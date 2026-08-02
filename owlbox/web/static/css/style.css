@@ -293,6 +293,9 @@ input[type="file"] { color: var(--text-dim); }
 .btn.secondary { background: #2a2f42; color: var(--text); }
 .btn.danger { background: var(--danger); color: #250000; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+a.btn { display: inline-block; text-decoration: none; }
+
+.doc-links { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .story-row {
   display: flex;

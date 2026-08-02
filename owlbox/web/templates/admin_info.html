@@ -59,6 +59,15 @@
       <dt>Modus</dt><dd id="info-mode">–</dd>
     </dl>
   </div>
+
+  <div class="card">
+    <h2>Dokumentation</h2>
+    <p class="hint">Benutzerhandbuch mit allen Funktionen und Screenshots, sowie die komplette Verkabelungs-Referenz.</p>
+    <div class="doc-links">
+      <a class="btn secondary" href="{{ url_for('static', filename='docs/OwlBox-Dokumentation.pdf') }}" download>📄 Dokumentation (PDF)</a>
+      <a class="btn secondary" href="{{ url_for('static', filename='docs/OwlBox-Wiring.pdf') }}" download>🔌 Verkabelung (PDF)</a>
+    </div>
+  </div>
 </div>
 
 <script src="{{ url_for('static', filename='js/admin_info.js') }}"></script>
