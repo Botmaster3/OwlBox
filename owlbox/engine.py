@@ -52,6 +52,7 @@ class Engine:
             on_prev=self.manual_prev,
             on_toggle_pause=self.manual_toggle_pause,
             on_volume_delta=self._handle_volume_delta,
+            on_seek=self.manual_seek,
             on_shutdown=self._handle_shutdown if config.gpio.shutdown_hold_seconds else None,
         )
 
@@ -242,6 +243,9 @@ class Engine:
             self._player.seek(0)
         else:
             self._player.previous()
+
+    def manual_seek(self, delta_seconds: float) -> None:
+        self._player.seek(delta_seconds, absolute=False)
 
     def manual_play(self) -> None:
         self._player.play()

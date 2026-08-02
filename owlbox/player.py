@@ -307,7 +307,7 @@ class StubPlayer:
             self._position = 0.0
 
     def seek(self, seconds: float, absolute: bool = True) -> None:
-        self._position = seconds if absolute else self._position + seconds
+        self._position = max(0.0, seconds if absolute else self._position + seconds)
 
     def set_volume(self, percent: int) -> None:
         self._volume = max(0, min(100, percent))

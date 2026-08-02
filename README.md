@@ -17,8 +17,10 @@ den Pi geladen und einem Chip zugewiesen.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
   Kapitel-/Track-Titel, Fortschritt, Lautstärke) - kein Touch, Bedienung
   läuft ausschließlich über Taster/Encoder/Funktions-Chips (siehe docs/hardware.md).
-- **Physische Bedienung**: zwei Taster (vor/zurück) + Dreh-Encoder
-  (drehen = Lautstärke, drücken = Play/Pause, lang drücken = herunterfahren).
+- **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
+  nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
+  Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,
+  lang drücken = herunterfahren).
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - reine "Jetzt läuft"-Anzeige (groß, wie auf dem Display), die erste Seite nach dem Login.

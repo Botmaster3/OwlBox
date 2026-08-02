@@ -30,3 +30,14 @@ def test_stub_player_does_not_step_past_playlist_bounds(config):
 
 def test_create_player_uses_stub_when_simulating(config):
     assert isinstance(create_player(config), StubPlayer)
+
+
+def test_stub_player_relative_seek_clamps_at_zero(config):
+    player = StubPlayer(config)
+    player.load_playlist(["a.mp3"], start_index=0, start_seconds=5.0)
+
+    player.seek(10, absolute=False)
+    assert player.get_status()["time_pos"] == 15.0
+
+    player.seek(-100, absolute=False)
+    assert player.get_status()["time_pos"] == 0.0

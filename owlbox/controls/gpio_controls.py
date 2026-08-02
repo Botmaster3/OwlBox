@@ -21,6 +21,7 @@ class GpioControls:
         on_prev: Callable[[], None],
         on_toggle_pause: Callable[[], None],
         on_volume_delta: Callable[[int], None],
+        on_seek: Callable[[float], None],
         on_shutdown: Optional[Callable[[], None]] = None,
     ):
         from gpiozero import Button, RotaryEncoder
@@ -29,14 +30,37 @@ class GpioControls:
         self._on_prev = on_prev
         self._on_toggle_pause = on_toggle_pause
         self._on_volume_delta = on_volume_delta
+        self._on_seek = on_seek
         self._on_shutdown = on_shutdown
         self._long_press_triggered = False
+        self._seek_step_seconds = gpio_config.seek_step_seconds
+        self._next_held = False
+        self._prev_held = False
 
-        self._btn_next = Button(gpio_config.button_next, pull_up=True, bounce_time=gpio_config.bounce_time)
-        self._btn_next.when_pressed = lambda: self._safe(self._on_next)
+        # Next/prev act on release, not on press: a short tap jumps to the next/
+        # previous track, but holding past seek_hold_seconds instead repeatedly
+        # fast-forwards/rewinds within the current track (when_held fires every
+        # seek_hold_seconds while held, thanks to hold_repeat) and suppresses the
+        # track jump that would otherwise fire on release.
+        self._btn_next = Button(
+            gpio_config.button_next,
+            pull_up=True,
+            bounce_time=gpio_config.bounce_time,
+            hold_time=gpio_config.seek_hold_seconds,
+            hold_repeat=True,
+        )
+        self._btn_next.when_held = self._handle_next_held
+        self._btn_next.when_released = self._handle_next_released
 
-        self._btn_prev = Button(gpio_config.button_prev, pull_up=True, bounce_time=gpio_config.bounce_time)
-        self._btn_prev.when_pressed = lambda: self._safe(self._on_prev)
+        self._btn_prev = Button(
+            gpio_config.button_prev,
+            pull_up=True,
+            bounce_time=gpio_config.bounce_time,
+            hold_time=gpio_config.seek_hold_seconds,
+            hold_repeat=True,
+        )
+        self._btn_prev.when_held = self._handle_prev_held
+        self._btn_prev.when_released = self._handle_prev_released
 
         self._encoder = RotaryEncoder(
             gpio_config.encoder_clk,
@@ -61,6 +85,26 @@ class GpioControls:
             fn(*args)
         except Exception:
             logger.exception("control callback failed")
+
+    def _handle_next_held(self) -> None:
+        self._next_held = True
+        self._safe(self._on_seek, self._seek_step_seconds)
+
+    def _handle_next_released(self) -> None:
+        if self._next_held:
+            self._next_held = False
+            return
+        self._safe(self._on_next)
+
+    def _handle_prev_held(self) -> None:
+        self._prev_held = True
+        self._safe(self._on_seek, -self._seek_step_seconds)
+
+    def _handle_prev_released(self) -> None:
+        if self._prev_held:
+            self._prev_held = False
+            return
+        self._safe(self._on_prev)
 
     def _handle_encoder_release(self) -> None:
         if self._long_press_triggered:

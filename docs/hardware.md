@@ -163,6 +163,11 @@ sonst) - dieselbe Verdrahtung wie jeder andere Taster:
 | Zurück   | 6       |
 | Weiter   | 5       |
 
+Kurz drücken springt zum vorherigen/nächsten Track. Gedrückt halten (länger
+als `gpio.seek_hold_seconds`, Default 0.4s) spult stattdessen im aktuellen
+Track vor/zurück, in Schritten von `gpio.seek_step_seconds` (Default 10s) -
+kein Trackwechsel, solange gehalten wird.
+
 ## Dreh-Encoder mit Taster (KY-040)
 
 | Encoder Pin | Raspberry Pi |

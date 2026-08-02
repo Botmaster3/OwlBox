@@ -58,6 +58,11 @@ gpio:
   # Hold the encoder button this long (seconds) to trigger a safe shutdown of the Pi.
   # Set to 0 to disable.
   shutdown_hold_seconds: 4
+  # Hold next/prev this long (seconds) before it starts fast-forwarding/rewinding
+  # instead of jumping to the next/previous track on release.
+  seek_hold_seconds: 0.4
+  # Seconds seeked per repeat tick while next/prev is held past seek_hold_seconds.
+  seek_step_seconds: 10
 
 playback:
   # When pressing "previous", restart the current track instead of jumping to the

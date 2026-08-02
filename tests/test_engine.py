@@ -98,6 +98,31 @@ def test_manual_volume_change(config):
         engine.stop()
 
 
+def test_manual_seek_is_relative_and_does_not_change_track(config):
+    config.rfid.poll_interval = 0.01
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine.get_state()["player"]["time_pos"] == 0.0
+
+        # This is what holding the next/prev button drives (see GpioControls) -
+        # a short tap still calls manual_next/manual_prev to change track, but
+        # holding repeatedly calls this with a fixed step instead.
+        engine.manual_seek(10)
+        state = engine.get_state()
+        assert state["player"]["time_pos"] == 10.0
+        assert state["player"]["playlist_pos"] == 0
+
+        engine.manual_seek(-100)
+        assert engine.get_state()["player"]["time_pos"] == 0.0
+    finally:
+        engine.stop()
+
+
 def test_function_tag_toggles_pause_without_being_treated_as_unknown(config):
     config.rfid.poll_interval = 0.01
     repository.set_function_tag("PAUSECARD", "toggle_pause")

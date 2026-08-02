@@ -48,6 +48,11 @@ class GpioConfig:
     encoder_switch: int = 22
     bounce_time: float = 0.05
     shutdown_hold_seconds: float = 4
+    # How long the next/prev button must be held before it starts fast-forwarding/
+    # rewinding instead of jumping to the next/previous track on release.
+    seek_hold_seconds: float = 0.4
+    # Seconds seeked per repeat tick while a button is held past seek_hold_seconds.
+    seek_step_seconds: float = 10
 
 
 @dataclass
