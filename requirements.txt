@@ -1,0 +1,9 @@
+Flask>=3.0
+PyYAML>=6.0
+mutagen>=1.47
+
+# Hardware support (only usable on a Raspberry Pi, safe to fail to install elsewhere)
+gpiozero>=2.0
+mfrc522>=0.0.7
+spidev>=3.6
+RPi.GPIO>=0.7.1; platform_machine == "armv6l" or platform_machine == "armv7l" or platform_machine == "aarch64"

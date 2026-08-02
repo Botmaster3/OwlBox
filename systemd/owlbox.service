@@ -1,0 +1,19 @@
+[Unit]
+Description=OwlBox core service (player, RFID, GPIO, web UI)
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=owlbox
+Group=owlbox
+WorkingDirectory=/opt/owlbox
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/owlbox/.venv/bin/python -m owlbox.main
+Restart=on-failure
+RestartSec=3
+
+# Hardware access: SPI (RC522), GPIO (buttons/encoder), audio (HiFiBerry via ALSA)
+SupplementaryGroups=gpio spi audio video
+
+[Install]
+WantedBy=multi-user.target

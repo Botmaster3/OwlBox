@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}OwlBox{% endblock %}
+{% block body %}
+<div class="player">
+  <div class="cover-wrap" id="cover-wrap">
+    <img id="cover" class="cover" alt="" hidden>
+    <div id="cover-placeholder" class="cover-placeholder">🦉</div>
+  </div>
+
+  <div class="info">
+    <div id="title" class="title">Kein Chip aufgelegt</div>
+    <div class="progress-row">
+      <span id="time-pos" class="time">0:00</span>
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+      <span id="time-dur" class="time">0:00</span>
+    </div>
+
+    <div class="controls">
+      <button id="btn-prev" class="ctrl-btn" aria-label="Zurück">⏮</button>
+      <button id="btn-toggle" class="ctrl-btn ctrl-btn-large" aria-label="Play/Pause">⏯</button>
+      <button id="btn-next" class="ctrl-btn" aria-label="Weiter">⏭</button>
+    </div>
+
+    <div class="volume-row">
+      <span>🔉</span>
+      <input id="volume" type="range" min="0" max="100" value="60">
+      <span>🔊</span>
+    </div>
+  </div>
+
+  <div id="unknown-banner" class="banner" hidden>
+    Unbekannter Chip erkannt. Im Admin-Bereich zuweisen (/admin).
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/player.js') }}"></script>
+{% endblock %}

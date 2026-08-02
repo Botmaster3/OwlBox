@@ -1,0 +1,65 @@
+# OwlBox configuration
+# Copy this file to config/config.yaml and adjust to your setup.
+# config/config.yaml is gitignored so local, device-specific settings never get committed.
+
+# Set to true on a development machine without the real hardware attached.
+# RFID reads can be injected via the admin UI ("Chip simulieren"),
+# GPIO buttons/encoder become no-ops, and mpv is optional.
+simulate: false
+
+paths:
+  media_dir: media       # uploaded story/music files go here, one subfolder per story
+  database: data/owlbox.db
+
+web:
+  host: "0.0.0.0"
+  port: 5000
+  # Set a password to protect the /admin library management UI.
+  # Leave empty to disable authentication (fine on a trusted home LAN).
+  admin_password: ""
+  secret_key: "change-me"
+
+audio:
+  # ALSA output device for mpv, as shown by `aplay -L`.
+  # For a HiFiBerry Amp/Amp2/DAC+ this is usually "hw:0,0" or "hw:sndrpihifiberry,0" once
+  # the sound card is the only one registered (see docs/hardware.md).
+  alsa_device: "hw:0,0"
+  # ALSA mixer control used for hardware volume (see `amixer scontrols` on the Pi).
+  # HiFiBerry DAC+/Amp2 boards commonly expose "Digital" or "PCM".
+  mixer_control: "Digital"
+  mixer_card: "0"
+  default_volume: 60
+  volume_step: 4
+  mpv_binary: mpv
+  mpv_ipc_socket: /tmp/owlbox-mpv.sock
+
+rfid:
+  reader: mfrc522   # mfrc522 | simulated
+  # RC522 wired to SPI0 (physical pin numbers in comments)
+  spi_bus: 0
+  spi_device: 0
+  reset_pin: 25      # BCM numbering, physical pin 22
+  poll_interval: 0.15
+  # A tag must be missing for this many consecutive polls before it counts as "removed"
+  # (RC522 reads are flaky at the edge of range, this avoids false pause/resume flapping)
+  missing_reads_to_remove: 5
+
+gpio:
+  # BCM pin numbers, chosen to avoid HiFiBerry's I2S pins (18/19/20/21) and I2C (2/3)
+  button_next: 5
+  button_prev: 6
+  encoder_clk: 17
+  encoder_dt: 27
+  encoder_switch: 22
+  bounce_time: 0.05
+  # Hold the encoder button this long (seconds) to trigger a safe shutdown of the Pi.
+  # Set to 0 to disable.
+  shutdown_hold_seconds: 4
+
+playback:
+  # When pressing "previous", restart the current track instead of jumping to the
+  # previous one if more than this many seconds have already played.
+  restart_track_after_seconds: 3
+  # Save playback position to the database this often (seconds), so power loss
+  # doesn't lose more than this much progress.
+  position_save_interval: 5

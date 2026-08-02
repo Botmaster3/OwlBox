@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}OwlBox – Anmelden{% endblock %}
+{% block body %}
+<div class="login-page">
+  <div class="card login-box">
+    <h2>🦉 OwlBox</h2>
+    <form method="post">
+      <div class="field">
+        <label for="password">Passwort</label>
+        <input type="password" id="password" name="password" autofocus>
+      </div>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      <button class="btn" type="submit">Anmelden</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
