@@ -158,7 +158,7 @@ sonst) - dieselbe Verdrahtung wie jeder andere Taster:
 | Zurück   | 6       |
 | Weiter   | 5       |
 
-## Dreh-Encoder mit Taster (z.B. KY-040)
+## Dreh-Encoder mit Taster (KY-040)
 
 | Encoder Pin | Raspberry Pi |
 |-------------|--------------|
@@ -167,6 +167,12 @@ sonst) - dieselbe Verdrahtung wie jeder andere Taster:
 | SW          | GPIO22       |
 | +           | 3.3V         |
 | GND         | GND          |
+
+Das KY-040-Modul bringt eigene Pull-up-Widerstände für CLK/DT mit; die
+zusätzlich von gpiozero aktivierten Pull-ups des Pi stören dabei nicht
+(einfach parallel). Für den Taster (SW) hat das Modul in der Regel
+**keinen** eigenen Pull-up - das übernimmt `gpiozero.Button(pull_up=True)`
+in `owlbox/controls/gpio_controls.py`, hier also nichts weiter nötig.
 
 Drehen ändert die Lautstärke (Schritweite `audio.volume_step`), Drücken
 schaltet Play/Pause um. Ein langer Druck (`gpio.shutdown_hold_seconds`,
