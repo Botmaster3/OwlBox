@@ -9,17 +9,24 @@ den Pi geladen und einem Chip zugewiesen.
 
 - **RFID-gesteuerte Wiedergabe**: Chip auflegen → zugehörige Playlist startet
   (mit gemerkter Position), Chip abnehmen → pausiert automatisch.
+- **Funktions-Chips**: eigene Chips, die statt einer Geschichte eine Aktion
+  auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus, Pi neu
+  starten/herunterfahren. Praktisch als "Bedienkarten" ohne Taster anfassen
+  zu müssen.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
   Kapitel-/Track-Titel, Fortschritt, Lautstärke) - kein Touch, Bedienung
-  läuft ausschließlich über Taster/Encoder (siehe docs/hardware.md).
+  läuft ausschließlich über Taster/Encoder/Funktions-Chips (siehe docs/hardware.md).
 - **Physische Bedienung**: zwei Taster (vor/zurück) + Dreh-Encoder
   (drehen = Lautstärke, drücken = Play/Pause, lang drücken = herunterfahren).
-- **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort geschützt, eigene
-  Unterseiten): "Bibliothek" (Übersicht inkl. "Jetzt läuft"-Anzeige, Chip
-  zuweisen, Shuffle/Repeat, löschen), "Hinzufügen" (einzelne Dateien oder
-  einen ganzen Ordner hochladen, Cover/Titel wird aus dem Ordner erkannt) und
-  "Einstellungen" (Zugangsdaten ändern, Pi neu starten/herunterfahren). Beim
-  ersten Besuch führt ein Einrichtungsassistent durchs Anlegen des
+- **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
+  hinterlegten RFID-Chip geschützt, fünf Unterseiten):
+  - **Jetzt läuft** - reine Anzeige wie auf dem Display, die erste Seite nach dem Login.
+  - **Bibliothek** - Geschichten verwalten: Chip zuweisen, Shuffle/Repeat, Track-Reihenfolge, löschen.
+  - **Hinzufügen** - einzelne Dateien oder einen ganzen Ordner hochladen, Cover/Titel wird aus dem Ordner erkannt.
+  - **RFID-Tags** - Login-Chip hinterlegen, Funktions-Chips anlegen, Übersicht aller Story-Chips.
+  - **Einstellungen** - Zugangsdaten ändern, Pi neu starten/herunterfahren.
+
+  Beim ersten Besuch führt ein Einrichtungsassistent durchs Anlegen des
   Admin-Kontos. Die Now-Playing-Anzeige (`/`) für den Touchscreen selbst
   bleibt bewusst ohne Login, da das Display keine Tastatur hat.
 - **Simulationsmodus**: läuft ohne echte Hardware (RFID/GPIO/mpv) für

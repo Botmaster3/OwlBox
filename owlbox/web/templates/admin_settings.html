@@ -2,17 +2,7 @@
 {% block title %}OwlBox – Einstellungen{% endblock %}
 {% block body %}
 <div class="admin" id="app">
-  <h1>🦉 OwlBox Verwaltung
-    <form action="{{ url_for('pages.logout') }}" method="post" class="logout">
-      <button class="btn secondary" type="submit">Abmelden</button>
-    </form>
-  </h1>
-
-  <nav class="admin-nav">
-    <a href="{{ url_for('pages.admin_library_page') }}" class="{{ 'active' if active == 'library' }}">Bibliothek</a>
-    <a href="{{ url_for('pages.admin_add_page') }}" class="{{ 'active' if active == 'add' }}">Hinzufügen</a>
-    <a href="{{ url_for('pages.admin_settings_page') }}" class="{{ 'active' if active == 'settings' }}">Einstellungen</a>
-  </nav>
+  {% include "_admin_nav.html" %}
 
   <div class="card">
     <h2>Zugangsdaten ändern</h2>

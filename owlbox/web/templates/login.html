@@ -16,6 +16,20 @@
       {% if error %}<p class="error">{{ error }}</p>{% endif %}
       <button class="btn" type="submit">Anmelden</button>
     </form>
+
+    <div class="divider"><span>oder</span></div>
+
+    <button class="btn secondary" id="rfid-login-btn" type="button" style="width: 100%;">Mit RFID-Chip anmelden</button>
+    <p id="rfid-login-status" class="hint"></p>
   </div>
 </div>
+
+<div id="scan-overlay" class="assign-overlay" hidden>
+  <div class="card" style="max-width: 360px;">
+    <p id="scan-status">Halte den Login-Chip jetzt an die Box…</p>
+    <button class="btn secondary" id="scan-cancel" type="button">Abbrechen</button>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
 {% endblock %}

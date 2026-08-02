@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}OwlBox – RFID-Tags{% endblock %}
+{% block body %}
+<div class="admin" id="app" data-admin-rfid-uid="{{ admin_rfid_uid or '' }}">
+  {% include "_admin_nav.html" %}
+
+  <div class="card">
+    <h2>Login-Chip</h2>
+    <p class="hint">
+      Ein Chip, der beim Auflegen die Verwaltung einloggt - ohne Benutzername/Passwort einzutippen.
+    </p>
+    <p id="admin-rfid-status">
+      {% if admin_rfid_uid %}Hinterlegt: <span class="mono">{{ admin_rfid_uid }}</span>{% else %}Kein Chip hinterlegt.{% endif %}
+    </p>
+    <button class="btn secondary" id="admin-rfid-set-btn" type="button">Chip hinterlegen</button>
+    <button class="btn danger" id="admin-rfid-clear-btn" type="button" {{ "hidden" if not admin_rfid_uid }}>Entfernen</button>
+  </div>
+
+  <div class="card">
+    <h2>Funktions-Chips</h2>
+    <p class="hint">
+      Chips, die beim Auflegen eine Aktion auslösen statt eine Geschichte abzuspielen
+      - z.B. eine eigene Karte für Play/Pause, Lautstärke oder WLAN.
+    </p>
+    <div id="function-tag-list"></div>
+
+    <h3>Neuen Funktions-Chip anlegen</h3>
+    <div class="field">
+      <label for="function-action">Aktion</label>
+      <select id="function-action">
+        {% for value, label in function_actions %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn" id="function-tag-add-btn" type="button">Chip auflegen und speichern</button>
+  </div>
+
+  <div class="card">
+    <h2>Story-Chips (Übersicht)</h2>
+    <p class="hint">Welche Geschichte an welchem Chip hängt - Zuweisen selbst passiert in der Bibliothek.</p>
+    <div id="story-tag-list"></div>
+  </div>
+</div>
+
+<div id="scan-overlay" class="assign-overlay" hidden>
+  <div class="card" style="max-width: 360px;">
+    <p id="scan-status">Halte den Chip jetzt an die Box…</p>
+    <button class="btn secondary" id="scan-cancel" type="button">Abbrechen</button>
+  </div>
+</div>
+
+<script>
+  window.OWLBOX_ACTION_LABELS = {{ function_action_labels|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/admin_tags.js') }}"></script>
+{% endblock %}

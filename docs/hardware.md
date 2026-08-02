@@ -184,12 +184,13 @@ schaltet Play/Pause um. Ein langer Druck (`gpio.shutdown_hold_seconds`,
 Default 4s) fährt den Pi sicher herunter - praktisch für ein Kindergerät
 ohne Zugriff auf ein Terminal. Auf 0 setzen, um das abzuschalten.
 
-Damit der Shutdown ohne Passwortabfrage funktioniert, braucht der
-Service-User `owlbox` passwortloses sudo dafür, z.B. in
-`/etc/sudoers.d/owlbox`:
+Damit Shutdown/Neustart (auch über die Web-UI unter Einstellungen bzw.
+über einen "Pi neu starten"/"WLAN aus"-Funktions-Chip, siehe unten) ohne
+Passwortabfrage funktionieren, braucht der Service-User `owlbox`
+passwortloses sudo dafür, z.B. in `/etc/sudoers.d/owlbox`:
 
 ```
-owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown
+owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli
 ```
 
 ## 3.5" SPI-Display: Treiber (ohne Touch)

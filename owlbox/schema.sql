@@ -35,9 +35,20 @@ CREATE TABLE IF NOT EXISTS scan_log (
 
 -- Single admin account gating /admin and the mutating API. Empty table means
 -- setup hasn't run yet - the login page redirects to /setup until one exists.
+-- rfid_uid is optional: a chip that, when scanned, logs this account into the
+-- web UI from whatever browser is waiting on /login - no keyboard needed.
 CREATE TABLE IF NOT EXISTS admin_user (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    rfid_uid TEXT UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Chips that trigger an action (play/pause/next/previous/volume/wifi/power)
+-- instead of playing a story when scanned - "control cards".
+CREATE TABLE IF NOT EXISTS function_tags (
+    uid TEXT PRIMARY KEY,
+    action TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

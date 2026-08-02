@@ -113,6 +113,12 @@ def assign_uid(story_id: int, uid: str) -> None:
     with write_cursor() as cur:
         cur.execute("UPDATE stories SET uid = NULL WHERE uid = ?", (uid,))
         cur.execute("UPDATE stories SET uid = ? WHERE id = ?", (uid, story_id))
+        cur.execute("DELETE FROM function_tags WHERE uid = ?", (uid,))
+
+
+def remove_story_uid(story_id: int) -> None:
+    with write_cursor() as cur:
+        cur.execute("UPDATE stories SET uid = NULL WHERE id = ?", (story_id,))
 
 
 def set_cover_path(story_id: int, cover_path: str) -> None:
@@ -190,6 +196,7 @@ class AdminUser:
     id: int
     username: str
     password_hash: str
+    rfid_uid: Optional[str]
     created_at: str
 
 
@@ -214,3 +221,41 @@ def update_admin_user(username: str, password_hash: str) -> None:
             "UPDATE admin_user SET username = ?, password_hash = ? WHERE id = (SELECT id FROM admin_user ORDER BY id LIMIT 1)",
             (username, password_hash),
         )
+
+
+def set_admin_rfid_uid(uid: Optional[str]) -> None:
+    with write_cursor() as cur:
+        cur.execute(
+            "UPDATE admin_user SET rfid_uid = ? WHERE id = (SELECT id FROM admin_user ORDER BY id LIMIT 1)",
+            (uid,),
+        )
+
+
+# -- function tags (control cards: play/pause/next/previous/volume/wifi/power) --
+
+
+def list_function_tags() -> list[dict]:
+    rows = get_connection().execute("SELECT uid, action FROM function_tags ORDER BY created_at DESC").fetchall()
+    return [{"uid": r["uid"], "action": r["action"]} for r in rows]
+
+
+def get_function_tag(uid: str) -> Optional[str]:
+    row = get_connection().execute("SELECT action FROM function_tags WHERE uid = ?", (uid,)).fetchone()
+    return row["action"] if row else None
+
+
+def set_function_tag(uid: str, action: str) -> None:
+    with write_cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO function_tags (uid, action) VALUES (?, ?)
+            ON CONFLICT(uid) DO UPDATE SET action = excluded.action
+            """,
+            (uid, action),
+        )
+        cur.execute("UPDATE stories SET uid = NULL WHERE uid = ?", (uid,))
+
+
+def delete_function_tag(uid: str) -> None:
+    with write_cursor() as cur:
+        cur.execute("DELETE FROM function_tags WHERE uid = ?", (uid,))

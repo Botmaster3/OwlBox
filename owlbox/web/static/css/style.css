@@ -230,6 +230,9 @@ input[type="file"] { color: var(--text-dim); }
 .login-page { height: 100vh; display: flex; align-items: center; justify-content: center; }
 .login-box { width: 320px; }
 
+.divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--text-dim); font-size: 0.85rem; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #2a2f42; }
+
 .assign-overlay {
   position: fixed;
   inset: 0;

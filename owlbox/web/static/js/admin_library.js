@@ -7,76 +7,6 @@
 
   let assignPoll = null;
 
-  // -- "now playing" widget, same data the kiosk display shows -------------
-
-  const npCover = document.getElementById("np-cover");
-  const npCoverPlaceholder = document.getElementById("np-cover-placeholder");
-  const npTitle = document.getElementById("np-title");
-  const npTrack = document.getElementById("np-track");
-  const npTimePos = document.getElementById("np-time-pos");
-  const npTimeDur = document.getElementById("np-time-dur");
-  const npProgressFill = document.getElementById("np-progress-fill");
-  const npVolumeFill = document.getElementById("np-volume-fill");
-  let lastNpCoverUrl = null;
-
-  function formatTime(seconds) {
-    seconds = Math.max(0, Math.floor(seconds || 0));
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-  }
-
-  async function pollNowPlaying() {
-    try {
-      const res = await fetch("/api/state");
-      if (res.ok) applyNowPlaying(await res.json());
-    } catch (err) {
-      // network hiccup, just try again next tick
-    } finally {
-      setTimeout(pollNowPlaying, 1000);
-    }
-  }
-
-  function applyNowPlaying(state) {
-    const story = state.story;
-    const player = state.player || {};
-
-    if (story) {
-      npTitle.textContent = story.title;
-    } else if (state.unknown_tag) {
-      npTitle.textContent = "Unbekannter Chip aufgelegt";
-    } else {
-      npTitle.textContent = "Kein Chip aufgelegt";
-    }
-
-    if (story && story.track_title) {
-      npTrack.textContent = story.track_title;
-      npTrack.hidden = false;
-    } else {
-      npTrack.hidden = true;
-    }
-
-    const coverUrl = story && story.cover_url ? story.cover_url : null;
-    if (coverUrl !== lastNpCoverUrl) {
-      lastNpCoverUrl = coverUrl;
-      if (coverUrl) {
-        npCover.src = coverUrl;
-        npCover.hidden = false;
-        npCoverPlaceholder.hidden = true;
-      } else {
-        npCover.hidden = true;
-        npCoverPlaceholder.hidden = false;
-      }
-    }
-
-    const timePos = player.time_pos || 0;
-    const duration = player.duration || 0;
-    npTimePos.textContent = formatTime(timePos);
-    npTimeDur.textContent = formatTime(duration);
-    npProgressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
-    npVolumeFill.style.width = `${Math.max(0, Math.min(100, player.volume || 0))}%`;
-  }
-
   function formatDuration(seconds) {
     if (!seconds) return "";
     seconds = Math.floor(seconds);
@@ -155,12 +85,20 @@
         </div>
         <div class="story-actions">
           <button class="btn secondary" data-action="assign">Chip zuweisen</button>
+          ${story.uid ? '<button class="btn secondary" data-action="unassign">Chip entfernen</button>' : ""}
           <button class="btn secondary" data-action="shuffle">${story.shuffle ? "🔀 an" : "🔀 aus"}</button>
           <button class="btn secondary" data-action="repeat">${story.repeat ? "🔁 an" : "🔁 aus"}</button>
           <button class="btn danger" data-action="delete">Löschen</button>
         </div>
       `;
       header.querySelector('[data-action="assign"]').addEventListener("click", () => startAssign(story));
+      const unassignBtn = header.querySelector('[data-action="unassign"]');
+      if (unassignBtn) {
+        unassignBtn.addEventListener("click", async () => {
+          await api(`/api/stories/${story.id}/unassign`, { method: "POST" });
+          loadStories();
+        });
+      }
       header.querySelector('[data-action="shuffle"]').addEventListener("click", async () => {
         await api(`/api/stories/${story.id}/flags`, {
           method: "POST",
@@ -238,5 +176,4 @@
   }
 
   loadStories();
-  pollNowPlaying();
 })();

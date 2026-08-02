@@ -17,6 +17,24 @@ from .rfid import create_reader
 
 logger = logging.getLogger("owlbox.engine")
 
+# Function tags ("control cards"): scanning one of these runs an action instead of
+# playing a story. (value, German label) - the label is what the RFID-tags admin
+# page shows in the action picker.
+FUNCTION_ACTIONS = [
+    ("play", "Play"),
+    ("pause", "Pause"),
+    ("toggle_pause", "Play/Pause umschalten"),
+    ("next", "Weiter"),
+    ("previous", "Zurück"),
+    ("volume_up", "Lauter"),
+    ("volume_down", "Leiser"),
+    ("wifi_on", "WLAN an"),
+    ("wifi_off", "WLAN aus"),
+    ("restart", "Pi neu starten"),
+    ("shutdown", "Pi herunterfahren"),
+]
+FUNCTION_ACTION_VALUES = {value for value, _label in FUNCTION_ACTIONS}
+
 
 class Engine:
     def __init__(self, config):
@@ -35,6 +53,7 @@ class Engine:
         self._lock = threading.RLock()
         self._current_uid: Optional[str] = None
         self._current_story: Optional[repository.Story] = None
+        self._current_function_action: Optional[str] = None
         self._last_unknown_uid: Optional[str] = None
         self._volume = config.audio.default_volume
         self._missing_reads = 0
@@ -104,21 +123,30 @@ class Engine:
             story = repository.get_story_by_uid(uid)
             repository.log_scan(uid)
             self._current_uid = uid
-            if story is None:
-                self._current_story = None
-                self._last_unknown_uid = uid
-                logger.info("unknown RFID tag scanned: %s", uid)
+            self._current_function_action = None
+
+            if story is not None:
+                self._current_story = story
+                tracks = repository.get_tracks(story.id)
+                filepaths = [str(self._media_path(story, t)) for t in tracks]
+                track_pos, seek_seconds = repository.get_playback_state(uid)
+                if track_pos >= len(filepaths):
+                    track_pos, seek_seconds = 0, 0.0
+                self._player.load_playlist(filepaths, start_index=track_pos, start_seconds=seek_seconds)
+                self._player.set_volume(self._volume)
+                logger.info("playing '%s' (uid=%s) from track %s @ %.1fs", story.title, uid, track_pos, seek_seconds)
                 return
 
-            self._current_story = story
-            tracks = repository.get_tracks(story.id)
-            filepaths = [str(self._media_path(story, t)) for t in tracks]
-            track_pos, seek_seconds = repository.get_playback_state(uid)
-            if track_pos >= len(filepaths):
-                track_pos, seek_seconds = 0, 0.0
-            self._player.load_playlist(filepaths, start_index=track_pos, start_seconds=seek_seconds)
-            self._player.set_volume(self._volume)
-            logger.info("playing '%s' (uid=%s) from track %s @ %.1fs", story.title, uid, track_pos, seek_seconds)
+            self._current_story = None
+
+            action = repository.get_function_tag(uid)
+            if action is not None:
+                self._current_function_action = action
+                self._execute_function_action(action)
+                return
+
+            self._last_unknown_uid = uid
+            logger.info("unknown RFID tag scanned: %s", uid)
 
     def _handle_tag_removed(self) -> None:
         with self._lock:
@@ -126,11 +154,45 @@ class Engine:
                 return
             if self._current_story is not None:
                 self._persist_position_locked()
-            logger.info("tag removed (uid=%s), pausing", self._current_uid)
-            self._player.pause()
+                logger.info("tag removed (uid=%s), pausing", self._current_uid)
+                self._player.pause()
             self._current_uid = None
             self._current_story = None
+            self._current_function_action = None
             self._missing_reads = 0
+
+    def _execute_function_action(self, action: str) -> None:
+        logger.info("executing RFID function tag action: %s", action)
+        if action == "play":
+            self._player.play()
+        elif action == "pause":
+            self._player.pause()
+        elif action == "toggle_pause":
+            self._player.toggle_pause()
+        elif action == "next":
+            self._player.next()
+        elif action == "previous":
+            self.manual_prev()
+        elif action == "volume_up":
+            self._handle_volume_delta(1)
+        elif action == "volume_down":
+            self._handle_volume_delta(-1)
+        elif action == "wifi_on":
+            self._set_wifi(True)
+        elif action == "wifi_off":
+            self._set_wifi(False)
+        elif action == "restart":
+            self.request_restart()
+        elif action == "shutdown":
+            self.request_shutdown()
+        else:
+            logger.warning("unknown function tag action: %s", action)
+
+    def _set_wifi(self, enabled: bool) -> None:
+        try:
+            subprocess.run(["sudo", "nmcli", "radio", "wifi", "on" if enabled else "off"], check=False)
+        except Exception:
+            logger.exception("failed to toggle wifi")
 
     def _persist_position_locked(self) -> None:
         if self._current_uid is None or self._current_story is None:
@@ -210,6 +272,7 @@ class Engine:
         with self._lock:
             story = self._current_story
             current_uid = self._current_uid
+            function_action = self._current_function_action
             last_unknown = self._last_unknown_uid
         status = self._player.get_status()
 
@@ -221,6 +284,8 @@ class Engine:
                 track = tracks[index]
                 track_title = track.title or Path(track.filename).stem
 
+        is_unknown = story is None and function_action is None and current_uid is not None
+
         return {
             "uid": current_uid,
             "story": None
@@ -231,7 +296,8 @@ class Engine:
                 "cover_url": f"/media/{story.id}/{story.cover_path}" if story.cover_path else None,
                 "track_title": track_title,
             },
-            "unknown_tag": current_uid if story is None and current_uid is not None else None,
+            "function_tag": function_action,
+            "unknown_tag": current_uid if is_unknown else None,
             "last_unknown_uid": last_unknown,
             "player": status,
         }

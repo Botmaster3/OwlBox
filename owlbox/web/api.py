@@ -4,10 +4,11 @@ import logging
 import shutil
 from pathlib import Path
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, session
 from werkzeug.utils import secure_filename
 
 from .. import repository
+from ..engine import FUNCTION_ACTION_VALUES
 from ..media_utils import is_allowed_audio, is_allowed_image, probe_audio
 from .auth import admin_required
 
@@ -172,6 +173,15 @@ def assign_story(story_id):
     return jsonify({"ok": True})
 
 
+@api_bp.route("/stories/<int:story_id>/unassign", methods=["POST"])
+@admin_required
+def unassign_story(story_id):
+    if repository.get_story(story_id) is None:
+        return jsonify({"error": "not found"}), 404
+    repository.remove_story_uid(story_id)
+    return jsonify({"ok": True})
+
+
 @api_bp.route("/stories/<int:story_id>/flags", methods=["POST"])
 @admin_required
 def set_flags(story_id):
@@ -271,4 +281,68 @@ def simulate_remove():
     if not _config().simulate:
         return jsonify({"error": "only available with simulate: true"}), 404
     _engine().simulate_remove()
+    return jsonify({"ok": True})
+
+
+# -- function tags (control cards) -----------------------------------------
+
+
+@api_bp.route("/function-tags")
+@admin_required
+def list_function_tags():
+    return jsonify(repository.list_function_tags())
+
+
+@api_bp.route("/function-tags", methods=["POST"])
+@admin_required
+def create_function_tag():
+    data = request.get_json(silent=True) or {}
+    uid = (data.get("uid") or "").strip()
+    action = (data.get("action") or "").strip()
+    if not uid:
+        return jsonify({"error": "uid is required"}), 400
+    if action not in FUNCTION_ACTION_VALUES:
+        return jsonify({"error": f"unknown action: {action}"}), 400
+    repository.set_function_tag(uid, action)
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/function-tags/<uid>", methods=["DELETE"])
+@admin_required
+def delete_function_tag(uid):
+    repository.delete_function_tag(uid)
+    return jsonify({"ok": True})
+
+
+# -- admin RFID login tag ---------------------------------------------------
+
+
+@api_bp.route("/admin/rfid", methods=["POST"])
+@admin_required
+def set_admin_rfid():
+    data = request.get_json(silent=True) or {}
+    uid = (data.get("uid") or "").strip()
+    if not uid:
+        return jsonify({"error": "uid is required"}), 400
+    repository.set_admin_rfid_uid(uid)
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/admin/rfid", methods=["DELETE"])
+@admin_required
+def clear_admin_rfid():
+    repository.set_admin_rfid_uid(None)
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/auth/rfid-login", methods=["POST"])
+def rfid_login():
+    data = request.get_json(silent=True) or {}
+    uid = (data.get("uid") or "").strip()
+    if not uid:
+        return jsonify({"error": "uid is required"}), 400
+    user = repository.get_admin_user()
+    if user is None or not user.rfid_uid or user.rfid_uid != uid:
+        return jsonify({"error": "Chip nicht als Login-Chip hinterlegt."}), 401
+    session["authed"] = True
     return jsonify({"ok": True})

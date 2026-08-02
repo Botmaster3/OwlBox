@@ -4,6 +4,7 @@ from flask import Blueprint, current_app, redirect, render_template, request, se
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .. import repository
+from ..engine import FUNCTION_ACTIONS
 from .auth import admin_required
 
 pages_bp = Blueprint("pages", __name__)
@@ -16,6 +17,12 @@ def player_page():
 
 @pages_bp.route("/admin")
 @admin_required
+def admin_dashboard_page():
+    return render_template("admin_dashboard.html", active="dashboard")
+
+
+@pages_bp.route("/admin/library")
+@admin_required
 def admin_library_page():
     config = current_app.config["OWLBOX_CONFIG"]
     return render_template("admin_library.html", simulate=config.simulate, active="library")
@@ -25,6 +32,19 @@ def admin_library_page():
 @admin_required
 def admin_add_page():
     return render_template("admin_add.html", active="add")
+
+
+@pages_bp.route("/admin/tags")
+@admin_required
+def admin_tags_page():
+    user = repository.get_admin_user()
+    return render_template(
+        "admin_tags.html",
+        active="tags",
+        admin_rfid_uid=user.rfid_uid if user else None,
+        function_actions=FUNCTION_ACTIONS,
+        function_action_labels=dict(FUNCTION_ACTIONS),
+    )
 
 
 @pages_bp.route("/admin/settings", methods=["GET", "POST"])
@@ -78,7 +98,7 @@ def setup():
         else:
             repository.create_admin_user(username, generate_password_hash(password))
             session["authed"] = True
-            return redirect(url_for("pages.admin_library_page"))
+            return redirect(url_for("pages.admin_dashboard_page"))
     return render_template("setup.html", error=error)
 
 
@@ -94,7 +114,7 @@ def login():
         password = request.form.get("password", "")
         if user is not None and username == user.username and check_password_hash(user.password_hash, password):
             session["authed"] = True
-            return redirect(request.args.get("next") or url_for("pages.admin_library_page"))
+            return redirect(request.args.get("next") or url_for("pages.admin_dashboard_page"))
         error = "Benutzername oder Passwort falsch."
     return render_template("login.html", error=error)
 

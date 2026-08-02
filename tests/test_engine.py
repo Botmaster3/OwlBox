@@ -75,6 +75,55 @@ def test_manual_volume_change(config):
         engine.stop()
 
 
+def test_function_tag_toggles_pause_without_being_treated_as_unknown(config):
+    config.rfid.poll_interval = 0.01
+    repository.set_function_tag("PAUSECARD", "toggle_pause")
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine.get_state()["player"]["playing"] is True
+
+        engine.simulate_scan("PAUSECARD")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["player"]["playing"] is False
+        assert state["function_tag"] == "toggle_pause"
+        assert state["unknown_tag"] is None
+        assert state["story"] is None
+    finally:
+        engine.stop()
+
+
+def test_function_tag_next_advances_playlist(config):
+    config.rfid.poll_interval = 0.01
+    repository.set_function_tag("NEXTCARD", "next")
+    story = repository.create_story(title="Multi")
+    story_dir = config.media_dir / str(story.id)
+    story_dir.mkdir(parents=True, exist_ok=True)
+    (story_dir / "a.mp3").write_bytes(b"x")
+    (story_dir / "b.mp3").write_bytes(b"x")
+    repository.add_track(story.id, 0, "a.mp3", None, None)
+    repository.add_track(story.id, 1, "b.mp3", None, None)
+    repository.assign_uid(story.id, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine.get_state()["player"]["playlist_pos"] == 0
+
+        engine.simulate_scan("NEXTCARD")
+        time.sleep(0.15)
+        assert engine.get_state()["player"]["playlist_pos"] == 1
+    finally:
+        engine.stop()
+
+
 def test_stop_persists_exact_position_even_before_next_autosave(config):
     # A large interval means the periodic autosave in the loop won't fire during
     # this test - stop() must still save the exact position on its own so a
