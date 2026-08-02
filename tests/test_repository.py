@@ -80,15 +80,35 @@ def test_admin_user_create_and_update(config):
     assert updated.password_hash == "hashed-pw-2"
 
 
-def test_admin_rfid_uid_set_and_clear(config):
-    repository.create_admin_user("marco", "hashed-pw")
-    assert repository.get_admin_user().rfid_uid is None
+def test_parent_tags_crud_and_collisions(config):
+    assert repository.list_parent_tags() == []
+    assert repository.is_parent_tag("PARENT1") is False
 
-    repository.set_admin_rfid_uid("AABBCCDD")
-    assert repository.get_admin_user().rfid_uid == "AABBCCDD"
+    repository.add_parent_tag("PARENT1", "Vater")
+    repository.add_parent_tag("PARENT2", "Mutter")
+    assert repository.is_parent_tag("PARENT1") is True
+    assert repository.get_parent_tag_label("PARENT1") == "Vater"
+    assert repository.get_parent_tag_label("PARENT2") == "Mutter"
+    assert len(repository.list_parent_tags()) == 2
 
-    repository.set_admin_rfid_uid(None)
-    assert repository.get_admin_user().rfid_uid is None
+    repository.add_parent_tag("PARENT1", "Papa")
+    assert repository.get_parent_tag_label("PARENT1") == "Papa"
+    assert len(repository.list_parent_tags()) == 2
+
+    story = repository.create_story(title="Story")
+    repository.assign_uid(story.id, "PARENT2")
+    assert repository.get_parent_tag_label("PARENT2") is None
+    assert repository.get_story_by_uid("PARENT2").id == story.id
+
+    repository.set_function_tag("PARENT1", "next")
+    assert repository.get_parent_tag_label("PARENT1") is None
+    assert repository.get_function_tag("PARENT1") == "next"
+
+    repository.add_parent_tag("FUNC1", "Oma")
+    assert repository.get_function_tag("FUNC1") is None
+
+    repository.delete_parent_tag("FUNC1")
+    assert repository.list_parent_tags() == []
 
 
 def test_function_tags_crud_and_story_uid_collision(config):

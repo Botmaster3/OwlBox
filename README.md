@@ -23,7 +23,8 @@ den Pi geladen und einem Chip zugewiesen.
   - **Home** - reine "Jetzt läuft"-Anzeige (groß, wie auf dem Display), die erste Seite nach dem Login.
   - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle/Repeat, Track-Reihenfolge, löschen.
   - **Hinzufügen** - einzelne Dateien oder einen ganzen Ordner hochladen, Cover/Titel wird aus dem Ordner erkannt.
-  - **RFID-Tags** - Login-Chip hinterlegen, Funktions-Chips anlegen, Übersicht aller Story-Chips.
+  - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
+    Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
     Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert automatisch nach Ablauf);
     WLAN (Status, an/aus, nach Netzwerken suchen und verbinden); Pi neu starten/herunterfahren.
@@ -33,6 +34,11 @@ den Pi geladen und einem Chip zugewiesen.
   Beim ersten Besuch führt ein Einrichtungsassistent durchs Anlegen des
   Admin-Kontos. Die Now-Playing-Anzeige (`/`) für den Touchscreen selbst
   bleibt bewusst ohne Login, da das Display keine Tastatur hat.
+- **Eltern-Modus mit QR-Login**: legt ein Elternteil seinen Chip auf, zeigt das
+  Display statt der Now-Playing-Anzeige einen QR-Code zur Login-Seite - per
+  Handy scannen und einloggen, ohne dass Kinder je einen QR-Code oder eine
+  Login-Seite zu sehen bekommen. Story- und Funktions-Chips zeigen davon
+  nichts an.
 - **Simulationsmodus**: läuft ohne echte Hardware (RFID/GPIO/mpv) für
   Entwicklung und Tests - die Admin-UI bekommt dann einen "Chip simulieren"-
   Knopf.

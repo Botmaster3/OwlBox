@@ -5,9 +5,9 @@
   const scanStatus = document.getElementById("scan-status");
   const scanCancel = document.getElementById("scan-cancel");
 
-  const adminRfidStatus = document.getElementById("admin-rfid-status");
-  const adminRfidSetBtn = document.getElementById("admin-rfid-set-btn");
-  const adminRfidClearBtn = document.getElementById("admin-rfid-clear-btn");
+  const parentTagList = document.getElementById("parent-tag-list");
+  const parentTagLabelInput = document.getElementById("parent-tag-label");
+  const parentTagAddBtn = document.getElementById("parent-tag-add-btn");
 
   const functionTagList = document.getElementById("function-tag-list");
   const functionActionSelect = document.getElementById("function-action");
@@ -73,32 +73,57 @@
     });
   }
 
-  // -- admin login chip -----------------------------------------------------
+  // -- parent tags (Eltern-Chips) ---------------------------------------------
 
-  adminRfidSetBtn.addEventListener("click", async () => {
-    const uid = await scanForUid("Halte den Login-Chip jetzt an die Box…");
+  async function loadParentTags() {
+    const tags = await api("/api/parent-tags");
+    parentTagList.innerHTML = "";
+    if (tags.length === 0) {
+      parentTagList.innerHTML = '<p class="hint">Noch keine Eltern-Chips angelegt.</p>';
+      return;
+    }
+    for (const tag of tags) {
+      const row = document.createElement("div");
+      row.className = "story-row";
+      row.innerHTML = `
+        <div class="story-meta">
+          <div class="row-title">${tag.label}</div>
+          <div class="story-sub mono">${tag.uid}</div>
+        </div>
+        <div class="story-actions">
+          <button class="btn danger" data-action="delete">Löschen</button>
+        </div>
+      `;
+      row.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+        try {
+          await api(`/api/parent-tags/${encodeURIComponent(tag.uid)}`, { method: "DELETE" });
+          showToast("Eltern-Chip gelöscht.");
+          loadParentTags();
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      });
+      parentTagList.appendChild(row);
+    }
+  }
+
+  parentTagAddBtn.addEventListener("click", async () => {
+    const label = parentTagLabelInput.value.trim();
+    if (!label) {
+      showToast("Bitte eine Bezeichnung eingeben.", true);
+      return;
+    }
+    const uid = await scanForUid(`Halte den Chip für "${label}" jetzt an die Box…`);
     if (!uid) return;
     try {
-      await api("/api/admin/rfid", {
+      await api("/api/parent-tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid }),
+        body: JSON.stringify({ uid, label }),
       });
-      adminRfidStatus.innerHTML = `Hinterlegt: <span class="mono">${uid}</span>`;
-      adminRfidClearBtn.hidden = false;
-      showToast("Login-Chip hinterlegt.");
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  });
-
-  adminRfidClearBtn.addEventListener("click", async () => {
-    if (!confirm("Login-Chip entfernen?")) return;
-    try {
-      await api("/api/admin/rfid", { method: "DELETE" });
-      adminRfidStatus.textContent = "Kein Chip hinterlegt.";
-      adminRfidClearBtn.hidden = true;
-      showToast("Login-Chip entfernt.");
+      parentTagLabelInput.value = "";
+      showToast(`Eltern-Chip "${label}" gespeichert.`);
+      loadParentTags();
     } catch (err) {
       showToast(err.message, true);
     }
@@ -191,6 +216,7 @@
     }
   }
 
+  loadParentTags();
   loadFunctionTags();
   loadStoryTags();
 })();

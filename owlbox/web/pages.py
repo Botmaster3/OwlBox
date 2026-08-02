@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
+from flask import Blueprint, Response, current_app, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .. import repository
+from .. import network, qr, repository
 from ..engine import FUNCTION_ACTIONS
 from .auth import admin_required
 
@@ -13,6 +13,13 @@ pages_bp = Blueprint("pages", __name__)
 @pages_bp.route("/")
 def player_page():
     return render_template("player.html")
+
+
+@pages_bp.route("/login-qr.svg")
+def login_qr():
+    config = current_app.config["OWLBOX_CONFIG"]
+    url = f"http://{network.get_lan_ip()}:{config.web.port}/login"
+    return Response(qr.generate_svg(url), mimetype="image/svg+xml")
 
 
 @pages_bp.route("/admin")
@@ -37,11 +44,10 @@ def admin_add_page():
 @pages_bp.route("/admin/tags")
 @admin_required
 def admin_tags_page():
-    user = repository.get_admin_user()
     return render_template(
         "admin_tags.html",
         active="tags",
-        admin_rfid_uid=user.rfid_uid if user else None,
+        parent_tags=repository.list_parent_tags(),
         function_actions=FUNCTION_ACTIONS,
         function_action_labels=dict(FUNCTION_ACTIONS),
     )

@@ -8,8 +8,12 @@
   const progressFill = document.getElementById("progress-fill");
   const volumeFill = document.getElementById("volume-fill");
   const unknownBanner = document.getElementById("unknown-banner");
+  const playerEl = document.querySelector(".player");
+  const parentModeEl = document.getElementById("parent-mode");
+  const parentModeLabelEl = document.getElementById("parent-mode-label");
 
   let lastCoverUrl = null;
+  let parentModeActive = false;
 
   function formatTime(seconds) {
     seconds = Math.max(0, Math.floor(seconds || 0));
@@ -21,6 +25,20 @@
   function applyState(state) {
     const story = state.story;
     const player = state.player || {};
+    const parentMode = state.parent_mode || { active: false, label: null };
+
+    // Parent mode (a "Vater"/"Mutter" chip is on the reader) shows a QR code to
+    // the login page instead of the normal now-playing view - never revealed to
+    // kids scanning story or function tags.
+    if (parentMode.active !== parentModeActive) {
+      parentModeActive = parentMode.active;
+      parentModeEl.hidden = !parentModeActive;
+      playerEl.hidden = parentModeActive;
+    }
+    if (parentModeActive) {
+      parentModeLabelEl.textContent = `Eltern-Modus: ${parentMode.label}`;
+      return;
+    }
 
     if (story) {
       storyTitleEl.textContent = story.title;

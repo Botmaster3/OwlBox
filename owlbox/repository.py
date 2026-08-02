@@ -122,6 +122,7 @@ def assign_uid(story_id: int, uid: str) -> None:
         cur.execute("UPDATE stories SET uid = NULL WHERE uid = ?", (uid,))
         cur.execute("UPDATE stories SET uid = ? WHERE id = ?", (uid, story_id))
         cur.execute("DELETE FROM function_tags WHERE uid = ?", (uid,))
+        cur.execute("DELETE FROM parent_tags WHERE uid = ?", (uid,))
 
 
 def remove_story_uid(story_id: int) -> None:
@@ -204,7 +205,6 @@ class AdminUser:
     id: int
     username: str
     password_hash: str
-    rfid_uid: Optional[str]
     created_at: str
 
 
@@ -231,12 +231,39 @@ def update_admin_user(username: str, password_hash: str) -> None:
         )
 
 
-def set_admin_rfid_uid(uid: Optional[str]) -> None:
+# -- parent tags (Vater/Mutter/...) -----------------------------------------
+
+
+def list_parent_tags() -> list[dict]:
+    rows = get_connection().execute("SELECT uid, label FROM parent_tags ORDER BY created_at ASC").fetchall()
+    return [{"uid": r["uid"], "label": r["label"]} for r in rows]
+
+
+def get_parent_tag_label(uid: str) -> Optional[str]:
+    row = get_connection().execute("SELECT label FROM parent_tags WHERE uid = ?", (uid,)).fetchone()
+    return row["label"] if row else None
+
+
+def is_parent_tag(uid: str) -> bool:
+    return get_parent_tag_label(uid) is not None
+
+
+def add_parent_tag(uid: str, label: str) -> None:
     with write_cursor() as cur:
         cur.execute(
-            "UPDATE admin_user SET rfid_uid = ? WHERE id = (SELECT id FROM admin_user ORDER BY id LIMIT 1)",
-            (uid,),
+            """
+            INSERT INTO parent_tags (uid, label) VALUES (?, ?)
+            ON CONFLICT(uid) DO UPDATE SET label = excluded.label
+            """,
+            (uid, label),
         )
+        cur.execute("UPDATE stories SET uid = NULL WHERE uid = ?", (uid,))
+        cur.execute("DELETE FROM function_tags WHERE uid = ?", (uid,))
+
+
+def delete_parent_tag(uid: str) -> None:
+    with write_cursor() as cur:
+        cur.execute("DELETE FROM parent_tags WHERE uid = ?", (uid,))
 
 
 # -- function tags (control cards: play/pause/next/previous/volume/wifi/power) --
@@ -262,6 +289,7 @@ def set_function_tag(uid: str, action: str) -> None:
             (uid, action),
         )
         cur.execute("UPDATE stories SET uid = NULL WHERE uid = ?", (uid,))
+        cur.execute("DELETE FROM parent_tags WHERE uid = ?", (uid,))
 
 
 def delete_function_tag(uid: str) -> None:

@@ -54,6 +54,7 @@ class Engine:
         self._current_uid: Optional[str] = None
         self._current_story: Optional[repository.Story] = None
         self._current_function_action: Optional[str] = None
+        self._current_parent_label: Optional[str] = None
         self._last_unknown_uid: Optional[str] = None
         self._max_volume = repository.get_int_setting("max_volume", 100)
         self._volume_step = repository.get_int_setting("volume_step", config.audio.volume_step)
@@ -130,6 +131,7 @@ class Engine:
             repository.log_scan(uid)
             self._current_uid = uid
             self._current_function_action = None
+            self._current_parent_label = None
 
             if story is not None:
                 self._current_story = story
@@ -144,6 +146,12 @@ class Engine:
                 return
 
             self._current_story = None
+
+            parent_label = repository.get_parent_tag_label(uid)
+            if parent_label is not None:
+                self._current_parent_label = parent_label
+                logger.info("parent tag scanned (uid=%s, label=%s)", uid, parent_label)
+                return
 
             action = repository.get_function_tag(uid)
             if action is not None:
@@ -165,6 +173,7 @@ class Engine:
             self._current_uid = None
             self._current_story = None
             self._current_function_action = None
+            self._current_parent_label = None
             self._missing_reads = 0
 
     def _execute_function_action(self, action: str) -> None:
@@ -311,6 +320,7 @@ class Engine:
             story = self._current_story
             current_uid = self._current_uid
             function_action = self._current_function_action
+            parent_label = self._current_parent_label
             last_unknown = self._last_unknown_uid
             max_volume = self._max_volume
             volume_step = self._volume_step
@@ -330,7 +340,9 @@ class Engine:
                 track = tracks[index]
                 track_title = track.title or Path(track.filename).stem
 
-        is_unknown = story is None and function_action is None and current_uid is not None
+        is_unknown = (
+            story is None and function_action is None and parent_label is None and current_uid is not None
+        )
 
         return {
             "uid": current_uid,
@@ -352,4 +364,5 @@ class Engine:
                 "minutes": sleep_timer_minutes,
                 "remaining_seconds": sleep_timer_remaining,
             },
+            "parent_mode": {"active": parent_label is not None, "label": parent_label},
         }

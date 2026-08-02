@@ -10,10 +10,28 @@ degrade when the real hardware isn't there.
 from __future__ import annotations
 
 import logging
+import socket
 import subprocess
 from typing import Optional
 
 logger = logging.getLogger("owlbox.network")
+
+
+def get_lan_ip() -> str:
+    """Best-effort local IP address other devices on the LAN could reach this Pi at.
+
+    Used for the login QR code on the kiosk display - request.host is useless there
+    since the kiosk browser loads http://localhost:5000/, which means nothing to a
+    phone scanning the code. Opening a UDP "connection" doesn't send any packets, it
+    just asks the OS to pick the outbound interface/address for that route, which is
+    exactly the address other devices on the same network would use to reach us.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
 
 
 def _run(args: list[str], timeout: float = 10.0) -> str:

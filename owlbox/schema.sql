@@ -35,13 +35,10 @@ CREATE TABLE IF NOT EXISTS scan_log (
 
 -- Single admin account gating /admin and the mutating API. Empty table means
 -- setup hasn't run yet - the login page redirects to /setup until one exists.
--- rfid_uid is optional: a chip that, when scanned, logs this account into the
--- web UI from whatever browser is waiting on /login - no keyboard needed.
 CREATE TABLE IF NOT EXISTS admin_user (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    rfid_uid TEXT UNIQUE,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -50,6 +47,16 @@ CREATE TABLE IF NOT EXISTS admin_user (
 CREATE TABLE IF NOT EXISTS function_tags (
     uid TEXT PRIMARY KEY,
     action TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Parent chips (e.g. "Vater"/"Mutter"): scanning one logs the web session in
+-- (see /api/auth/rfid-login) and puts the kiosk display into parent mode,
+-- showing a QR code to the login page - normal story/function tags never
+-- reveal that, keeping it out of kids' view.
+CREATE TABLE IF NOT EXISTS parent_tags (
+    uid TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

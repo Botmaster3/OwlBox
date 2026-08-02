@@ -65,6 +65,29 @@ def test_removing_tag_pauses_and_saves_position(config):
         engine.stop()
 
 
+def test_parent_tag_activates_parent_mode_without_being_treated_as_unknown(config):
+    config.rfid.poll_interval = 0.01
+    config.rfid.missing_reads_to_remove = 2
+    repository.add_parent_tag("PARENTCARD", "Vater")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("PARENTCARD")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["parent_mode"] == {"active": True, "label": "Vater"}
+        assert state["unknown_tag"] is None
+        assert state["story"] is None
+        assert state["function_tag"] is None
+
+        engine.simulate_remove()
+        time.sleep(0.15)
+        assert engine.get_state()["parent_mode"] == {"active": False, "label": None}
+    finally:
+        engine.stop()
+
+
 def test_manual_volume_change(config):
     engine = Engine(config)
     engine.start()

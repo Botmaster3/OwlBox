@@ -1,19 +1,24 @@
 {% extends "base.html" %}
 {% block title %}OwlBox – RFID-Tags{% endblock %}
 {% block body %}
-<div class="admin" id="app" data-admin-rfid-uid="{{ admin_rfid_uid or '' }}">
+<div class="admin" id="app">
   {% include "_admin_nav.html" %}
 
   <div class="card">
-    <h2>Login-Chip</h2>
+    <h2>Eltern-Chips</h2>
     <p class="hint">
-      Ein Chip, der beim Auflegen die Verwaltung einloggt - ohne Benutzername/Passwort einzutippen.
+      Chips für Vater/Mutter/etc.: beim Auflegen loggt sich die Verwaltung ein und die Box zeigt
+      auf ihrem Display einen QR-Code zur Login-Seite an - so können sich Eltern per Handy einloggen,
+      ohne dass Kinder je den QR-Code oder die Login-Seite zu Gesicht bekommen.
     </p>
-    <p id="admin-rfid-status">
-      {% if admin_rfid_uid %}Hinterlegt: <span class="mono">{{ admin_rfid_uid }}</span>{% else %}Kein Chip hinterlegt.{% endif %}
-    </p>
-    <button class="btn secondary" id="admin-rfid-set-btn" type="button">Chip hinterlegen</button>
-    <button class="btn danger" id="admin-rfid-clear-btn" type="button" {{ "hidden" if not admin_rfid_uid }}>Entfernen</button>
+    <div id="parent-tag-list"></div>
+
+    <h3>Neuen Eltern-Chip anlegen</h3>
+    <div class="field">
+      <label for="parent-tag-label">Bezeichnung</label>
+      <input type="text" id="parent-tag-label" placeholder="z.B. Vater, Mutter">
+    </div>
+    <button class="btn" id="parent-tag-add-btn" type="button">Chip auflegen und speichern</button>
   </div>
 
   <div class="card">

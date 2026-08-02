@@ -314,24 +314,33 @@ def delete_function_tag(uid):
     return jsonify({"ok": True})
 
 
-# -- admin RFID login tag ---------------------------------------------------
+# -- parent tags (Eltern-Chips: RFID login + QR code on the kiosk display) ---
 
 
-@api_bp.route("/admin/rfid", methods=["POST"])
+@api_bp.route("/parent-tags")
 @admin_required
-def set_admin_rfid():
+def list_parent_tags():
+    return jsonify(repository.list_parent_tags())
+
+
+@api_bp.route("/parent-tags", methods=["POST"])
+@admin_required
+def create_parent_tag():
     data = request.get_json(silent=True) or {}
     uid = (data.get("uid") or "").strip()
+    label = (data.get("label") or "").strip()
     if not uid:
         return jsonify({"error": "uid is required"}), 400
-    repository.set_admin_rfid_uid(uid)
+    if not label:
+        return jsonify({"error": "label is required"}), 400
+    repository.add_parent_tag(uid, label)
     return jsonify({"ok": True})
 
 
-@api_bp.route("/admin/rfid", methods=["DELETE"])
+@api_bp.route("/parent-tags/<uid>", methods=["DELETE"])
 @admin_required
-def clear_admin_rfid():
-    repository.set_admin_rfid_uid(None)
+def delete_parent_tag(uid):
+    repository.delete_parent_tag(uid)
     return jsonify({"ok": True})
 
 
@@ -341,9 +350,8 @@ def rfid_login():
     uid = (data.get("uid") or "").strip()
     if not uid:
         return jsonify({"error": "uid is required"}), 400
-    user = repository.get_admin_user()
-    if user is None or not user.rfid_uid or user.rfid_uid != uid:
-        return jsonify({"error": "Chip nicht als Login-Chip hinterlegt."}), 401
+    if not repository.is_parent_tag(uid):
+        return jsonify({"error": "Chip nicht als Eltern-Chip hinterlegt."}), 401
     session["authed"] = True
     return jsonify({"ok": True})
 
