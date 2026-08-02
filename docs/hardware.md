@@ -139,8 +139,19 @@ Interface Options → SPI).
 
 ## Taster (vor/zurück)
 
-Jeweils ein Taster zwischen GPIO und GND, kein externer Widerstand nötig
-(interner Pull-up wird von gpiozero aktiviert):
+Als Taster kommen Cherry-MX-Switches (3-Pin-Variante) zum Einsatz. Elektrisch
+sind das ganz normale Momentary-Schalter (schließt nur beim Drücken, öffnet
+sonst) - dieselbe Verdrahtung wie jeder andere Taster:
+
+- Von den 3 Pins sind nur die **beiden Metall-Pins** die elektrischen
+  Kontakte (die sich diagonal gegenüberliegen); der dritte, meist aus
+  Kunststoff, ist nur ein mechanischer Halteclip fürs Gehäuse/die Platine
+  und hat keine elektrische Funktion - er muss nirgends angeschlossen werden.
+- Jeweils einer der beiden Metall-Pins an GPIO, der andere an GND. Kein
+  externer Widerstand nötig, der interne Pull-up wird von gpiozero aktiviert.
+- Da Cherry-MX-Switches (anders als billige Blechtaster) sehr sauber
+  prellen, reicht die Default-Entprellzeit (`gpio.bounce_time`, 50ms)
+  komfortabel aus.
 
 | Funktion | BCM Pin |
 |----------|---------|
