@@ -1,0 +1,11 @@
+[Unit]
+Description=fbcp - mirrors the virtual HDMI framebuffer to the 3.5" SPI display
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/local/bin/fbcp
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

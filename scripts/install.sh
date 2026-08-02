@@ -71,12 +71,16 @@ Still to do manually:
      HiFiBerry Amp/Amp2: dtoverlay=hifiberry-amp   (see docs/hardware.md), then reboot.
   2. Run 'aplay -L' and 'amixer -c 0 scontrols' to confirm the ALSA device/mixer name
      in $INSTALL_DIR/config/config.yaml (audio.alsa_device / audio.mixer_control) match your board.
-  3. Add the 3.5" SPI display's device tree overlay/driver and, if it bundles a
-     touch controller, disable it (see docs/hardware.md) - watch out for the
-     GPIO18 backlight vs. HiFiBerry I2S conflict mentioned there.
+  3. Install the 3.5" SPI display's driver (the vendor's installer, or
+     goodtft/LCD-show) and then remove the ads7846 touch overlay line it adds
+     to keep touch off; disable vc4-kms-v3d (Wayland) in favor of legacy X11
+     so fbcp works, and wire the display via jumper cables rather than
+     plugging it onto the header directly (see docs/hardware.md - there's a
+     real physical conflict there with the HiFiBerry).
   4. Wire the RC522 reader (CE1, not CE0) and the buttons/encoder per docs/hardware.md.
-  5. Set up the kiosk display autostart (see docs/hardware.md) so the display
-     shows http://localhost:5000/ full-screen on boot - this depends on your desktop
-     session/user and isn't done by this script.
+  5. Install and enable systemd/owlbox-fbcp.service so the display mirror
+     runs, then set up the kiosk display autostart (see docs/hardware.md) so
+     it shows http://localhost:5000/ full-screen on boot - this depends on
+     your desktop session/user and isn't done by this script.
   6. Open http://<pi-ip>:5000/admin to upload stories and assign RFID chips.
 EOF
