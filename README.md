@@ -9,8 +9,9 @@ den Pi geladen und einem Chip zugewiesen.
 
 - **RFID-gesteuerte Wiedergabe**: Chip auflegen → zugehörige Playlist startet
   (mit gemerkter Position), Chip abnehmen → pausiert automatisch.
-- **5" Touch-Display**: zeigt Cover, Titel, Fortschritt und Lautstärke;
-  zusätzlich antippbare Play/Pause/Vor/Zurück-Buttons.
+- **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
+  Kapitel-/Track-Titel, Fortschritt, Lautstärke) - kein Touch, Bedienung
+  läuft ausschließlich über Taster/Encoder (siehe docs/hardware.md).
 - **Physische Bedienung**: zwei Taster (vor/zurück) + Dreh-Encoder
   (drehen = Lautstärke, drücken = Play/Pause, lang drücken = herunterfahren).
 - **Web-Verwaltung** (`/admin`): Hörspiele/Musik hochladen (mehrere Dateien +
@@ -36,9 +37,12 @@ Ein einziger Python-Prozess (`owlbox.main`) vereint:
   Polling aktualisiert), `/admin` (Bibliotheksverwaltung), `/api/*` (REST).
 
 Das Now-Playing-Display läuft als ganz normale Webseite, die im Kiosk-Modus
-in Chromium auf dem Touchscreen angezeigt wird (`scripts/kiosk.sh`) - kein
-separates GUI-Toolkit nötig, funktioniert offline und ist auf einem Pi 3B+
-mit 1 GB RAM deutlich genügsamer als z.B. Kivy oder Qt.
+in Chromium auf dem 3.5"-SPI-Display angezeigt wird (`scripts/kiosk.sh`) -
+kein separates GUI-Toolkit nötig, funktioniert offline und ist auf einem
+Pi 3B+ mit 1 GB RAM deutlich genügsamer als z.B. Kivy oder Qt. Das Display
+selbst braucht dafür den passenden Kernel-Treiber/Overlay (siehe
+docs/hardware.md) - Touch ist am Board zwar vorhanden, wird aber bewusst
+nicht aktiviert.
 
 ## Schnellstart (Entwicklung, ohne Pi-Hardware)
 

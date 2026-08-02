@@ -71,9 +71,12 @@ Still to do manually:
      HiFiBerry Amp/Amp2: dtoverlay=hifiberry-amp   (see docs/hardware.md), then reboot.
   2. Run 'aplay -L' and 'amixer -c 0 scontrols' to confirm the ALSA device/mixer name
      in $INSTALL_DIR/config/config.yaml (audio.alsa_device / audio.mixer_control) match your board.
-  3. Wire the RC522 reader and the buttons/encoder per docs/hardware.md.
-  4. Set up the kiosk display autostart (see docs/hardware.md) so the 5" touchscreen
+  3. Add the 3.5" SPI display's device tree overlay/driver and, if it bundles a
+     touch controller, disable it (see docs/hardware.md) - watch out for the
+     GPIO18 backlight vs. HiFiBerry I2S conflict mentioned there.
+  4. Wire the RC522 reader (CE1, not CE0) and the buttons/encoder per docs/hardware.md.
+  5. Set up the kiosk display autostart (see docs/hardware.md) so the display
      shows http://localhost:5000/ full-screen on boot - this depends on your desktop
      session/user and isn't done by this script.
-  5. Open http://<pi-ip>:5000/admin to upload stories and assign RFID chips.
+  6. Open http://<pi-ip>:5000/admin to upload stories and assign RFID chips.
 EOF

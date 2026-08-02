@@ -1,5 +1,5 @@
 [Unit]
-Description=OwlBox kiosk display (Chromium fullscreen on the touchscreen)
+Description=OwlBox kiosk display (Chromium fullscreen on the 3.5" SPI display, touch disabled)
 After=graphical-session.target owlbox.service
 PartOf=graphical-session.target
 
