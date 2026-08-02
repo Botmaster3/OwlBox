@@ -19,7 +19,11 @@ def player_page():
 def login_qr():
     config = current_app.config["OWLBOX_CONFIG"]
     url = f"http://{network.get_lan_ip()}:{config.web.port}/login"
-    return Response(qr.generate_svg(url), mimetype="image/svg+xml")
+    response = Response(qr.generate_svg(url), mimetype="image/svg+xml")
+    # Always reflect the current IP - the kiosk page never reloads on its own,
+    # so a cached image would keep showing a stale address after a network change.
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @pages_bp.route("/admin")

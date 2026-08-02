@@ -11,6 +11,7 @@
   const playerEl = document.querySelector(".player");
   const parentModeEl = document.getElementById("parent-mode");
   const parentModeLabelEl = document.getElementById("parent-mode-label");
+  const parentModeQrEl = document.getElementById("parent-mode-qr");
 
   let lastCoverUrl = null;
   let parentModeActive = false;
@@ -34,6 +35,12 @@
       parentModeActive = parentMode.active;
       parentModeEl.hidden = !parentModeActive;
       playerEl.hidden = parentModeActive;
+      if (parentModeActive) {
+        // Generate the QR code fresh at the moment the chip is scanned - the IP it
+        // encodes may have changed since the last time a parent tag was placed, and
+        // the kiosk page itself never reloads on its own to pick that up otherwise.
+        parentModeQrEl.src = `/login-qr.svg?t=${Date.now()}`;
+      }
     }
     if (parentModeActive) {
       parentModeLabelEl.textContent = `Eltern-Modus: ${parentMode.label}`;
