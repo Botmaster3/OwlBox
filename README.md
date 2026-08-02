@@ -8,7 +8,10 @@ den Pi geladen und einem Chip zugewiesen.
 ## Funktionen
 
 - **RFID-gesteuerte Wiedergabe**: Chip auflegen → zugehörige Playlist startet
-  (mit gemerkter Position), Chip abnehmen → pausiert automatisch.
+  (mit gemerkter Position). Chip abnehmen unterbricht die Wiedergabe nicht -
+  die Geschichte läuft weiter, nur die Position wird laufend gespeichert. Erst
+  ein anderer Chip (oder ein Funktions-Chip/Taster für Pause) wechselt bzw.
+  stoppt die Wiedergabe; denselben Chip wieder aufzulegen ist ein No-Op.
 - **Funktions-Chips**: eigene Chips, die statt einer Geschichte eine Aktion
   auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus,
   Einschlaf-Timer starten (15/30/45/60 Min.) oder abbrechen, Pi neu
@@ -109,7 +112,7 @@ ausführlich in [docs/hardware.md](docs/hardware.md).
 |----------------------------------|--------------------------------------------|
 | Chip auflegen (bekannt)          | Playlist lädt, Wiedergabe ab letzter Position |
 | Chip auflegen (unbekannt)        | Anzeige "Unbekannter Chip", Scan wird geloggt (im Admin-UI direkt zuweisbar) |
-| Chip abnehmen                    | Pause, Position wird gespeichert            |
+| Chip abnehmen                    | Wiedergabe läuft weiter, Position wird laufend gespeichert |
 | Taster "Zurück"                  | Neustart des Tracks, oder vorheriger Track wenn <3s gespielt |
 | Taster "Weiter"                  | nächster Track                              |
 | Encoder drehen                   | Lautstärke rauf/runter                      |

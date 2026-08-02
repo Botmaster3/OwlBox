@@ -46,10 +46,10 @@ def test_scan_unknown_tag_is_logged_and_not_playing(config):
         engine.stop()
 
 
-def test_removing_tag_pauses_and_saves_position(config):
+def test_removing_tag_keeps_story_playing_and_saves_position(config):
     config.rfid.poll_interval = 0.01
     config.rfid.missing_reads_to_remove = 2
-    _make_story_with_file(config, "112233")
+    story = _make_story_with_file(config, "112233")
 
     engine = Engine(config)
     engine.start()
@@ -59,8 +59,43 @@ def test_removing_tag_pauses_and_saves_position(config):
         engine.simulate_remove()
         time.sleep(0.2)
         state = engine.get_state()
-        assert state["uid"] is None
-        assert state["player"]["playing"] is False
+        # Lifting the figure off the reader no longer pauses playback - it keeps
+        # going, and the kiosk keeps showing what's playing instead of reverting
+        # to "no chip".
+        assert state["uid"] == "112233"
+        assert state["story"]["id"] == story.id
+        assert state["player"]["playing"] is True
+
+        # Placing the very same chip back is a no-op, not a reload/rewind.
+        engine.simulate_scan("112233")
+        time.sleep(0.15)
+        assert engine.get_state()["player"]["time_pos"] == 0.0
+    finally:
+        engine.stop()
+
+
+def test_removing_tag_then_scanning_a_different_story_switches(config):
+    config.rfid.poll_interval = 0.01
+    config.rfid.missing_reads_to_remove = 2
+    story_a = _make_story_with_file(config, "AAAA", title="Story A")
+    story_b = _make_story_with_file(config, "BBBB", title="Story B")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AAAA")
+        time.sleep(0.15)
+        assert engine.get_state()["story"]["id"] == story_a.id
+
+        engine.simulate_remove()
+        time.sleep(0.2)
+        assert engine.get_state()["story"]["id"] == story_a.id  # still playing
+
+        engine.simulate_scan("BBBB")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["story"]["id"] == story_b.id
+        assert state["uid"] == "BBBB"
     finally:
         engine.stop()
 

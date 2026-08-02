@@ -66,6 +66,7 @@ class Engine:
         self._volume_step = repository.get_int_setting("volume_step", config.audio.volume_step)
         self._volume = min(config.audio.default_volume, self._max_volume)
         self._missing_reads = 0
+        self._tag_present = False
         self._sleep_timer_end: Optional[float] = None
         self._sleep_timer_minutes: Optional[float] = None
 
@@ -106,11 +107,13 @@ class Engine:
                     self._missing_reads = 0
                     if uid != self._current_uid:
                         self._handle_tag_present(uid)
+                    self._tag_present = True
                 else:
-                    if self._current_uid is not None:
+                    if self._tag_present:
                         self._missing_reads += 1
                         if self._missing_reads >= threshold:
                             self._handle_tag_removed()
+                            self._tag_present = False
 
                 now = time.monotonic()
                 if now - last_save >= save_interval:
@@ -173,11 +176,14 @@ class Engine:
             if self._current_uid is None:
                 return
             if self._current_story is not None:
+                # Story tags keep playing after the chip is lifted (unlike function/
+                # parent tags below, which are momentary) - uid/story stay "current"
+                # so playback continues uninterrupted and placing the same chip back
+                # is a no-op instead of reloading/rewinding the playlist.
                 self._persist_position_locked()
-                logger.info("tag removed (uid=%s), pausing", self._current_uid)
-                self._player.pause()
-            self._current_uid = None
-            self._current_story = None
+                logger.info("tag removed (uid=%s), story keeps playing", self._current_uid)
+            else:
+                self._current_uid = None
             self._current_function_action = None
             self._current_parent_label = None
             self._missing_reads = 0
