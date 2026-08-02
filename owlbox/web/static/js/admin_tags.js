@@ -17,6 +17,21 @@
 
   let scanPoll = null;
 
+  function showToast(message, isError) {
+    let toast = document.getElementById("toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "toast";
+      toast.className = "toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.toggle("error", !!isError);
+    toast.classList.add("show");
+    clearTimeout(toast._hideTimeout);
+    toast._hideTimeout = setTimeout(() => toast.classList.remove("show"), 2500);
+  }
+
   async function api(url, options) {
     const res = await fetch(url, options);
     if (!res.ok) {
@@ -63,20 +78,30 @@
   adminRfidSetBtn.addEventListener("click", async () => {
     const uid = await scanForUid("Halte den Login-Chip jetzt an die Box…");
     if (!uid) return;
-    await api("/api/admin/rfid", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid }),
-    });
-    adminRfidStatus.innerHTML = `Hinterlegt: <span class="mono">${uid}</span>`;
-    adminRfidClearBtn.hidden = false;
+    try {
+      await api("/api/admin/rfid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid }),
+      });
+      adminRfidStatus.innerHTML = `Hinterlegt: <span class="mono">${uid}</span>`;
+      adminRfidClearBtn.hidden = false;
+      showToast("Login-Chip hinterlegt.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
   });
 
   adminRfidClearBtn.addEventListener("click", async () => {
     if (!confirm("Login-Chip entfernen?")) return;
-    await api("/api/admin/rfid", { method: "DELETE" });
-    adminRfidStatus.textContent = "Kein Chip hinterlegt.";
-    adminRfidClearBtn.hidden = true;
+    try {
+      await api("/api/admin/rfid", { method: "DELETE" });
+      adminRfidStatus.textContent = "Kein Chip hinterlegt.";
+      adminRfidClearBtn.hidden = true;
+      showToast("Login-Chip entfernt.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
   });
 
   // -- function tags ---------------------------------------------------------
@@ -101,8 +126,13 @@
         </div>
       `;
       row.querySelector('[data-action="delete"]').addEventListener("click", async () => {
-        await api(`/api/function-tags/${encodeURIComponent(tag.uid)}`, { method: "DELETE" });
-        loadFunctionTags();
+        try {
+          await api(`/api/function-tags/${encodeURIComponent(tag.uid)}`, { method: "DELETE" });
+          showToast("Funktions-Chip gelöscht.");
+          loadFunctionTags();
+        } catch (err) {
+          showToast(err.message, true);
+        }
       });
       functionTagList.appendChild(row);
     }
@@ -113,12 +143,17 @@
     const label = ACTION_LABELS[action] || action;
     const uid = await scanForUid(`Halte den Chip für "${label}" jetzt an die Box…`);
     if (!uid) return;
-    await api("/api/function-tags", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid, action }),
-    });
-    loadFunctionTags();
+    try {
+      await api("/api/function-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid, action }),
+      });
+      showToast(`Funktions-Chip "${label}" gespeichert.`);
+      loadFunctionTags();
+    } catch (err) {
+      showToast(err.message, true);
+    }
   });
 
   // -- story tags (read-only overview) ---------------------------------------
@@ -144,8 +179,13 @@
         </div>
       `;
       row.querySelector('[data-action="unassign"]').addEventListener("click", async () => {
-        await api(`/api/stories/${story.id}/unassign`, { method: "POST" });
-        loadStoryTags();
+        try {
+          await api(`/api/stories/${story.id}/unassign`, { method: "POST" });
+          showToast("Chip entfernt.");
+          loadStoryTags();
+        } catch (err) {
+          showToast(err.message, true);
+        }
       });
       storyTagList.appendChild(row);
     }

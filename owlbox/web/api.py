@@ -7,7 +7,7 @@ from pathlib import Path
 from flask import Blueprint, current_app, jsonify, request, session
 from werkzeug.utils import secure_filename
 
-from .. import repository
+from .. import network, repository, system_info
 from ..engine import FUNCTION_ACTION_VALUES
 from ..media_utils import is_allowed_audio, is_allowed_image, probe_audio
 from .auth import admin_required
@@ -346,3 +346,107 @@ def rfid_login():
         return jsonify({"error": "Chip nicht als Login-Chip hinterlegt."}), 401
     session["authed"] = True
     return jsonify({"ok": True})
+
+
+# -- volume settings + sleep timer -------------------------------------------
+
+
+@api_bp.route("/settings/volume", methods=["POST"])
+@admin_required
+def update_volume_settings():
+    data = request.get_json(silent=True) or {}
+    if "max_volume" in data:
+        try:
+            _engine().set_max_volume(int(data["max_volume"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "max_volume must be an integer"}), 400
+    if "volume_step" in data:
+        try:
+            _engine().set_volume_step(int(data["volume_step"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "volume_step must be an integer"}), 400
+    if "current_volume" in data:
+        try:
+            _engine().manual_set_volume(int(data["current_volume"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "current_volume must be an integer"}), 400
+    return jsonify(_engine().get_state()["settings"])
+
+
+@api_bp.route("/sleep-timer", methods=["POST"])
+@admin_required
+def start_sleep_timer():
+    data = request.get_json(silent=True) or {}
+    try:
+        minutes = float(data.get("minutes"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "minutes is required"}), 400
+    if minutes <= 0:
+        return jsonify({"error": "minutes must be positive"}), 400
+    _engine().start_sleep_timer(minutes)
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/sleep-timer", methods=["DELETE"])
+@admin_required
+def cancel_sleep_timer():
+    _engine().cancel_sleep_timer()
+    return jsonify({"ok": True})
+
+
+# -- wifi ---------------------------------------------------------------
+
+
+@api_bp.route("/network/status")
+@admin_required
+def network_status():
+    return jsonify(network.get_status())
+
+
+@api_bp.route("/network/scan")
+@admin_required
+def network_scan():
+    return jsonify(network.scan_networks())
+
+
+@api_bp.route("/network/connect", methods=["POST"])
+@admin_required
+def network_connect():
+    data = request.get_json(silent=True) or {}
+    ssid = (data.get("ssid") or "").strip()
+    password = data.get("password") or ""
+    if not ssid:
+        return jsonify({"error": "ssid is required"}), 400
+    ok, message = network.connect(ssid, password)
+    return jsonify({"ok": ok, "message": message}), (200 if ok else 400)
+
+
+@api_bp.route("/network/wifi-power", methods=["POST"])
+@admin_required
+def network_wifi_power():
+    data = request.get_json(silent=True) or {}
+    network.set_wifi_enabled(bool(data.get("enabled")))
+    return jsonify({"ok": True})
+
+
+# -- system info -----------------------------------------------------------
+
+
+@api_bp.route("/system/info")
+@admin_required
+def system_info_route():
+    from .. import __version__
+
+    config = _config()
+    return jsonify(
+        {
+            "hardware_model": system_info.get_hardware_model(),
+            "os": system_info.get_os_pretty_name(),
+            "uptime_seconds": system_info.get_uptime_seconds(),
+            "cpu_temp_celsius": system_info.get_cpu_temperature_celsius(),
+            "memory": system_info.get_memory_info(),
+            "disk": system_info.get_disk_usage(config.media_dir),
+            "library": repository.get_library_stats(),
+            "app": {"version": __version__, "simulate": config.simulate},
+        }
+    )

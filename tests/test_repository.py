@@ -78,3 +78,56 @@ def test_admin_user_create_and_update(config):
     updated = repository.get_admin_user()
     assert updated.username == "marco2"
     assert updated.password_hash == "hashed-pw-2"
+
+
+def test_admin_rfid_uid_set_and_clear(config):
+    repository.create_admin_user("marco", "hashed-pw")
+    assert repository.get_admin_user().rfid_uid is None
+
+    repository.set_admin_rfid_uid("AABBCCDD")
+    assert repository.get_admin_user().rfid_uid == "AABBCCDD"
+
+    repository.set_admin_rfid_uid(None)
+    assert repository.get_admin_user().rfid_uid is None
+
+
+def test_function_tags_crud_and_story_uid_collision(config):
+    assert repository.list_function_tags() == []
+
+    repository.set_function_tag("FUNC1", "next")
+    assert repository.get_function_tag("FUNC1") == "next"
+    assert len(repository.list_function_tags()) == 1
+
+    repository.set_function_tag("FUNC1", "previous")
+    assert repository.get_function_tag("FUNC1") == "previous"
+    assert len(repository.list_function_tags()) == 1
+
+    story = repository.create_story(title="Story")
+    repository.assign_uid(story.id, "FUNC1")
+    assert repository.get_function_tag("FUNC1") is None
+    assert repository.get_story_by_uid("FUNC1").id == story.id
+
+    repository.set_function_tag("FUNC1", "next")
+    assert repository.get_story_by_uid("FUNC1") is None
+
+    repository.delete_function_tag("FUNC1")
+    assert repository.list_function_tags() == []
+
+
+def test_int_setting_roundtrip_and_default(config):
+    assert repository.get_int_setting("max_volume", 100) == 100
+    repository.set_setting("max_volume", 77)
+    assert repository.get_int_setting("max_volume", 100) == 77
+
+
+def test_library_stats(config):
+    stats = repository.get_library_stats()
+    assert stats == {"story_count": 0, "track_count": 0, "assigned_count": 0}
+
+    story = repository.create_story(title="Story")
+    repository.add_track(story.id, 0, "a.mp3", None, None)
+    repository.add_track(story.id, 1, "b.mp3", None, None)
+    repository.assign_uid(story.id, "ABC123")
+
+    stats = repository.get_library_stats()
+    assert stats == {"story_count": 1, "track_count": 2, "assigned_count": 1}

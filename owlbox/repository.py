@@ -76,6 +76,14 @@ def list_stories() -> list[Story]:
     return [Story.from_row(r) for r in rows]
 
 
+def get_library_stats() -> dict:
+    conn = get_connection()
+    story_count = conn.execute("SELECT COUNT(*) AS n FROM stories").fetchone()["n"]
+    track_count = conn.execute("SELECT COUNT(*) AS n FROM tracks").fetchone()["n"]
+    assigned_count = conn.execute("SELECT COUNT(*) AS n FROM stories WHERE uid IS NOT NULL").fetchone()["n"]
+    return {"story_count": story_count, "track_count": track_count, "assigned_count": assigned_count}
+
+
 def get_tracks(story_id: int) -> list[Track]:
     rows = get_connection().execute(
         "SELECT * FROM tracks WHERE story_id = ? ORDER BY position ASC", (story_id,)
@@ -259,3 +267,27 @@ def set_function_tag(uid: str, action: str) -> None:
 def delete_function_tag(uid: str) -> None:
     with write_cursor() as cur:
         cur.execute("DELETE FROM function_tags WHERE uid = ?", (uid,))
+
+
+# -- generic runtime settings ------------------------------------------------
+
+
+def get_setting(key: str) -> Optional[str]:
+    row = get_connection().execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else None
+
+
+def get_int_setting(key: str, default: int) -> int:
+    value = get_setting(key)
+    return int(value) if value is not None else default
+
+
+def set_setting(key: str, value: str) -> None:
+    with write_cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO settings (key, value) VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """,
+            (key, str(value)),
+        )

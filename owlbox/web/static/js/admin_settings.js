@@ -1,31 +1,281 @@
 (function () {
-  const status = document.getElementById("system-status");
-
-  async function post(url) {
-    const res = await fetch(url, { method: "POST" });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `HTTP ${res.status}`);
+  function showToast(message, isError) {
+    let toast = document.getElementById("toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "toast";
+      toast.className = "toast";
+      document.body.appendChild(toast);
     }
+    toast.textContent = message;
+    toast.classList.toggle("error", !!isError);
+    toast.classList.add("show");
+    clearTimeout(toast._hideTimeout);
+    toast._hideTimeout = setTimeout(() => toast.classList.remove("show"), 2500);
   }
+
+  async function api(url, options) {
+    const res = await fetch(url, options);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+    return body;
+  }
+
+  // -- system (restart/shutdown) ---------------------------------------------
+
+  const systemStatus = document.getElementById("system-status");
 
   document.getElementById("restart-btn").addEventListener("click", async () => {
     if (!confirm("Pi jetzt neu starten?")) return;
-    status.textContent = "Startet neu…";
+    systemStatus.textContent = "Startet neu…";
     try {
-      await post("/api/system/restart");
+      await api("/api/system/restart", { method: "POST" });
     } catch (err) {
-      status.textContent = err.message;
+      systemStatus.textContent = err.message;
     }
   });
 
   document.getElementById("shutdown-btn").addEventListener("click", async () => {
     if (!confirm("Pi jetzt herunterfahren? Danach muss er per Stecker/Schalter wieder eingeschaltet werden.")) return;
-    status.textContent = "Fährt herunter…";
+    systemStatus.textContent = "Fährt herunter…";
     try {
-      await post("/api/system/shutdown");
+      await api("/api/system/shutdown", { method: "POST" });
     } catch (err) {
-      status.textContent = err.message;
+      systemStatus.textContent = err.message;
     }
   });
+
+  // -- volume -----------------------------------------------------------------
+
+  const currentVolumeInput = document.getElementById("current-volume");
+  const currentVolumeValue = document.getElementById("current-volume-value");
+  const maxVolumeInput = document.getElementById("max-volume");
+  const volumeStepInput = document.getElementById("volume-step");
+  const volumeSaveBtn = document.getElementById("volume-save-btn");
+
+  let volumeSliderBeingDragged = false;
+
+  currentVolumeInput.addEventListener("input", () => {
+    volumeSliderBeingDragged = true;
+    currentVolumeValue.textContent = currentVolumeInput.value;
+  });
+  currentVolumeInput.addEventListener("change", async () => {
+    try {
+      await api("/api/settings/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current_volume: parseInt(currentVolumeInput.value, 10) }),
+      });
+    } catch (err) {
+      showToast(err.message, true);
+    }
+    volumeSliderBeingDragged = false;
+  });
+
+  volumeSaveBtn.addEventListener("click", async () => {
+    try {
+      const settings = await api("/api/settings/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          max_volume: parseInt(maxVolumeInput.value, 10),
+          volume_step: parseInt(volumeStepInput.value, 10),
+        }),
+      });
+      // Reflect back the server's (clamped) values in case the input was out of range.
+      maxVolumeInput.value = settings.max_volume;
+      volumeStepInput.value = settings.volume_step;
+      showToast("Lautstärke-Einstellungen gespeichert.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  // -- sleep timer --------------------------------------------------------
+
+  const sleepTimerStatus = document.getElementById("sleep-timer-status");
+  const sleepTimerCustom = document.getElementById("sleep-timer-custom");
+  const sleepTimerStartBtn = document.getElementById("sleep-timer-start-btn");
+  const sleepTimerCancelBtn = document.getElementById("sleep-timer-cancel-btn");
+
+  function formatMinutesSeconds(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  async function startTimer(minutes) {
+    try {
+      await api("/api/sleep-timer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ minutes }),
+      });
+      showToast(`Einschlaf-Timer über ${minutes} Minuten gestartet.`);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  }
+
+  document.querySelectorAll("[data-minutes]").forEach((btn) => {
+    btn.addEventListener("click", () => startTimer(parseFloat(btn.dataset.minutes)));
+  });
+
+  sleepTimerStartBtn.addEventListener("click", () => {
+    const minutes = parseFloat(sleepTimerCustom.value);
+    if (!minutes || minutes <= 0) {
+      showToast("Bitte eine gültige Minutenzahl eingeben.", true);
+      return;
+    }
+    startTimer(minutes);
+  });
+
+  sleepTimerCancelBtn.addEventListener("click", async () => {
+    try {
+      await api("/api/sleep-timer", { method: "DELETE" });
+      showToast("Einschlaf-Timer abgebrochen.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  // -- wifi ---------------------------------------------------------------
+
+  const wifiStatus = document.getElementById("wifi-status");
+  const wifiToggleBtn = document.getElementById("wifi-toggle-btn");
+  const wifiScanBtn = document.getElementById("wifi-scan-btn");
+  const wifiNetworks = document.getElementById("wifi-networks");
+  const wifiConnectField = document.getElementById("wifi-connect-field");
+  const wifiConnectSsid = document.getElementById("wifi-connect-ssid");
+  const wifiPassword = document.getElementById("wifi-password");
+  const wifiConnectBtn = document.getElementById("wifi-connect-btn");
+  const wifiConnectStatus = document.getElementById("wifi-connect-status");
+
+  let wifiEnabled = true;
+  let selectedSsid = null;
+
+  async function refreshWifiStatus() {
+    try {
+      const status = await api("/api/network/status");
+      wifiEnabled = status.enabled;
+      wifiToggleBtn.textContent = wifiEnabled ? "WLAN ausschalten" : "WLAN einschalten";
+      wifiStatus.textContent = !wifiEnabled
+        ? "WLAN ist ausgeschaltet."
+        : status.connected_ssid
+        ? `Verbunden mit "${status.connected_ssid}"${status.ip_address ? " · " + status.ip_address : ""}`
+        : "Nicht verbunden.";
+    } catch (err) {
+      wifiStatus.textContent = "Status konnte nicht geladen werden.";
+    }
+  }
+
+  wifiToggleBtn.addEventListener("click", async () => {
+    try {
+      await api("/api/network/wifi-power", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !wifiEnabled }),
+      });
+      setTimeout(refreshWifiStatus, 1500);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  wifiScanBtn.addEventListener("click", async () => {
+    wifiNetworks.innerHTML = '<p class="hint">Suche…</p>';
+    try {
+      const networks = await api("/api/network/scan");
+      wifiNetworks.innerHTML = "";
+      if (networks.length === 0) {
+        wifiNetworks.innerHTML = '<p class="hint">Keine Netzwerke gefunden.</p>';
+        return;
+      }
+      for (const net of networks) {
+        const row = document.createElement("div");
+        row.className = "story-row";
+        row.innerHTML = `
+          <div class="story-meta">
+            <div class="row-title">${net.ssid}</div>
+            <div class="story-sub">${net.signal != null ? net.signal + "%" : ""}</div>
+          </div>
+          <div class="story-actions">
+            <button class="btn secondary" type="button">Verbinden</button>
+          </div>
+        `;
+        row.querySelector("button").addEventListener("click", () => {
+          selectedSsid = net.ssid;
+          wifiConnectSsid.textContent = net.ssid;
+          wifiConnectField.hidden = false;
+          wifiConnectStatus.textContent = "";
+          wifiPassword.focus();
+        });
+        wifiNetworks.appendChild(row);
+      }
+    } catch (err) {
+      wifiNetworks.innerHTML = "";
+      showToast(err.message, true);
+    }
+  });
+
+  wifiConnectBtn.addEventListener("click", async () => {
+    if (!selectedSsid) return;
+    wifiConnectStatus.textContent = "Verbinde…";
+    try {
+      const result = await api("/api/network/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ssid: selectedSsid, password: wifiPassword.value }),
+      });
+      wifiConnectStatus.textContent = result.message || "Verbunden.";
+      showToast(`Mit "${selectedSsid}" verbunden.`);
+      wifiConnectField.hidden = true;
+      wifiPassword.value = "";
+      refreshWifiStatus();
+    } catch (err) {
+      wifiConnectStatus.textContent = err.message;
+    }
+  });
+
+  // Max-volume/step are edit-and-save fields, not live telemetry - only ever
+  // populated once up front, never overwritten by the recurring poll below
+  // (which would otherwise race a user's in-progress edit or an unsaved change
+  // right back to whatever the server currently has).
+  async function loadVolumeSettingsOnce() {
+    try {
+      const state = await api("/api/state");
+      maxVolumeInput.value = state.settings.max_volume;
+      volumeStepInput.value = state.settings.volume_step;
+    } catch (err) {
+      // ignore, fields keep their HTML defaults
+    }
+  }
+
+  // -- periodic refresh of live values (current volume, sleep timer) --------
+
+  async function pollState() {
+    try {
+      const state = await api("/api/state");
+      if (!volumeSliderBeingDragged) {
+        currentVolumeInput.value = state.player.volume;
+        currentVolumeValue.textContent = state.player.volume;
+      }
+
+      if (state.sleep_timer.active) {
+        sleepTimerStatus.textContent = `Noch ${formatMinutesSeconds(state.sleep_timer.remaining_seconds)} bis zur Pause.`;
+        sleepTimerCancelBtn.hidden = false;
+      } else {
+        sleepTimerStatus.textContent = "Kein Timer aktiv.";
+        sleepTimerCancelBtn.hidden = true;
+      }
+    } catch (err) {
+      // ignore, try again next tick
+    } finally {
+      setTimeout(pollState, 1000);
+    }
+  }
+
+  loadVolumeSettingsOnce();
+  pollState();
+  refreshWifiStatus();
 })();

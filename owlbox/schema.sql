@@ -52,3 +52,10 @@ CREATE TABLE IF NOT EXISTS function_tags (
     action TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Generic runtime-tunable settings (max_volume, volume_step, ...), editable from
+-- /admin/settings instead of requiring a config.yaml edit + service restart.
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);

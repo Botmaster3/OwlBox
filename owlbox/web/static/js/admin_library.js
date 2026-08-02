@@ -7,6 +7,21 @@
 
   let assignPoll = null;
 
+  function showToast(message, isError) {
+    let toast = document.getElementById("toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "toast";
+      toast.className = "toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.toggle("error", !!isError);
+    toast.classList.add("show");
+    clearTimeout(toast._hideTimeout);
+    toast._hideTimeout = setTimeout(() => toast.classList.remove("show"), 2500);
+  }
+
   function formatDuration(seconds) {
     if (!seconds) return "";
     seconds = Math.floor(seconds);
@@ -95,8 +110,13 @@
       const unassignBtn = header.querySelector('[data-action="unassign"]');
       if (unassignBtn) {
         unassignBtn.addEventListener("click", async () => {
-          await api(`/api/stories/${story.id}/unassign`, { method: "POST" });
-          loadStories();
+          try {
+            await api(`/api/stories/${story.id}/unassign`, { method: "POST" });
+            showToast("Chip entfernt.");
+            loadStories();
+          } catch (err) {
+            showToast(err.message, true);
+          }
         });
       }
       header.querySelector('[data-action="shuffle"]').addEventListener("click", async () => {
@@ -117,8 +137,13 @@
       });
       header.querySelector('[data-action="delete"]').addEventListener("click", async () => {
         if (!confirm(`"${story.title}" wirklich löschen?`)) return;
-        await api(`/api/stories/${story.id}`, { method: "DELETE" });
-        loadStories();
+        try {
+          await api(`/api/stories/${story.id}`, { method: "DELETE" });
+          showToast(`"${story.title}" gelöscht.`);
+          loadStories();
+        } catch (err) {
+          showToast(err.message, true);
+        }
       });
 
       const tracks = document.createElement("ul");
@@ -141,12 +166,17 @@
         const latest = await api("/api/scans/last");
         if (latest && latest.id !== baselineId) {
           stopAssign();
-          await api(`/api/stories/${story.id}/assign`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ uid: latest.uid }),
-          });
-          loadStories();
+          try {
+            await api(`/api/stories/${story.id}/assign`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ uid: latest.uid }),
+            });
+            showToast(`Chip zugewiesen: ${latest.uid}`);
+            loadStories();
+          } catch (err) {
+            showToast(err.message, true);
+          }
         }
       }, 1000);
     });

@@ -19,6 +19,21 @@
   let folderAudioFiles = [];
   let folderCoverFile = null;
 
+  function showToast(message, isError) {
+    let toast = document.getElementById("toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "toast";
+      toast.className = "toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.toggle("error", !!isError);
+    toast.classList.add("show");
+    clearTimeout(toast._hideTimeout);
+    toast._hideTimeout = setTimeout(() => toast.classList.remove("show"), 2500);
+  }
+
   function extOf(filename) {
     const idx = filename.lastIndexOf(".");
     return idx === -1 ? "" : filename.slice(idx).toLowerCase();
@@ -97,15 +112,22 @@
       if (manualCover) formData.append("cover", manualCover, manualCover.name);
     }
 
+    const submitBtn = createForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
     try {
       const res = await fetch("/api/stories", { method: "POST", body: formData });
+      const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `HTTP ${res.status}`);
       }
-      window.location.href = "/admin";
+      showToast(`"${body.title}" wurde hinzugefügt.`);
+      setTimeout(() => {
+        window.location.href = "/admin/library";
+      }, 900);
     } catch (err) {
       createError.textContent = err.message;
+      showToast(err.message, true);
+      submitBtn.disabled = false;
     }
   });
 

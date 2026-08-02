@@ -143,3 +143,72 @@ def test_stop_persists_exact_position_even_before_next_autosave(config):
 
     _track_position, seek_seconds = repository.get_playback_state("AABBCC")
     assert seek_seconds == 42.0
+
+
+def test_max_volume_clamps_current_and_future_changes(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.manual_set_volume(90)
+        assert engine.get_state()["player"]["volume"] == 90
+
+        engine.set_max_volume(60)
+        state = engine.get_state()
+        assert state["player"]["volume"] == 60
+        assert state["settings"]["max_volume"] == 60
+
+        engine.manual_set_volume(100)
+        assert engine.get_state()["player"]["volume"] == 60
+    finally:
+        engine.stop()
+    assert repository.get_int_setting("max_volume", -1) == 60
+
+
+def test_volume_step_setting_is_persisted_and_used(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.set_volume_step(10)
+        assert engine.get_state()["settings"]["volume_step"] == 10
+
+        engine.manual_set_volume(50)
+        engine._handle_volume_delta(1)
+        assert engine.get_state()["player"]["volume"] == 60
+    finally:
+        engine.stop()
+    assert repository.get_int_setting("volume_step", -1) == 10
+
+
+def test_sleep_timer_pauses_playback_when_it_expires(config):
+    config.rfid.poll_interval = 0.05
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine.get_state()["player"]["playing"] is True
+
+        engine.start_sleep_timer(0.01)  # ~0.6 seconds
+        state = engine.get_state()
+        assert state["sleep_timer"]["active"] is True
+
+        time.sleep(1.0)
+        state = engine.get_state()
+        assert state["player"]["playing"] is False
+        assert state["sleep_timer"]["active"] is False
+    finally:
+        engine.stop()
+
+
+def test_cancel_sleep_timer(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.start_sleep_timer(5)
+        assert engine.get_state()["sleep_timer"]["active"] is True
+        engine.cancel_sleep_timer()
+        assert engine.get_state()["sleep_timer"]["active"] is False
+    finally:
+        engine.stop()

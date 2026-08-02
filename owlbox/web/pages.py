@@ -47,6 +47,12 @@ def admin_tags_page():
     )
 
 
+@pages_bp.route("/admin/info")
+@admin_required
+def admin_info_page():
+    return render_template("admin_info.html", active="info")
+
+
 @pages_bp.route("/admin/settings", methods=["GET", "POST"])
 @admin_required
 def admin_settings_page():

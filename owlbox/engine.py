@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import repository
+from . import network, repository
 from .controls import create_controls
 from .player import create_player
 from .rfid import create_reader
@@ -55,8 +55,12 @@ class Engine:
         self._current_story: Optional[repository.Story] = None
         self._current_function_action: Optional[str] = None
         self._last_unknown_uid: Optional[str] = None
-        self._volume = config.audio.default_volume
+        self._max_volume = repository.get_int_setting("max_volume", 100)
+        self._volume_step = repository.get_int_setting("volume_step", config.audio.volume_step)
+        self._volume = min(config.audio.default_volume, self._max_volume)
         self._missing_reads = 0
+        self._sleep_timer_end: Optional[float] = None
+        self._sleep_timer_minutes: Optional[float] = None
 
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
@@ -105,6 +109,8 @@ class Engine:
                 if now - last_save >= save_interval:
                     self._persist_current_position()
                     last_save = now
+
+                self._check_sleep_timer(now)
             except Exception:
                 logger.exception("engine loop iteration failed")
 
@@ -189,10 +195,7 @@ class Engine:
             logger.warning("unknown function tag action: %s", action)
 
     def _set_wifi(self, enabled: bool) -> None:
-        try:
-            subprocess.run(["sudo", "nmcli", "radio", "wifi", "on" if enabled else "off"], check=False)
-        except Exception:
-            logger.exception("failed to toggle wifi")
+        network.set_wifi_enabled(enabled)
 
     def _persist_position_locked(self) -> None:
         if self._current_uid is None or self._current_story is None:
@@ -227,14 +230,49 @@ class Engine:
 
     def manual_set_volume(self, percent: int) -> None:
         with self._lock:
-            self._volume = max(0, min(100, percent))
+            self._volume = max(0, min(self._max_volume, percent))
             self._player.set_volume(self._volume)
 
     def _handle_volume_delta(self, direction: int) -> None:
-        step = self._config.audio.volume_step
         with self._lock:
-            self._volume = max(0, min(100, self._volume + direction * step))
+            self._volume = max(0, min(self._max_volume, self._volume + direction * self._volume_step))
             self._player.set_volume(self._volume)
+
+    def set_max_volume(self, percent: int) -> None:
+        with self._lock:
+            self._max_volume = max(1, min(100, percent))
+            repository.set_setting("max_volume", self._max_volume)
+            if self._volume > self._max_volume:
+                self._volume = self._max_volume
+                self._player.set_volume(self._volume)
+
+    def set_volume_step(self, percent: int) -> None:
+        with self._lock:
+            self._volume_step = max(1, min(50, percent))
+            repository.set_setting("volume_step", self._volume_step)
+
+    # -- sleep timer ----------------------------------------------------------
+
+    def start_sleep_timer(self, minutes: float) -> None:
+        with self._lock:
+            self._sleep_timer_minutes = minutes
+            self._sleep_timer_end = time.monotonic() + minutes * 60
+        logger.info("sleep timer set: %.1f minutes", minutes)
+
+    def cancel_sleep_timer(self) -> None:
+        with self._lock:
+            self._sleep_timer_end = None
+            self._sleep_timer_minutes = None
+
+    def _check_sleep_timer(self, now: float) -> None:
+        with self._lock:
+            if self._sleep_timer_end is None or now < self._sleep_timer_end:
+                return
+            self._sleep_timer_end = None
+            self._sleep_timer_minutes = None
+            logger.info("sleep timer expired, pausing playback")
+            self._persist_position_locked()
+            self._player.pause()
 
     def _handle_shutdown(self) -> None:
         logger.warning("shutdown requested via encoder long-press")
@@ -274,7 +312,15 @@ class Engine:
             current_uid = self._current_uid
             function_action = self._current_function_action
             last_unknown = self._last_unknown_uid
+            max_volume = self._max_volume
+            volume_step = self._volume_step
+            sleep_timer_end = self._sleep_timer_end
+            sleep_timer_minutes = self._sleep_timer_minutes
         status = self._player.get_status()
+
+        sleep_timer_remaining = None
+        if sleep_timer_end is not None:
+            sleep_timer_remaining = max(0, round(sleep_timer_end - time.monotonic()))
 
         track_title = None
         if story is not None:
@@ -300,4 +346,10 @@ class Engine:
             "unknown_tag": current_uid if is_unknown else None,
             "last_unknown_uid": last_unknown,
             "player": status,
+            "settings": {"max_volume": max_volume, "volume_step": volume_step},
+            "sleep_timer": {
+                "active": sleep_timer_end is not None,
+                "minutes": sleep_timer_minutes,
+                "remaining_seconds": sleep_timer_remaining,
+            },
         }

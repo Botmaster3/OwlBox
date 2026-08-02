@@ -30,6 +30,57 @@
   </div>
 
   <div class="card">
+    <h2>Lautstärke</h2>
+    <div class="field">
+      <label for="current-volume">Aktuelle Lautstärke (<span id="current-volume-value">–</span>%)</label>
+      <input type="range" id="current-volume" min="0" max="100" value="60">
+    </div>
+    <div class="field">
+      <label for="max-volume">Maximale Lautstärke (%)</label>
+      <input type="number" id="max-volume" min="1" max="100" value="100">
+    </div>
+    <div class="field">
+      <label for="volume-step">Schrittweite pro Tastendruck/Encoder-Schritt (%)</label>
+      <input type="number" id="volume-step" min="1" max="50" value="4">
+    </div>
+    <button class="btn" id="volume-save-btn" type="button">Speichern</button>
+  </div>
+
+  <div class="card">
+    <h2>Einschlaf-Timer</h2>
+    <p class="hint" id="sleep-timer-status">Kein Timer aktiv.</p>
+    <div class="field">
+      <label>Schnellauswahl</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn secondary" data-minutes="15">15 min</button>
+        <button type="button" class="btn secondary" data-minutes="30">30 min</button>
+        <button type="button" class="btn secondary" data-minutes="45">45 min</button>
+        <button type="button" class="btn secondary" data-minutes="60">60 min</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="sleep-timer-custom">Eigene Dauer (Minuten)</label>
+      <input type="number" id="sleep-timer-custom" min="1" max="480">
+    </div>
+    <button class="btn" id="sleep-timer-start-btn" type="button">Timer starten</button>
+    <button class="btn danger" id="sleep-timer-cancel-btn" type="button" hidden>Timer abbrechen</button>
+  </div>
+
+  <div class="card">
+    <h2>WLAN</h2>
+    <p class="hint" id="wifi-status">Lädt…</p>
+    <button class="btn secondary" id="wifi-toggle-btn" type="button"></button>
+    <button class="btn secondary" id="wifi-scan-btn" type="button">Netzwerke suchen</button>
+    <div id="wifi-networks"></div>
+    <div class="field" id="wifi-connect-field" hidden>
+      <label for="wifi-password">Passwort für <span id="wifi-connect-ssid" class="mono"></span></label>
+      <input type="password" id="wifi-password">
+      <button class="btn" id="wifi-connect-btn" type="button">Verbinden</button>
+    </div>
+    <span id="wifi-connect-status" class="hint"></span>
+  </div>
+
+  <div class="card">
     <h2>System</h2>
     <p class="hint">Aktuelle Wiedergabeposition wird vor dem Herunterfahren/Neustart gespeichert.</p>
     <button class="btn secondary" id="restart-btn" type="button">Pi neu starten</button>

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}OwlBox – Info{% endblock %}
+{% block body %}
+<div class="admin" id="app">
+  {% include "_admin_nav.html" %}
+
+  <div class="card">
+    <h2>Gerät</h2>
+    <dl class="info-grid" id="device-info">
+      <dt>Hardware</dt><dd id="info-hardware">–</dd>
+      <dt>Betriebssystem</dt><dd id="info-os">–</dd>
+      <dt>Laufzeit</dt><dd id="info-uptime">–</dd>
+      <dt>CPU-Temperatur</dt><dd id="info-cpu-temp">–</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h2>Speicher</h2>
+    <div class="field">
+      <label>Datenträger (Medien-Verzeichnis)</label>
+      <div class="progress-bar"><div id="disk-fill" class="progress-fill"></div></div>
+      <span class="hint" id="disk-text"></span>
+    </div>
+    <div class="field">
+      <label>Arbeitsspeicher</label>
+      <div class="progress-bar"><div id="memory-fill" class="progress-fill"></div></div>
+      <span class="hint" id="memory-text"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Bibliothek</h2>
+    <dl class="info-grid">
+      <dt>Geschichten</dt><dd id="info-story-count">–</dd>
+      <dt>Titel insgesamt</dt><dd id="info-track-count">–</dd>
+      <dt>Mit Chip verknüpft</dt><dd id="info-assigned-count">–</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h2>Software</h2>
+    <dl class="info-grid">
+      <dt>OwlBox-Version</dt><dd id="info-version">–</dd>
+      <dt>Modus</dt><dd id="info-mode">–</dd>
+    </dl>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/admin_info.js') }}"></script>
+{% endblock %}

@@ -19,12 +19,16 @@ den Pi geladen und einem Chip zugewiesen.
 - **Physische Bedienung**: zwei Taster (vor/zurück) + Dreh-Encoder
   (drehen = Lautstärke, drücken = Play/Pause, lang drücken = herunterfahren).
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
-  hinterlegten RFID-Chip geschützt, fünf Unterseiten):
-  - **Jetzt läuft** - reine Anzeige wie auf dem Display, die erste Seite nach dem Login.
-  - **Bibliothek** - Geschichten verwalten: Chip zuweisen, Shuffle/Repeat, Track-Reihenfolge, löschen.
+  hinterlegten RFID-Chip geschützt, sechs Unterseiten):
+  - **Home** - reine "Jetzt läuft"-Anzeige (groß, wie auf dem Display), die erste Seite nach dem Login.
+  - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle/Repeat, Track-Reihenfolge, löschen.
   - **Hinzufügen** - einzelne Dateien oder einen ganzen Ordner hochladen, Cover/Titel wird aus dem Ordner erkannt.
   - **RFID-Tags** - Login-Chip hinterlegen, Funktions-Chips anlegen, Übersicht aller Story-Chips.
-  - **Einstellungen** - Zugangsdaten ändern, Pi neu starten/herunterfahren.
+  - **Einstellungen** - Zugangsdaten ändern; Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
+    Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert automatisch nach Ablauf);
+    WLAN (Status, an/aus, nach Netzwerken suchen und verbinden); Pi neu starten/herunterfahren.
+  - **Info** - Systeminfos: Hardware-Modell, Betriebssystem, Laufzeit, CPU-Temperatur,
+    Speicher-/RAM-Belegung, Bibliotheks-Statistik, OwlBox-Version.
 
   Beim ersten Besuch führt ein Einrichtungsassistent durchs Anlegen des
   Admin-Kontos. Die Now-Playing-Anzeige (`/`) für den Touchscreen selbst
