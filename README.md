@@ -14,9 +14,14 @@ den Pi geladen und einem Chip zugewiesen.
   läuft ausschließlich über Taster/Encoder (siehe docs/hardware.md).
 - **Physische Bedienung**: zwei Taster (vor/zurück) + Dreh-Encoder
   (drehen = Lautstärke, drücken = Play/Pause, lang drücken = herunterfahren).
-- **Web-Verwaltung** (`/admin`): Hörspiele/Musik hochladen (mehrere Dateien +
-  Cover), einem gescannten Chip zuweisen, Titel-Reihenfolge ändern,
-  Shuffle/Repeat pro Geschichte, löschen. Optional passwortgeschützt.
+- **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort geschützt, eigene
+  Unterseiten): "Bibliothek" (Übersicht inkl. "Jetzt läuft"-Anzeige, Chip
+  zuweisen, Shuffle/Repeat, löschen), "Hinzufügen" (einzelne Dateien oder
+  einen ganzen Ordner hochladen, Cover/Titel wird aus dem Ordner erkannt) und
+  "Einstellungen" (Zugangsdaten ändern, Pi neu starten/herunterfahren). Beim
+  ersten Besuch führt ein Einrichtungsassistent durchs Anlegen des
+  Admin-Kontos. Die Now-Playing-Anzeige (`/`) für den Touchscreen selbst
+  bleibt bewusst ohne Login, da das Display keine Tastatur hat.
 - **Simulationsmodus**: läuft ohne echte Hardware (RFID/GPIO/mpv) für
   Entwicklung und Tests - die Admin-UI bekommt dann einen "Chip simulieren"-
   Knopf.
@@ -93,19 +98,26 @@ ausführlich in [docs/hardware.md](docs/hardware.md).
 
 ## Konfiguration
 
-Alle Einstellungen (GPIO-Pins, SPI, ALSA-Device/Mixer, Ports, Admin-Passwort,
+Alle Einstellungen (GPIO-Pins, SPI, ALSA-Device/Mixer, Ports,
 Lautstärkeschritte, …) liegen in `config/config.yaml`
 (Vorlage: `config/config.example.yaml`, kommentiert). Diese Datei ist
-bewusst `.gitignore`t, da sie gerätespezifisch ist.
+bewusst `.gitignore`t, da sie gerätespezifisch ist. Das Admin-Konto
+(Benutzername/Passwort) wird separat über den Einrichtungsassistenten beim
+ersten `/admin`-Besuch angelegt und liegt (als Hash) in der SQLite-Datenbank,
+änderbar über `/admin/settings`.
 
 ## Inhalte hochladen
 
-1. `/admin` öffnen (im lokalen Netz, z.B. `http://owlbox.local:5000/admin`).
-2. Titel eingeben, Cover (optional) und eine oder mehrere Audiodateien
-   (mp3/m4a/ogg/flac/wav/opus) auswählen, "Anlegen" klicken.
-3. Bei der neu angelegten Geschichte auf "Chip zuweisen" klicken und den
-   gewünschten RFID-Chip an den Leser halten - die Zuordnung passiert
-   automatisch.
+1. `/admin/add` öffnen (im lokalen Netz, z.B. `http://owlbox.local:5000/admin/add`).
+2. Titel eingeben, Cover (optional) und entweder einzelne Audiodateien
+   (mp3/m4a/ogg/flac/wav/opus) oder über "Ganzer Ordner" gleich einen
+   kompletten Ordner auswählen - die enthaltenen Audiodateien werden
+   alphabetisch sortiert übernommen, ein Cover-Bild im Ordner (z.B.
+   `cover.jpg`) automatisch erkannt, der Titel aus dem Ordnernamen
+   vorausgefüllt. "Anlegen" klicken.
+3. Auf der Bibliotheksseite bei der neuen Geschichte auf "Chip zuweisen"
+   klicken und den gewünschten RFID-Chip an den Leser halten - die
+   Zuordnung passiert automatisch.
 4. Fertig: Chip auflegen, Geschichte spielt.
 
 ## Tests

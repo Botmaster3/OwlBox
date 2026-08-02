@@ -1,13 +1,81 @@
 (function () {
   const storyList = document.getElementById("story-list");
-  const createForm = document.getElementById("create-form");
-  const createError = document.getElementById("create-error");
   const assignOverlay = document.getElementById("assign-overlay");
   const assignStatus = document.getElementById("assign-status");
   const assignCancel = document.getElementById("assign-cancel");
   const simulate = document.getElementById("app").dataset.simulate === "true";
 
   let assignPoll = null;
+
+  // -- "now playing" widget, same data the kiosk display shows -------------
+
+  const npCover = document.getElementById("np-cover");
+  const npCoverPlaceholder = document.getElementById("np-cover-placeholder");
+  const npTitle = document.getElementById("np-title");
+  const npTrack = document.getElementById("np-track");
+  const npTimePos = document.getElementById("np-time-pos");
+  const npTimeDur = document.getElementById("np-time-dur");
+  const npProgressFill = document.getElementById("np-progress-fill");
+  const npVolumeFill = document.getElementById("np-volume-fill");
+  let lastNpCoverUrl = null;
+
+  function formatTime(seconds) {
+    seconds = Math.max(0, Math.floor(seconds || 0));
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  async function pollNowPlaying() {
+    try {
+      const res = await fetch("/api/state");
+      if (res.ok) applyNowPlaying(await res.json());
+    } catch (err) {
+      // network hiccup, just try again next tick
+    } finally {
+      setTimeout(pollNowPlaying, 1000);
+    }
+  }
+
+  function applyNowPlaying(state) {
+    const story = state.story;
+    const player = state.player || {};
+
+    if (story) {
+      npTitle.textContent = story.title;
+    } else if (state.unknown_tag) {
+      npTitle.textContent = "Unbekannter Chip aufgelegt";
+    } else {
+      npTitle.textContent = "Kein Chip aufgelegt";
+    }
+
+    if (story && story.track_title) {
+      npTrack.textContent = story.track_title;
+      npTrack.hidden = false;
+    } else {
+      npTrack.hidden = true;
+    }
+
+    const coverUrl = story && story.cover_url ? story.cover_url : null;
+    if (coverUrl !== lastNpCoverUrl) {
+      lastNpCoverUrl = coverUrl;
+      if (coverUrl) {
+        npCover.src = coverUrl;
+        npCover.hidden = false;
+        npCoverPlaceholder.hidden = true;
+      } else {
+        npCover.hidden = true;
+        npCoverPlaceholder.hidden = false;
+      }
+    }
+
+    const timePos = player.time_pos || 0;
+    const duration = player.duration || 0;
+    npTimePos.textContent = formatTime(timePos);
+    npTimeDur.textContent = formatTime(duration);
+    npProgressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
+    npVolumeFill.style.width = `${Math.max(0, Math.min(100, player.volume || 0))}%`;
+  }
 
   function formatDuration(seconds) {
     if (!seconds) return "";
@@ -66,7 +134,7 @@
   function renderStories(stories) {
     storyList.innerHTML = "";
     if (stories.length === 0) {
-      storyList.innerHTML = '<p class="hint">Noch keine Geschichten angelegt.</p>';
+      storyList.innerHTML = '<p class="hint">Noch keine Geschichten angelegt. <a href="/admin/add">Jetzt hinzufügen</a>.</p>';
       return;
     }
     for (const story of stories) {
@@ -82,7 +150,7 @@
       header.innerHTML = `
         ${story.cover_url ? `<img src="${story.cover_url}" alt="">` : '<div class="thumb-placeholder">🦉</div>'}
         <div class="story-meta">
-          <div class="story-title">${story.title}</div>
+          <div class="row-title">${story.title}</div>
           <div class="story-sub">${story.track_count} Titel · ${story.uid ? "Chip: " + story.uid : "kein Chip zugewiesen"}</div>
         </div>
         <div class="story-actions">
@@ -154,19 +222,6 @@
 
   assignCancel.addEventListener("click", stopAssign);
 
-  createForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    createError.textContent = "";
-    const formData = new FormData(createForm);
-    try {
-      await api("/api/stories", { method: "POST", body: formData });
-      createForm.reset();
-      loadStories();
-    } catch (err) {
-      createError.textContent = err.message;
-    }
-  });
-
   if (simulate) {
     document.getElementById("sim-scan-btn").addEventListener("click", () => {
       const uid = document.getElementById("sim-uid").value.trim();
@@ -183,4 +238,5 @@
   }
 
   loadStories();
+  pollNowPlaying();
 })();

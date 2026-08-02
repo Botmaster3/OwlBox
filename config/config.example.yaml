@@ -14,9 +14,10 @@ paths:
 web:
   host: "0.0.0.0"
   port: 5000
-  # Set a password to protect the /admin library management UI.
-  # Leave empty to disable authentication (fine on a trusted home LAN).
-  admin_password: ""
+  # Signs the login session cookie - change this to a real random value, e.g.
+  # `python3 -c "import secrets; print(secrets.token_hex(32))"`. The admin
+  # username/password itself isn't set here: the first visit to /admin walks
+  # you through a one-time setup wizard that stores it (hashed) in the database.
   secret_key: "change-me"
 
 audio:

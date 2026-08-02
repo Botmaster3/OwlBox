@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}OwlBox – Einstellungen{% endblock %}
+{% block body %}
+<div class="admin" id="app">
+  <h1>🦉 OwlBox Verwaltung
+    <form action="{{ url_for('pages.logout') }}" method="post" class="logout">
+      <button class="btn secondary" type="submit">Abmelden</button>
+    </form>
+  </h1>
+
+  <nav class="admin-nav">
+    <a href="{{ url_for('pages.admin_library_page') }}" class="{{ 'active' if active == 'library' }}">Bibliothek</a>
+    <a href="{{ url_for('pages.admin_add_page') }}" class="{{ 'active' if active == 'add' }}">Hinzufügen</a>
+    <a href="{{ url_for('pages.admin_settings_page') }}" class="{{ 'active' if active == 'settings' }}">Einstellungen</a>
+  </nav>
+
+  <div class="card">
+    <h2>Zugangsdaten ändern</h2>
+    <form method="post">
+      <div class="field">
+        <label for="username">Benutzername</label>
+        <input type="text" id="username" name="username" value="{{ username }}" autocapitalize="off" required>
+      </div>
+      <div class="field">
+        <label for="new_password">Neues Passwort (leer lassen, um es nicht zu ändern)</label>
+        <input type="password" id="new_password" name="new_password" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="new_password_confirm">Neues Passwort wiederholen</label>
+        <input type="password" id="new_password_confirm" name="new_password_confirm" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="current_password">Aktuelles Passwort (zur Bestätigung)</label>
+        <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+      </div>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      {% if success %}<p class="hint">{{ success }}</p>{% endif %}
+      <button class="btn" type="submit">Speichern</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>System</h2>
+    <p class="hint">Aktuelle Wiedergabeposition wird vor dem Herunterfahren/Neustart gespeichert.</p>
+    <button class="btn secondary" id="restart-btn" type="button">Pi neu starten</button>
+    <button class="btn danger" id="shutdown-btn" type="button">Pi herunterfahren</button>
+    <span id="system-status" class="hint"></span>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/admin_settings.js') }}"></script>
+{% endblock %}

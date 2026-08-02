@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}OwlBox – Hinzufügen{% endblock %}
+{% block body %}
+<div class="admin" id="app">
+  <h1>🦉 OwlBox Verwaltung
+    <form action="{{ url_for('pages.logout') }}" method="post" class="logout">
+      <button class="btn secondary" type="submit">Abmelden</button>
+    </form>
+  </h1>
+
+  <nav class="admin-nav">
+    <a href="{{ url_for('pages.admin_library_page') }}" class="{{ 'active' if active == 'library' }}">Bibliothek</a>
+    <a href="{{ url_for('pages.admin_add_page') }}" class="{{ 'active' if active == 'add' }}">Hinzufügen</a>
+    <a href="{{ url_for('pages.admin_settings_page') }}" class="{{ 'active' if active == 'settings' }}">Einstellungen</a>
+  </nav>
+
+  <div class="card">
+    <h2>Neue Geschichte / Musik hinzufügen</h2>
+
+    <div class="field">
+      <label>Quelle</label>
+      <div class="segmented" id="source-toggle">
+        <button type="button" class="segmented-btn active" data-mode="files">Einzelne Dateien</button>
+        <button type="button" class="segmented-btn" data-mode="folder">Ganzer Ordner</button>
+      </div>
+      <span class="hint" id="folder-hint" hidden>
+        Ordner auswählen - alle enthaltenen Audiodateien werden (alphabetisch sortiert) übernommen,
+        ein darin liegendes Cover-Bild (z.B. <code>cover.jpg</code>) wird automatisch erkannt.
+      </span>
+    </div>
+
+    <form id="create-form">
+      <div class="field">
+        <label for="title">Titel</label>
+        <input type="text" id="title" name="title" required>
+      </div>
+      <div class="field">
+        <label for="cover">Cover-Bild (optional)</label>
+        <input type="file" id="cover" name="cover" accept="image/*">
+        <span class="hint" id="cover-auto-hint" hidden></span>
+      </div>
+      <div class="field" id="files-field">
+        <label for="audio_files">Audio-Dateien (mehrere möglich, Reihenfolge = Auswahlreihenfolge)</label>
+        <input type="file" id="audio_files" name="audio_files" accept="audio/*" multiple>
+      </div>
+      <div class="field" id="folder-field" hidden>
+        <label for="audio_folder">Ordner</label>
+        <input type="file" id="audio_folder" webkitdirectory directory multiple>
+        <span class="hint" id="folder-summary"></span>
+      </div>
+      <button class="btn" type="submit">Anlegen</button>
+      <span id="create-error" class="error"></span>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/admin_add.js') }}"></script>
+{% endblock %}

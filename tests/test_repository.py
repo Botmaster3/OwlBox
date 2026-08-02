@@ -61,3 +61,20 @@ def test_delete_story_cascades_tracks(config):
     repository.delete_story(story.id)
     assert repository.get_story(story.id) is None
     assert repository.get_tracks(story.id) == []
+
+
+def test_admin_user_starts_absent(config):
+    assert repository.get_admin_user() is None
+
+
+def test_admin_user_create_and_update(config):
+    repository.create_admin_user("marco", "hashed-pw-1")
+    user = repository.get_admin_user()
+    assert user is not None
+    assert user.username == "marco"
+    assert user.password_hash == "hashed-pw-1"
+
+    repository.update_admin_user("marco2", "hashed-pw-2")
+    updated = repository.get_admin_user()
+    assert updated.username == "marco2"
+    assert updated.password_hash == "hashed-pw-2"

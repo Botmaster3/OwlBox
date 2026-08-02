@@ -6,8 +6,12 @@
     <h2>🦉 OwlBox</h2>
     <form method="post">
       <div class="field">
+        <label for="username">Benutzername</label>
+        <input type="text" id="username" name="username" autofocus autocapitalize="off" autocomplete="username">
+      </div>
+      <div class="field">
         <label for="password">Passwort</label>
-        <input type="password" id="password" name="password" autofocus>
+        <input type="password" id="password" name="password" autocomplete="current-password">
       </div>
       {% if error %}<p class="error">{{ error }}</p>{% endif %}
       <button class="btn" type="submit">Anmelden</button>

@@ -232,6 +232,23 @@ def last_scan():
     return jsonify(repository.get_last_scan())
 
 
+# -- system ---------------------------------------------------------------
+
+
+@api_bp.route("/system/shutdown", methods=["POST"])
+@admin_required
+def system_shutdown():
+    _engine().request_shutdown()
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/system/restart", methods=["POST"])
+@admin_required
+def system_restart():
+    _engine().request_restart()
+    return jsonify({"ok": True})
+
+
 # -- dev tools (only meaningful with the simulated RFID reader) --------------
 
 

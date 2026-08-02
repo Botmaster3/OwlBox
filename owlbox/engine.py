@@ -176,11 +176,21 @@ class Engine:
 
     def _handle_shutdown(self) -> None:
         logger.warning("shutdown requested via encoder long-press")
+        self.request_shutdown()
+
+    def request_shutdown(self) -> None:
         self._persist_current_position()
         try:
             subprocess.run(["sudo", "shutdown", "-h", "now"], check=False)
         except Exception:
             logger.exception("failed to invoke shutdown")
+
+    def request_restart(self) -> None:
+        self._persist_current_position()
+        try:
+            subprocess.run(["sudo", "shutdown", "-r", "now"], check=False)
+        except Exception:
+            logger.exception("failed to invoke restart")
 
     def simulate_scan(self, uid: str, hold_seconds: Optional[float] = None) -> None:
         inject = getattr(self._rfid, "inject", None)

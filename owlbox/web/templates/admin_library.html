@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}OwlBox – Bibliothek{% endblock %}
+{% block body %}
+<div class="admin" id="app" data-simulate="{{ 'true' if simulate else 'false' }}">
+  <h1>🦉 OwlBox Verwaltung
+    <form action="{{ url_for('pages.logout') }}" method="post" class="logout">
+      <button class="btn secondary" type="submit">Abmelden</button>
+    </form>
+  </h1>
+
+  <nav class="admin-nav">
+    <a href="{{ url_for('pages.admin_library_page') }}" class="{{ 'active' if active == 'library' }}">Bibliothek</a>
+    <a href="{{ url_for('pages.admin_add_page') }}" class="{{ 'active' if active == 'add' }}">Hinzufügen</a>
+    <a href="{{ url_for('pages.admin_settings_page') }}" class="{{ 'active' if active == 'settings' }}">Einstellungen</a>
+  </nav>
+
+  <div class="card now-playing" id="now-playing">
+    <div class="now-playing-cover" id="np-cover-wrap">
+      <img id="np-cover" alt="" hidden>
+      <div id="np-cover-placeholder" class="now-playing-placeholder">🦉</div>
+    </div>
+    <div class="now-playing-info">
+      <div class="now-playing-eyebrow">Jetzt läuft</div>
+      <div class="now-playing-title" id="np-title">Kein Chip aufgelegt</div>
+      <div class="now-playing-track" id="np-track" hidden></div>
+      <div class="progress-row">
+        <span id="np-time-pos" class="time">0:00</span>
+        <div class="progress-bar"><div id="np-progress-fill" class="progress-fill"></div></div>
+        <span id="np-time-dur" class="time">0:00</span>
+      </div>
+      <div class="volume-row">
+        <span>🔉</span>
+        <div class="progress-bar"><div id="np-volume-fill" class="progress-fill volume-fill"></div></div>
+        <span>🔊</span>
+      </div>
+    </div>
+  </div>
+
+  {% if simulate %}
+  <div class="card">
+    <h2>Entwicklungs-Werkzeuge (Simulationsmodus)</h2>
+    <p class="hint">Kein echtes Lesegerät angeschlossen – hier lässt sich ein Scan simulieren.</p>
+    <div class="field">
+      <label for="sim-uid">Chip-UID</label>
+      <input type="text" id="sim-uid" placeholder="z.B. AABBCCDD">
+    </div>
+    <button class="btn" id="sim-scan-btn" type="button">Chip auflegen (simulieren)</button>
+    <button class="btn secondary" id="sim-remove-btn" type="button">Chip entfernen (simulieren)</button>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Bibliothek</h2>
+    <div id="story-list"></div>
+  </div>
+</div>
+
+<div id="assign-overlay" class="assign-overlay" hidden>
+  <div class="card" style="max-width: 360px;">
+    <p id="assign-status">Halte den gewünschten Chip jetzt an die Box…</p>
+    <button class="btn secondary" id="assign-cancel" type="button">Abbrechen</button>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/admin_library.js') }}"></script>
+{% endblock %}

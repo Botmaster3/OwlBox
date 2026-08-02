@@ -32,3 +32,12 @@ CREATE TABLE IF NOT EXISTS scan_log (
     uid TEXT NOT NULL,
     seen_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Single admin account gating /admin and the mutating API. Empty table means
+-- setup hasn't run yet - the login page redirects to /setup until one exists.
+CREATE TABLE IF NOT EXISTS admin_user (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}OwlBox – Einrichtung{% endblock %}
+{% block body %}
+<div class="login-page">
+  <div class="card login-box">
+    <h2>🦉 OwlBox einrichten</h2>
+    <p class="hint">
+      Erster Besuch - lege hier den Benutzernamen und das Passwort für die
+      Verwaltung fest. Das brauchst du ab jetzt für jeden Zugriff auf /admin.
+    </p>
+    <form method="post">
+      <div class="field">
+        <label for="username">Benutzername</label>
+        <input type="text" id="username" name="username" autofocus autocapitalize="off" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Passwort</label>
+        <input type="password" id="password" name="password" autocomplete="new-password" required>
+      </div>
+      <div class="field">
+        <label for="password_confirm">Passwort wiederholen</label>
+        <input type="password" id="password_confirm" name="password_confirm" autocomplete="new-password" required>
+      </div>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      <button class="btn" type="submit">Einrichten</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

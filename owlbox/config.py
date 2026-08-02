@@ -15,7 +15,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 class WebConfig:
     host: str = "0.0.0.0"
     port: int = 5000
-    admin_password: str = ""
     secret_key: str = "change-me"
 
 

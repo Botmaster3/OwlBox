@@ -183,3 +183,34 @@ def get_last_unknown_scan() -> Optional[str]:
         """
     ).fetchone()
     return row["uid"] if row else None
+
+
+@dataclass
+class AdminUser:
+    id: int
+    username: str
+    password_hash: str
+    created_at: str
+
+
+def get_admin_user() -> Optional[AdminUser]:
+    """There's only ever one admin account - a single row in this table."""
+    row = get_connection().execute("SELECT * FROM admin_user ORDER BY id LIMIT 1").fetchone()
+    return AdminUser(**dict(row)) if row else None
+
+
+def create_admin_user(username: str, password_hash: str) -> AdminUser:
+    with write_cursor() as cur:
+        cur.execute(
+            "INSERT INTO admin_user (username, password_hash) VALUES (?, ?)",
+            (username, password_hash),
+        )
+    return get_admin_user()
+
+
+def update_admin_user(username: str, password_hash: str) -> None:
+    with write_cursor() as cur:
+        cur.execute(
+            "UPDATE admin_user SET username = ?, password_hash = ? WHERE id = (SELECT id FROM admin_user ORDER BY id LIMIT 1)",
+            (username, password_hash),
+        )
