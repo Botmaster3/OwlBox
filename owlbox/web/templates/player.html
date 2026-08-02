@@ -9,22 +9,18 @@
   </div>
 
   <div class="info">
-    <div id="title" class="title">Kein Chip aufgelegt</div>
+    <div id="story-title" class="story-title">Kein Chip aufgelegt</div>
+    <div id="track-title" class="track-title" hidden></div>
+
     <div class="progress-row">
       <span id="time-pos" class="time">0:00</span>
       <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
       <span id="time-dur" class="time">0:00</span>
     </div>
 
-    <div class="controls">
-      <button id="btn-prev" class="ctrl-btn" aria-label="Zurück">⏮</button>
-      <button id="btn-toggle" class="ctrl-btn ctrl-btn-large" aria-label="Play/Pause">⏯</button>
-      <button id="btn-next" class="ctrl-btn" aria-label="Weiter">⏭</button>
-    </div>
-
     <div class="volume-row">
       <span>🔉</span>
-      <input id="volume" type="range" min="0" max="100" value="60">
+      <div class="progress-bar"><div id="volume-fill" class="progress-fill volume-fill"></div></div>
       <span>🔊</span>
     </div>
   </div>

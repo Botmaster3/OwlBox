@@ -138,7 +138,8 @@ def create_story():
         dest = story_dir / filename
         f.save(dest)
         duration, tag_title = probe_audio(dest)
-        repository.add_track(story.id, position, filename, tag_title, duration)
+        title = tag_title or Path(f.filename).stem
+        repository.add_track(story.id, position, filename, title, duration)
 
     uid = request.form.get("uid", "").strip()
     if uid:

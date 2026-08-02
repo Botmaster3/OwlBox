@@ -198,6 +198,15 @@ class Engine:
             current_uid = self._current_uid
             last_unknown = self._last_unknown_uid
         status = self._player.get_status()
+
+        track_title = None
+        if story is not None:
+            tracks = repository.get_tracks(story.id)
+            index = status.get("playlist_pos", 0)
+            if 0 <= index < len(tracks):
+                track = tracks[index]
+                track_title = track.title or Path(track.filename).stem
+
         return {
             "uid": current_uid,
             "story": None
@@ -206,6 +215,7 @@ class Engine:
                 "id": story.id,
                 "title": story.title,
                 "cover_url": f"/media/{story.id}/{story.cover_path}" if story.cover_path else None,
+                "track_title": track_title,
             },
             "unknown_tag": current_uid if story is None and current_uid is not None else None,
             "last_unknown_uid": last_unknown,
