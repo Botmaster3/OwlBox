@@ -53,6 +53,10 @@ class Engine:
         self._stop_event.set()
         if self._thread is not None:
             self._thread.join(timeout=5)
+        # Final exact save - the periodic autosave in _loop() only runs every
+        # playback.position_save_interval seconds, so without this a clean
+        # shutdown (systemd stop, reboot) could lose a few seconds of progress.
+        self._persist_current_position()
         self._controls.close()
         self._rfid.close()
         self._player.stop()

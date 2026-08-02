@@ -73,3 +73,24 @@ def test_manual_volume_change(config):
         assert engine.get_state()["player"]["volume"] == 42
     finally:
         engine.stop()
+
+
+def test_stop_persists_exact_position_even_before_next_autosave(config):
+    # A large interval means the periodic autosave in the loop won't fire during
+    # this test - stop() must still save the exact position on its own so a
+    # clean shutdown/reboot doesn't lose progress made since the last autosave.
+    config.rfid.poll_interval = 0.01
+    config.playback.position_save_interval = 999
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.1)
+        engine._player.seek(42.0)
+    finally:
+        engine.stop()
+
+    _track_position, seek_seconds = repository.get_playback_state("AABBCC")
+    assert seek_seconds == 42.0
