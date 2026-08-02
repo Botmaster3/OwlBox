@@ -2,7 +2,12 @@
 {% block title %}OwlBox{% endblock %}
 {% block body_class %}kiosk{% endblock %}
 {% block body %}
-<div class="player">
+<div id="splash" class="splash">
+  <div class="splash-owl">🦉</div>
+  <div class="splash-name">OwlBox</div>
+</div>
+
+<div class="player" hidden>
   <div class="cover-wrap" id="cover-wrap">
     <img id="cover" class="cover" alt="" hidden>
     <div id="cover-placeholder" class="cover-placeholder">🦉</div>

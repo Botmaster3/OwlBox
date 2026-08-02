@@ -14,9 +14,11 @@
   const parentModeQrEl = document.getElementById("parent-mode-qr");
   const sleepTimerBadge = document.getElementById("sleep-timer-badge");
   const sleepTimerRemaining = document.getElementById("sleep-timer-remaining");
+  const splashEl = document.getElementById("splash");
 
   let lastCoverUrl = null;
   let parentModeActive = false;
+  let hasScannedTag = false;
 
   function formatTime(seconds) {
     seconds = Math.max(0, Math.floor(seconds || 0));
@@ -30,13 +32,23 @@
     const player = state.player || {};
     const parentMode = state.parent_mode || { active: false, label: null };
 
+    // On boot, show the OwlBox splash (owl + name) instead of the "no chip"
+    // now-playing view - it only goes away once any chip (story, function, or
+    // parent tag) has actually been read, and stays gone for the rest of this
+    // page load even after that chip is removed again.
+    if (!hasScannedTag) {
+      if (!state.uid) {
+        return;
+      }
+      hasScannedTag = true;
+      splashEl.hidden = true;
+    }
+
     // Parent mode (a "Vater"/"Mutter" chip is on the reader) shows a QR code to
     // the login page instead of the normal now-playing view - never revealed to
     // kids scanning story or function tags.
     if (parentMode.active !== parentModeActive) {
       parentModeActive = parentMode.active;
-      parentModeEl.hidden = !parentModeActive;
-      playerEl.hidden = parentModeActive;
       if (parentModeActive) {
         // Generate the QR code fresh at the moment the chip is scanned - the IP it
         // encodes may have changed since the last time a parent tag was placed, and
@@ -44,6 +56,8 @@
         parentModeQrEl.src = `/login-qr.svg?t=${Date.now()}`;
       }
     }
+    parentModeEl.hidden = !parentModeActive;
+    playerEl.hidden = parentModeActive;
     if (parentModeActive) {
       parentModeLabelEl.textContent = `Eltern-Modus: ${parentMode.label}`;
       return;
