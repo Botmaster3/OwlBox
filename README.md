@@ -10,7 +10,8 @@ den Pi geladen und einem Chip zugewiesen.
 - **RFID-gesteuerte Wiedergabe**: Chip auflegen → zugehörige Playlist startet
   (mit gemerkter Position), Chip abnehmen → pausiert automatisch.
 - **Funktions-Chips**: eigene Chips, die statt einer Geschichte eine Aktion
-  auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus, Pi neu
+  auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus,
+  Einschlaf-Timer starten (15/30/45/60 Min.) oder abbrechen, Pi neu
   starten/herunterfahren. Praktisch als "Bedienkarten" ohne Taster anfassen
   zu müssen.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller

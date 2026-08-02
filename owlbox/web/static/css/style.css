@@ -7,6 +7,11 @@
   --text: #f5f2ea;
   --text-dim: #9a9db0;
   --danger: #e05c5c;
+  /* Status colors (good/warn/critical) - reserved for gauges/thresholds, never
+     reused as a generic accent so their meaning stays unambiguous. */
+  --status-good: #4fae6d;
+  --status-warn: #e0a83c;
+  --status-critical: var(--danger);
 }
 
 * { box-sizing: border-box; }
@@ -19,9 +24,20 @@ html, body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background: var(--bg);
   color: var(--text);
   font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Night-forest backdrop with a hint of owl eyes glowing in the dark, instead of a flat panel color. */
+html, body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(90px 70px at 34% 20%, rgba(242, 169, 60, 0.16), transparent 70%),
+    radial-gradient(90px 70px at 66% 20%, rgba(242, 169, 60, 0.16), transparent 70%),
+    radial-gradient(70% 45% at 50% 105%, rgba(122, 90, 38, 0.22), transparent 70%),
+    linear-gradient(180deg, #0d0f16 0%, #12141c 55%, #1a140f 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 /* Only the kiosk now-playing screen locks to the viewport with no scrolling;
@@ -87,12 +103,19 @@ body.kiosk { height: 100vh; overflow: hidden; }
 .progress-row { display: flex; align-items: center; gap: 12px; }
 .time { font-variant-numeric: tabular-nums; color: var(--text-dim); font-size: 0.9rem; }
 .progress-bar {
-  flex: 1;
+  width: 100%;
   height: 8px;
   border-radius: 4px;
-  background: var(--panel);
+  /* Darker than --panel on purpose - cards use --panel as their own background,
+     so a same-colored track would be invisible whenever the fill is empty/low. */
+  background: var(--bg);
   overflow: hidden;
 }
+/* Only inside a *row* flex container (progress/volume sliders) should the bar
+   grow along the main axis - `flex: 1` as the default collapsed .field's (a
+   *column* container, e.g. the Info page's disk/memory/CPU gauges) bars to
+   zero height, since flex-basis: 0 wins over `height` on the main axis there. */
+.progress-row .progress-bar, .volume-row .progress-bar { flex: 1; width: auto; }
 .progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s linear; }
 
 .volume-row { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; }
@@ -111,6 +134,21 @@ body.kiosk { height: 100vh; overflow: hidden; }
   font-weight: 600;
   text-align: center;
 }
+
+.sleep-timer-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--accent-dim);
+  color: var(--text-dim);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.sleep-timer-badge span { color: var(--accent); font-variant-numeric: tabular-nums; }
 
 .parent-mode {
   height: 100vh;
@@ -208,6 +246,11 @@ body.kiosk { height: 100vh; overflow: hidden; }
 .now-playing .progress-row, .now-playing .volume-row { max-width: 640px; }
 .now-playing .progress-bar { height: 10px; }
 
+.np-upcoming { max-width: 640px; }
+.np-upcoming-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 6px; }
+.np-upcoming-list { margin: 0; padding-left: 1.3em; color: var(--text-dim); font-size: 0.95rem; display: flex; flex-direction: column; gap: 2px; }
+.np-upcoming-list li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 @media (max-width: 640px) {
   .now-playing { flex-direction: column; text-align: center; }
   .now-playing-info { align-items: center; }
@@ -266,6 +309,27 @@ input[type="file"] { color: var(--text-dim); }
 .info-grid { display: grid; grid-template-columns: max-content 1fr; gap: 8px 20px; margin: 0; }
 .info-grid dt { color: var(--text-dim); font-size: 0.85rem; }
 .info-grid dd { margin: 0; font-weight: 600; }
+
+.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; }
+.stat-tile {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.stat-tile-icon { font-size: 1.6rem; }
+.stat-tile-value { font-size: 2rem; font-weight: 700; color: var(--accent); line-height: 1; }
+.stat-tile-label { color: var(--text-dim); font-size: 0.82rem; }
+
+.gauge-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.gauge-row .time { font-size: 0.8rem; }
+.progress-fill.good { background: var(--status-good); }
+.progress-fill.warn { background: var(--status-warn); }
+.progress-fill.critical { background: var(--status-critical); }
 .hint code { background: #10131c; padding: 1px 5px; border-radius: 4px; }
 .error { color: var(--danger); font-size: 0.9rem; }
 

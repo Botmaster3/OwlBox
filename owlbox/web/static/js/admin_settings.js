@@ -232,6 +232,7 @@
       wifiConnectField.hidden = true;
       wifiPassword.value = "";
       refreshWifiStatus();
+      loadKnownNetworks();
     } catch (err) {
       wifiConnectStatus.textContent = err.message;
     }
@@ -275,7 +276,66 @@
     }
   }
 
+  // -- known/saved wifi networks ---------------------------------------------
+
+  const wifiKnownList = document.getElementById("wifi-known-list");
+
+  async function loadKnownNetworks() {
+    try {
+      const networks = await api("/api/network/known");
+      wifiKnownList.innerHTML = "";
+      if (networks.length === 0) {
+        wifiKnownList.innerHTML = '<p class="hint">Noch keine bekannten Netzwerke.</p>';
+        return;
+      }
+      for (const net of networks) {
+        const row = document.createElement("div");
+        row.className = "story-row";
+        row.innerHTML = `
+          <div class="story-meta">
+            <div class="row-title">${net.name}${net.active ? " (verbunden)" : ""}</div>
+          </div>
+          <div class="story-actions">
+            ${net.active ? "" : '<button class="btn secondary" data-action="connect">Verbinden</button>'}
+            <button class="btn danger" data-action="forget">Entfernen</button>
+          </div>
+        `;
+        const connectBtn = row.querySelector('[data-action="connect"]');
+        if (connectBtn) {
+          connectBtn.addEventListener("click", async () => {
+            connectBtn.disabled = true;
+            connectBtn.textContent = "Verbinde…";
+            try {
+              const result = await api(`/api/network/known/${encodeURIComponent(net.name)}/connect`, { method: "POST" });
+              showToast(result.message || `Mit "${net.name}" verbunden.`);
+              refreshWifiStatus();
+              loadKnownNetworks();
+            } catch (err) {
+              showToast(err.message, true);
+              connectBtn.disabled = false;
+              connectBtn.textContent = "Verbinden";
+            }
+          });
+        }
+        row.querySelector('[data-action="forget"]').addEventListener("click", async () => {
+          if (!confirm(`Netzwerk "${net.name}" wirklich entfernen?`)) return;
+          try {
+            await api(`/api/network/known/${encodeURIComponent(net.name)}`, { method: "DELETE" });
+            showToast("Netzwerk entfernt.");
+            loadKnownNetworks();
+          } catch (err) {
+            showToast(err.message, true);
+          }
+        });
+        wifiKnownList.appendChild(row);
+      }
+    } catch (err) {
+      wifiKnownList.innerHTML = '<p class="hint">Bekannte Netzwerke konnten nicht geladen werden.</p>';
+    }
+  }
+
   loadVolumeSettingsOnce();
   pollState();
   refreshWifiStatus();
+  loadKnownNetworks();
 })();

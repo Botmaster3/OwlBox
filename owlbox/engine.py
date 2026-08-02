@@ -30,6 +30,11 @@ FUNCTION_ACTIONS = [
     ("volume_down", "Leiser"),
     ("wifi_on", "WLAN an"),
     ("wifi_off", "WLAN aus"),
+    ("sleep_timer_15", "Einschlaf-Timer 15 Min"),
+    ("sleep_timer_30", "Einschlaf-Timer 30 Min"),
+    ("sleep_timer_45", "Einschlaf-Timer 45 Min"),
+    ("sleep_timer_60", "Einschlaf-Timer 60 Min"),
+    ("sleep_timer_cancel", "Einschlaf-Timer abbrechen"),
     ("restart", "Pi neu starten"),
     ("shutdown", "Pi herunterfahren"),
 ]
@@ -196,6 +201,16 @@ class Engine:
             self._set_wifi(True)
         elif action == "wifi_off":
             self._set_wifi(False)
+        elif action == "sleep_timer_15":
+            self.start_sleep_timer(15)
+        elif action == "sleep_timer_30":
+            self.start_sleep_timer(30)
+        elif action == "sleep_timer_45":
+            self.start_sleep_timer(45)
+        elif action == "sleep_timer_60":
+            self.start_sleep_timer(60)
+        elif action == "sleep_timer_cancel":
+            self.cancel_sleep_timer()
         elif action == "restart":
             self.request_restart()
         elif action == "shutdown":
@@ -333,12 +348,14 @@ class Engine:
             sleep_timer_remaining = max(0, round(sleep_timer_end - time.monotonic()))
 
         track_title = None
+        upcoming_tracks: list[str] = []
         if story is not None:
             tracks = repository.get_tracks(story.id)
             index = status.get("playlist_pos", 0)
             if 0 <= index < len(tracks):
                 track = tracks[index]
                 track_title = track.title or Path(track.filename).stem
+            upcoming_tracks = [t.title or Path(t.filename).stem for t in tracks[index + 1 :]]
 
         is_unknown = (
             story is None and function_action is None and parent_label is None and current_uid is not None
@@ -353,6 +370,7 @@ class Engine:
                 "title": story.title,
                 "cover_url": f"/media/{story.id}/{story.cover_path}" if story.cover_path else None,
                 "track_title": track_title,
+                "upcoming_tracks": upcoming_tracks,
             },
             "function_tag": function_action,
             "unknown_tag": current_uid if is_unknown else None,

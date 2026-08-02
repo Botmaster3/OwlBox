@@ -147,6 +147,36 @@ def test_function_tag_next_advances_playlist(config):
         engine.stop()
 
 
+def test_state_lists_upcoming_tracks_after_current_one(config):
+    config.rfid.poll_interval = 0.01
+    story = repository.create_story(title="Multi")
+    story_dir = config.media_dir / str(story.id)
+    story_dir.mkdir(parents=True, exist_ok=True)
+    for filename in ("a.mp3", "b.mp3", "c.mp3"):
+        (story_dir / filename).write_bytes(b"x")
+    repository.add_track(story.id, 0, "a.mp3", "Erstes Kapitel", None)
+    repository.add_track(story.id, 1, "b.mp3", "Zweites Kapitel", None)
+    repository.add_track(story.id, 2, "c.mp3", "Drittes Kapitel", None)
+    repository.assign_uid(story.id, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["story"]["track_title"] == "Erstes Kapitel"
+        assert state["story"]["upcoming_tracks"] == ["Zweites Kapitel", "Drittes Kapitel"]
+
+        engine.manual_next()
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["story"]["track_title"] == "Zweites Kapitel"
+        assert state["story"]["upcoming_tracks"] == ["Drittes Kapitel"]
+    finally:
+        engine.stop()
+
+
 def test_stop_persists_exact_position_even_before_next_autosave(config):
     # A large interval means the periodic autosave in the loop won't fire during
     # this test - stop() must still save the exact position on its own so a
@@ -233,5 +263,29 @@ def test_cancel_sleep_timer(config):
         assert engine.get_state()["sleep_timer"]["active"] is True
         engine.cancel_sleep_timer()
         assert engine.get_state()["sleep_timer"]["active"] is False
+    finally:
+        engine.stop()
+
+
+def test_sleep_timer_function_tags_start_and_cancel(config):
+    config.rfid.poll_interval = 0.01
+    repository.set_function_tag("SLEEP30CARD", "sleep_timer_30")
+    repository.set_function_tag("SLEEPCANCELCARD", "sleep_timer_cancel")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("SLEEP30CARD")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["sleep_timer"]["active"] is True
+        assert state["sleep_timer"]["minutes"] == 30
+        assert state["function_tag"] == "sleep_timer_30"
+
+        engine.simulate_scan("SLEEPCANCELCARD")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["sleep_timer"]["active"] is False
+        assert state["function_tag"] == "sleep_timer_cancel"
     finally:
         engine.stop()

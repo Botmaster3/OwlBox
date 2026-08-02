@@ -93,6 +93,41 @@ def connect(ssid: str, password: str) -> tuple[bool, str]:
     return False, (result.stderr or result.stdout or "Verbindung fehlgeschlagen.").strip()
 
 
+def list_known_networks() -> list[dict]:
+    """Saved WiFi connection profiles - NetworkManager remembers the password once
+    you've connected successfully, so the settings page can offer "reconnect
+    without retyping the password" and "forget this network", independent of
+    what's currently in scan range.
+    """
+    active_ssid = get_status()["connected_ssid"]
+    networks = []
+    for line in _run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"]).splitlines():
+        name, _, conn_type = line.partition(":")
+        if conn_type != "802-11-wireless" or not name:
+            continue
+        networks.append({"name": name, "active": name == active_ssid})
+    return networks
+
+
+def connect_known(name: str) -> tuple[bool, str]:
+    try:
+        result = subprocess.run(
+            ["sudo", "nmcli", "connection", "up", name], capture_output=True, text=True, timeout=20, check=False
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, str(exc)
+    if result.returncode == 0:
+        return True, "Verbunden."
+    return False, (result.stderr or result.stdout or "Verbindung fehlgeschlagen.").strip()
+
+
+def forget_network(name: str) -> None:
+    try:
+        subprocess.run(["sudo", "nmcli", "connection", "delete", name], check=False)
+    except Exception:
+        logger.exception("failed to delete wifi connection profile")
+
+
 def set_wifi_enabled(enabled: bool) -> None:
     try:
         subprocess.run(["sudo", "nmcli", "radio", "wifi", "on" if enabled else "off"], check=False)

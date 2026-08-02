@@ -23,6 +23,15 @@
     return parts.join(" ");
   }
 
+  // Status-colors a gauge bar (width relative to `max`, color by how close
+  // `value` is to the warn/critical thresholds - all three in the same unit).
+  function setGauge(fillEl, value, max, warnAt, criticalAt) {
+    const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
+    fillEl.style.width = `${pct}%`;
+    fillEl.classList.remove("good", "warn", "critical");
+    fillEl.classList.add(value >= criticalAt ? "critical" : value >= warnAt ? "warn" : "good");
+  }
+
   async function load() {
     let info;
     try {
@@ -35,21 +44,22 @@
     document.getElementById("info-hardware").textContent = info.hardware_model || "unbekannt";
     document.getElementById("info-os").textContent = info.os || "unbekannt";
     document.getElementById("info-uptime").textContent = formatUptime(info.uptime_seconds);
-    document.getElementById("info-cpu-temp").textContent =
-      info.cpu_temp_celsius != null ? `${info.cpu_temp_celsius.toFixed(1)} °C` : "unbekannt";
+
+    const cpuTemp = info.cpu_temp_celsius;
+    document.getElementById("info-cpu-temp").textContent = cpuTemp != null ? `${cpuTemp.toFixed(1)} °C` : "unbekannt";
+    // Raspberry Pi boards start throttling around 80-85 °C, so that's the gauge's ceiling.
+    setGauge(document.getElementById("cpu-temp-fill"), cpuTemp || 0, 85, 65, 78);
 
     const disk = info.disk;
     if (disk) {
-      const pct = (disk.used_bytes / disk.total_bytes) * 100;
-      document.getElementById("disk-fill").style.width = `${pct}%`;
+      setGauge(document.getElementById("disk-fill"), disk.used_bytes, disk.total_bytes, disk.total_bytes * 0.8, disk.total_bytes * 0.92);
       document.getElementById("disk-text").textContent =
         `${formatBytes(disk.used_bytes)} von ${formatBytes(disk.total_bytes)} belegt (${formatBytes(disk.free_bytes)} frei)`;
     }
 
     const memory = info.memory;
     if (memory && memory.used_bytes != null) {
-      const pct = (memory.used_bytes / memory.total_bytes) * 100;
-      document.getElementById("memory-fill").style.width = `${pct}%`;
+      setGauge(document.getElementById("memory-fill"), memory.used_bytes, memory.total_bytes, memory.total_bytes * 0.8, memory.total_bytes * 0.92);
       document.getElementById("memory-text").textContent =
         `${formatBytes(memory.used_bytes)} von ${formatBytes(memory.total_bytes)} belegt`;
     } else {

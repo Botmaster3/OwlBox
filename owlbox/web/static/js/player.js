@@ -12,6 +12,8 @@
   const parentModeEl = document.getElementById("parent-mode");
   const parentModeLabelEl = document.getElementById("parent-mode-label");
   const parentModeQrEl = document.getElementById("parent-mode-qr");
+  const sleepTimerBadge = document.getElementById("sleep-timer-badge");
+  const sleepTimerRemaining = document.getElementById("sleep-timer-remaining");
 
   let lastCoverUrl = null;
   let parentModeActive = false;
@@ -84,6 +86,14 @@
     volumeFill.style.width = `${Math.max(0, Math.min(100, player.volume || 0))}%`;
 
     unknownBanner.hidden = !state.unknown_tag;
+
+    const sleepTimer = state.sleep_timer || {};
+    if (sleepTimer.active) {
+      sleepTimerBadge.hidden = false;
+      sleepTimerRemaining.textContent = formatTime(sleepTimer.remaining_seconds);
+    } else {
+      sleepTimerBadge.hidden = true;
+    }
   }
 
   async function poll() {

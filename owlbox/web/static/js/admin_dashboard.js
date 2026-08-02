@@ -7,6 +7,10 @@
   const npTimeDur = document.getElementById("np-time-dur");
   const npProgressFill = document.getElementById("np-progress-fill");
   const npVolumeFill = document.getElementById("np-volume-fill");
+  const npUpcoming = document.getElementById("np-upcoming");
+  const npUpcomingList = document.getElementById("np-upcoming-list");
+  const npSleepTimerBadge = document.getElementById("np-sleep-timer-badge");
+  const npSleepTimerRemaining = document.getElementById("np-sleep-timer-remaining");
   let lastCoverUrl = null;
 
   const FUNCTION_LABELS = {
@@ -19,6 +23,11 @@
     volume_down: "Leiser",
     wifi_on: "WLAN an",
     wifi_off: "WLAN aus",
+    sleep_timer_15: "Einschlaf-Timer 15 Min",
+    sleep_timer_30: "Einschlaf-Timer 30 Min",
+    sleep_timer_45: "Einschlaf-Timer 45 Min",
+    sleep_timer_60: "Einschlaf-Timer 60 Min",
+    sleep_timer_cancel: "Einschlaf-Timer abbrechen",
     restart: "Pi neu starten",
     shutdown: "Pi herunterfahren",
   };
@@ -70,6 +79,22 @@
     npTimeDur.textContent = formatTime(duration);
     npProgressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
     npVolumeFill.style.width = `${Math.max(0, Math.min(100, player.volume || 0))}%`;
+
+    const upcoming = (story && story.upcoming_tracks) || [];
+    if (upcoming.length === 0) {
+      npUpcoming.hidden = true;
+    } else {
+      npUpcoming.hidden = false;
+      npUpcomingList.innerHTML = upcoming.map((title) => `<li>${title}</li>`).join("");
+    }
+
+    const sleepTimer = state.sleep_timer || {};
+    if (sleepTimer.active) {
+      npSleepTimerBadge.hidden = false;
+      npSleepTimerRemaining.textContent = formatTime(sleepTimer.remaining_seconds);
+    } else {
+      npSleepTimerBadge.hidden = true;
+    }
   }
 
   async function poll() {

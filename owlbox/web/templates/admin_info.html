@@ -10,8 +10,11 @@
       <dt>Hardware</dt><dd id="info-hardware">–</dd>
       <dt>Betriebssystem</dt><dd id="info-os">–</dd>
       <dt>Laufzeit</dt><dd id="info-uptime">–</dd>
-      <dt>CPU-Temperatur</dt><dd id="info-cpu-temp">–</dd>
     </dl>
+    <div class="field">
+      <label>CPU-Temperatur (<span id="info-cpu-temp">–</span>)</label>
+      <div class="progress-bar"><div id="cpu-temp-fill" class="progress-fill"></div></div>
+    </div>
   </div>
 
   <div class="card">
@@ -30,11 +33,23 @@
 
   <div class="card">
     <h2>Bibliothek</h2>
-    <dl class="info-grid">
-      <dt>Geschichten</dt><dd id="info-story-count">–</dd>
-      <dt>Titel insgesamt</dt><dd id="info-track-count">–</dd>
-      <dt>Mit Chip verknüpft</dt><dd id="info-assigned-count">–</dd>
-    </dl>
+    <div class="stat-tiles">
+      <div class="stat-tile">
+        <span class="stat-tile-icon">📚</span>
+        <span class="stat-tile-value" id="info-story-count">–</span>
+        <span class="stat-tile-label">Geschichten</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-icon">🎵</span>
+        <span class="stat-tile-value" id="info-track-count">–</span>
+        <span class="stat-tile-label">Titel insgesamt</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-icon">🏷️</span>
+        <span class="stat-tile-value" id="info-assigned-count">–</span>
+        <span class="stat-tile-label">Mit Chip verknüpft</span>
+      </div>
+    </div>
   </div>
 
   <div class="card">

@@ -429,6 +429,26 @@ def network_connect():
     return jsonify({"ok": ok, "message": message}), (200 if ok else 400)
 
 
+@api_bp.route("/network/known")
+@admin_required
+def network_known():
+    return jsonify(network.list_known_networks())
+
+
+@api_bp.route("/network/known/<name>/connect", methods=["POST"])
+@admin_required
+def network_known_connect(name):
+    ok, message = network.connect_known(name)
+    return jsonify({"ok": ok, "message": message}), (200 if ok else 400)
+
+
+@api_bp.route("/network/known/<name>", methods=["DELETE"])
+@admin_required
+def network_known_delete(name):
+    network.forget_network(name)
+    return jsonify({"ok": True})
+
+
 @api_bp.route("/network/wifi-power", methods=["POST"])
 @admin_required
 def network_wifi_power():
