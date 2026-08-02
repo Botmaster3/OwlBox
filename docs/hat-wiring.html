@@ -1,0 +1,639 @@
+<title>OwlBox – Verteiler-Platine</title>
+<style>
+  :root {
+    --paper: #f5f2ea;
+    --panel: #ffffff;
+    --ink: #1c231e;
+    --sage: #6d7669;
+    --sage-line: #d9d4c6;
+    --accent: #2f6f4e;
+    --accent-soft: #e4ede7;
+    --copper: #b5732a;
+    --copper-soft: #f3e6d4;
+    --slate: #4c6478;
+    --slate-soft: #e3e9ed;
+    --danger: #a3402f;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10201a;
+      --panel: #16281f;
+      --ink: #eef2ee;
+      --sage: #93a396;
+      --sage-line: #2b3a30;
+      --accent: #57c98d;
+      --accent-soft: #1c3a2c;
+      --copper: #e2a355;
+      --copper-soft: #3a2e1c;
+      --slate: #8fb3cc;
+      --slate-soft: #223342;
+      --danger: #e08674;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10201a;
+    --panel: #16281f;
+    --ink: #eef2ee;
+    --sage: #93a396;
+    --sage-line: #2b3a30;
+    --accent: #57c98d;
+    --accent-soft: #1c3a2c;
+    --copper: #e2a355;
+    --copper-soft: #3a2e1c;
+    --slate: #8fb3cc;
+    --slate-soft: #223342;
+    --danger: #e08674;
+  }
+  :root[data-theme="light"] {
+    --paper: #f5f2ea;
+    --panel: #ffffff;
+    --ink: #1c231e;
+    --sage: #6d7669;
+    --sage-line: #d9d4c6;
+    --accent: #2f6f4e;
+    --accent-soft: #e4ede7;
+    --copper: #b5732a;
+    --copper-soft: #f3e6d4;
+    --slate: #4c6478;
+    --slate-soft: #e3e9ed;
+    --danger: #a3402f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.55;
+  }
+
+  .mono {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  header.page-head {
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--copper);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4vw, 2.5rem);
+    font-weight: 700;
+    margin: 0 0 12px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    max-width: 62ch;
+    color: var(--sage);
+    font-size: 1.05rem;
+    margin: 0;
+  }
+
+  section { margin-top: 56px; }
+  section > h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  section > .section-note {
+    color: var(--sage);
+    max-width: 62ch;
+    margin: 0 0 22px;
+    font-size: 0.96rem;
+  }
+
+  /* ---- materials list ---- */
+  .materials {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .material-card {
+    background: var(--panel);
+    border: 1px solid var(--sage-line);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .material-card .qty {
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: var(--copper);
+    letter-spacing: 0.04em;
+  }
+  .material-card .name {
+    font-weight: 600;
+    margin: 4px 0 6px;
+  }
+  .material-card .note {
+    font-size: 0.88rem;
+    color: var(--sage);
+  }
+
+  /* ---- board stack diagram ---- */
+  .stack {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .stack-board {
+    border-radius: 10px;
+    padding: 16px 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .stack-board .label {
+    font-weight: 700;
+  }
+  .stack-board .sub {
+    font-size: 0.85rem;
+    opacity: 0.85;
+  }
+  .stack-board.hifiberry {
+    background: var(--slate-soft);
+    border: 1px solid var(--slate);
+    color: var(--ink);
+  }
+  .stack-board.custom {
+    background: var(--accent-soft);
+    border: 2px solid var(--accent);
+    color: var(--ink);
+    margin: -1px 12px;
+  }
+  .stack-board.pi {
+    background: var(--panel);
+    border: 1px solid var(--sage-line);
+  }
+  .stack-connector-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 6px 0;
+  }
+  .stack-connector {
+    width: 2px;
+    height: 22px;
+    flex: none;
+    background: repeating-linear-gradient(var(--sage) 0 4px, transparent 4px 8px);
+  }
+  .stack-connector-row .through-label {
+    font-family: ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--sage);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .fanout-note {
+    text-align: center;
+    color: var(--sage);
+    font-size: 0.85rem;
+    margin-top: 18px;
+  }
+
+  /* ---- 40-pin header grid ---- */
+  .header-scroll { overflow-x: auto; padding-bottom: 4px; }
+  .pin-header {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(190px, 1fr));
+    gap: 6px 10px;
+    min-width: 420px;
+    background: var(--panel);
+    border: 1px solid var(--sage-line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .pin {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--cat-color) 14%, var(--panel));
+  }
+  .pin .num {
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--cat-color);
+    text-align: center;
+  }
+  .pin .fn {
+    font-family: ui-monospace, monospace;
+    font-size: 0.82rem;
+    line-height: 1.25;
+  }
+  .pin .fn .use {
+    display: block;
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.72rem;
+    color: var(--sage);
+  }
+  .pin.pwr { --cat-color: var(--copper); }
+  .pin.gnd { --cat-color: var(--sage); }
+  .pin.hifi { --cat-color: var(--slate); }
+  .pin.ours { --cat-color: var(--accent); }
+  .pin.free { --cat-color: var(--sage-line); opacity: 0.75; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 16px;
+    font-size: 0.85rem;
+  }
+  .legend .item { display: flex; align-items: center; gap: 7px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dot); }
+
+  /* ---- connector detail tables ---- */
+  .connectors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+  .connector-card {
+    background: var(--panel);
+    border: 1px solid var(--sage-line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .connector-card h3 {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-bottom: 1px solid var(--sage-line);
+  }
+  table.pinout {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+  table.pinout th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sage);
+    font-weight: 600;
+    padding: 8px 12px 6px;
+  }
+  table.pinout td {
+    padding: 7px 12px;
+    border-top: 1px solid var(--sage-line);
+    font-family: ui-monospace, monospace;
+    overflow-wrap: break-word;
+  }
+  table.pinout td.desc {
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    color: var(--sage);
+    font-size: 0.78rem;
+  }
+
+  .warn {
+    border-left: 3px solid var(--danger);
+    background: color-mix(in srgb, var(--danger) 10%, var(--panel));
+    padding: 10px 16px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9rem;
+    margin-top: 14px;
+  }
+
+  /* ---- build steps ---- */
+  ol.steps {
+    counter-reset: step;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  ol.steps li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 14px;
+    align-items: baseline;
+  }
+  ol.steps li::before {
+    content: counter(step);
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--sage-line);
+    color: var(--sage);
+    font-size: 0.85rem;
+  }
+  footer .mono { color: var(--sage); }
+
+  a { color: var(--accent); }
+</style>
+
+<main>
+  <header class="page-head">
+    <p class="eyebrow">Wiring Reference · OwlBox HAT</p>
+    <h1>Verteiler-Platine: Pi, HiFiBerry, RC522, Taster, Encoder, Display</h1>
+    <p class="lede">
+      Eine Lochraster-HAT, die auf den 40-Pin-Header des Raspberry Pi 3B+ gesteckt wird,
+      den HiFiBerry Amp unverändert durchreicht und alle übrigen Komponenten sauber verkabelt.
+    </p>
+  </header>
+
+  <section>
+    <h2>Bauteile</h2>
+    <p class="section-note">Alles Standardware, keine Sonderanfertigung nötig.</p>
+    <div class="materials">
+      <div class="material-card">
+        <div class="qty">1×</div>
+        <div class="name">Proto-HAT-Lochrasterplatine</div>
+        <div class="note">HAT-Formfaktor mit vorgebohrtem 40-Pin-Footprint + Befestigungslöchern, freies Rasterfeld</div>
+      </div>
+      <div class="material-card">
+        <div class="qty">1×</div>
+        <div class="name">2×20 Stacking-Header (extra hoch)</div>
+        <div class="note">Reicht alle 40 Pins nach oben durch, damit der HiFiBerry weiter aufgesteckt werden kann</div>
+      </div>
+      <div class="material-card">
+        <div class="qty">1×</div>
+        <div class="name">2×20 Buchsenleiste</div>
+        <div class="note">Unterseite der HAT, steckt auf den Pi</div>
+      </div>
+      <div class="material-card">
+        <div class="qty">5×</div>
+        <div class="name">Stiftleisten/JST-Stecker</div>
+        <div class="note">Für RC522 (7-pol.), Taster (2× 2-pol.), Encoder (5-pol.), Display (8-pol.)</div>
+      </div>
+      <div class="material-card">
+        <div class="qty">–</div>
+        <div class="name">Litzendraht + Lötzinn</div>
+        <div class="note">Punkt-zu-Punkt-Verdrahtung auf dem freien Rasterfeld, keine Leiterbahnplanung nötig</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Aufbau als Stapel</h2>
+    <p class="section-note">
+      Der HiFiBerry braucht ebenfalls den vollen Header - deshalb reicht unsere Platine alle
+      40 Pins unverändert nach oben durch und zapft elektrisch nur das an, was sie wirklich braucht.
+    </p>
+    <div class="stack">
+      <div class="stack-board hifiberry">
+        <div class="label">HiFiBerry Amp</div>
+        <div class="sub">steckt oben auf den Stacking-Header, unverändert</div>
+      </div>
+      <div class="stack-connector-row">
+        <div class="stack-connector"></div>
+        <span class="through-label">40-Pin Durchreichung</span>
+      </div>
+      <div class="stack-board custom">
+        <div class="label">Verteiler-Platine (diese HAT)</div>
+        <div class="sub">zapft: SPI-Bus + CE1 (RC522), CE0/DC/RST (Display), GPIO5/6 (Taster), GPIO17/22/27 (Encoder)</div>
+      </div>
+      <div class="stack-connector-row">
+        <div class="stack-connector"></div>
+      </div>
+      <div class="stack-board pi">
+        <div class="label">Raspberry Pi 3B+</div>
+        <div class="sub">40-Pin-GPIO-Header</div>
+      </div>
+    </div>
+    <p class="fanout-note">Von der Verteiler-Platine gehen 5 Steckverbinder seitlich ab → siehe unten</p>
+  </section>
+
+  <section>
+    <h2>40-Pin-Header, komplett</h2>
+    <p class="section-note">
+      Physische Pin-Nummern (nicht BCM) - so wie sie beim Auflöten der Buchsenleiste tatsächlich
+      vor einem liegen. Ungefärbte/blasse Pins bleiben frei.
+    </p>
+    <div class="header-scroll">
+      <div class="pin-header" id="pin-header"></div>
+    </div>
+    <div class="legend">
+      <div class="item"><span class="dot" style="--dot: var(--accent)"></span> von dieser HAT genutzt</div>
+      <div class="item"><span class="dot" style="--dot: var(--slate)"></span> HiFiBerry (nur Durchreichung)</div>
+      <div class="item"><span class="dot" style="--dot: var(--copper)"></span> Stromversorgung</div>
+      <div class="item"><span class="dot" style="--dot: var(--sage)"></span> GND</div>
+      <div class="item"><span class="dot" style="--dot: var(--sage-line)"></span> frei / reserviert</div>
+    </div>
+    <div class="warn">
+      GPIO18/19/20/21 sowie GPIO2/3 gehören dem HiFiBerry (I2S + I2C) - die Platine legt darauf
+      bewusst nichts, auch nicht die Display-Hintergrundbeleuchtung (die geht direkt an einen
+      3.3V-Pin, nicht an GPIO18).
+    </div>
+  </section>
+
+  <section>
+    <h2>Steckverbinder im Detail</h2>
+    <p class="section-note">
+      Was an welchen physischen Header-Pin geht, pro Modul. „Bus“ markiert die drei SPI-Leitungen
+      (SCK/MOSI/MISO), die sich RC522 und Display teilen - getrennt bleiben nur die
+      Chipselect-Leitungen (CE1 bzw. CE0).
+    </p>
+    <div class="connectors" id="connectors"></div>
+  </section>
+
+  <section>
+    <h2>Aufbau-Reihenfolge</h2>
+    <ol class="steps">
+      <li><div class="step-body">2×20-Buchsenleiste auf die Unterseite der Proto-HAT löten (steckt später auf den Pi),
+        den 2×20-Stacking-Header direkt darüber in dieselben Löcher auf die Oberseite.</div></li>
+      <li><div class="step-body">Fünf Stiftleisten/JST-Buchsen an den Rand der Platine löten: RC522 (7-pol.), je einen
+        2-poligen für die beiden Taster, Encoder (5-pol.), Display (8-pol.).</div></li>
+      <li><div class="step-body">Jeden Steckverbinder-Pin per Litzendraht punktweise mit dem passenden Header-Pin verbinden
+        (Tabellen oben) - Drahtführung ist unkritisch, es gibt keine Hochfrequenzsignale außer dem
+        SPI-Bus, der ohnehin kurz bleibt.</div></li>
+      <li><div class="step-body">SPI-Bus-Pins (SCK/MOSI/MISO, physische Pins 23/19/21) sind Sternpunkte: RC522 und Display
+        hängen beide daran, aber mit getrennten CE-Leitungen (CE1 bzw. CE0).</div></li>
+      <li><div class="step-body">Vor dem ersten Einstecken: Durchgangsprüfung mit Multimeter, dass keine zwei Pins der
+        Buchsenleiste versehentlich kurzgeschlossen sind (typischer Lochraster-Fehler).</div></li>
+      <li><div class="step-body">HAT auf den Pi stecken, HiFiBerry oben auf den Stacking-Header, dann RC522/Taster/
+        Encoder/Display an ihre Steckverbinder - Display-Verkabelung selbst siehe
+        <span class="mono">docs/hardware.md</span> im Repo (Touch-Leitungen bewusst nicht verbunden).</div></li>
+    </ol>
+  </section>
+
+  <footer>
+    Ergänzt <span class="mono">docs/hardware.md</span> im OwlBox-Repo - Pin-Zuordnung ist mit der
+    dortigen Konfiguration (<span class="mono">config/config.example.yaml</span>) identisch.
+  </footer>
+</main>
+
+<script>
+  const PINS = [
+    [1, "3V3", "pwr", "Stromversorgung"],
+    [2, "5V", "free", "nicht verwendet (Module sind 3.3V)"],
+    [3, "GPIO2", "hifi", "I2C SDA · HiFiBerry"],
+    [4, "5V", "free", "nicht verwendet"],
+    [5, "GPIO3", "hifi", "I2C SCL · HiFiBerry"],
+    [6, "GND", "gnd", ""],
+    [7, "GPIO4", "free", "frei"],
+    [8, "GPIO14", "free", "frei (TXD)"],
+    [9, "GND", "gnd", ""],
+    [10, "GPIO15", "free", "frei (RXD)"],
+    [11, "GPIO17", "ours", "Encoder CLK"],
+    [12, "GPIO18", "hifi", "I2S BCLK · HiFiBerry"],
+    [13, "GPIO27", "ours", "Encoder DT"],
+    [14, "GND", "gnd", ""],
+    [15, "GPIO22", "ours", "Encoder SW"],
+    [16, "GPIO23", "free", "frei"],
+    [17, "3V3", "pwr", "Stromversorgung"],
+    [18, "GPIO24", "ours", "Display DC"],
+    [19, "GPIO10", "ours", "SPI MOSI (Bus)"],
+    [20, "GND", "gnd", ""],
+    [21, "GPIO9", "ours", "SPI MISO (Bus)"],
+    [22, "GPIO25", "ours", "Display RST"],
+    [23, "GPIO11", "ours", "SPI SCLK (Bus)"],
+    [24, "GPIO8", "ours", "Display CS (CE0)"],
+    [25, "GND", "gnd", ""],
+    [26, "GPIO7", "ours", "RC522 CS (CE1)"],
+    [27, "ID_SD", "free", "reserviert (HAT-EEPROM)"],
+    [28, "ID_SC", "free", "reserviert (HAT-EEPROM)"],
+    [29, "GPIO5", "ours", "Taster Weiter"],
+    [30, "GND", "gnd", ""],
+    [31, "GPIO6", "ours", "Taster Zurück"],
+    [32, "GPIO12", "free", "frei"],
+    [33, "GPIO13", "free", "frei"],
+    [34, "GND", "gnd", ""],
+    [35, "GPIO19", "hifi", "I2S LRCLK · HiFiBerry"],
+    [36, "GPIO16", "free", "frei"],
+    [37, "GPIO26", "ours", "RC522 RST"],
+    [38, "GPIO20", "hifi", "I2S DIN · HiFiBerry"],
+    [39, "GND", "gnd", ""],
+    [40, "GPIO21", "hifi", "I2S DOUT · HiFiBerry"],
+  ];
+
+  const header = document.getElementById("pin-header");
+  // Render as two visual columns matching the physical header (odd left / even right),
+  // interleaved row by row like the real silkscreen.
+  for (let row = 0; row < 20; row++) {
+    const left = PINS[row * 2];
+    const right = PINS[row * 2 + 1];
+    for (const p of [left, right]) {
+      const [num, name, cat, use] = p;
+      const el = document.createElement("div");
+      el.className = `pin ${cat}`;
+      el.innerHTML = `
+        <div class="num">${num}</div>
+        <div class="fn">${name}${use ? `<span class="use">${use}</span>` : ""}</div>
+      `;
+      header.appendChild(el);
+    }
+  }
+
+  const CONNECTORS = [
+    {
+      title: "RC522 (RFID, SPI CE1, 7-polig)",
+      rows: [
+        ["3V3", "Pin 1/17", "nicht 5V!"],
+        ["GND", "beliebig", "z.B. Pin 6"],
+        ["RST", "Pin 37 · GPIO26", ""],
+        ["SDA/CS", "Pin 26 · GPIO7", ""],
+        ["SCK", "Pin 23 · GPIO11", "Bus"],
+        ["MOSI", "Pin 19 · GPIO10", "Bus"],
+        ["MISO", "Pin 21 · GPIO9", "Bus"],
+      ],
+    },
+    {
+      title: "Taster „Weiter“ (2-polig)",
+      rows: [
+        ["A", "Pin 29 · GPIO5", ""],
+        ["B", "Pin 30 · GND", ""],
+      ],
+    },
+    {
+      title: "Taster „Zurück“ (2-polig)",
+      rows: [
+        ["A", "Pin 31 · GPIO6", ""],
+        ["B", "Pin 30 · GND", ""],
+      ],
+    },
+    {
+      title: "Dreh-Encoder KY-040 (5-polig)",
+      rows: [
+        ["CLK", "Pin 11 · GPIO17", ""],
+        ["DT", "Pin 13 · GPIO27", ""],
+        ["SW", "Pin 15 · GPIO22", ""],
+        ["+", "Pin 1/17 · 3V3", ""],
+        ["GND", "Pin 14 · GND", ""],
+      ],
+    },
+    {
+      title: "3.5\" Display (SPI CE0, 8-polig, kein Touch)",
+      rows: [
+        ["VCC", "Pin 17 · 3V3", ""],
+        ["GND", "Pin 20 · GND", ""],
+        ["SCK", "Pin 23 · GPIO11", "Bus"],
+        ["MOSI", "Pin 19 · GPIO10", "Bus"],
+        ["MISO", "Pin 21 · GPIO9", "Bus"],
+        ["CS", "Pin 24 · GPIO8", ""],
+        ["DC", "Pin 18 · GPIO24", ""],
+        ["RST", "Pin 22 · GPIO25", ""],
+      ],
+    },
+  ];
+
+  const connectors = document.getElementById("connectors");
+  for (const conn of CONNECTORS) {
+    const card = document.createElement("div");
+    card.className = "connector-card";
+    const rows = conn.rows
+      .map(
+        ([modulePin, target, note]) => `
+        <tr>
+          <td>${modulePin}</td>
+          <td>${target}</td>
+          <td class="desc">${note}</td>
+        </tr>`
+      )
+      .join("");
+    card.innerHTML = `
+      <h3>${conn.title}</h3>
+      <table class="pinout">
+        <colgroup><col style="width:22%"><col style="width:56%"><col style="width:22%"></colgroup>
+        <thead><tr><th>Modul</th><th>HAT-Pin · BCM</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    connectors.appendChild(card);
+  }
+</script>

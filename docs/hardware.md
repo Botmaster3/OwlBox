@@ -16,6 +16,11 @@ Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 `config/config.example.yaml`. Wer andere Pins verdrahtet, passt einfach die
 `gpio:`/`rfid:` Sektion in `config/config.yaml` an.
 
+**Verteiler-Platine**: `docs/hat-wiring.html` (im Browser öffnen) zeigt den
+kompletten Schaltplan als Lochraster-HAT - inkl. 40-Pin-Belegung, Stapelaufbau
+mit HiFiBerry-Durchreichung und Steckverbinder-Pinouts pro Modul. Die
+Pin-Zuordnung dort ist identisch mit den Tabellen unten.
+
 ## Woran die Identifikation hängt
 
 480×320px, Stylus im Lieferumfang, 26-Pin-Anschluss und der (leicht
