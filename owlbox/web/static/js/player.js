@@ -21,12 +21,33 @@
   const brightnessOsdFill = document.getElementById("brightness-osd-fill");
   const wifiFill = document.getElementById("wifi-fill");
   const wifiLabel = document.getElementById("wifi-label");
+  const vuBars = document.querySelectorAll("#vu-meter .vu-bar");
 
   let lastCoverUrl = null;
   let parentModeActive = false;
   let hasScannedTag = false;
   let lastBrightness = null;
   let brightnessOsdTimer = null;
+  let vuTimer = null;
+
+  // Decorative "is audio playing" animation, not a real audio-level analysis -
+  // mpv doesn't expose one over the IPC socket we already talk to it through.
+  function setVuPlaying(playing) {
+    if (playing) {
+      if (vuTimer) return;
+      vuTimer = setInterval(() => {
+        vuBars.forEach((bar) => {
+          bar.style.height = `${12 + Math.random() * 85}%`;
+        });
+      }, 130);
+    } else if (vuTimer) {
+      clearInterval(vuTimer);
+      vuTimer = null;
+      vuBars.forEach((bar) => {
+        bar.style.height = "12%";
+      });
+    }
+  }
 
   // Fill percentage of a value relative to a [min, max] range, e.g. how full
   // the brightness/volume bar should look given the configured limits rather
@@ -164,6 +185,7 @@
 
     volumeFill.style.width = `${relativePercent(player.volume || 0, 0, settings.max_volume || 100)}%`;
     applyWifi(state.wifi);
+    setVuPlaying(!!player.playing);
 
     unknownBanner.hidden = !state.unknown_tag;
 

@@ -121,6 +121,23 @@ body.kiosk { height: 100vh; overflow: hidden; }
 .volume-row { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; }
 .volume-fill { background: var(--text-dim); }
 
+/* Slimmer than the volume bar it's otherwise styled like - reception is a
+   secondary, glanceable readout rather than a primary control. */
+.wifi-row .progress-bar { height: 4px; border-radius: 2px; }
+
+/* Decorative "is audio playing" animation, dancing while playback is active
+   and resting flat otherwise - not a real audio-level analysis. */
+.vu-meter { display: flex; align-items: flex-end; gap: 4px; height: 28px; }
+.vu-bar {
+  flex: 1;
+  max-width: 10px;
+  height: 12%;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  opacity: 0.85;
+  transition: height 0.12s ease-out;
+}
+
 .banner {
   position: absolute;
   left: 0; right: 0; bottom: 2vh;
@@ -276,10 +293,12 @@ body.kiosk { height: 100vh; overflow: hidden; }
   -webkit-box-orient: vertical;
 }
 .now-playing-track { color: var(--text-dim); font-size: clamp(1rem, 2vw, 1.3rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.now-playing .progress-row, .now-playing .volume-row, .now-playing .control-buttons, .now-playing .field {
+.now-playing .progress-row, .now-playing .volume-row, .now-playing .control-buttons, .now-playing .field,
+.now-playing .vu-meter {
   max-width: 640px;
 }
 .now-playing .progress-bar { height: 10px; }
+.now-playing .wifi-row .progress-bar { height: 4px; }
 
 .control-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
 .control-buttons .btn { font-size: 1.1rem; padding: 10px 18px; }

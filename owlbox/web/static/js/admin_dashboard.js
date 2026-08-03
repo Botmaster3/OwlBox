@@ -20,9 +20,30 @@
   const npBrightnessValue = document.getElementById("np-brightness-value");
   const npWifiFill = document.getElementById("np-wifi-fill");
   const npWifiLabel = document.getElementById("np-wifi-label");
+  const npVuBars = document.querySelectorAll("#np-vu-meter .vu-bar");
   let lastCoverUrl = null;
   let volumeSliderBeingDragged = false;
   let brightnessSliderBeingDragged = false;
+  let vuTimer = null;
+
+  // Decorative "is audio playing" animation, not a real audio-level analysis -
+  // mpv doesn't expose one over the IPC socket we already talk to it through.
+  function setVuPlaying(playing) {
+    if (playing) {
+      if (vuTimer) return;
+      vuTimer = setInterval(() => {
+        npVuBars.forEach((bar) => {
+          bar.style.height = `${12 + Math.random() * 85}%`;
+        });
+      }, 130);
+    } else if (vuTimer) {
+      clearInterval(vuTimer);
+      vuTimer = null;
+      npVuBars.forEach((bar) => {
+        bar.style.height = "12%";
+      });
+    }
+  }
 
   async function postJson(url, body) {
     await fetch(url, {
@@ -149,6 +170,7 @@
     npTimeDur.textContent = formatTime(duration);
     npProgressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
     applyWifi(state.wifi);
+    setVuPlaying(!!player.playing);
 
     if (!volumeSliderBeingDragged) {
       npVolumeInput.value = player.volume || 0;
