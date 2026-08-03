@@ -23,13 +23,14 @@ den Pi geladen und einem Chip zugewiesen.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
   Kapitel-/Track-Titel, Fortschritt, Lautstärke) - kein Touch, Bedienung
   läuft ausschließlich über Taster/Encoder/Funktions-Chips (siehe docs/hardware.md).
-  Helligkeit regelbar (Einstellungen) und dimmt automatisch nach 5 Minuten
-  Inaktivität bzw. sofort bei laufendem Einschlaf-Timer - braucht dafür die
-  optionale Backlight-Verkabelung per Software-PWM statt fest an 3.3V.
+  Helligkeit ausschließlich manuell regelbar (Regler unter Einstellungen oder
+  ein zweiter Dreh-Encoder am Gerät) - kein automatisches Dimmen; braucht dafür
+  die optionale Backlight-Verkabelung per Software-PWM statt fest an 3.3V.
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,
-  lang drücken = herunterfahren).
+  lang drücken = herunterfahren) + optionaler zweiter Dreh-Encoder (drehen =
+  Helligkeit, nur zusammen mit dimmbarem Backlight).
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - reine "Jetzt läuft"-Anzeige (groß, wie auf dem Display), die erste Seite nach dem Login.
@@ -127,6 +128,7 @@ ausführlich in [docs/hardware.md](docs/hardware.md).
 | Encoder drehen                   | Lautstärke rauf/runter                      |
 | Encoder drücken                  | Play/Pause                                  |
 | Encoder lang drücken (4s)        | Pi sicher herunterfahren                    |
+| Zweiter Encoder drehen (optional) | Helligkeit rauf/runter                      |
 
 ## Konfiguration
 

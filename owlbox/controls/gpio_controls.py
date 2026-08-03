@@ -11,8 +11,9 @@ _HOLD_DISABLED = 1e9
 
 
 class GpioControls:
-    """Two push buttons (next/prev) plus a rotary encoder with a push switch
-    (volume +/- on rotate, play/pause on click, optional long-press shutdown)."""
+    """Two push buttons (next/prev) plus two rotary encoders: one with a push switch
+    for volume (rotate = volume +/-, click = play/pause, optional long-press shutdown),
+    and a plain one dedicated to display brightness."""
 
     def __init__(
         self,
@@ -22,6 +23,7 @@ class GpioControls:
         on_toggle_pause: Callable[[], None],
         on_volume_delta: Callable[[int], None],
         on_seek: Callable[[float], None],
+        on_brightness_delta: Callable[[int], None],
         on_shutdown: Optional[Callable[[], None]] = None,
     ):
         from gpiozero import Button, RotaryEncoder
@@ -31,6 +33,7 @@ class GpioControls:
         self._on_toggle_pause = on_toggle_pause
         self._on_volume_delta = on_volume_delta
         self._on_seek = on_seek
+        self._on_brightness_delta = on_brightness_delta
         self._on_shutdown = on_shutdown
         self._long_press_triggered = False
         self._seek_step_seconds = gpio_config.seek_step_seconds
@@ -70,6 +73,15 @@ class GpioControls:
         )
         self._encoder.when_rotated_clockwise = lambda: self._safe(self._on_volume_delta, 1)
         self._encoder.when_rotated_counter_clockwise = lambda: self._safe(self._on_volume_delta, -1)
+
+        self._brightness_encoder = RotaryEncoder(
+            gpio_config.brightness_encoder_clk,
+            gpio_config.brightness_encoder_dt,
+            max_steps=0,
+            bounce_time=gpio_config.bounce_time,
+        )
+        self._brightness_encoder.when_rotated_clockwise = lambda: self._safe(self._on_brightness_delta, 1)
+        self._brightness_encoder.when_rotated_counter_clockwise = lambda: self._safe(self._on_brightness_delta, -1)
 
         shutdown_after = gpio_config.shutdown_hold_seconds
         hold_time = shutdown_after if shutdown_after and shutdown_after > 0 else _HOLD_DISABLED
@@ -119,7 +131,13 @@ class GpioControls:
             self._safe(self._on_shutdown)
 
     def close(self) -> None:
-        for device in (self._btn_next, self._btn_prev, self._encoder, self._encoder_button):
+        for device in (
+            self._btn_next,
+            self._btn_prev,
+            self._encoder,
+            self._encoder_button,
+            self._brightness_encoder,
+        ):
             try:
                 device.close()
             except Exception:

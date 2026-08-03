@@ -57,15 +57,12 @@ class GpioConfig:
     # backlight is still hardwired straight to 3.3V (its original, non-dimmable
     # default) rather than rewired to this GPIO through a driver transistor.
     backlight_pin: Optional[int] = None
-
-
-@dataclass
-class DisplayConfig:
-    # Brightness to fall back to once dimmed (percent, 0-100).
-    dim_brightness_percent: int = 20
-    # Idle time (no RFID/button/web activity) before auto-dimming, when no
-    # sleep timer is running. A running sleep timer dims immediately instead.
-    dim_after_seconds: float = 300
+    # Second rotary encoder, dedicated to brightness (only meaningful together
+    # with backlight_pin above) - same KY-040 wiring pattern as the volume encoder.
+    brightness_encoder_clk: int = 23
+    brightness_encoder_dt: int = 12
+    # Brightness change (percent) per encoder detent.
+    brightness_step: int = 5
 
 
 @dataclass
@@ -89,7 +86,6 @@ class Config:
     rfid: RfidConfig = field(default_factory=RfidConfig)
     gpio: GpioConfig = field(default_factory=GpioConfig)
     playback: PlaybackConfig = field(default_factory=PlaybackConfig)
-    display: DisplayConfig = field(default_factory=DisplayConfig)
 
     @property
     def media_dir(self) -> Path:
@@ -144,6 +140,5 @@ def load_config(path: str | Path | None = None) -> Config:
         rfid=_section(RfidConfig, data.get("rfid", {})),
         gpio=_section(GpioConfig, data.get("gpio", {})),
         playback=_section(PlaybackConfig, data.get("playback", {})),
-        display=_section(DisplayConfig, data.get("display", {})),
     )
     return cfg
