@@ -120,6 +120,8 @@ body.kiosk { height: 100vh; overflow: hidden; }
   background: var(--bg);
   overflow: hidden;
 }
+.progress-bar.seekable { cursor: pointer; }
+.progress-bar.seekable:hover { height: 12px; margin: -2px 0; }
 /* Only inside a *row* flex container (progress/volume sliders) should the bar
    grow along the main axis - `flex: 1` as the default collapsed .field's (a
    *column* container, e.g. the Info page's disk/memory/CPU gauges) bars to

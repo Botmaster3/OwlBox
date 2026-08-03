@@ -39,6 +39,8 @@ den Pi geladen und einem Chip zugewiesen.
   - **Home** - "Jetzt läuft"-Anzeige (groß, wie auf dem Display, inkl. WLAN-Empfang) als erste
     Seite nach dem Login, zusätzlich als Fernbedienung nutzbar: Zurück/Play-Pause/Weiter sowie
     Lautstärke- und Helligkeits-Regler direkt bedienbar, ohne den echten Taster/Encoder anzufassen.
+    Fortschrittsanzeige zeigt links die bereits gespielte und rechts die verbleibende Zeit,
+    ein Klick auf die Leiste spult direkt zur angeklickten Stelle im Track.
   - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle/Repeat, Track-Reihenfolge, löschen;
     Hörstatistik (Wiedergaben insgesamt, Gesamt-Hördauer, Meistgehört-Liste, pro Geschichte/Ordner/Livestream
     wie oft und wie lange gehört sowie zuletzt gespielt).

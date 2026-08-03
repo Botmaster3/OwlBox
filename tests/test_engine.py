@@ -158,6 +158,31 @@ def test_manual_seek_is_relative_and_does_not_change_track(config):
         engine.stop()
 
 
+def test_manual_seek_to_jumps_to_an_absolute_position(config):
+    config.rfid.poll_interval = 0.01
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+
+        # This is what clicking the progress bar drives (see admin_dashboard.js) -
+        # an absolute position, unlike the relative manual_seek used by holding
+        # next/prev.
+        engine.manual_seek_to(42)
+        assert engine.get_state()["player"]["time_pos"] == 42.0
+
+        engine.manual_seek_to(5)
+        assert engine.get_state()["player"]["time_pos"] == 5.0
+
+        engine.manual_seek_to(-10)
+        assert engine.get_state()["player"]["time_pos"] == 0.0
+    finally:
+        engine.stop()
+
+
 def test_function_tag_toggles_pause_without_being_treated_as_unknown(config):
     config.rfid.poll_interval = 0.01
     repository.set_function_tag("PAUSECARD", "toggle_pause")

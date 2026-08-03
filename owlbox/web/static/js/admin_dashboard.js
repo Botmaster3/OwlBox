@@ -4,8 +4,9 @@
   const npTitle = document.getElementById("np-title");
   const npTrack = document.getElementById("np-track");
   const npTimePos = document.getElementById("np-time-pos");
-  const npTimeDur = document.getElementById("np-time-dur");
+  const npTimeRemaining = document.getElementById("np-time-remaining");
   const npProgressRow = document.getElementById("np-progress-row");
+  const npProgressBar = document.getElementById("np-progress-bar");
   const npProgressFill = document.getElementById("np-progress-fill");
   const npUpcoming = document.getElementById("np-upcoming");
   const npUpcomingList = document.getElementById("np-upcoming-list");
@@ -25,6 +26,7 @@
   let volumeSliderBeingDragged = false;
   let brightnessSliderBeingDragged = false;
   let vuTimer = null;
+  let lastDuration = 0;
 
   // Decorative "is audio playing" animation, not a real audio-level analysis -
   // mpv doesn't expose one over the IPC socket we already talk to it through.
@@ -56,6 +58,18 @@
   npBtnPrev.addEventListener("click", () => fetch("/api/control/prev", { method: "POST" }));
   npBtnToggle.addEventListener("click", () => fetch("/api/control/toggle", { method: "POST" }));
   npBtnNext.addEventListener("click", () => fetch("/api/control/next", { method: "POST" }));
+
+  npProgressBar.addEventListener("click", (event) => {
+    if (lastDuration <= 0) return;
+    const rect = npProgressBar.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const seconds = ratio * lastDuration;
+    // Reflect the new position immediately instead of waiting for the next poll tick.
+    npProgressFill.style.width = `${ratio * 100}%`;
+    npTimePos.textContent = formatTime(seconds);
+    npTimeRemaining.textContent = `-${formatTime(lastDuration - seconds)}`;
+    postJson("/api/control/seek", { seconds });
+  });
 
   npVolumeInput.addEventListener("input", () => {
     volumeSliderBeingDragged = true;
@@ -172,8 +186,9 @@
 
     const timePos = player.time_pos || 0;
     const duration = player.duration || 0;
+    lastDuration = duration;
     npTimePos.textContent = formatTime(timePos);
-    npTimeDur.textContent = formatTime(duration);
+    npTimeRemaining.textContent = `-${formatTime(duration - timePos)}`;
     npProgressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
     applyWifi(state.wifi);
     setVuPlaying(!!player.playing);

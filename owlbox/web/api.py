@@ -95,6 +95,17 @@ def control_volume():
     return jsonify({"ok": True})
 
 
+@api_bp.route("/control/seek", methods=["POST"])
+def control_seek():
+    data = request.get_json(silent=True) or {}
+    try:
+        seconds = float(data["seconds"])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"error": "expected number 'seconds'"}), 400
+    _engine().manual_seek_to(seconds)
+    return jsonify({"ok": True})
+
+
 # -- library ------------------------------------------------------------
 
 

@@ -316,6 +316,11 @@ class Engine:
             return
         self._player.seek(delta_seconds, absolute=False)
 
+    def manual_seek_to(self, seconds: float) -> None:
+        if self._is_streaming():
+            return
+        self._player.seek(max(0, seconds), absolute=True)
+
     def manual_play(self) -> None:
         self._player.play()
 
