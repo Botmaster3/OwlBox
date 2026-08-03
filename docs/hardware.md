@@ -29,14 +29,16 @@ Zielgerät pro Pin - gedacht als Bauvorlage für eine per Kabel angeschlossene
 Adapter-Platine (Pi + HiFiBerry bleiben gestapelt, alle übrigen Komponenten
 hängen an der Adapter-Platine).
 
+**Layout-Vorschlag für die Adapter-Platine**: `docs/owlbox-adapter-layout.svg`
+zeigt, wie die Steckverbinder auf der Platine selbst angeordnet werden können -
+IDC-Buchsenleiste an einer Kante (Richtung Pi/HiFiBerry), die übrigen sechs
+Anschlüsse jeweils zur Seite ihres Zielbauteils im Gehäuse ausgerichtet, plus
+eine gemeinsame GND-/3.3V-Schiene statt einzelner Rückführungen zum Kabel.
+
 **Verteiler-Platine**: `docs/hat-wiring.html` (im Browser öffnen) zeigt den
-kompletten Schaltplan als Lochraster-HAT - inkl. 40-Pin-Belegung, Stapelaufbau
-mit HiFiBerry-Durchreichung und Steckverbinder-Pinouts pro Modul. Die
-Pin-Zuordnung dort ist identisch mit den Tabellen unten. **Achtung:** diese
-Seite geht noch davon aus, dass die Verteiler-Platine selbst als HAT direkt
-auf den Pi gesteckt wird (mit Durchreichung für den HiFiBerry) - falls die
-Adapter-Platine stattdessen per Kabel angebunden wird (s.o.), ist nur die
-Pin-Zuordnung dort noch relevant, nicht der Stapelaufbau.
+kompletten Schaltplan inkl. 40-Pin-Belegung und Steckverbinder-Pinouts pro
+Modul - Kabel-Konzept wie oben, kein Stapelaufbau der Adapter-Platine selbst.
+Die Pin-Zuordnung dort ist identisch mit den Tabellen unten.
 
 ## Woran die Identifikation hängt
 
