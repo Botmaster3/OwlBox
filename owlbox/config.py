@@ -72,6 +72,19 @@ class PlaybackConfig:
 
 
 @dataclass
+class NetworkConfig:
+    # Recovery hotspot (see docs/hardware.md) - shown on the kiosk display and admin
+    # Home whenever it's active, so it doesn't need to be memorized in advance.
+    hotspot_ssid: str = "OwlBox-Setup"
+    hotspot_password: str = "owlbox-setup"
+    # How long WiFi has to be enabled-but-disconnected before the hotspot kicks in.
+    hotspot_after_seconds: float = 60
+    # While the hotspot is up, how often to briefly check whether a known network
+    # has come back into range.
+    hotspot_retry_interval_seconds: float = 120
+
+
+@dataclass
 class PathsConfig:
     media_dir: str = "media"
     database: str = "data/owlbox.db"
@@ -86,6 +99,7 @@ class Config:
     rfid: RfidConfig = field(default_factory=RfidConfig)
     gpio: GpioConfig = field(default_factory=GpioConfig)
     playback: PlaybackConfig = field(default_factory=PlaybackConfig)
+    network: NetworkConfig = field(default_factory=NetworkConfig)
 
     @property
     def media_dir(self) -> Path:
@@ -140,5 +154,6 @@ def load_config(path: str | Path | None = None) -> Config:
         rfid=_section(RfidConfig, data.get("rfid", {})),
         gpio=_section(GpioConfig, data.get("gpio", {})),
         playback=_section(PlaybackConfig, data.get("playback", {})),
+        network=_section(NetworkConfig, data.get("network", {})),
     )
     return cfg

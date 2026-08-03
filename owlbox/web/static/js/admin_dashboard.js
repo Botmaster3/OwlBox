@@ -21,6 +21,10 @@
   const npBrightnessValue = document.getElementById("np-brightness-value");
   const npWifiBars = document.querySelectorAll("#np-wifi-bars .wifi-bar");
   const npWifiLabel = document.getElementById("np-wifi-label");
+  const hotspotBanner = document.getElementById("hotspot-banner");
+  const hotspotSsidEl = document.getElementById("hotspot-ssid");
+  const hotspotPasswordEl = document.getElementById("hotspot-password");
+  const hotspotUrlEl = document.getElementById("hotspot-url");
   const npVuBars = document.querySelectorAll("#np-vu-meter .vu-bar");
   let lastCoverUrl = null;
   let volumeSliderBeingDragged = false;
@@ -139,6 +143,19 @@
     }
   }
 
+  function applyHotspotBanner(wifi) {
+    wifi = wifi || {};
+    if (!wifi.hotspot_active) {
+      hotspotBanner.hidden = true;
+      return;
+    }
+    hotspotSsidEl.textContent = wifi.hotspot_ssid;
+    hotspotPasswordEl.textContent = wifi.hotspot_password;
+    const port = window.location.port ? `:${window.location.port}` : "";
+    hotspotUrlEl.textContent = `http://${wifi.hotspot_ip}${port}/admin`;
+    hotspotBanner.hidden = false;
+  }
+
   function formatTime(seconds) {
     seconds = Math.max(0, Math.floor(seconds || 0));
     const m = Math.floor(seconds / 60);
@@ -191,6 +208,7 @@
     npTimeRemaining.textContent = `-${formatTime(duration - timePos)}`;
     npProgressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
     applyWifi(state.wifi);
+    applyHotspotBanner(state.wifi);
     setVuPlaying(!!player.playing);
 
     if (!volumeSliderBeingDragged) {

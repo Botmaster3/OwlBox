@@ -55,6 +55,27 @@ body.kiosk { height: 100vh; overflow: hidden; }
   z-index: 90;
 }
 
+/* Recovery-hotspot notice - shown across splash/parent-mode/now-playing alike
+   whenever no real WiFi has been reachable for a while (see docs/hardware.md),
+   so the credentials to join it are never hidden behind whatever else the
+   kiosk happens to be showing. Replaces the small WLAN status-bar for the
+   duration, since it already covers that information plus what to do about it. */
+.hotspot-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 95;
+  background: var(--status-warn);
+  color: #201400;
+  padding: 1.2vh 3vw;
+  text-align: center;
+  font-weight: 700;
+  font-size: clamp(0.8rem, 3vw, 1.05rem);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.hotspot-banner .hotspot-hint { font-weight: 500; font-size: 0.85em; margin-top: 2px; }
+
 .player {
   display: flex;
   align-items: center;
@@ -402,6 +423,18 @@ a.btn { display: inline-block; text-decoration: none; }
 
 .banner-info { background: var(--panel); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
 .hint { color: var(--text-dim); font-size: 0.85rem; }
+
+/* Recovery-hotspot notice on admin pages - same info/urgency as the kiosk's
+   .hotspot-banner, just laid out as a normal page block instead of fixed. */
+.hotspot-notice {
+  background: var(--status-warn);
+  color: #201400;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+.hotspot-notice .hotspot-hint { font-weight: 500; font-size: 0.85em; margin-top: 4px; }
 
 .info-grid { display: grid; grid-template-columns: max-content 1fr; gap: 8px 20px; margin: 0; }
 .info-grid dt { color: var(--text-dim); font-size: 0.85rem; }

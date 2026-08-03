@@ -89,6 +89,14 @@ class Engine:
         self._wifi_signal: Optional[int] = None
         self._last_wifi_check: Optional[float] = None
 
+        # Fallback hotspot state machine (see _check_wifi_fallback) - kicks in once
+        # WiFi has been enabled-but-disconnected for a while, so the box is never
+        # fully unreachable just because the configured network moved/changed.
+        self._hotspot_active = False
+        self._hotspot_ip: Optional[str] = None
+        self._wifi_disconnected_since: Optional[float] = None
+        self._last_hotspot_retry: Optional[float] = None
+
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
 
@@ -268,6 +276,74 @@ class Engine:
         with self._lock:
             self._wifi_enabled = status["enabled"]
             self._wifi_signal = status["signal"] if status["connected_ssid"] else None
+        self._check_wifi_fallback(now, status)
+
+    def _check_wifi_fallback(self, now: float, status: dict) -> None:
+        """Starts a recovery hotspot once WiFi has been enabled-but-disconnected for
+        longer than config.network.hotspot_after_seconds, so the box stays reachable
+        even if its configured network moves, changes password, or disappears - see
+        docs/hardware.md. Stops it again as soon as either a real connection comes
+        back or a periodic retry manages to reconnect to a remembered network.
+        """
+        cfg = self._config.network
+
+        if not status["enabled"]:
+            # User explicitly turned WiFi off - respect that instead of fighting it.
+            with self._lock:
+                was_active = self._hotspot_active
+                self._hotspot_active = False
+                self._wifi_disconnected_since = None
+                self._last_hotspot_retry = None
+            if was_active:
+                network.stop_hotspot()
+            return
+
+        if status["connected_ssid"]:
+            with self._lock:
+                was_active = self._hotspot_active
+                self._hotspot_active = False
+                self._wifi_disconnected_since = None
+                self._last_hotspot_retry = None
+            if was_active:
+                logger.info("wifi reconnected (%s), stopping fallback hotspot", status["connected_ssid"])
+                network.stop_hotspot()
+            return
+
+        with self._lock:
+            hotspot_active = self._hotspot_active
+            should_retry = hotspot_active and (
+                self._last_hotspot_retry is None or now - self._last_hotspot_retry >= cfg.hotspot_retry_interval_seconds
+            )
+            if should_retry:
+                self._last_hotspot_retry = now
+            if not hotspot_active and self._wifi_disconnected_since is None:
+                self._wifi_disconnected_since = now
+            should_start = (
+                not hotspot_active
+                and self._wifi_disconnected_since is not None
+                and now - self._wifi_disconnected_since >= cfg.hotspot_after_seconds
+            )
+
+        if should_retry:
+            logger.info("fallback hotspot active, checking for a known network back in range")
+            if network.try_reconnect_known_networks():
+                logger.info("reconnected to a known network, stopping fallback hotspot")
+                network.stop_hotspot()
+                with self._lock:
+                    self._hotspot_active = False
+                    self._last_hotspot_retry = None
+        elif should_start:
+            logger.warning(
+                "no wifi connection for %.0fs, starting fallback hotspot '%s'",
+                cfg.hotspot_after_seconds,
+                cfg.hotspot_ssid,
+            )
+            if network.start_hotspot(cfg.hotspot_ssid, cfg.hotspot_password):
+                hotspot_ip = network.get_hotspot_ip()
+                with self._lock:
+                    self._hotspot_active = True
+                    self._hotspot_ip = hotspot_ip
+                    self._last_hotspot_retry = now
 
     def _persist_position_locked(self) -> None:
         if self._current_uid is None or self._current_story is None:
@@ -482,6 +558,8 @@ class Engine:
             brightness_step = self._brightness_step
             wifi_enabled = self._wifi_enabled
             wifi_signal = self._wifi_signal
+            hotspot_active = self._hotspot_active
+            hotspot_ip = self._hotspot_ip
         status = self._player.get_status()
 
         sleep_timer_remaining = None
@@ -533,6 +611,13 @@ class Engine:
                 "minutes": sleep_timer_minutes,
                 "remaining_seconds": sleep_timer_remaining,
             },
-            "wifi": {"enabled": wifi_enabled, "signal": wifi_signal},
+            "wifi": {
+                "enabled": wifi_enabled,
+                "signal": wifi_signal,
+                "hotspot_active": hotspot_active,
+                "hotspot_ssid": self._config.network.hotspot_ssid if hotspot_active else None,
+                "hotspot_password": self._config.network.hotspot_password if hotspot_active else None,
+                "hotspot_ip": hotspot_ip if hotspot_active else None,
+            },
             "parent_mode": {"active": parent_label is not None, "label": parent_label},
         }

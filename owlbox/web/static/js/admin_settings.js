@@ -203,9 +203,29 @@
   const wifiPassword = document.getElementById("wifi-password");
   const wifiConnectBtn = document.getElementById("wifi-connect-btn");
   const wifiConnectStatus = document.getElementById("wifi-connect-status");
+  const hotspotBanner = document.getElementById("hotspot-banner");
+  const hotspotSsidEl = document.getElementById("hotspot-ssid");
+  const hotspotPasswordEl = document.getElementById("hotspot-password");
+  const hotspotUrlEl = document.getElementById("hotspot-url");
 
   let wifiEnabled = true;
   let selectedSsid = null;
+
+  // The recovery hotspot's state lives on the engine (see engine.py), not in
+  // network.get_status() - fed from the state poll below instead of a
+  // separate fetch loop.
+  function applyHotspotBanner(wifi) {
+    wifi = wifi || {};
+    if (!wifi.hotspot_active) {
+      hotspotBanner.hidden = true;
+      return;
+    }
+    hotspotSsidEl.textContent = wifi.hotspot_ssid;
+    hotspotPasswordEl.textContent = wifi.hotspot_password;
+    const port = window.location.port ? `:${window.location.port}` : "";
+    hotspotUrlEl.textContent = `http://${wifi.hotspot_ip}${port}/admin`;
+    hotspotBanner.hidden = false;
+  }
 
   async function refreshWifiStatus() {
     try {
@@ -324,6 +344,8 @@
         currentBrightnessInput.value = state.settings.brightness;
         currentBrightnessValue.textContent = state.settings.brightness;
       }
+
+      applyHotspotBanner(state.wifi);
 
       if (state.sleep_timer.active) {
         sleepTimerStatus.textContent = `Noch ${formatMinutesSeconds(state.sleep_timer.remaining_seconds)} bis zur Pause.`;

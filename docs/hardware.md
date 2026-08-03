@@ -247,6 +247,37 @@ passwortloses sudo dafür, z.B. in `/etc/sudoers.d/owlbox`:
 owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli
 ```
 
+## Fallback-Hotspot (WLAN-Recovery)
+
+Ist WLAN eingeschaltet, aber für `network.hotspot_after_seconds` (Standard
+60s) mit keinem Netzwerk verbunden - z.B. weil das Heimnetz sein Passwort
+geändert hat oder der Pi an einen neuen Ort umgezogen ist - macht der Pi
+automatisch seinen eigenen Access Point auf (`nmcli device wifi hotspot`),
+statt komplett unerreichbar zu bleiben. SSID und Passwort (aus
+`config.yaml` unter `network:`, Standard `OwlBox-Setup` /
+`owlbox-setup`) werden dafür auf dem Kiosk-Display (Banner oben) und im
+Admin-Bereich (Home und Einstellungen → WLAN) angezeigt, inklusive der
+URL, unter der die Einstellungen-Seite dann im Hotspot erreichbar ist
+(normalerweise `http://10.42.0.1:5000/admin` - NetworkManagers
+Standard-Adresse für einen geteilten Access Point).
+
+Ablauf: mit einem Laptop/Handy in dieses WLAN einwählen, die angezeigte
+URL öffnen, unter Einstellungen → WLAN das eigentliche Netzwerk
+auswählen/verbinden. Sobald das klappt, beendet der Pi den Hotspot von
+selbst wieder. Solange keine echte Verbindung zustande kommt, prüft er
+außerdem alle `network.hotspot_retry_interval_seconds` (Standard 120s)
+kurz, ob ein bereits bekanntes Netzwerk wieder in Reichweite ist, und
+schaltet dann automatisch zurück.
+
+Das WLAN-Radio explizit auszuschalten (Einstellungen oder
+"WLAN aus"-Funktions-Chip) wird respektiert - der Hotspot startet dann
+nicht automatisch.
+
+**Sicherheitshinweis**: Das Standardpasswort `owlbox-setup` steht so im
+Repo und ist damit öffentlich bekannt - für den Einsatz in einer Umgebung,
+in der Fremde in Funkreichweite kommen könnten, unbedingt in
+`config.yaml` ein eigenes Passwort setzen.
+
 ## 3.5" SPI-Display: Treiber (ohne Touch)
 
 Diese Board-Familie (tft35a/MHS-35) funktioniert **nicht** über einen

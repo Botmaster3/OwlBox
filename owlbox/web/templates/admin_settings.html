@@ -95,6 +95,14 @@
 
   <div class="card">
     <h2>WLAN</h2>
+    <div id="hotspot-banner" class="hotspot-notice" hidden>
+      📡 Setup-Hotspot aktiv &ndash; WLAN <strong id="hotspot-ssid"></strong> &middot;
+      Passwort <strong id="hotspot-password"></strong>
+      <div class="hotspot-hint">
+        Mit einem Gerät verbinden, dann <span id="hotspot-url"></span> öffnen, um das
+        echte WLAN einzurichten.
+      </div>
+    </div>
     <p class="hint" id="wifi-status">Lädt…</p>
     <button class="btn secondary" id="wifi-toggle-btn" type="button"></button>
     <button class="btn secondary" id="wifi-scan-btn" type="button">Netzwerke suchen</button>

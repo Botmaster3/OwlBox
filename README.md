@@ -60,6 +60,12 @@ den Pi geladen und einem Chip zugewiesen.
   Beim ersten Besuch führt ein Einrichtungsassistent durchs Anlegen des
   Admin-Kontos. Die Now-Playing-Anzeige (`/`) für den Touchscreen selbst
   bleibt bewusst ohne Login, da das Display keine Tastatur hat.
+- **Fallback-Hotspot bei WLAN-Ausfall**: ist WLAN an, aber eine Weile mit
+  keinem Netzwerk verbunden, macht der Pi automatisch seinen eigenen
+  Access Point auf (SSID/Passwort werden auf Kiosk-Display und im
+  Admin-Bereich angezeigt) - damit einwählen und die echten WLAN-Zugangsdaten
+  unter Einstellungen neu setzen, ganz ohne Monitor/Tastatur am Pi (siehe
+  docs/hardware.md).
 - **Eltern-Modus mit QR-Login**: legt ein Elternteil seinen Chip auf, zeigt das
   Display statt der Now-Playing-Anzeige einen QR-Code zur Login-Seite - per
   Handy scannen und einloggen, ohne dass Kinder je einen QR-Code oder eine

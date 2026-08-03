@@ -4,6 +4,15 @@
 <div class="admin" id="app">
   {% include "_admin_nav.html" %}
 
+  <div id="hotspot-banner" class="hotspot-notice" hidden>
+    📡 Setup-Hotspot aktiv &ndash; WLAN <strong id="hotspot-ssid"></strong> &middot;
+    Passwort <strong id="hotspot-password"></strong>
+    <div class="hotspot-hint">
+      Mit einem Gerät verbinden, dann <span id="hotspot-url"></span> öffnen und unter
+      Einstellungen → WLAN das echte Netzwerk einrichten.
+    </div>
+  </div>
+
   <div class="card now-playing" id="now-playing">
     <div class="wifi-indicator" id="wifi-indicator">
       <div class="wifi-bars" id="np-wifi-bars">

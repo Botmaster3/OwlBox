@@ -16,6 +16,16 @@ from typing import Optional
 
 logger = logging.getLogger("owlbox.network")
 
+# Fixed connection-profile name for the fallback hotspot (see start_hotspot below) -
+# distinctive on purpose so it never collides with a real SSID and can reliably be
+# filtered out of "known networks" (Einstellungen shouldn't offer to "reconnect to"
+# or "forget" the box's own recovery hotspot).
+HOTSPOT_CONNECTION_NAME = "OwlBox-Hotspot"
+
+# NetworkManager's own default subnet/gateway for a shared ("Hotspot") connection -
+# used as a fallback if the actual address can't be read back from the interface.
+HOTSPOT_FALLBACK_IP = "10.42.0.1"
+
 
 def get_lan_ip() -> str:
     """Best-effort local IP address other devices on the LAN could reach this Pi at.
@@ -111,7 +121,7 @@ def list_known_networks() -> list[dict]:
     networks = []
     for line in _run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"]).splitlines():
         name, _, conn_type = line.partition(":")
-        if conn_type != "802-11-wireless" or not name:
+        if conn_type != "802-11-wireless" or not name or name == HOTSPOT_CONNECTION_NAME:
             continue
         networks.append({"name": name, "active": name == active_ssid})
     return networks
@@ -141,3 +151,78 @@ def set_wifi_enabled(enabled: bool) -> None:
         subprocess.run(["sudo", "nmcli", "radio", "wifi", "on" if enabled else "off"], check=False)
     except Exception:
         logger.exception("failed to toggle wifi radio")
+
+
+def start_hotspot(ssid: str, password: str) -> bool:
+    """Turns the Pi's own WiFi radio into an access point, so a laptop/phone can join it
+    directly and reach the admin UI to fix the real WiFi settings - used as a recovery
+    fallback (see engine.py) when no known network has been reachable for a while.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "sudo",
+                "nmcli",
+                "device",
+                "wifi",
+                "hotspot",
+                "ifname",
+                "wlan0",
+                "con-name",
+                HOTSPOT_CONNECTION_NAME,
+                "ssid",
+                ssid,
+                "password",
+                password,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        logger.exception("failed to start fallback hotspot")
+        return False
+    if result.returncode != 0:
+        logger.warning("nmcli hotspot start failed: %s", (result.stderr or result.stdout).strip())
+    return result.returncode == 0
+
+
+def stop_hotspot() -> None:
+    try:
+        subprocess.run(
+            ["sudo", "nmcli", "connection", "down", HOTSPOT_CONNECTION_NAME], capture_output=True, timeout=10, check=False
+        )
+    except Exception:
+        logger.exception("failed to stop fallback hotspot")
+
+
+def get_hotspot_ip() -> str:
+    """Best-effort gateway address of the active hotspot, for the "open this URL" hint -
+    falls back to NetworkManager's own default shared-connection subnet if it can't be
+    read back (e.g. right after the hotspot just came up)."""
+    output = _run(["nmcli", "-g", "IP4.ADDRESS", "device", "show", "wlan0"]).strip()
+    address = output.splitlines()[0].split("/")[0] if output else ""
+    return address or HOTSPOT_FALLBACK_IP
+
+
+def try_reconnect_known_networks() -> bool:
+    """Tries each remembered WiFi profile in turn (skipping our own hotspot profile) -
+    used while the fallback hotspot is active, to periodically check whether a known
+    network has come back into range without waiting for a user to intervene."""
+    for net in list_known_networks():
+        if net["active"]:
+            continue
+        try:
+            result = subprocess.run(
+                ["sudo", "nmcli", "connection", "up", net["name"]],
+                capture_output=True,
+                text=True,
+                timeout=20,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if result.returncode == 0:
+            return True
+    return False

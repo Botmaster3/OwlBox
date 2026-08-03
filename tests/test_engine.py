@@ -642,3 +642,128 @@ def test_wifi_status_check_is_throttled(config):
         assert len(calls) == 2
     finally:
         network.get_status = original
+
+
+def test_hotspot_starts_after_prolonged_disconnection(config):
+    config.network.hotspot_after_seconds = 30
+    engine = Engine(config)
+
+    start_calls = []
+    original_start = network.start_hotspot
+    original_get_ip = network.get_hotspot_ip
+    network.start_hotspot = lambda ssid, password: start_calls.append((ssid, password)) or True
+    network.get_hotspot_ip = lambda: "10.42.0.1"
+    try:
+        disconnected = {"enabled": True, "connected_ssid": None, "ip_address": None, "signal": None}
+
+        engine._check_wifi_fallback(0.0, disconnected)
+        assert start_calls == []
+        assert engine.get_state()["wifi"]["hotspot_active"] is False
+
+        engine._check_wifi_fallback(29.0, disconnected)
+        assert start_calls == []
+
+        engine._check_wifi_fallback(30.1, disconnected)
+        assert start_calls == [(config.network.hotspot_ssid, config.network.hotspot_password)]
+        state = engine.get_state()["wifi"]
+        assert state["hotspot_active"] is True
+        assert state["hotspot_ssid"] == config.network.hotspot_ssid
+        assert state["hotspot_password"] == config.network.hotspot_password
+        assert state["hotspot_ip"] == "10.42.0.1"
+
+        # Already active - must not call start_hotspot again.
+        engine._check_wifi_fallback(31.0, disconnected)
+        assert len(start_calls) == 1
+    finally:
+        network.start_hotspot = original_start
+        network.get_hotspot_ip = original_get_ip
+
+
+def test_hotspot_stops_once_wifi_reconnects(config):
+    config.network.hotspot_after_seconds = 10
+    engine = Engine(config)
+
+    stop_calls = []
+    original_start = network.start_hotspot
+    original_stop = network.stop_hotspot
+    original_get_ip = network.get_hotspot_ip
+    network.start_hotspot = lambda ssid, password: True
+    network.stop_hotspot = lambda: stop_calls.append(1)
+    network.get_hotspot_ip = lambda: "10.42.0.1"
+    try:
+        disconnected = {"enabled": True, "connected_ssid": None, "ip_address": None, "signal": None}
+        engine._check_wifi_fallback(0.0, disconnected)
+        engine._check_wifi_fallback(11.0, disconnected)
+        assert engine.get_state()["wifi"]["hotspot_active"] is True
+
+        connected = {"enabled": True, "connected_ssid": "HomeWifi", "ip_address": "192.168.1.5", "signal": 80}
+        engine._check_wifi_fallback(12.0, connected)
+        assert stop_calls == [1]
+        assert engine.get_state()["wifi"]["hotspot_active"] is False
+    finally:
+        network.start_hotspot = original_start
+        network.stop_hotspot = original_stop
+        network.get_hotspot_ip = original_get_ip
+
+
+def test_hotspot_periodic_retry_reconnects_and_stops(config):
+    config.network.hotspot_after_seconds = 10
+    config.network.hotspot_retry_interval_seconds = 20
+    engine = Engine(config)
+
+    stop_calls = []
+    retry_calls = []
+    original_start = network.start_hotspot
+    original_stop = network.stop_hotspot
+    original_get_ip = network.get_hotspot_ip
+    original_retry = network.try_reconnect_known_networks
+    network.start_hotspot = lambda ssid, password: True
+    network.stop_hotspot = lambda: stop_calls.append(1)
+    network.get_hotspot_ip = lambda: "10.42.0.1"
+    network.try_reconnect_known_networks = lambda: retry_calls.append(1) or True
+    try:
+        disconnected = {"enabled": True, "connected_ssid": None, "ip_address": None, "signal": None}
+        engine._check_wifi_fallback(0.0, disconnected)
+        engine._check_wifi_fallback(11.0, disconnected)
+        assert engine.get_state()["wifi"]["hotspot_active"] is True
+
+        # Too soon for a retry - must not call try_reconnect_known_networks yet.
+        engine._check_wifi_fallback(20.0, disconnected)
+        assert retry_calls == []
+
+        engine._check_wifi_fallback(31.5, disconnected)
+        assert retry_calls == [1]
+        assert stop_calls == [1]
+        assert engine.get_state()["wifi"]["hotspot_active"] is False
+    finally:
+        network.start_hotspot = original_start
+        network.stop_hotspot = original_stop
+        network.get_hotspot_ip = original_get_ip
+        network.try_reconnect_known_networks = original_retry
+
+
+def test_hotspot_stops_if_wifi_explicitly_disabled(config):
+    config.network.hotspot_after_seconds = 10
+    engine = Engine(config)
+
+    stop_calls = []
+    original_start = network.start_hotspot
+    original_stop = network.stop_hotspot
+    original_get_ip = network.get_hotspot_ip
+    network.start_hotspot = lambda ssid, password: True
+    network.stop_hotspot = lambda: stop_calls.append(1)
+    network.get_hotspot_ip = lambda: "10.42.0.1"
+    try:
+        disconnected = {"enabled": True, "connected_ssid": None, "ip_address": None, "signal": None}
+        engine._check_wifi_fallback(0.0, disconnected)
+        engine._check_wifi_fallback(11.0, disconnected)
+        assert engine.get_state()["wifi"]["hotspot_active"] is True
+
+        radio_off = {"enabled": False, "connected_ssid": None, "ip_address": None, "signal": None}
+        engine._check_wifi_fallback(12.0, radio_off)
+        assert stop_calls == [1]
+        assert engine.get_state()["wifi"]["hotspot_active"] is False
+    finally:
+        network.start_hotspot = original_start
+        network.stop_hotspot = original_stop
+        network.get_hotspot_ip = original_get_ip

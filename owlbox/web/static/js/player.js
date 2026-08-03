@@ -23,6 +23,11 @@
   const brightnessOsdFill = document.getElementById("brightness-osd-fill");
   const wifiBars = document.querySelectorAll("#wifi-bars .wifi-bar");
   const wifiLabel = document.getElementById("wifi-label");
+  const statusBarEl = document.getElementById("status-bar");
+  const hotspotBanner = document.getElementById("hotspot-banner");
+  const hotspotSsidEl = document.getElementById("hotspot-ssid");
+  const hotspotPasswordEl = document.getElementById("hotspot-password");
+  const hotspotUrlEl = document.getElementById("hotspot-url");
   const vuBars = document.querySelectorAll("#vu-meter .vu-bar");
 
   let lastCoverUrl = null;
@@ -100,6 +105,23 @@
     }
   }
 
+  function applyHotspotBanner(wifi) {
+    wifi = wifi || {};
+    if (!wifi.hotspot_active) {
+      hotspotBanner.hidden = true;
+      statusBarEl.hidden = false;
+      return;
+    }
+    hotspotSsidEl.textContent = wifi.hotspot_ssid;
+    hotspotPasswordEl.textContent = wifi.hotspot_password;
+    const port = window.location.port ? `:${window.location.port}` : "";
+    hotspotUrlEl.textContent = `http://${wifi.hotspot_ip}${port}/admin`;
+    hotspotBanner.hidden = false;
+    // The banner already covers WiFi state plus what to do about it - showing
+    // both at once is redundant and there isn't room for both on a small screen.
+    statusBarEl.hidden = true;
+  }
+
   function formatTime(seconds) {
     seconds = Math.max(0, Math.floor(seconds || 0));
     const m = Math.floor(seconds / 60);
@@ -118,6 +140,7 @@
       lastBrightness = settings.brightness;
     }
     applyWifi(state.wifi);
+    applyHotspotBanner(state.wifi);
 
     const story = state.story;
     const player = state.player || {};

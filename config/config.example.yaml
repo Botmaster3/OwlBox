@@ -84,3 +84,17 @@ playback:
   # Save playback position to the database this often (seconds), so power loss
   # doesn't lose more than this much progress.
   position_save_interval: 5
+
+network:
+  # Recovery hotspot: if WiFi is on but not connected to any network for this
+  # long, the Pi turns its own radio into an access point with this SSID/password
+  # so it stays reachable from a laptop/phone to fix the real WiFi - shown on the
+  # kiosk display and admin Home/Einstellungen while active. See docs/hardware.md.
+  # Change the password from the default before deploying somewhere not fully
+  # private - it's a plain WPA2 network anyone in range could otherwise join.
+  hotspot_ssid: "OwlBox-Setup"
+  hotspot_password: "owlbox-setup"
+  hotspot_after_seconds: 60
+  # While the hotspot is up, how often (seconds) to check whether a known
+  # network has come back into range and reconnect automatically.
+  hotspot_retry_interval_seconds: 120
