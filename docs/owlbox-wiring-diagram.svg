@@ -28,11 +28,25 @@
 <text x="698" y="552" font-size="19" font-weight="700" fill="#1c231e" font-family="Arial, sans-serif">Raspberry Pi 3B+</text>
 <text x="698" y="573" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">40-Pin-GPIO-Header (BCM-Nummerierung)</text>
 <text x="840" y="706" font-size="12" fill="#6d7669" text-anchor="middle" font-family="Arial, sans-serif">Wiedergabe (mpv) + Web-UI + alle Sensoren/Aktoren</text>
-<line x1="716" y1="430" x2="716" y2="520" stroke="#4c6478" stroke-width="2.4" stroke-dasharray="4 4"/>
-<circle cx="716" cy="430" r="4" fill="#4c6478"/>
-<circle cx="716" cy="520" r="4" fill="#4c6478"/>
-<rect x="724" y="464" width="150" height="18" rx="9" fill="#f5f2ea" stroke="#4c6478" stroke-width="1"/>
-<text x="730" y="479" font-size="12" fill="#4c6478" font-family="ui-monospace, monospace" font-weight="700">40-Pin Durchreichung</text>
+<rect x="704" y="430" width="272" height="90" fill="#e3e9ed" stroke="#4c6478" stroke-width="2" stroke-dasharray="7 5"/>
+<line x1="718" y1="430" x2="718" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="734" y1="430" x2="734" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="750" y1="430" x2="750" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="766" y1="430" x2="766" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="782" y1="430" x2="782" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="798" y1="430" x2="798" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="814" y1="430" x2="814" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="830" y1="430" x2="830" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="846" y1="430" x2="846" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="862" y1="430" x2="862" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="878" y1="430" x2="878" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="894" y1="430" x2="894" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="910" y1="430" x2="910" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="926" y1="430" x2="926" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="942" y1="430" x2="942" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="958" y1="430" x2="958" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<line x1="974" y1="430" x2="974" y2="520" stroke="#4c6478" stroke-width="1.4" opacity="0.5"/>
+<text x="840" y="479" font-size="12.5" fill="#4c6478" text-anchor="middle" font-family="ui-monospace, monospace" font-weight="700">steckt direkt auf - kein Kabel (40-Pin-Header)</text>
 <rect x="1180" y="150" width="400" height="300" rx="14" fill="#ffffff" stroke="#c9c2af" stroke-width="2"/>
 <text x="1198" y="182" font-size="19" font-weight="700" fill="#1c231e" font-family="Arial, sans-serif">3.5" SPI-Display</text>
 <text x="1198" y="203" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">ILI9486, Touch bewusst nicht verdrahtet</text>
@@ -101,16 +115,16 @@
 <circle cx="1180" cy="210" r="4" fill="#2e5f8a"/>
 <rect x="1012.6" y="360.5" width="154.7" height="18" rx="9" fill="#f5f2ea" stroke="#2e5f8a" stroke-width="1" opacity="0.97"/>
 <text x="1090.0" y="374.5" font-size="12.5" fill="#2e5f8a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">SPI-Bus + CS/DC/RST</text>
-<line x1="856.0" y1="520" x2="1250" y2="450" stroke="#b5732a" stroke-width="3"/>
-<circle cx="856.0" cy="520" r="4" fill="#b5732a"/>
+<line x1="1000" y1="590" x2="1250" y2="450" stroke="#b5732a" stroke-width="3"/>
+<circle cx="1000" cy="590" r="4" fill="#b5732a"/>
 <circle cx="1250" cy="450" r="4" fill="#b5732a"/>
-<rect x="1030.4" y="463.0" width="45.2" height="18" rx="9" fill="#f5f2ea" stroke="#b5732a" stroke-width="1" opacity="0.97"/>
-<text x="1053.0" y="477.0" font-size="12.5" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">3.3V</text>
-<line x1="904.0" y1="520" x2="1300" y2="450" stroke="#33362f" stroke-width="3"/>
-<circle cx="904.0" cy="520" r="4" fill="#33362f"/>
+<rect x="1102.4" y="498.0" width="45.2" height="18" rx="9" fill="#f5f2ea" stroke="#b5732a" stroke-width="1" opacity="0.97"/>
+<text x="1125.0" y="512.0" font-size="12.5" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">3.3V</text>
+<line x1="1000" y1="625" x2="1300" y2="450" stroke="#33362f" stroke-width="3"/>
+<circle cx="1000" cy="625" r="4" fill="#33362f"/>
 <circle cx="1300" cy="450" r="4" fill="#33362f"/>
-<rect x="1083.0" y="463.0" width="37.9" height="18" rx="9" fill="#f5f2ea" stroke="#33362f" stroke-width="1" opacity="0.97"/>
-<text x="1102.0" y="477.0" font-size="12.5" fill="#33362f" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">GND</text>
+<rect x="1131.0" y="515.5" width="37.9" height="18" rx="9" fill="#f5f2ea" stroke="#33362f" stroke-width="1" opacity="0.97"/>
+<text x="1150.0" y="529.5" font-size="12.5" fill="#33362f" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">GND</text>
 <line x1="1580" y1="420" x2="1340" y2="540" stroke="#7a4f8c" stroke-width="3" stroke-dasharray="8 6"/>
 <circle cx="1580" cy="420" r="4" fill="#7a4f8c"/>
 <circle cx="1340" cy="540" r="4" fill="#7a4f8c"/>
