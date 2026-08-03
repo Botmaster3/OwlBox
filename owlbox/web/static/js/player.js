@@ -18,6 +18,7 @@
   const splashEl = document.getElementById("splash");
   const brightnessOsd = document.getElementById("brightness-osd");
   const brightnessOsdValue = document.getElementById("brightness-osd-value");
+  const brightnessOsdFill = document.getElementById("brightness-osd-fill");
 
   let lastCoverUrl = null;
   let parentModeActive = false;
@@ -25,8 +26,17 @@
   let lastBrightness = null;
   let brightnessOsdTimer = null;
 
-  function showBrightnessOsd(percent) {
+  // Fill percentage of a value relative to a [min, max] range, e.g. how full
+  // the brightness/volume bar should look given the configured limits rather
+  // than the raw 0-100 value.
+  function relativePercent(value, min, max) {
+    if (max <= min) return 0;
+    return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+  }
+
+  function showBrightnessOsd(percent, min, max) {
     brightnessOsdValue.textContent = percent;
+    brightnessOsdFill.style.width = `${relativePercent(percent, min, max)}%`;
     brightnessOsd.hidden = false;
     clearTimeout(brightnessOsdTimer);
     brightnessOsdTimer = setTimeout(() => {
@@ -47,7 +57,7 @@
     const settings = state.settings || {};
     if (typeof settings.brightness === "number") {
       if (lastBrightness !== null && settings.brightness !== lastBrightness) {
-        showBrightnessOsd(settings.brightness);
+        showBrightnessOsd(settings.brightness, settings.min_brightness, settings.max_brightness);
       }
       lastBrightness = settings.brightness;
     }
@@ -125,7 +135,7 @@
     timeDurEl.textContent = formatTime(duration);
     progressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
 
-    volumeFill.style.width = `${Math.max(0, Math.min(100, player.volume || 0))}%`;
+    volumeFill.style.width = `${relativePercent(player.volume || 0, 0, settings.max_volume || 100)}%`;
 
     unknownBanner.hidden = !state.unknown_tag;
 

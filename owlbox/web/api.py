@@ -414,6 +414,11 @@ def update_brightness():
             _engine().set_max_brightness(int(data["max_brightness"]))
         except (TypeError, ValueError):
             return jsonify({"error": "max_brightness must be an integer"}), 400
+    if "brightness_step" in data:
+        try:
+            _engine().set_brightness_step(int(data["brightness_step"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "brightness_step must be an integer"}), 400
     if "brightness" in data:
         try:
             _engine().manual_set_brightness(int(data["brightness"]))

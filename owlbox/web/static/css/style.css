@@ -203,6 +203,7 @@ body.kiosk { height: 100vh; overflow: hidden; }
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   z-index: 100;
 }
+.osd .progress-bar { width: 30vw; max-width: 260px; height: 0.35em; }
 
 /* ---- admin UI ---- */
 

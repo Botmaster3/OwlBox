@@ -76,6 +76,7 @@ class Engine:
         self._backlight = create_backlight(config)
         self._min_brightness = repository.get_int_setting("min_brightness", 0)
         self._max_brightness = repository.get_int_setting("max_brightness", 100)
+        self._brightness_step = repository.get_int_setting("brightness_step", config.gpio.brightness_step)
         self._brightness = max(
             self._min_brightness, min(self._max_brightness, repository.get_int_setting("brightness", 100))
         )
@@ -341,10 +342,15 @@ class Engine:
         with self._lock:
             self._brightness = max(
                 self._min_brightness,
-                min(self._max_brightness, self._brightness + direction * self._config.gpio.brightness_step),
+                min(self._max_brightness, self._brightness + direction * self._brightness_step),
             )
             repository.set_setting("brightness", self._brightness)
             self._backlight.set_brightness(self._brightness)
+
+    def set_brightness_step(self, percent: int) -> None:
+        with self._lock:
+            self._brightness_step = max(1, min(50, percent))
+            repository.set_setting("brightness_step", self._brightness_step)
 
     def set_min_brightness(self, percent: int) -> None:
         with self._lock:
@@ -441,6 +447,7 @@ class Engine:
             brightness = self._brightness
             min_brightness = self._min_brightness
             max_brightness = self._max_brightness
+            brightness_step = self._brightness_step
         status = self._player.get_status()
 
         sleep_timer_remaining = None
@@ -483,6 +490,7 @@ class Engine:
                 "brightness": brightness,
                 "min_brightness": min_brightness,
                 "max_brightness": max_brightness,
+                "brightness_step": brightness_step,
             },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,

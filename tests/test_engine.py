@@ -504,6 +504,21 @@ def test_brightness_encoder_delta_adjusts_and_clamps_brightness(config):
         engine.stop()
 
 
+def test_brightness_step_setting_is_persisted_and_used(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.set_brightness_step(15)
+        assert engine.get_state()["settings"]["brightness_step"] == 15
+
+        engine.manual_set_brightness(50)
+        engine._handle_brightness_delta(1)
+        assert engine.get_state()["settings"]["brightness"] == 65
+    finally:
+        engine.stop()
+    assert repository.get_int_setting("brightness_step", -1) == 15
+
+
 def test_brightness_range_clamps_current_and_future_changes(config):
     engine = Engine(config)
     engine.start()

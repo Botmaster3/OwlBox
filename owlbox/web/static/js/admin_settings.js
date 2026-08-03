@@ -97,6 +97,7 @@
   const currentBrightnessValue = document.getElementById("current-brightness-value");
   const minBrightnessInput = document.getElementById("min-brightness");
   const maxBrightnessInput = document.getElementById("max-brightness");
+  const brightnessStepInput = document.getElementById("brightness-step");
   const brightnessSaveBtn = document.getElementById("brightness-save-btn");
 
   let brightnessSliderBeingDragged = false;
@@ -126,11 +127,13 @@
         body: JSON.stringify({
           min_brightness: parseInt(minBrightnessInput.value, 10),
           max_brightness: parseInt(maxBrightnessInput.value, 10),
+          brightness_step: parseInt(brightnessStepInput.value, 10),
         }),
       });
       // Reflect back the server's (clamped) values in case the input was out of range.
       minBrightnessInput.value = settings.min_brightness;
       maxBrightnessInput.value = settings.max_brightness;
+      brightnessStepInput.value = settings.brightness_step;
       currentBrightnessInput.min = settings.min_brightness;
       currentBrightnessInput.max = settings.max_brightness;
       currentBrightnessInput.value = settings.brightness;
@@ -299,6 +302,7 @@
       volumeStepInput.value = state.settings.volume_step;
       minBrightnessInput.value = state.settings.min_brightness;
       maxBrightnessInput.value = state.settings.max_brightness;
+      brightnessStepInput.value = state.settings.brightness_step;
       currentBrightnessInput.min = state.settings.min_brightness;
       currentBrightnessInput.max = state.settings.max_brightness;
     } catch (err) {
