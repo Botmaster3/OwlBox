@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 1748" width="1360" height="1748" font-family="Arial, sans-serif">
+<rect x="0" y="0" width="1360" height="1600" fill="#f5f2ea"/>
+<text x="40" y="42" font-size="15" letter-spacing="2" fill="#b5732a" font-family="ui-monospace, Consolas, monospace" font-weight="700">OWLBOX · GPIO-PINBELEGUNG</text>
+<text x="40" y="74" font-size="26" font-weight="800" fill="#1c231e" font-family="Arial, sans-serif">Welches Gerät an welchen Pin</text>
+<text x="40" y="98" font-size="13.5" fill="#6d7669" font-family="Arial, sans-serif">40-Pin-Header, physische Nummerierung wie auf der Pi-Platine · BCM-Name und Zielgerät pro Pin</text>
+<rect x="40" y="148" width="460" height="70" rx="14" fill="#e3e9ed" stroke="#4c6478" stroke-width="2"/>
+<text x="270" y="182" font-size="18" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="Arial, sans-serif">Pi 3B+ + HiFiBerry</text>
+<text x="270" y="204" font-size="12.5" fill="#6d7669" text-anchor="middle" font-family="Arial, sans-serif">gestapelt, direkt auf dem 40-Pin-Header</text>
+<rect x="860" y="148" width="460" height="70" rx="14" fill="#e4ede7" stroke="#2f6f4e" stroke-width="2"/>
+<text x="1090" y="182" font-size="18" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="Arial, sans-serif">Adapter-Platine</text>
+<text x="1090" y="204" font-size="12.5" fill="#6d7669" text-anchor="middle" font-family="Arial, sans-serif">RC522, Taster ×2, Encoder ×2, Display, Backlight</text>
+<path d="M 500 183 C 590 159, 770 207, 860 183" stroke="#b5732a" stroke-width="3" fill="none"/>
+<circle cx="500" cy="183" r="4.5" fill="#b5732a"/>
+<circle cx="860" cy="183" r="4.5" fill="#b5732a"/>
+<rect x="528.5" y="116" width="303.0" height="20" rx="10" fill="#f5f2ea" stroke="#b5732a" stroke-width="1"/>
+<text x="680" y="130" font-size="11" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, monospace" font-weight="700">Kabel: nur farbige Pins (nicht HiFiBerry)</text>
+<line x1="40" y1="258" x2="66" y2="258" stroke="#b5732a" stroke-width="4"/>
+<text x="74" y="262" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">3.3V / 5V (Strom)</text>
+<line x1="40" y1="280" x2="66" y2="280" stroke="#33362f" stroke-width="4"/>
+<text x="74" y="284" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">GND</text>
+<line x1="40" y1="302" x2="66" y2="302" stroke="#4c6478" stroke-width="4"/>
+<text x="74" y="306" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">HiFiBerry (I2S/I2C) - bleibt am Pi, geht nicht zur Adapter-Platine</text>
+<line x1="40" y1="324" x2="66" y2="324" stroke="#2e5f8a" stroke-width="4"/>
+<text x="74" y="328" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">SPI-Bus, gemeinsam (Display + RC522)</text>
+<line x1="40" y1="346" x2="66" y2="346" stroke="#2f6f4e" stroke-width="4"/>
+<text x="74" y="350" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">Gerätespezifisches GPIO-Signal - siehe Label</text>
+<rect x="40" y="364" width="18" height="12" rx="3" fill="#eceae2" stroke="#c9c2af"/>
+<text x="66" y="374" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">frei / reserviert</text>
+<rect x="40" y="398" width="620" height="58" rx="8" fill="color-mix(in srgb, #b5732a 13%, #ffffff)" stroke="#b5732a" stroke-width="1.6"/>
+<circle cx="66" cy="427" r="15" fill="#f5f2ea" stroke="#b5732a" stroke-width="1.6"/>
+<text x="66" y="431" font-size="12" font-weight="700" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, monospace">1</text>
+<text x="92" y="420" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">3V3</text>
+<text x="92" y="438" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Stromversorgung</text>
+<rect x="720" y="398" width="620" height="58" rx="8" fill="#eceae2" stroke="#c9c2af" stroke-width="1.6"/>
+<circle cx="746" cy="427" r="15" fill="#f5f2ea" stroke="#6d7669" stroke-width="1.6"/>
+<text x="746" y="431" font-size="12" font-weight="700" fill="#6d7669" text-anchor="middle" font-family="ui-monospace, monospace">2</text>
+<text x="772" y="420" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">5V</text>
+<text x="772" y="438" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">nicht verwendet (Module sind 3.3V)</text>
+<rect x="40" y="463" width="620" height="58" rx="8" fill="color-mix(in srgb, #4c6478 13%, #ffffff)" stroke="#4c6478" stroke-width="1.6"/>
+<circle cx="66" cy="492" r="15" fill="#f5f2ea" stroke="#4c6478" stroke-width="1.6"/>
+<text x="66" y="496" font-size="12" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="ui-monospace, monospace">3</text>
+<text x="92" y="485" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO2</text>
+<text x="92" y="503" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">I2C SDA · HiFiBerry</text>
+<rect x="720" y="463" width="620" height="58" rx="8" fill="#eceae2" stroke="#c9c2af" stroke-width="1.6"/>
+<circle cx="746" cy="492" r="15" fill="#f5f2ea" stroke="#6d7669" stroke-width="1.6"/>
+<text x="746" y="496" font-size="12" font-weight="700" fill="#6d7669" text-anchor="middle" font-family="ui-monospace, monospace">4</text>
+<text x="772" y="485" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">5V</text>
+<text x="772" y="503" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">nicht verwendet</text>
+<rect x="40" y="528" width="620" height="58" rx="8" fill="color-mix(in srgb, #4c6478 13%, #ffffff)" stroke="#4c6478" stroke-width="1.6"/>
+<circle cx="66" cy="557" r="15" fill="#f5f2ea" stroke="#4c6478" stroke-width="1.6"/>
+<text x="66" y="561" font-size="12" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="ui-monospace, monospace">5</text>
+<text x="92" y="550" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO3</text>
+<text x="92" y="568" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">I2C SCL · HiFiBerry</text>
+<rect x="720" y="528" width="620" height="58" rx="8" fill="color-mix(in srgb, #33362f 13%, #ffffff)" stroke="#33362f" stroke-width="1.6"/>
+<circle cx="746" cy="557" r="15" fill="#f5f2ea" stroke="#33362f" stroke-width="1.6"/>
+<text x="746" y="561" font-size="12" font-weight="700" fill="#33362f" text-anchor="middle" font-family="ui-monospace, monospace">6</text>
+<text x="772" y="550" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GND</text>
+<rect x="40" y="593" width="620" height="58" rx="8" fill="#eceae2" stroke="#c9c2af" stroke-width="1.6"/>
+<circle cx="66" cy="622" r="15" fill="#f5f2ea" stroke="#6d7669" stroke-width="1.6"/>
+<text x="66" y="626" font-size="12" font-weight="700" fill="#6d7669" text-anchor="middle" font-family="ui-monospace, monospace">7</text>
+<text x="92" y="615" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO4</text>
+<text x="92" y="633" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">frei</text>
+<rect x="720" y="593" width="620" height="58" rx="8" fill="#eceae2" stroke="#c9c2af" stroke-width="1.6"/>
+<circle cx="746" cy="622" r="15" fill="#f5f2ea" stroke="#6d7669" stroke-width="1.6"/>
+<text x="746" y="626" font-size="12" font-weight="700" fill="#6d7669" text-anchor="middle" font-family="ui-monospace, monospace">8</text>
+<text x="772" y="615" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO14</text>
+<text x="772" y="633" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">frei (TXD)</text>
+<rect x="40" y="658" width="620" height="58" rx="8" fill="color-mix(in srgb, #33362f 13%, #ffffff)" stroke="#33362f" stroke-width="1.6"/>
+<circle cx="66" cy="687" r="15" fill="#f5f2ea" stroke="#33362f" stroke-width="1.6"/>
+<text x="66" y="691" font-size="12" font-weight="700" fill="#33362f" text-anchor="middle" font-family="ui-monospace, monospace">9</text>
+<text x="92" y="680" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GND</text>
+<rect x="720" y="658" width="620" height="58" rx="8" fill="#eceae2" stroke="#c9c2af" stroke-width="1.6"/>
+<circle cx="746" cy="687" r="15" fill="#f5f2ea" stroke="#6d7669" stroke-width="1.6"/>
+<text x="746" y="691" font-size="12" font-weight="700" fill="#6d7669" text-anchor="middle" font-family="ui-monospace, monospace">10</text>
+<text x="772" y="680" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO15</text>
+<text x="772" y="698" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">frei (RXD)</text>
+<rect x="40" y="723" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="66" cy="752" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="66" y="756" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">11</text>
+<text x="92" y="745" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO17</text>
+<text x="92" y="763" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Encoder CLK (Lautstärke)</text>
+<rect x="720" y="723" width="620" height="58" rx="8" fill="color-mix(in srgb, #4c6478 13%, #ffffff)" stroke="#4c6478" stroke-width="1.6"/>
+<circle cx="746" cy="752" r="15" fill="#f5f2ea" stroke="#4c6478" stroke-width="1.6"/>
+<text x="746" y="756" font-size="12" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="ui-monospace, monospace">12</text>
+<text x="772" y="745" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO18</text>
+<text x="772" y="763" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">I2S BCLK · HiFiBerry</text>
+<rect x="40" y="788" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="66" cy="817" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="66" y="821" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">13</text>
+<text x="92" y="810" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO27</text>
+<text x="92" y="828" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Encoder DT (Lautstärke)</text>
+<rect x="720" y="788" width="620" height="58" rx="8" fill="color-mix(in srgb, #33362f 13%, #ffffff)" stroke="#33362f" stroke-width="1.6"/>
+<circle cx="746" cy="817" r="15" fill="#f5f2ea" stroke="#33362f" stroke-width="1.6"/>
+<text x="746" y="821" font-size="12" font-weight="700" fill="#33362f" text-anchor="middle" font-family="ui-monospace, monospace">14</text>
+<text x="772" y="810" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GND</text>
+<rect x="40" y="853" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="66" cy="882" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="66" y="886" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">15</text>
+<text x="92" y="875" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO22</text>
+<text x="92" y="893" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Encoder SW (Lautstärke)</text>
+<rect x="720" y="853" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="746" cy="882" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="746" y="886" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">16</text>
+<text x="772" y="875" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO23</text>
+<text x="772" y="893" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Helligkeits-Encoder CLK</text>
+<rect x="40" y="918" width="620" height="58" rx="8" fill="color-mix(in srgb, #b5732a 13%, #ffffff)" stroke="#b5732a" stroke-width="1.6"/>
+<circle cx="66" cy="947" r="15" fill="#f5f2ea" stroke="#b5732a" stroke-width="1.6"/>
+<text x="66" y="951" font-size="12" font-weight="700" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, monospace">17</text>
+<text x="92" y="940" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">3V3</text>
+<text x="92" y="958" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Stromversorgung</text>
+<rect x="720" y="918" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="746" cy="947" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="746" y="951" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">18</text>
+<text x="772" y="940" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO24</text>
+<text x="772" y="958" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Display DC</text>
+<rect x="40" y="983" width="620" height="58" rx="8" fill="color-mix(in srgb, #2e5f8a 13%, #ffffff)" stroke="#2e5f8a" stroke-width="1.6"/>
+<circle cx="66" cy="1012" r="15" fill="#f5f2ea" stroke="#2e5f8a" stroke-width="1.6"/>
+<text x="66" y="1016" font-size="12" font-weight="700" fill="#2e5f8a" text-anchor="middle" font-family="ui-monospace, monospace">19</text>
+<text x="92" y="1005" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO10</text>
+<text x="92" y="1023" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">SPI MOSI (Display + RC522)</text>
+<rect x="720" y="983" width="620" height="58" rx="8" fill="color-mix(in srgb, #33362f 13%, #ffffff)" stroke="#33362f" stroke-width="1.6"/>
+<circle cx="746" cy="1012" r="15" fill="#f5f2ea" stroke="#33362f" stroke-width="1.6"/>
+<text x="746" y="1016" font-size="12" font-weight="700" fill="#33362f" text-anchor="middle" font-family="ui-monospace, monospace">20</text>
+<text x="772" y="1005" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GND</text>
+<rect x="40" y="1048" width="620" height="58" rx="8" fill="color-mix(in srgb, #2e5f8a 13%, #ffffff)" stroke="#2e5f8a" stroke-width="1.6"/>
+<circle cx="66" cy="1077" r="15" fill="#f5f2ea" stroke="#2e5f8a" stroke-width="1.6"/>
+<text x="66" y="1081" font-size="12" font-weight="700" fill="#2e5f8a" text-anchor="middle" font-family="ui-monospace, monospace">21</text>
+<text x="92" y="1070" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO9</text>
+<text x="92" y="1088" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">SPI MISO (Display + RC522)</text>
+<rect x="720" y="1048" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="746" cy="1077" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="746" y="1081" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">22</text>
+<text x="772" y="1070" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO25</text>
+<text x="772" y="1088" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Display RST</text>
+<rect x="40" y="1113" width="620" height="58" rx="8" fill="color-mix(in srgb, #2e5f8a 13%, #ffffff)" stroke="#2e5f8a" stroke-width="1.6"/>
+<circle cx="66" cy="1142" r="15" fill="#f5f2ea" stroke="#2e5f8a" stroke-width="1.6"/>
+<text x="66" y="1146" font-size="12" font-weight="700" fill="#2e5f8a" text-anchor="middle" font-family="ui-monospace, monospace">23</text>
+<text x="92" y="1135" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO11</text>
+<text x="92" y="1153" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">SPI SCLK (Display + RC522)</text>
+<rect x="720" y="1113" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="746" cy="1142" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="746" y="1146" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">24</text>
+<text x="772" y="1135" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO8</text>
+<text x="772" y="1153" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Display CS (CE0)</text>
+<rect x="40" y="1178" width="620" height="58" rx="8" fill="color-mix(in srgb, #33362f 13%, #ffffff)" stroke="#33362f" stroke-width="1.6"/>
+<circle cx="66" cy="1207" r="15" fill="#f5f2ea" stroke="#33362f" stroke-width="1.6"/>
+<text x="66" y="1211" font-size="12" font-weight="700" fill="#33362f" text-anchor="middle" font-family="ui-monospace, monospace">25</text>
+<text x="92" y="1200" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GND</text>
+<rect x="720" y="1178" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="746" cy="1207" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="746" y="1211" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">26</text>
+<text x="772" y="1200" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO7</text>
+<text x="772" y="1218" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">RC522 CS (CE1)</text>
+<rect x="40" y="1243" width="620" height="58" rx="8" fill="#eceae2" stroke="#c9c2af" stroke-width="1.6"/>
+<circle cx="66" cy="1272" r="15" fill="#f5f2ea" stroke="#6d7669" stroke-width="1.6"/>
+<text x="66" y="1276" font-size="12" font-weight="700" fill="#6d7669" text-anchor="middle" font-family="ui-monospace, monospace">27</text>
+<text x="92" y="1265" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">ID_SD</text>
+<text x="92" y="1283" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">reserviert (HAT-EEPROM)</text>
+<rect x="720" y="1243" width="620" height="58" rx="8" fill="#eceae2" stroke="#c9c2af" stroke-width="1.6"/>
+<circle cx="746" cy="1272" r="15" fill="#f5f2ea" stroke="#6d7669" stroke-width="1.6"/>
+<text x="746" y="1276" font-size="12" font-weight="700" fill="#6d7669" text-anchor="middle" font-family="ui-monospace, monospace">28</text>
+<text x="772" y="1265" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">ID_SC</text>
+<text x="772" y="1283" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">reserviert (HAT-EEPROM)</text>
+<rect x="40" y="1308" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="66" cy="1337" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="66" y="1341" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">29</text>
+<text x="92" y="1330" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO5</text>
+<text x="92" y="1348" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Taster „Weiter“</text>
+<rect x="720" y="1308" width="620" height="58" rx="8" fill="color-mix(in srgb, #33362f 13%, #ffffff)" stroke="#33362f" stroke-width="1.6"/>
+<circle cx="746" cy="1337" r="15" fill="#f5f2ea" stroke="#33362f" stroke-width="1.6"/>
+<text x="746" y="1341" font-size="12" font-weight="700" fill="#33362f" text-anchor="middle" font-family="ui-monospace, monospace">30</text>
+<text x="772" y="1330" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GND</text>
+<rect x="40" y="1373" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="66" cy="1402" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="66" y="1406" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">31</text>
+<text x="92" y="1395" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO6</text>
+<text x="92" y="1413" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Taster „Zurück“</text>
+<rect x="720" y="1373" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="746" cy="1402" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="746" y="1406" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">32</text>
+<text x="772" y="1395" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO12</text>
+<text x="772" y="1413" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Helligkeits-Encoder DT</text>
+<rect x="40" y="1438" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="66" cy="1467" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="66" y="1471" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">33</text>
+<text x="92" y="1460" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO13</text>
+<text x="92" y="1478" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">Display-Backlight (dimmbar)</text>
+<rect x="720" y="1438" width="620" height="58" rx="8" fill="color-mix(in srgb, #33362f 13%, #ffffff)" stroke="#33362f" stroke-width="1.6"/>
+<circle cx="746" cy="1467" r="15" fill="#f5f2ea" stroke="#33362f" stroke-width="1.6"/>
+<text x="746" y="1471" font-size="12" font-weight="700" fill="#33362f" text-anchor="middle" font-family="ui-monospace, monospace">34</text>
+<text x="772" y="1460" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GND</text>
+<rect x="40" y="1503" width="620" height="58" rx="8" fill="color-mix(in srgb, #4c6478 13%, #ffffff)" stroke="#4c6478" stroke-width="1.6"/>
+<circle cx="66" cy="1532" r="15" fill="#f5f2ea" stroke="#4c6478" stroke-width="1.6"/>
+<text x="66" y="1536" font-size="12" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="ui-monospace, monospace">35</text>
+<text x="92" y="1525" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO19</text>
+<text x="92" y="1543" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">I2S LRCLK · HiFiBerry</text>
+<rect x="720" y="1503" width="620" height="58" rx="8" fill="#eceae2" stroke="#c9c2af" stroke-width="1.6"/>
+<circle cx="746" cy="1532" r="15" fill="#f5f2ea" stroke="#6d7669" stroke-width="1.6"/>
+<text x="746" y="1536" font-size="12" font-weight="700" fill="#6d7669" text-anchor="middle" font-family="ui-monospace, monospace">36</text>
+<text x="772" y="1525" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO16</text>
+<text x="772" y="1543" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">frei</text>
+<rect x="40" y="1568" width="620" height="58" rx="8" fill="color-mix(in srgb, #2f6f4e 13%, #ffffff)" stroke="#2f6f4e" stroke-width="1.6"/>
+<circle cx="66" cy="1597" r="15" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1.6"/>
+<text x="66" y="1601" font-size="12" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, monospace">37</text>
+<text x="92" y="1590" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO26</text>
+<text x="92" y="1608" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">RC522 RST</text>
+<rect x="720" y="1568" width="620" height="58" rx="8" fill="color-mix(in srgb, #4c6478 13%, #ffffff)" stroke="#4c6478" stroke-width="1.6"/>
+<circle cx="746" cy="1597" r="15" fill="#f5f2ea" stroke="#4c6478" stroke-width="1.6"/>
+<text x="746" y="1601" font-size="12" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="ui-monospace, monospace">38</text>
+<text x="772" y="1590" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO20</text>
+<text x="772" y="1608" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">I2S DIN · HiFiBerry</text>
+<rect x="40" y="1633" width="620" height="58" rx="8" fill="color-mix(in srgb, #33362f 13%, #ffffff)" stroke="#33362f" stroke-width="1.6"/>
+<circle cx="66" cy="1662" r="15" fill="#f5f2ea" stroke="#33362f" stroke-width="1.6"/>
+<text x="66" y="1666" font-size="12" font-weight="700" fill="#33362f" text-anchor="middle" font-family="ui-monospace, monospace">39</text>
+<text x="92" y="1655" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GND</text>
+<rect x="720" y="1633" width="620" height="58" rx="8" fill="color-mix(in srgb, #4c6478 13%, #ffffff)" stroke="#4c6478" stroke-width="1.6"/>
+<circle cx="746" cy="1662" r="15" fill="#f5f2ea" stroke="#4c6478" stroke-width="1.6"/>
+<text x="746" y="1666" font-size="12" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="ui-monospace, monospace">40</text>
+<text x="772" y="1655" font-size="14.5" font-weight="700" fill="#1c231e" font-family="ui-monospace, monospace">GPIO21</text>
+<text x="772" y="1673" font-size="12" fill="#6d7669" font-family="Arial, sans-serif">I2S DOUT · HiFiBerry</text>
+<text x="680" y="1718" font-size="12" fill="#6d7669" text-anchor="middle" font-family="Arial, sans-serif">Physische Pins 1/2 oben, absteigend - identisch mit der Reihenfolge auf der Pi-Platine. BCM-Namen entsprechen config/config.example.yaml.</text>
+</svg>

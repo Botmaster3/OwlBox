@@ -23,10 +23,20 @@ Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 Komponenten und ihre Verkabelung auf einen Blick als Schaubild (Pi, HiFiBerry,
 Lautsprecher L/R, RC522, Taster, beide Encoder, Display, Backlight-Dimmen).
 
+**GPIO-Pinbelegung als Grafik**: `docs/owlbox-gpio-pinout.svg` zeigt den
+kompletten 40-Pin-Header (physische Nummerierung wie auf der Pi-Platine) mit
+Zielgerät pro Pin - gedacht als Bauvorlage für eine per Kabel angeschlossene
+Adapter-Platine (Pi + HiFiBerry bleiben gestapelt, alle übrigen Komponenten
+hängen an der Adapter-Platine).
+
 **Verteiler-Platine**: `docs/hat-wiring.html` (im Browser öffnen) zeigt den
 kompletten Schaltplan als Lochraster-HAT - inkl. 40-Pin-Belegung, Stapelaufbau
 mit HiFiBerry-Durchreichung und Steckverbinder-Pinouts pro Modul. Die
-Pin-Zuordnung dort ist identisch mit den Tabellen unten.
+Pin-Zuordnung dort ist identisch mit den Tabellen unten. **Achtung:** diese
+Seite geht noch davon aus, dass die Verteiler-Platine selbst als HAT direkt
+auf den Pi gesteckt wird (mit Durchreichung für den HiFiBerry) - falls die
+Adapter-Platine stattdessen per Kabel angebunden wird (s.o.), ist nur die
+Pin-Zuordnung dort noch relevant, nicht der Stapelaufbau.
 
 ## Woran die Identifikation hängt
 
