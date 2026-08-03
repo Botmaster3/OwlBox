@@ -34,6 +34,12 @@ def _migrate(conn: sqlite3.Connection) -> None:
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(stories)")}
     if "stream_url" not in columns:
         conn.execute("ALTER TABLE stories ADD COLUMN stream_url TEXT")
+    if "play_count" not in columns:
+        conn.execute("ALTER TABLE stories ADD COLUMN play_count INTEGER NOT NULL DEFAULT 0")
+    if "total_seconds" not in columns:
+        conn.execute("ALTER TABLE stories ADD COLUMN total_seconds REAL NOT NULL DEFAULT 0")
+    if "last_played_at" not in columns:
+        conn.execute("ALTER TABLE stories ADD COLUMN last_played_at TEXT")
 
 
 def get_connection() -> sqlite3.Connection:

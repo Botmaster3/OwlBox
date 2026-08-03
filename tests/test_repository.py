@@ -173,3 +173,52 @@ def test_stream_story_can_have_a_custom_cover(config):
     fetched = repository.get_story(story.id)
     assert fetched.stream_url == "https://stream.example.com/radio.mp3"
     assert fetched.cover_path == "cover.jpg"
+
+
+def test_new_story_has_zeroed_out_listening_stats(config):
+    story = repository.create_story(title="Story")
+    assert story.play_count == 0
+    assert story.total_seconds == 0
+    assert story.last_played_at is None
+
+
+def test_increment_play_count_and_add_listening_seconds(config):
+    story = repository.create_story(title="Story")
+
+    repository.increment_play_count(story.id)
+    repository.add_listening_seconds(story.id, 30.5)
+    repository.add_listening_seconds(story.id, 10.0)
+    repository.increment_play_count(story.id)
+
+    fetched = repository.get_story(story.id)
+    assert fetched.play_count == 2
+    assert fetched.total_seconds == 40.5
+    assert fetched.last_played_at is not None
+
+    # Negative/zero durations are ignored rather than silently corrupting the total.
+    repository.add_listening_seconds(story.id, -5)
+    assert repository.get_story(story.id).total_seconds == 40.5
+
+
+def test_get_listening_stats_aggregates_and_ranks_by_total_seconds(config):
+    assert repository.get_listening_stats() == {"total_plays": 0, "total_seconds": 0, "top_stories": []}
+
+    quiet = repository.create_story(title="Never Played")
+    loud = repository.create_story(title="Most Played")
+    medium = repository.create_story(title="Some Plays")
+    stream = repository.create_story(title="Radio", stream_url="https://stream.example.com/radio.mp3")
+
+    repository.increment_play_count(loud.id)
+    repository.add_listening_seconds(loud.id, 300)
+    repository.increment_play_count(medium.id)
+    repository.add_listening_seconds(medium.id, 60)
+    repository.increment_play_count(stream.id)
+    repository.add_listening_seconds(stream.id, 120)
+
+    stats = repository.get_listening_stats()
+    assert stats["total_plays"] == 3
+    assert stats["total_seconds"] == 480
+    # Ranked by total_seconds descending; the never-played story is excluded.
+    assert [s["title"] for s in stats["top_stories"]] == ["Most Played", "Radio", "Some Plays"]
+    assert stats["top_stories"][1]["is_stream"] is True
+    assert quiet.title == "Never Played"  # sanity check the fixture itself

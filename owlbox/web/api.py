@@ -35,6 +35,9 @@ def _story_to_dict(story: repository.Story) -> dict:
         "stream_url": story.stream_url,
         "shuffle": story.shuffle,
         "repeat": story.repeat,
+        "play_count": story.play_count,
+        "total_seconds": story.total_seconds,
+        "last_played_at": story.last_played_at,
         "track_count": len(tracks),
         "tracks": [
             {"id": t.id, "position": t.position, "filename": t.filename, "title": t.title, "duration": t.duration}
@@ -98,6 +101,12 @@ def control_volume():
 @api_bp.route("/stories")
 def list_stories():
     return jsonify([_story_to_dict(s) for s in repository.list_stories()])
+
+
+@api_bp.route("/library/stats")
+@admin_required
+def library_stats():
+    return jsonify(repository.get_listening_stats())
 
 
 @api_bp.route("/stories/<int:story_id>")

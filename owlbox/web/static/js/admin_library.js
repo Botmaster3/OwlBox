@@ -30,6 +30,28 @@
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
+  // Hörstatistik: total listening time as "2h 14min" rather than mm:ss.
+  function formatListeningDuration(seconds) {
+    seconds = Math.floor(seconds || 0);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return `${h}h ${m}min`;
+    if (m > 0) return `${m} Min.`;
+    return `${seconds} Sek.`;
+  }
+
+  // SQLite's datetime('now') returns "YYYY-MM-DD HH:MM:SS" in UTC with no
+  // timezone marker - Date needs that spelled out to parse it consistently.
+  function formatRelativeTime(sqliteTimestamp) {
+    if (!sqliteTimestamp) return null;
+    const date = new Date(sqliteTimestamp.replace(" ", "T") + "Z");
+    const diffSeconds = Math.max(0, (Date.now() - date.getTime()) / 1000);
+    if (diffSeconds < 60) return "gerade eben";
+    if (diffSeconds < 3600) return `vor ${Math.floor(diffSeconds / 60)} Min.`;
+    if (diffSeconds < 86400) return `vor ${Math.floor(diffSeconds / 3600)} Std.`;
+    return `vor ${Math.floor(diffSeconds / 86400)} Tag(en)`;
+  }
+
   async function api(url, options) {
     const res = await fetch(url, options);
     if (!res.ok) {
@@ -42,6 +64,31 @@
   async function loadStories() {
     const stories = await api("/api/stories");
     renderStories(stories);
+  }
+
+  const statsTotalPlays = document.getElementById("stats-total-plays");
+  const statsTotalTime = document.getElementById("stats-total-time");
+  const statsTopList = document.getElementById("stats-top-list");
+
+  async function loadStats() {
+    const stats = await api("/api/library/stats");
+    statsTotalPlays.textContent = stats.total_plays;
+    statsTotalTime.textContent = formatListeningDuration(stats.total_seconds);
+
+    statsTopList.innerHTML = "";
+    if (stats.top_stories.length === 0) {
+      statsTopList.innerHTML = '<p class="hint">Noch keine Geschichte oder kein Livestream wurde abgespielt.</p>';
+      return;
+    }
+    const list = document.createElement("ol");
+    list.className = "np-upcoming-list";
+    for (const s of stats.top_stories) {
+      const li = document.createElement("li");
+      const kind = s.is_stream ? "🔴 Livestream" : "Geschichte";
+      li.textContent = `${s.title} - ${kind} · ${s.play_count}x gespielt · ${formatListeningDuration(s.total_seconds)}`;
+      list.appendChild(li);
+    }
+    statsTopList.appendChild(list);
   }
 
   function trackRow(story, track, index, total) {
@@ -95,11 +142,17 @@
       const subtitle = story.stream_url
         ? `🔴 Livestream · ${story.stream_url} · ${story.uid ? "Chip: " + story.uid : "kein Chip zugewiesen"}`
         : `${story.track_count} Titel · ${story.uid ? "Chip: " + story.uid : "kein Chip zugewiesen"}`;
+      const relPlayed = formatRelativeTime(story.last_played_at);
+      const statsLine =
+        story.play_count > 0
+          ? `${story.play_count}x gespielt · ${formatListeningDuration(story.total_seconds)} gehört · zuletzt ${relPlayed}`
+          : "Noch nicht abgespielt";
       header.innerHTML = `
         ${story.cover_url ? `<img src="${story.cover_url}" alt="">` : '<div class="thumb-placeholder">🦉</div>'}
         <div class="story-meta">
           <div class="row-title">${story.title}</div>
           <div class="story-sub">${subtitle}</div>
+          <div class="story-sub">${statsLine}</div>
         </div>
         <div class="story-actions">
           <button class="btn secondary" data-action="assign">Chip zuweisen</button>
@@ -219,4 +272,5 @@
   }
 
   loadStories();
+  loadStats();
 })();

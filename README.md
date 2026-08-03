@@ -30,7 +30,9 @@ den Pi geladen und einem Chip zugewiesen.
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - reine "Jetzt läuft"-Anzeige (groß, wie auf dem Display), die erste Seite nach dem Login.
-  - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle/Repeat, Track-Reihenfolge, löschen.
+  - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle/Repeat, Track-Reihenfolge, löschen;
+    Hörstatistik (Wiedergaben insgesamt, Gesamt-Hördauer, Meistgehört-Liste, pro Geschichte/Ordner/Livestream
+    wie oft und wie lange gehört sowie zuletzt gespielt).
   - **Hinzufügen** - einzelne Dateien, einen ganzen Ordner oder eine Livestream-URL (Internetradio o.ä.)
     hochladen/anlegen, Cover/Titel wird aus dem Ordner erkannt.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),

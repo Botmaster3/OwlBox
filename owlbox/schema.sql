@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS stories (
     stream_url TEXT,
     shuffle INTEGER NOT NULL DEFAULT 0,
     repeat INTEGER NOT NULL DEFAULT 0,
+    -- Hörstatistik: how often and how long this story/stream has been played.
+    play_count INTEGER NOT NULL DEFAULT 0,
+    total_seconds REAL NOT NULL DEFAULT 0,
+    last_played_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

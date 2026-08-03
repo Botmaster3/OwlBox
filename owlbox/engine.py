@@ -67,6 +67,7 @@ class Engine:
         self._volume = min(config.audio.default_volume, self._max_volume)
         self._missing_reads = 0
         self._tag_present = False
+        self._last_stat_time: Optional[float] = None
         self._sleep_timer_end: Optional[float] = None
         self._sleep_timer_minutes: Optional[float] = None
 
@@ -144,6 +145,9 @@ class Engine:
 
             if story is not None:
                 self._current_story = story
+                repository.increment_play_count(story.id)
+                self._last_stat_time = time.monotonic()
+
                 if story.stream_url:
                     # A livestream has no tracks/position to resume - always join live.
                     self._player.load_playlist([story.stream_url])
@@ -238,11 +242,21 @@ class Engine:
     def _persist_position_locked(self) -> None:
         if self._current_uid is None or self._current_story is None:
             return
-        if self._current_story.stream_url:
-            # Livestreams always join live - there's no position worth remembering.
-            return
         status = self._player.get_status()
-        repository.save_playback_state(self._current_uid, status["playlist_pos"], status["time_pos"])
+        if not self._current_story.stream_url:
+            repository.save_playback_state(self._current_uid, status["playlist_pos"], status["time_pos"])
+        self._accumulate_listening_time_locked(status)
+
+    def _accumulate_listening_time_locked(self, status: dict) -> None:
+        # Hörstatistik: attribute only the time elapsed since the last call (this one
+        # or the play-start reset in _handle_tag_present) to avoid double/under-counting
+        # across periodic autosave ticks, tag switches, and removals alike.
+        now = time.monotonic()
+        if self._last_stat_time is not None and status.get("playing"):
+            elapsed = now - self._last_stat_time
+            if elapsed > 0 and self._current_story is not None:
+                repository.add_listening_seconds(self._current_story.id, elapsed)
+        self._last_stat_time = now
 
     def _persist_current_position(self) -> None:
         with self._lock:

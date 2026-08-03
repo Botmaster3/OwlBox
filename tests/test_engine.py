@@ -381,3 +381,93 @@ def test_stream_tag_plays_url_without_track_resume(config):
         assert repository.get_playback_state("RADIOCARD") == (0, 0.0)
     finally:
         engine.stop()
+
+
+def test_playing_a_story_accumulates_listening_stats(config):
+    config.rfid.poll_interval = 0.01
+    config.playback.position_save_interval = 0.05
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.3)
+        fetched = repository.get_story(story.id)
+        assert fetched.play_count == 1
+        assert fetched.total_seconds > 0
+        assert fetched.last_played_at is not None
+
+        # Pausing should stop the clock - total_seconds shouldn't keep climbing.
+        engine.manual_pause()
+        time.sleep(0.2)
+        seconds_while_paused = repository.get_story(story.id).total_seconds
+        time.sleep(0.2)
+        assert repository.get_story(story.id).total_seconds == seconds_while_paused
+    finally:
+        engine.stop()
+
+
+def test_switching_back_to_a_story_increments_play_count_again(config):
+    config.rfid.poll_interval = 0.01
+    story_a = _make_story_with_file(config, "AAAA", title="Story A")
+    story_b = _make_story_with_file(config, "BBBB", title="Story B")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AAAA")
+        time.sleep(0.1)
+        assert repository.get_story(story_a.id).play_count == 1
+
+        # A genuinely different chip counts as a new play...
+        engine.simulate_scan("BBBB")
+        time.sleep(0.1)
+        assert repository.get_story(story_b.id).play_count == 1
+
+        # ...and switching back to A again is a second play for A.
+        engine.simulate_scan("AAAA")
+        time.sleep(0.1)
+        assert repository.get_story(story_a.id).play_count == 2
+    finally:
+        engine.stop()
+
+
+def test_replacing_the_same_still_playing_chip_does_not_recount_as_a_new_play(config):
+    # The chip-removed-keeps-playing feature makes the uid "sticky", so placing
+    # the *same* chip back without ever registering a different one in between
+    # is a no-op - it must not look like a second play.
+    config.rfid.poll_interval = 0.01
+    config.rfid.missing_reads_to_remove = 2
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.1)
+        engine.simulate_remove()
+        time.sleep(0.2)
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.1)
+        assert repository.get_story(story.id).play_count == 1
+    finally:
+        engine.stop()
+
+
+def test_livestream_play_counts_and_accumulates_listening_time_too(config):
+    config.rfid.poll_interval = 0.01
+    config.playback.position_save_interval = 0.05
+    stream_story = repository.create_story(title="Radio Owl", stream_url="https://stream.example.com/radio.mp3")
+    repository.assign_uid(stream_story.id, "RADIOCARD")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("RADIOCARD")
+        time.sleep(0.3)
+        fetched = repository.get_story(stream_story.id)
+        assert fetched.play_count == 1
+        assert fetched.total_seconds > 0
+    finally:
+        engine.stop()

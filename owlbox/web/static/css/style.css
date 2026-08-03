@@ -325,7 +325,7 @@ a.btn { display: inline-block; text-decoration: none; }
 .info-grid dt { color: var(--text-dim); font-size: 0.85rem; }
 .info-grid dd { margin: 0; font-weight: 600; }
 
-.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; }
+.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin-bottom: 14px; }
 .stat-tile {
   background: var(--bg);
   border-radius: 10px;

@@ -26,6 +26,9 @@ class Story:
     stream_url: Optional[str]
     shuffle: bool
     repeat: bool
+    play_count: int
+    total_seconds: float
+    last_played_at: Optional[str]
     created_at: str
 
     @classmethod
@@ -38,6 +41,9 @@ class Story:
             stream_url=row["stream_url"],
             shuffle=bool(row["shuffle"]),
             repeat=bool(row["repeat"]),
+            play_count=row["play_count"],
+            total_seconds=row["total_seconds"],
+            last_played_at=row["last_played_at"],
             created_at=row["created_at"],
         )
 
@@ -86,6 +92,55 @@ def get_library_stats() -> dict:
     track_count = conn.execute("SELECT COUNT(*) AS n FROM tracks").fetchone()["n"]
     assigned_count = conn.execute("SELECT COUNT(*) AS n FROM stories WHERE uid IS NOT NULL").fetchone()["n"]
     return {"story_count": story_count, "track_count": track_count, "assigned_count": assigned_count}
+
+
+# -- Hörstatistik (play count / listening time per story) -------------------
+
+
+def increment_play_count(story_id: int) -> None:
+    with write_cursor() as cur:
+        cur.execute(
+            "UPDATE stories SET play_count = play_count + 1, last_played_at = datetime('now') WHERE id = ?",
+            (story_id,),
+        )
+
+
+def add_listening_seconds(story_id: int, seconds: float) -> None:
+    if seconds <= 0:
+        return
+    with write_cursor() as cur:
+        cur.execute("UPDATE stories SET total_seconds = total_seconds + ? WHERE id = ?", (seconds, story_id))
+
+
+def get_listening_stats() -> dict:
+    conn = get_connection()
+    totals = conn.execute(
+        "SELECT COALESCE(SUM(play_count), 0) AS plays, COALESCE(SUM(total_seconds), 0) AS seconds FROM stories"
+    ).fetchone()
+    top_rows = conn.execute(
+        """
+        SELECT id, title, stream_url, play_count, total_seconds, last_played_at
+        FROM stories
+        WHERE play_count > 0
+        ORDER BY total_seconds DESC
+        LIMIT 5
+        """
+    ).fetchall()
+    return {
+        "total_plays": totals["plays"],
+        "total_seconds": totals["seconds"],
+        "top_stories": [
+            {
+                "id": r["id"],
+                "title": r["title"],
+                "is_stream": bool(r["stream_url"]),
+                "play_count": r["play_count"],
+                "total_seconds": r["total_seconds"],
+                "last_played_at": r["last_played_at"],
+            }
+            for r in top_rows
+        ],
+    }
 
 
 def get_tracks(story_id: int) -> list[Track]:
