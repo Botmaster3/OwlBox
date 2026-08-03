@@ -1,11 +1,12 @@
 """Controls the display backlight brightness via software PWM on a GPIO pin.
 
-By default the backlight is hardwired straight to a 3.3V pin (see docs/hardware.md) -
-simple, but always on at full brightness. Dimming requires rewiring that line to a
-free GPIO through a driver transistor (a Pi GPIO can't source enough current for the
-backlight directly) and setting gpio.backlight_pin accordingly. Until that's done -
-or in simulate mode - NullBacklight just tracks the requested value without touching
-any hardware, the same "degrade gracefully" pattern as player.py/network.py.
+The backlight line is wired to a GPIO through a driver transistor (a Pi GPIO
+can't source enough current for the backlight directly) - see docs/hardware.md.
+This is required hardware, not optional; gpio.backlight_pin must be set for
+dimming to have any effect. In simulate mode, or if backlight_pin is unset
+(e.g. the backlight is against the standard build still hardwired straight to
+3.3V), NullBacklight just tracks the requested value without touching any
+hardware, the same "degrade gracefully" pattern as player.py/network.py.
 """
 from __future__ import annotations
 

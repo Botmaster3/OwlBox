@@ -12,8 +12,6 @@
     --copper-soft: #f3e6d4;
     --slate: #4c6478;
     --slate-soft: #e3e9ed;
-    --plum: #7a4f8c;
-    --plum-soft: #ece2ef;
     --danger: #a3402f;
   }
 
@@ -30,8 +28,6 @@
       --copper-soft: #3a2e1c;
       --slate: #8fb3cc;
       --slate-soft: #223342;
-      --plum: #c99bd8;
-      --plum-soft: #362a3a;
       --danger: #e08674;
     }
   }
@@ -47,8 +43,6 @@
     --copper-soft: #3a2e1c;
     --slate: #8fb3cc;
     --slate-soft: #223342;
-    --plum: #c99bd8;
-    --plum-soft: #362a3a;
     --danger: #e08674;
   }
   :root[data-theme="light"] {
@@ -63,8 +57,6 @@
     --copper-soft: #f3e6d4;
     --slate: #4c6478;
     --slate-soft: #e3e9ed;
-    --plum: #7a4f8c;
-    --plum-soft: #ece2ef;
     --danger: #a3402f;
   }
 
@@ -139,12 +131,6 @@
     border: 1px solid var(--sage-line);
     border-radius: 10px;
     padding: 16px 18px;
-  }
-  .material-card.optional {
-    border-color: color-mix(in srgb, var(--plum) 45%, var(--sage-line));
-  }
-  .material-card.optional .qty {
-    color: var(--plum);
   }
   .material-card .qty {
     font-family: ui-monospace, monospace;
@@ -269,7 +255,6 @@
   .pin.gnd { --cat-color: var(--sage); }
   .pin.hifi { --cat-color: var(--slate); }
   .pin.ours { --cat-color: var(--accent); }
-  .pin.opt { --cat-color: var(--plum); }
   .pin.free { --cat-color: var(--sage-line); opacity: 0.75; }
 
   .legend {
@@ -301,10 +286,6 @@
     background: var(--accent-soft);
     color: var(--accent);
     border-bottom: 1px solid var(--sage-line);
-  }
-  .connector-card.optional h3 {
-    background: var(--plum-soft);
-    color: var(--plum);
   }
   table.pinout {
     width: 100%;
@@ -393,8 +374,8 @@
     <p class="lede">
       Eine Lochraster-HAT, die auf den 40-Pin-Header des Raspberry Pi 3B+ gesteckt wird,
       den HiFiBerry Amp unverändert durchreicht und alle übrigen Komponenten sauber verkabelt -
-      inklusive der beiden optionalen Erweiterungen (lila markiert): dimmbares Backlight und
-      zweiter Dreh-Encoder für die Helligkeit.
+      inklusive dimmbarem Backlight und dem zweiten Dreh-Encoder für die Helligkeit, beides
+      Teil des Standardaufbaus.
     </p>
   </header>
 
@@ -427,15 +408,15 @@
         <div class="name">Litzendraht + Lötzinn</div>
         <div class="note">Punkt-zu-Punkt-Verdrahtung auf dem freien Rasterfeld, keine Leiterbahnplanung nötig</div>
       </div>
-      <div class="material-card optional">
-        <div class="qty">optional</div>
+      <div class="material-card">
+        <div class="qty">1×</div>
         <div class="name">2. KY-040-Encoder (4-polig, kein Taster)</div>
-        <div class="note">Nur für die Helligkeits-Regelung per Dreh-Encoder statt/zusätzlich zum Schieberegler</div>
+        <div class="note">Für die Helligkeits-Regelung per Dreh-Encoder, zusätzlich zum Schieberegler in den Einstellungen</div>
       </div>
-      <div class="material-card optional">
-        <div class="qty">optional</div>
+      <div class="material-card">
+        <div class="qty">1×</div>
         <div class="name">NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET + ~1kΩ Widerstand</div>
-        <div class="note">Nur für dimmbares Backlight - schaltet die LED-Leitung per Software-PWM statt fest an 3.3V</div>
+        <div class="note">Für dimmbares Backlight - schaltet die LED-Leitung per Software-PWM statt fest an 3.3V</div>
       </div>
     </div>
   </section>
@@ -458,7 +439,7 @@
       <div class="stack-board custom">
         <div class="label">Verteiler-Platine (diese HAT)</div>
         <div class="sub">zapft: SPI-Bus + CE1 (RC522), CE0/DC/RST (Display), GPIO5/6 (Taster), GPIO17/22/27
-          (Lautstärke-Encoder), optional GPIO13 (Backlight), GPIO23/12 (Helligkeits-Encoder)</div>
+          (Lautstärke-Encoder), GPIO13 (Backlight), GPIO23/12 (Helligkeits-Encoder)</div>
       </div>
       <div class="stack-connector-row">
         <div class="stack-connector"></div>
@@ -482,7 +463,6 @@
     </div>
     <div class="legend">
       <div class="item"><span class="dot" style="--dot: var(--accent)"></span> von dieser HAT genutzt</div>
-      <div class="item"><span class="dot" style="--dot: var(--plum)"></span> optional (Backlight-Dimmen, Helligkeits-Encoder)</div>
       <div class="item"><span class="dot" style="--dot: var(--slate)"></span> HiFiBerry (nur Durchreichung)</div>
       <div class="item"><span class="dot" style="--dot: var(--copper)"></span> Stromversorgung</div>
       <div class="item"><span class="dot" style="--dot: var(--sage)"></span> GND</div>
@@ -490,8 +470,7 @@
     </div>
     <div class="warn">
       GPIO18/19/20/21 sowie GPIO2/3 gehören dem HiFiBerry (I2S + I2C) - die Platine legt darauf
-      bewusst nichts. Die optionalen Pins (lila) bleiben frei, solange Backlight-Dimmen und
-      Helligkeits-Encoder nicht verdrahtet sind - Standard ist Backlight fest an 3.3V.
+      bewusst nichts.
     </div>
   </section>
 
@@ -548,7 +527,7 @@
     [13, "GPIO27", "ours", "Encoder DT"],
     [14, "GND", "gnd", ""],
     [15, "GPIO22", "ours", "Encoder SW"],
-    [16, "GPIO23", "opt", "Helligkeits-Encoder CLK (optional)"],
+    [16, "GPIO23", "ours", "Helligkeits-Encoder CLK"],
     [17, "3V3", "pwr", "Stromversorgung"],
     [18, "GPIO24", "ours", "Display DC"],
     [19, "GPIO10", "ours", "SPI MOSI (Bus)"],
@@ -564,8 +543,8 @@
     [29, "GPIO5", "ours", "Taster Weiter"],
     [30, "GND", "gnd", ""],
     [31, "GPIO6", "ours", "Taster Zurück"],
-    [32, "GPIO12", "opt", "Helligkeits-Encoder DT (optional)"],
-    [33, "GPIO13", "opt", "Display-Backlight, dimmbar (optional)"],
+    [32, "GPIO12", "ours", "Helligkeits-Encoder DT"],
+    [33, "GPIO13", "ours", "Display-Backlight, dimmbar"],
     [34, "GND", "gnd", ""],
     [35, "GPIO19", "hifi", "I2S LRCLK · HiFiBerry"],
     [36, "GPIO16", "free", "frei"],
@@ -644,8 +623,7 @@
       ],
     },
     {
-      title: "Helligkeits-Encoder KY-040 (4-polig, optional, kein Taster)",
-      optional: true,
+      title: "Helligkeits-Encoder KY-040 (4-polig, kein Taster)",
       rows: [
         ["CLK", "Pin 16 · GPIO23", ""],
         ["DT", "Pin 32 · GPIO12", ""],
@@ -654,8 +632,7 @@
       ],
     },
     {
-      title: "Backlight-Dimmen: Transistor-Schalter (optional)",
-      optional: true,
+      title: "Backlight-Dimmen: Transistor-Schalter",
       rows: [
         ["GPIO13", "Basis/Gate", "über ~1kΩ Vorwiderstand (BJT)"],
         ["Kollektor/Drain", "LED-Kathode", "statt LED-Kathode an GND"],
@@ -668,7 +645,7 @@
   const connectors = document.getElementById("connectors");
   for (const conn of CONNECTORS) {
     const card = document.createElement("div");
-    card.className = conn.optional ? "connector-card optional" : "connector-card";
+    card.className = "connector-card";
     const rows = conn.rows
       .map(
         ([modulePin, target, note]) => `

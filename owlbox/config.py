@@ -53,12 +53,13 @@ class GpioConfig:
     seek_hold_seconds: float = 0.4
     # Seconds seeked per repeat tick while a button is held past seek_hold_seconds.
     seek_step_seconds: float = 10
-    # Display backlight, for dimming (see docs/hardware.md) - None/0 means the
-    # backlight is still hardwired straight to 3.3V (its original, non-dimmable
-    # default) rather than rewired to this GPIO through a driver transistor.
-    backlight_pin: Optional[int] = None
-    # Second rotary encoder, dedicated to brightness (only meaningful together
-    # with backlight_pin above) - same KY-040 wiring pattern as the volume encoder.
+    # Display backlight, for dimming (see docs/hardware.md) - wired through a
+    # driver transistor, not straight to 3.3V. Required hardware, not optional;
+    # only set to None/0 if the backlight is (against the standard build)
+    # still hardwired straight to 3.3V.
+    backlight_pin: Optional[int] = 13
+    # Second rotary encoder, dedicated to brightness - required hardware,
+    # same KY-040 wiring pattern as the volume encoder.
     brightness_encoder_clk: int = 23
     brightness_encoder_dt: int = 12
     # Brightness change (percent) per encoder detent.

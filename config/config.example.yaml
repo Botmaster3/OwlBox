@@ -65,13 +65,13 @@ gpio:
   seek_step_seconds: 10
   # BCM pin driving the display backlight for software-PWM dimming, via a driver
   # transistor (a Pi GPIO can't source the backlight's current directly) - see
-  # docs/hardware.md. Leave unset (null) if the backlight is still wired straight
-  # to 3.3V (the default, non-dimmable wiring) - the brightness slider in
-  # Einstellungen has no effect until this is set.
-  backlight_pin: null
-  # Second KY-040 rotary encoder, dedicated to brightness (only meaningful together
-  # with backlight_pin above) - turning it is the only way brightness changes,
-  # there is no automatic dimming. See docs/hardware.md.
+  # docs/hardware.md. Required hardware, not optional. Only set to null if the
+  # backlight is (against the standard build) still wired straight to 3.3V -
+  # the brightness slider in Einstellungen has no effect until this is set.
+  backlight_pin: 13
+  # Second KY-040 rotary encoder, dedicated to brightness - required hardware.
+  # Turning it (or the slider in Einstellungen) is the only way brightness
+  # changes, there is no automatic dimming. See docs/hardware.md.
   brightness_encoder_clk: 23
   brightness_encoder_dt: 12
   # Brightness change (%) per encoder detent.

@@ -11,8 +11,9 @@ Zielhardware:
   deaktiviert**, siehe unten.
 - 2 Taster (vor/zurück)
 - 1 Dreh-Encoder mit Druckschalter (Lautstärke / Pause)
-- 1 weiterer Dreh-Encoder ohne Taster (Helligkeit, optional - nur zusammen mit
-  dimmbarem Backlight sinnvoll, s.u.)
+- 1 weiterer Dreh-Encoder ohne Taster (Helligkeit, s.u.)
+- 1 NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET, für dimmbares
+  Backlight (s.u.)
 
 Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 `config/config.example.yaml`. Wer andere Pins verdrahtet, passt einfach die
@@ -20,8 +21,7 @@ Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 
 **Verkabelungsplan als Grafik**: `docs/owlbox-wiring-diagram.svg` zeigt alle
 Komponenten und ihre Verkabelung auf einen Blick als Schaubild (Pi, HiFiBerry,
-Lautsprecher L/R, RC522, Taster, beide Encoder, Display, optionales
-Backlight-Dimmen).
+Lautsprecher L/R, RC522, Taster, beide Encoder, Display, Backlight-Dimmen).
 
 **Verteiler-Platine**: `docs/hat-wiring.html` (im Browser öffnen) zeigt den
 kompletten Schaltplan als Lochraster-HAT - inkl. 40-Pin-Belegung, Stapelaufbau
@@ -75,45 +75,39 @@ Nur diese Leitungen vom Display-Header zum Pi verbinden:
 | CS/CE0     | GPIO8       | Display-Chipselect |
 | DC/RS      | GPIO24      | Data/Command (Standardwert des tft35a-Overlays) |
 | RST        | GPIO25      | Reset (Standardwert des tft35a-Overlays) |
-| LED/Backlight | **3.3V direkt** (Standard) oder GPIO13 (optional, dimmbar) | siehe unten |
+| LED/Backlight | **GPIO13, über Treibertransistor** (dimmbar, Standard) | siehe unten |
 | T_CLK, T_CS, T_DIN, T_DO, T_IRQ (Touch) | **nicht anschließen** | Touch bleibt so auch elektrisch inaktiv |
 
 **Zur Hintergrundbeleuchtung**: Je nach Fertigungscharge ist die LED-Leitung
-bei diesem Board-Typ entweder fest verdrahtet oder für Software-Dimmen auf
-einen GPIO gelegt (öfter berichtet: GPIO18 - genau der Pin, den der
-HiFiBerry für die I2S-Bit-Clock braucht, hier also nicht verwendbar).
-
-**Standard (keine Dimmung)**: die LED-Leitung direkt an einen 3.3V-Pin des
-Pi anschließen - Beleuchtung ist dann dauerhaft an, GPIO18 bleibt frei für
-den HiFiBerry, keine zusätzlichen Bauteile nötig.
-
-**Optional: dimmbares Backlight per Software-PWM** - dann lässt sich die
-Helligkeit **rein manuell** regeln, per Regler unter Einstellungen oder am
-Gerät über einen zweiten Dreh-Encoder (s.u.). Es gibt bewusst **kein**
-automatisches Dimmen (weder nach Inaktivität noch beim Einschlaf-Timer) -
-die Helligkeit bleibt, wie sie zuletzt eingestellt wurde:
+bei diesem Board-Typ ab Werk entweder fest verdrahtet oder auf einen GPIO
+gelegt (öfter berichtet: GPIO18 - genau der Pin, den der HiFiBerry für die
+I2S-Bit-Clock braucht, hier also nicht verwendbar). Bei OwlBox ist das
+Backlight-Dimmen **Pflicht, kein optionales Extra** - der Helligkeitsregler
+unter Einstellungen (und der zweite Dreh-Encoder) sind zentrale
+Bedienelemente, keine Kür:
 
 1. Die LED-Leitung nicht an 3.3V, sondern an einen freien GPIO anschließen -
-   empfohlen **GPIO13** (physischer Pin 33, einer der Hardware-PWM-fähigen
-   Pins neben 12/18/19, von denen 18/19 dem HiFiBerry gehören).
+   **GPIO13** (physischer Pin 33, einer der Hardware-PWM-fähigen Pins neben
+   12/18/19, von denen 18/19 dem HiFiBerry gehören).
 2. Da ein Pi-GPIO nicht genug Strom für die Hintergrundbeleuchtung liefern
    kann, einen kleinen NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET
    als Schalter dazwischenschalten: GPIO13 → Basis/Gate (über ~1kΩ
    Vorwiderstand bei einem BJT), Kollektor/Drain → LED-Kathode, Emitter/
    Source → GND. Die LED-Anode bleibt wie gehabt an 3.3V bzw. an der vom
    Board vorgesehenen Versorgung.
-3. In `config.yaml`: `gpio.backlight_pin: 13` setzen (Default `null` = alte
-   3.3V-Direktverdrahtung, OwlBox steuert dann nichts und der Regler in den
-   Einstellungen hat keine Wirkung).
-4. Optional einen zweiten KY-040-Dreh-Encoder (ohne Taster) für die
-   Helligkeit verdrahten, siehe Tabelle unten - Drehen ändert die Helligkeit
-   sofort um `gpio.brightness_step` (Standard 5%) pro Rastung. Ohne diesen
-   Encoder bleibt nur der Regler unter Einstellungen zur Bedienung übrig.
+3. In `config.yaml`: `gpio.backlight_pin: 13` setzen (Default in
+   `config.example.yaml`). Nur auf `null` setzen, wenn das Backlight
+   abweichend vom Standardaufbau doch fest an 3.3V hängt - dann hat der
+   Regler in den Einstellungen keine Wirkung.
+4. Den zweiten KY-040-Dreh-Encoder (ohne Taster) für die Helligkeit
+   verdrahten, siehe Tabelle unten - Drehen ändert die Helligkeit sofort um
+   `gpio.brightness_step` (Standard 5%) pro Rastung. Es gibt bewusst **kein**
+   automatisches Dimmen (weder nach Inaktivität noch beim Einschlaf-Timer) -
+   die Helligkeit bleibt, wie sie zuletzt eingestellt wurde.
 
-Beide optionalen Erweiterungen (Backlight-Dimmen, Helligkeits-Encoder) sind in
-`docs/hat-wiring.html` als eigene, lila markierte Pins/Steckverbinder
-eingezeichnet - `OwlBox-Wiring.pdf` ist nur eine ältere PDF-Momentaufnahme
-davon und noch nicht aktualisiert.
+Beide Erweiterungen (Backlight-Dimmen, Helligkeits-Encoder) sind in
+`docs/hat-wiring.html` eingezeichnet - `OwlBox-Wiring.pdf` ist nur eine
+ältere PDF-Momentaufnahme davon und noch nicht aktualisiert.
 
 ## GPIO-Belegung im Überblick
 
@@ -136,9 +130,9 @@ davon und noch nicht aktualisiert.
 | Encoder CLK                     | 17      | Lautstärke-Encoder  |
 | Encoder DT                      | 27      | Lautstärke-Encoder  |
 | Encoder SW                      | 22      | Lautstärke-Encoder  |
-| Display-Backlight (optional)    | 13      | Nur falls dimmbar verdrahtet (s.o.) - sonst frei |
-| Helligkeits-Encoder CLK (optional) | 23   | Nur falls Helligkeits-Encoder verdrahtet (s.o.) - sonst frei |
-| Helligkeits-Encoder DT (optional)  | 12   | Nur falls Helligkeits-Encoder verdrahtet (s.o.) - sonst frei |
+| Display-Backlight (dimmbar)     | 13      | Backlight-Dimmen (Treibertransistor, s.o.) |
+| Helligkeits-Encoder CLK         | 23      | Helligkeits-Encoder |
+| Helligkeits-Encoder DT          | 12      | Helligkeits-Encoder |
 
 ## HiFiBerry Amp
 
@@ -242,11 +236,11 @@ schaltet Play/Pause um. Ein langer Druck (`gpio.shutdown_hold_seconds`,
 Default 4s) fährt den Pi sicher herunter - praktisch für ein Kindergerät
 ohne Zugriff auf ein Terminal. Auf 0 setzen, um das abzuschalten.
 
-## Zweiter Dreh-Encoder für Helligkeit (KY-040, optional)
+## Zweiter Dreh-Encoder für Helligkeit (KY-040)
 
-Nur sinnvoll zusammen mit dem dimmbaren Backlight oben - dasselbe
-KY-040-Modul, diesmal ohne den Taster zu verdrahten (kein eigener Klick,
-nur Drehen):
+Gehört zum Standardaufbau, zusammen mit dem dimmbaren Backlight oben -
+dasselbe KY-040-Modul, diesmal ohne den Taster zu verdrahten (kein eigener
+Klick, nur Drehen):
 
 | Encoder Pin | Raspberry Pi |
 |-------------|--------------|
@@ -256,9 +250,7 @@ nur Drehen):
 | GND         | GND          |
 
 Drehen ändert die Helligkeit (Schrittweite `gpio.brightness_step`, Standard
-5%), sofort und rein manuell - es gibt kein automatisches Dimmen. Ohne
-`gpio.backlight_pin` gesetzt (s.o.) hat dieser Encoder keine sichtbare
-Wirkung.
+5%), sofort und rein manuell - es gibt kein automatisches Dimmen.
 
 Damit Shutdown/Neustart (auch über die Web-UI unter Einstellungen bzw.
 über einen "Pi neu starten"/"WLAN aus"-Funktions-Chip, siehe unten) ohne
