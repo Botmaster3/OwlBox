@@ -404,11 +404,21 @@ def update_volume_settings():
 @admin_required
 def update_brightness():
     data = request.get_json(silent=True) or {}
-    try:
-        brightness = int(data["brightness"])
-    except (KeyError, TypeError, ValueError):
-        return jsonify({"error": "brightness is required and must be an integer"}), 400
-    _engine().manual_set_brightness(brightness)
+    if "min_brightness" in data:
+        try:
+            _engine().set_min_brightness(int(data["min_brightness"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "min_brightness must be an integer"}), 400
+    if "max_brightness" in data:
+        try:
+            _engine().set_max_brightness(int(data["max_brightness"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "max_brightness must be an integer"}), 400
+    if "brightness" in data:
+        try:
+            _engine().manual_set_brightness(int(data["brightness"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "brightness must be an integer"}), 400
     return jsonify(_engine().get_state()["settings"])
 
 

@@ -502,3 +502,33 @@ def test_brightness_encoder_delta_adjusts_and_clamps_brightness(config):
         assert engine.get_state()["settings"]["brightness"] == 100
     finally:
         engine.stop()
+
+
+def test_brightness_range_clamps_current_and_future_changes(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.manual_set_brightness(90)
+        assert engine.get_state()["settings"]["brightness"] == 90
+
+        engine.set_max_brightness(60)
+        state = engine.get_state()
+        assert state["settings"]["brightness"] == 60
+        assert state["settings"]["max_brightness"] == 60
+
+        engine.manual_set_brightness(100)
+        assert engine.get_state()["settings"]["brightness"] == 60
+
+        engine.set_min_brightness(20)
+        engine.manual_set_brightness(0)
+        state = engine.get_state()
+        assert state["settings"]["brightness"] == 20
+        assert state["settings"]["min_brightness"] == 20
+
+        # min/max can't cross - each setter pushes the other out of the way.
+        engine.set_min_brightness(90)
+        assert engine.get_state()["settings"]["max_brightness"] == 91
+    finally:
+        engine.stop()
+    assert repository.get_int_setting("max_brightness", -1) == 91
+    assert repository.get_int_setting("min_brightness", -1) == 90

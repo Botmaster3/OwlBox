@@ -42,7 +42,9 @@ den Pi geladen und einem Chip zugewiesen.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
-    Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert automatisch nach Ablauf);
+    Helligkeit (aktuelle Helligkeit, sowie ein einstellbarer Minimal-/Maximalwert, der den
+    Schieberegler hier und den Helligkeits-Encoder am Gerät begrenzt); Einschlaf-Timer
+    (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert automatisch nach Ablauf);
     WLAN (Status, an/aus, nach Netzwerken suchen und verbinden); Pi neu starten/herunterfahren.
   - **Info** - Systeminfos: Hardware-Modell, Betriebssystem, Laufzeit, CPU-Temperatur,
     Speicher-/RAM-Belegung, Bibliotheks-Statistik, OwlBox-Version.

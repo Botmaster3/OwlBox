@@ -95,6 +95,9 @@
 
   const currentBrightnessInput = document.getElementById("current-brightness");
   const currentBrightnessValue = document.getElementById("current-brightness-value");
+  const minBrightnessInput = document.getElementById("min-brightness");
+  const maxBrightnessInput = document.getElementById("max-brightness");
+  const brightnessSaveBtn = document.getElementById("brightness-save-btn");
 
   let brightnessSliderBeingDragged = false;
 
@@ -113,6 +116,29 @@
       showToast(err.message, true);
     }
     brightnessSliderBeingDragged = false;
+  });
+
+  brightnessSaveBtn.addEventListener("click", async () => {
+    try {
+      const settings = await api("/api/settings/brightness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          min_brightness: parseInt(minBrightnessInput.value, 10),
+          max_brightness: parseInt(maxBrightnessInput.value, 10),
+        }),
+      });
+      // Reflect back the server's (clamped) values in case the input was out of range.
+      minBrightnessInput.value = settings.min_brightness;
+      maxBrightnessInput.value = settings.max_brightness;
+      currentBrightnessInput.min = settings.min_brightness;
+      currentBrightnessInput.max = settings.max_brightness;
+      currentBrightnessInput.value = settings.brightness;
+      currentBrightnessValue.textContent = settings.brightness;
+      showToast("Helligkeits-Grenzen gespeichert.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
   });
 
   // -- sleep timer --------------------------------------------------------
@@ -262,15 +288,19 @@
     }
   });
 
-  // Max-volume/step are edit-and-save fields, not live telemetry - only ever
-  // populated once up front, never overwritten by the recurring poll below
-  // (which would otherwise race a user's in-progress edit or an unsaved change
-  // right back to whatever the server currently has).
+  // Max-volume/step and min/max-brightness are edit-and-save fields, not live
+  // telemetry - only ever populated once up front, never overwritten by the
+  // recurring poll below (which would otherwise race a user's in-progress edit
+  // or an unsaved change right back to whatever the server currently has).
   async function loadVolumeSettingsOnce() {
     try {
       const state = await api("/api/state");
       maxVolumeInput.value = state.settings.max_volume;
       volumeStepInput.value = state.settings.volume_step;
+      minBrightnessInput.value = state.settings.min_brightness;
+      maxBrightnessInput.value = state.settings.max_brightness;
+      currentBrightnessInput.min = state.settings.min_brightness;
+      currentBrightnessInput.max = state.settings.max_brightness;
     } catch (err) {
       // ignore, fields keep their HTML defaults
     }

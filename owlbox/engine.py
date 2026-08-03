@@ -74,7 +74,11 @@ class Engine:
         self._sleep_timer_minutes: Optional[float] = None
 
         self._backlight = create_backlight(config)
-        self._brightness = repository.get_int_setting("brightness", 100)
+        self._min_brightness = repository.get_int_setting("min_brightness", 0)
+        self._max_brightness = repository.get_int_setting("max_brightness", 100)
+        self._brightness = max(
+            self._min_brightness, min(self._max_brightness, repository.get_int_setting("brightness", 100))
+        )
 
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
@@ -329,15 +333,44 @@ class Engine:
 
     def manual_set_brightness(self, percent: int) -> None:
         with self._lock:
-            self._brightness = max(0, min(100, percent))
+            self._brightness = max(self._min_brightness, min(self._max_brightness, percent))
             repository.set_setting("brightness", self._brightness)
             self._backlight.set_brightness(self._brightness)
 
     def _handle_brightness_delta(self, direction: int) -> None:
         with self._lock:
-            self._brightness = max(0, min(100, self._brightness + direction * self._config.gpio.brightness_step))
+            self._brightness = max(
+                self._min_brightness,
+                min(self._max_brightness, self._brightness + direction * self._config.gpio.brightness_step),
+            )
             repository.set_setting("brightness", self._brightness)
             self._backlight.set_brightness(self._brightness)
+
+    def set_min_brightness(self, percent: int) -> None:
+        with self._lock:
+            self._min_brightness = max(0, min(99, percent))
+            if self._min_brightness >= self._max_brightness:
+                # Push the upper bound out of the way rather than silently
+                # ignoring the requested minimum.
+                self._max_brightness = min(100, self._min_brightness + 1)
+                repository.set_setting("max_brightness", self._max_brightness)
+            repository.set_setting("min_brightness", self._min_brightness)
+            if self._brightness < self._min_brightness:
+                self._brightness = self._min_brightness
+                repository.set_setting("brightness", self._brightness)
+                self._backlight.set_brightness(self._brightness)
+
+    def set_max_brightness(self, percent: int) -> None:
+        with self._lock:
+            self._max_brightness = max(1, min(100, percent))
+            if self._max_brightness <= self._min_brightness:
+                self._min_brightness = max(0, self._max_brightness - 1)
+                repository.set_setting("min_brightness", self._min_brightness)
+            repository.set_setting("max_brightness", self._max_brightness)
+            if self._brightness > self._max_brightness:
+                self._brightness = self._max_brightness
+                repository.set_setting("brightness", self._brightness)
+                self._backlight.set_brightness(self._brightness)
 
     # -- sleep timer ----------------------------------------------------------
 
@@ -406,6 +439,8 @@ class Engine:
             sleep_timer_end = self._sleep_timer_end
             sleep_timer_minutes = self._sleep_timer_minutes
             brightness = self._brightness
+            min_brightness = self._min_brightness
+            max_brightness = self._max_brightness
         status = self._player.get_status()
 
         sleep_timer_remaining = None
@@ -442,7 +477,13 @@ class Engine:
             "unknown_tag": current_uid if is_unknown else None,
             "last_unknown_uid": last_unknown,
             "player": status,
-            "settings": {"max_volume": max_volume, "volume_step": volume_step, "brightness": brightness},
+            "settings": {
+                "max_volume": max_volume,
+                "volume_step": volume_step,
+                "brightness": brightness,
+                "min_brightness": min_brightness,
+                "max_brightness": max_brightness,
+            },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,
                 "minutes": sleep_timer_minutes,
