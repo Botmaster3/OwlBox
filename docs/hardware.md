@@ -105,8 +105,10 @@ die Helligkeit bleibt, wie sie zuletzt eingestellt wurde:
    sofort um `gpio.brightness_step` (Standard 5%) pro Rastung. Ohne diesen
    Encoder bleibt nur der Regler unter Einstellungen zur Bedienung übrig.
 
-Diese Variante ist in `docs/hat-wiring.html`/`OwlBox-Wiring.pdf` noch nicht
-eingezeichnet, da sie optional ist - bei Bedarf ergänze ich das dort auch.
+Beide optionalen Erweiterungen (Backlight-Dimmen, Helligkeits-Encoder) sind in
+`docs/hat-wiring.html` als eigene, lila markierte Pins/Steckverbinder
+eingezeichnet - `OwlBox-Wiring.pdf` ist nur eine ältere PDF-Momentaufnahme
+davon und noch nicht aktualisiert.
 
 ## GPIO-Belegung im Überblick
 
