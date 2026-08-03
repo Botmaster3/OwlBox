@@ -258,6 +258,37 @@ def test_stop_persists_exact_position_even_before_next_autosave(config):
     assert seek_seconds == 42.0
 
 
+def test_volume_zero_pauses_and_raising_it_again_resumes(config):
+    config.rfid.poll_interval = 0.01
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.1)
+        engine.manual_set_volume(50)
+        assert engine.get_state()["player"]["playing"] is True
+
+        engine.manual_set_volume(0)
+        assert engine.get_state()["player"]["playing"] is False
+
+        # Volume already at 0 - no-op, must not un-pause on its own.
+        engine._handle_volume_delta(-1)
+        assert engine.get_state()["player"]["playing"] is False
+
+        engine.manual_set_volume(30)
+        assert engine.get_state()["player"]["playing"] is True
+
+        # Same again, but driven by the encoder delta instead of an absolute set.
+        engine.manual_set_volume(0)
+        assert engine.get_state()["player"]["playing"] is False
+        engine._handle_volume_delta(1)
+        assert engine.get_state()["player"]["playing"] is True
+    finally:
+        engine.stop()
+
+
 def test_max_volume_clamps_current_and_future_changes(config):
     engine = Engine(config)
     engine.start()

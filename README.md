@@ -31,7 +31,9 @@ den Pi geladen und einem Chip zugewiesen.
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,
   lang drücken = herunterfahren) + optionaler zweiter Dreh-Encoder (drehen =
-  Helligkeit, nur zusammen mit dimmbarem Backlight).
+  Helligkeit, nur zusammen mit dimmbarem Backlight). Lautstärke ganz runter
+  drehen (0%) pausiert automatisch, wieder hochdrehen setzt die Wiedergabe
+  fort - egal ob per Encoder oder Web-Regler.
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - "Jetzt läuft"-Anzeige (groß, wie auf dem Display) als erste Seite nach dem Login,

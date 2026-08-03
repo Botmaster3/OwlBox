@@ -309,13 +309,22 @@ class Engine:
 
     def manual_set_volume(self, percent: int) -> None:
         with self._lock:
-            self._volume = max(0, min(self._max_volume, percent))
-            self._player.set_volume(self._volume)
+            self._set_volume_locked(percent)
 
     def _handle_volume_delta(self, direction: int) -> None:
         with self._lock:
-            self._volume = max(0, min(self._max_volume, self._volume + direction * self._volume_step))
-            self._player.set_volume(self._volume)
+            self._set_volume_locked(self._volume + direction * self._volume_step)
+
+    def _set_volume_locked(self, percent: int) -> None:
+        previous = self._volume
+        self._volume = max(0, min(self._max_volume, percent))
+        self._player.set_volume(self._volume)
+        # Turning all the way down to 0 pauses, turning back up resumes - mirrors
+        # a real volume knob/mute button instead of just playing silently at 0.
+        if previous > 0 and self._volume == 0:
+            self._player.pause()
+        elif previous == 0 and self._volume > 0:
+            self._player.play()
 
     def set_max_volume(self, percent: int) -> None:
         with self._lock:
