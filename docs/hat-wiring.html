@@ -1,4 +1,4 @@
-<title>OwlBox – Verteiler-Platine</title>
+<title>OwlBox – Adapter-Platine (Kabel)</title>
 <style>
   :root {
     --paper: #f5f2ea;
@@ -212,6 +212,28 @@
     margin-top: 18px;
   }
 
+  .cable-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 18px 0;
+  }
+  .cable-row .cable-line {
+    width: 3px;
+    height: 34px;
+    flex: none;
+    background: var(--copper);
+    border-radius: 2px;
+  }
+  .cable-row .cable-label {
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: var(--copper);
+    text-align: center;
+    max-width: 42ch;
+  }
+
   /* ---- 40-pin header grid ---- */
   .header-scroll { overflow-x: auto; padding-bottom: 4px; }
   .pin-header {
@@ -369,13 +391,13 @@
 
 <main>
   <header class="page-head">
-    <p class="eyebrow">Wiring Reference · OwlBox HAT</p>
-    <h1>Verteiler-Platine: Pi, HiFiBerry, RC522, Taster, Encoder, Display</h1>
+    <p class="eyebrow">Wiring Reference · OwlBox Adapter-Platine</p>
+    <h1>Adapter-Platine per Kabel: RC522, Taster, Encoder, Display, Backlight</h1>
     <p class="lede">
-      Eine Lochraster-HAT, die auf den 40-Pin-Header des Raspberry Pi 3B+ gesteckt wird,
-      den HiFiBerry Amp unverändert durchreicht und alle übrigen Komponenten sauber verkabelt -
-      inklusive dimmbarem Backlight und dem zweiten Dreh-Encoder für die Helligkeit, beides
-      Teil des Standardaufbaus.
+      Pi und HiFiBerry bleiben unverändert direkt gestapelt. Eine separate Lochraster-Platine
+      (keine HAT-Form nötig) hängt per Flachbandkabel am Pass-Through-Header des HiFiBerry und
+      nimmt alle übrigen Komponenten auf - inklusive dimmbarem Backlight und dem zweiten
+      Dreh-Encoder für die Helligkeit, beides Teil des Standardaufbaus.
     </p>
   </header>
 
@@ -385,23 +407,23 @@
     <div class="materials">
       <div class="material-card">
         <div class="qty">1×</div>
-        <div class="name">Proto-HAT-Lochrasterplatine</div>
-        <div class="note">HAT-Formfaktor mit vorgebohrtem 40-Pin-Footprint + Befestigungslöchern, freies Rasterfeld</div>
+        <div class="name">Lochrasterplatine (beliebige Form)</div>
+        <div class="note">Keine HAT-Form nötig - liegt getrennt vom Pi, z.B. im Gehäusedeckel neben dem Display</div>
       </div>
       <div class="material-card">
         <div class="qty">1×</div>
-        <div class="name">2×20 Stacking-Header (extra hoch)</div>
-        <div class="note">Reicht alle 40 Pins nach oben durch, damit der HiFiBerry weiter aufgesteckt werden kann</div>
+        <div class="name">40-poliges Flachbandkabel (IDC) oder Einzellitzen</div>
+        <div class="note">Verbindet den Pass-Through-Header des HiFiBerry mit der Adapter-Platine - es müssen nur die tatsächlich genutzten Adern verlegt werden</div>
       </div>
       <div class="material-card">
         <div class="qty">1×</div>
-        <div class="name">2×20 Buchsenleiste</div>
-        <div class="note">Unterseite der HAT, steckt auf den Pi</div>
+        <div class="name">2×20-Buchsenleiste oder IDC-Stecker</div>
+        <div class="note">Nimmt das Flachbandkabel auf der Adapter-Platine auf</div>
       </div>
       <div class="material-card">
-        <div class="qty">5×</div>
+        <div class="qty">6×</div>
         <div class="name">Stiftleisten/JST-Stecker</div>
-        <div class="note">Für RC522 (7-pol.), Taster (2× 2-pol.), Encoder (5-pol.), Display (8-pol.)</div>
+        <div class="note">Für RC522 (7-pol.), Taster (2× 2-pol.), Encoder Lautstärke (5-pol.), Encoder Helligkeit (4-pol.), Display (8-pol.)</div>
       </div>
       <div class="material-card">
         <div class="qty">–</div>
@@ -422,64 +444,71 @@
   </section>
 
   <section>
-    <h2>Aufbau als Stapel</h2>
+    <h2>Aufbau: Stapel + Kabel</h2>
     <p class="section-note">
-      Der HiFiBerry braucht ebenfalls den vollen Header - deshalb reicht unsere Platine alle
-      40 Pins unverändert nach oben durch und zapft elektrisch nur das an, was sie wirklich braucht.
+      Pi und HiFiBerry bleiben ein direkter Stapel wie gehabt - keine Adapter-Platine dazwischen.
+      Der HiFiBerry hat einen eigenen Pass-Through-Header, der alle 40 Pins unverändert nach oben
+      durchreicht. Von dort geht ein Flachbandkabel zur separaten Adapter-Platine, die elektrisch
+      nur das anzapft, was sie wirklich braucht.
     </p>
     <div class="stack">
       <div class="stack-board hifiberry">
         <div class="label">HiFiBerry Amp</div>
-        <div class="sub">steckt oben auf den Stacking-Header, unverändert</div>
+        <div class="sub">steckt direkt auf den Pi, Pass-Through-Header oben unverändert</div>
       </div>
       <div class="stack-connector-row">
         <div class="stack-connector"></div>
-        <span class="through-label">40-Pin Durchreichung</span>
-      </div>
-      <div class="stack-board custom">
-        <div class="label">Verteiler-Platine (diese HAT)</div>
-        <div class="sub">zapft: SPI-Bus + CE1 (RC522), CE0/DC/RST (Display), GPIO5/6 (Taster), GPIO17/22/27
-          (Lautstärke-Encoder), GPIO13 (Backlight), GPIO23/12 (Helligkeits-Encoder)</div>
-      </div>
-      <div class="stack-connector-row">
-        <div class="stack-connector"></div>
+        <span class="through-label">steckt direkt auf - kein Kabel</span>
       </div>
       <div class="stack-board pi">
         <div class="label">Raspberry Pi 3B+</div>
         <div class="sub">40-Pin-GPIO-Header</div>
       </div>
     </div>
-    <p class="fanout-note">Von der Verteiler-Platine gehen 5 Steckverbinder seitlich ab → siehe unten</p>
+    <div class="cable-row">
+      <div class="cable-line"></div>
+      <span class="cable-label">Flachbandkabel (Pass-Through-Header → Adapter-Platine)</span>
+    </div>
+    <div class="stack">
+      <div class="stack-board custom">
+        <div class="label">Adapter-Platine (separates Board)</div>
+        <div class="sub">zapft: SPI-Bus + CE1 (RC522), CE0/DC/RST (Display), GPIO5/6 (Taster), GPIO17/22/27
+          (Lautstärke-Encoder), GPIO13 (Backlight), GPIO23/12 (Helligkeits-Encoder)</div>
+      </div>
+    </div>
+    <p class="fanout-note">Auf der Adapter-Platine sitzen 6 Steckverbinder für die einzelnen Module → siehe unten</p>
   </section>
 
   <section>
     <h2>40-Pin-Header, komplett</h2>
     <p class="section-note">
-      Physische Pin-Nummern (nicht BCM) - so wie sie beim Auflöten der Buchsenleiste tatsächlich
-      vor einem liegen. Ungefärbte/blasse Pins bleiben frei.
+      Physische Pin-Nummern (nicht BCM) am HiFiBerry-Pass-Through-Header - identisch mit denen
+      am Pi selbst. Genau diese Pins werden per Flachbandkabel zur Adapter-Platine geführt.
+      Ungefärbte/blasse Pins bleiben frei und müssen nicht verkabelt werden.
     </p>
     <div class="header-scroll">
       <div class="pin-header" id="pin-header"></div>
     </div>
     <div class="legend">
-      <div class="item"><span class="dot" style="--dot: var(--accent)"></span> von dieser HAT genutzt</div>
-      <div class="item"><span class="dot" style="--dot: var(--slate)"></span> HiFiBerry (nur Durchreichung)</div>
+      <div class="item"><span class="dot" style="--dot: var(--accent)"></span> geht per Kabel zur Adapter-Platine</div>
+      <div class="item"><span class="dot" style="--dot: var(--slate)"></span> HiFiBerry (bleibt am Stapel, geht nicht zur Adapter-Platine)</div>
       <div class="item"><span class="dot" style="--dot: var(--copper)"></span> Stromversorgung</div>
       <div class="item"><span class="dot" style="--dot: var(--sage)"></span> GND</div>
       <div class="item"><span class="dot" style="--dot: var(--sage-line)"></span> frei / reserviert</div>
     </div>
     <div class="warn">
-      GPIO18/19/20/21 sowie GPIO2/3 gehören dem HiFiBerry (I2S + I2C) - die Platine legt darauf
-      bewusst nichts.
+      GPIO18/19/20/21 sowie GPIO2/3 gehören dem HiFiBerry (I2S + I2C) - diese Adern bewusst
+      nicht ins Kabel zur Adapter-Platine mit aufnehmen.
     </div>
   </section>
 
   <section>
     <h2>Steckverbinder im Detail</h2>
     <p class="section-note">
-      Was an welchen physischen Header-Pin geht, pro Modul. „Bus“ markiert die drei SPI-Leitungen
-      (SCK/MOSI/MISO), die sich RC522 und Display teilen - getrennt bleiben nur die
-      Chipselect-Leitungen (CE1 bzw. CE0).
+      Was an welchen physischen Pin geht, pro Modul - dieselben Pin-Nummern wie am
+      HiFiBerry-Pass-Through-Header, nur jetzt auf der Adapter-Platine verkabelt. „Bus“ markiert
+      die drei SPI-Leitungen (SCK/MOSI/MISO), die sich RC522 und Display teilen - getrennt bleiben
+      nur die Chipselect-Leitungen (CE1 bzw. CE0).
     </p>
     <div class="connectors" id="connectors"></div>
   </section>
@@ -487,19 +516,20 @@
   <section>
     <h2>Aufbau-Reihenfolge</h2>
     <ol class="steps">
-      <li><div class="step-body">2×20-Buchsenleiste auf die Unterseite der Proto-HAT löten (steckt später auf den Pi),
-        den 2×20-Stacking-Header direkt darüber in dieselben Löcher auf die Oberseite.</div></li>
-      <li><div class="step-body">Fünf Stiftleisten/JST-Buchsen an den Rand der Platine löten: RC522 (7-pol.), je einen
-        2-poligen für die beiden Taster, Encoder (5-pol.), Display (8-pol.).</div></li>
-      <li><div class="step-body">Jeden Steckverbinder-Pin per Litzendraht punktweise mit dem passenden Header-Pin verbinden
-        (Tabellen oben) - Drahtführung ist unkritisch, es gibt keine Hochfrequenzsignale außer dem
-        SPI-Bus, der ohnehin kurz bleibt.</div></li>
+      <li><div class="step-body">Pi und HiFiBerry wie gehabt direkt stapeln - daran ändert sich nichts.</div></li>
+      <li><div class="step-body">Auf der Adapter-Platine eine 2×20-Buchsenleiste (oder einen IDC-Steckverbinder) für das
+        Flachbandkabel platzieren, plus sechs Stiftleisten/JST-Buchsen am Rand: RC522 (7-pol.),
+        je einen 2-poligen für die beiden Taster, Encoder Lautstärke (5-pol.), Encoder Helligkeit
+        (4-pol.), Display (8-pol.).</div></li>
+      <li><div class="step-body">Jeden Steckverbinder-Pin per Litzendraht punktweise mit dem passenden Pin der
+        Kabel-Buchsenleiste verbinden (Tabellen oben) - Drahtführung ist unkritisch, es gibt keine
+        Hochfrequenzsignale außer dem SPI-Bus, der ohnehin kurz bleibt.</div></li>
       <li><div class="step-body">SPI-Bus-Pins (SCK/MOSI/MISO, physische Pins 23/19/21) sind Sternpunkte: RC522 und Display
         hängen beide daran, aber mit getrennten CE-Leitungen (CE1 bzw. CE0).</div></li>
-      <li><div class="step-body">Vor dem ersten Einstecken: Durchgangsprüfung mit Multimeter, dass keine zwei Pins der
+      <li><div class="step-body">Vor dem ersten Anschließen: Durchgangsprüfung mit Multimeter, dass keine zwei Pins der
         Buchsenleiste versehentlich kurzgeschlossen sind (typischer Lochraster-Fehler).</div></li>
-      <li><div class="step-body">HAT auf den Pi stecken, HiFiBerry oben auf den Stacking-Header, dann RC522/Taster/
-        Encoder/Display an ihre Steckverbinder - Display-Verkabelung selbst siehe
+      <li><div class="step-body">Flachbandkabel vom Pass-Through-Header des HiFiBerry zur Adapter-Platine stecken, dann
+        RC522/Taster/Encoder/Display an ihre Steckverbinder - Display-Verkabelung selbst siehe
         <span class="mono">docs/hardware.md</span> im Repo (Touch-Leitungen bewusst nicht verbunden).</div></li>
     </ol>
   </section>
@@ -660,7 +690,7 @@
       <h3>${conn.title}</h3>
       <table class="pinout">
         <colgroup><col style="width:22%"><col style="width:56%"><col style="width:22%"></colgroup>
-        <thead><tr><th>Modul</th><th>HAT-Pin · BCM</th><th></th></tr></thead>
+        <thead><tr><th>Modul</th><th>Kabel-Pin · BCM</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     `;
