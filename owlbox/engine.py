@@ -144,6 +144,13 @@ class Engine:
 
             if story is not None:
                 self._current_story = story
+                if story.stream_url:
+                    # A livestream has no tracks/position to resume - always join live.
+                    self._player.load_playlist([story.stream_url])
+                    self._player.set_volume(self._volume)
+                    logger.info("streaming '%s' (uid=%s) from %s", story.title, uid, story.stream_url)
+                    return
+
                 tracks = repository.get_tracks(story.id)
                 filepaths = [str(self._media_path(story, t)) for t in tracks]
                 track_pos, seek_seconds = repository.get_playback_state(uid)
@@ -197,7 +204,7 @@ class Engine:
         elif action == "toggle_pause":
             self._player.toggle_pause()
         elif action == "next":
-            self._player.next()
+            self.manual_next()
         elif action == "previous":
             self.manual_prev()
         elif action == "volume_up":
@@ -231,6 +238,9 @@ class Engine:
     def _persist_position_locked(self) -> None:
         if self._current_uid is None or self._current_story is None:
             return
+        if self._current_story.stream_url:
+            # Livestreams always join live - there's no position worth remembering.
+            return
         status = self._player.get_status()
         repository.save_playback_state(self._current_uid, status["playlist_pos"], status["time_pos"])
 
@@ -240,10 +250,17 @@ class Engine:
 
     # -- manual controls (buttons, encoder, web API) ------------------------
 
+    def _is_streaming(self) -> bool:
+        return bool(self._current_story and self._current_story.stream_url)
+
     def manual_next(self) -> None:
+        if self._is_streaming():
+            return
         self._player.next()
 
     def manual_prev(self) -> None:
+        if self._is_streaming():
+            return
         status = self._player.get_status()
         if status["time_pos"] > self._config.playback.restart_track_after_seconds:
             self._player.seek(0)
@@ -251,6 +268,8 @@ class Engine:
             self._player.previous()
 
     def manual_seek(self, delta_seconds: float) -> None:
+        if self._is_streaming():
+            return
         self._player.seek(delta_seconds, absolute=False)
 
     def manual_play(self) -> None:
@@ -359,7 +378,7 @@ class Engine:
 
         track_title = None
         upcoming_tracks: list[str] = []
-        if story is not None:
+        if story is not None and not story.stream_url:
             tracks = repository.get_tracks(story.id)
             index = status.get("playlist_pos", 0)
             if 0 <= index < len(tracks):
@@ -381,6 +400,7 @@ class Engine:
                 "cover_url": f"/media/{story.id}/{story.cover_path}" if story.cover_path else None,
                 "track_title": track_title,
                 "upcoming_tracks": upcoming_tracks,
+                "is_stream": bool(story.stream_url),
             },
             "function_tag": function_action,
             "unknown_tag": current_uid if is_unknown else None,

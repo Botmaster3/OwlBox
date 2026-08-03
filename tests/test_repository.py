@@ -151,3 +151,17 @@ def test_library_stats(config):
 
     stats = repository.get_library_stats()
     assert stats == {"story_count": 1, "track_count": 2, "assigned_count": 1}
+
+
+def test_create_story_with_stream_url(config):
+    story = repository.create_story(title="Radio Owl", stream_url="https://stream.example.com/radio.mp3")
+    assert story.stream_url == "https://stream.example.com/radio.mp3"
+    assert repository.get_tracks(story.id) == []
+
+    repository.assign_uid(story.id, "RADIO1")
+    fetched = repository.get_story_by_uid("RADIO1")
+    assert fetched.stream_url == "https://stream.example.com/radio.mp3"
+
+    # A normal file-based story has no stream_url.
+    file_story = repository.create_story(title="Normal")
+    assert file_story.stream_url is None

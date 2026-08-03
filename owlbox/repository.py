@@ -23,6 +23,7 @@ class Story:
     uid: Optional[str]
     title: str
     cover_path: Optional[str]
+    stream_url: Optional[str]
     shuffle: bool
     repeat: bool
     created_at: str
@@ -34,17 +35,20 @@ class Story:
             uid=row["uid"],
             title=row["title"],
             cover_path=row["cover_path"],
+            stream_url=row["stream_url"],
             shuffle=bool(row["shuffle"]),
             repeat=bool(row["repeat"]),
             created_at=row["created_at"],
         )
 
 
-def create_story(title: str, uid: Optional[str] = None, cover_path: Optional[str] = None) -> Story:
+def create_story(
+    title: str, uid: Optional[str] = None, cover_path: Optional[str] = None, stream_url: Optional[str] = None
+) -> Story:
     with write_cursor() as cur:
         cur.execute(
-            "INSERT INTO stories (uid, title, cover_path) VALUES (?, ?, ?)",
-            (uid, title, cover_path),
+            "INSERT INTO stories (uid, title, cover_path, stream_url) VALUES (?, ?, ?, ?)",
+            (uid, title, cover_path, stream_url),
         )
         story_id = cur.lastrowid
     return get_story(story_id)

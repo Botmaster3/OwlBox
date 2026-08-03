@@ -5,6 +5,7 @@
   const npTrack = document.getElementById("np-track");
   const npTimePos = document.getElementById("np-time-pos");
   const npTimeDur = document.getElementById("np-time-dur");
+  const npProgressRow = document.getElementById("np-progress-row");
   const npProgressFill = document.getElementById("np-progress-fill");
   const npVolumeFill = document.getElementById("np-volume-fill");
   const npUpcoming = document.getElementById("np-upcoming");
@@ -53,12 +54,16 @@
       npTitle.textContent = "Kein Chip aufgelegt";
     }
 
-    if (story && story.track_title) {
+    if (story && story.is_stream) {
+      npTrack.textContent = "🔴 Live-Stream";
+      npTrack.hidden = false;
+    } else if (story && story.track_title) {
       npTrack.textContent = story.track_title;
       npTrack.hidden = false;
     } else {
       npTrack.hidden = true;
     }
+    npProgressRow.hidden = !!(story && story.is_stream);
 
     const coverUrl = story && story.cover_url ? story.cover_url : null;
     if (coverUrl !== lastCoverUrl) {

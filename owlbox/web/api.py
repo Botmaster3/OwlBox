@@ -26,12 +26,13 @@ def _config():
 
 
 def _story_to_dict(story: repository.Story) -> dict:
-    tracks = repository.get_tracks(story.id)
+    tracks = [] if story.stream_url else repository.get_tracks(story.id)
     return {
         "id": story.id,
         "title": story.title,
         "uid": story.uid,
         "cover_url": f"/media/{story.id}/{story.cover_path}" if story.cover_path else None,
+        "stream_url": story.stream_url,
         "shuffle": story.shuffle,
         "repeat": story.repeat,
         "track_count": len(tracks),
@@ -114,18 +115,24 @@ def create_story():
     if not title:
         return jsonify({"error": "title is required"}), 400
 
+    stream_url = request.form.get("stream_url", "").strip()
     audio_files = [f for f in request.files.getlist("audio_files") if f and f.filename]
-    if not audio_files:
-        return jsonify({"error": "at least one audio file is required"}), 400
-    for f in audio_files:
-        if not is_allowed_audio(f.filename):
-            return jsonify({"error": f"unsupported audio file: {f.filename}"}), 400
+
+    if stream_url:
+        if not stream_url.startswith(("http://", "https://")):
+            return jsonify({"error": "stream_url must start with http:// or https://"}), 400
+    elif not audio_files:
+        return jsonify({"error": "at least one audio file or a stream_url is required"}), 400
+    else:
+        for f in audio_files:
+            if not is_allowed_audio(f.filename):
+                return jsonify({"error": f"unsupported audio file: {f.filename}"}), 400
 
     cover = request.files.get("cover")
     if cover and cover.filename and not is_allowed_image(cover.filename):
         return jsonify({"error": f"unsupported cover image: {cover.filename}"}), 400
 
-    story = repository.create_story(title=title)
+    story = repository.create_story(title=title, stream_url=stream_url or None)
     story_dir = _config().media_dir / str(story.id)
     story_dir.mkdir(parents=True, exist_ok=True)
 
@@ -134,13 +141,14 @@ def create_story():
         cover.save(story_dir / cover_filename)
         repository.set_cover_path(story.id, cover_filename)
 
-    for position, f in enumerate(audio_files):
-        filename = secure_filename(f.filename)
-        dest = story_dir / filename
-        f.save(dest)
-        duration, tag_title = probe_audio(dest)
-        title = tag_title or Path(f.filename).stem
-        repository.add_track(story.id, position, filename, title, duration)
+    if not stream_url:
+        for position, f in enumerate(audio_files):
+            filename = secure_filename(f.filename)
+            dest = story_dir / filename
+            f.save(dest)
+            duration, tag_title = probe_audio(dest)
+            track_title = tag_title or Path(f.filename).stem
+            repository.add_track(story.id, position, filename, track_title, duration)
 
     uid = request.form.get("uid", "").strip()
     if uid:
@@ -198,6 +206,8 @@ def add_tracks(story_id):
     story = repository.get_story(story_id)
     if story is None:
         return jsonify({"error": "not found"}), 404
+    if story.stream_url:
+        return jsonify({"error": "cannot add tracks to a livestream story"}), 400
     audio_files = [f for f in request.files.getlist("audio_files") if f and f.filename]
     if not audio_files:
         return jsonify({"error": "at least one audio file is required"}), 400

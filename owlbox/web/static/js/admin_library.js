@@ -92,17 +92,24 @@
       header.className = "story-row";
       header.style.borderBottom = "none";
       header.style.padding = "0";
+      const subtitle = story.stream_url
+        ? `🔴 Livestream · ${story.stream_url} · ${story.uid ? "Chip: " + story.uid : "kein Chip zugewiesen"}`
+        : `${story.track_count} Titel · ${story.uid ? "Chip: " + story.uid : "kein Chip zugewiesen"}`;
       header.innerHTML = `
         ${story.cover_url ? `<img src="${story.cover_url}" alt="">` : '<div class="thumb-placeholder">🦉</div>'}
         <div class="story-meta">
           <div class="row-title">${story.title}</div>
-          <div class="story-sub">${story.track_count} Titel · ${story.uid ? "Chip: " + story.uid : "kein Chip zugewiesen"}</div>
+          <div class="story-sub">${subtitle}</div>
         </div>
         <div class="story-actions">
           <button class="btn secondary" data-action="assign">Chip zuweisen</button>
           ${story.uid ? '<button class="btn secondary" data-action="unassign">Chip entfernen</button>' : ""}
-          <button class="btn secondary" data-action="shuffle">${story.shuffle ? "🔀 an" : "🔀 aus"}</button>
-          <button class="btn secondary" data-action="repeat">${story.repeat ? "🔁 an" : "🔁 aus"}</button>
+          ${
+            story.stream_url
+              ? ""
+              : `<button class="btn secondary" data-action="shuffle">${story.shuffle ? "🔀 an" : "🔀 aus"}</button>
+          <button class="btn secondary" data-action="repeat">${story.repeat ? "🔁 an" : "🔁 aus"}</button>`
+          }
           <button class="btn danger" data-action="delete">Löschen</button>
         </div>
       `;
@@ -119,22 +126,28 @@
           }
         });
       }
-      header.querySelector('[data-action="shuffle"]').addEventListener("click", async () => {
-        await api(`/api/stories/${story.id}/flags`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ shuffle: !story.shuffle }),
+      const shuffleBtn = header.querySelector('[data-action="shuffle"]');
+      if (shuffleBtn) {
+        shuffleBtn.addEventListener("click", async () => {
+          await api(`/api/stories/${story.id}/flags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ shuffle: !story.shuffle }),
+          });
+          loadStories();
         });
-        loadStories();
-      });
-      header.querySelector('[data-action="repeat"]').addEventListener("click", async () => {
-        await api(`/api/stories/${story.id}/flags`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ repeat: !story.repeat }),
+      }
+      const repeatBtn = header.querySelector('[data-action="repeat"]');
+      if (repeatBtn) {
+        repeatBtn.addEventListener("click", async () => {
+          await api(`/api/stories/${story.id}/flags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ repeat: !story.repeat }),
+          });
+          loadStories();
         });
-        loadStories();
-      });
+      }
       header.querySelector('[data-action="delete"]').addEventListener("click", async () => {
         if (!confirm(`"${story.title}" wirklich löschen?`)) return;
         try {

@@ -5,6 +5,7 @@
   const trackTitleEl = document.getElementById("track-title");
   const timePosEl = document.getElementById("time-pos");
   const timeDurEl = document.getElementById("time-dur");
+  const progressRow = document.getElementById("progress-row");
   const progressFill = document.getElementById("progress-fill");
   const volumeFill = document.getElementById("volume-fill");
   const unknownBanner = document.getElementById("unknown-banner");
@@ -71,12 +72,16 @@
       storyTitleEl.textContent = "Kein Chip aufgelegt";
     }
 
-    if (story && story.track_title) {
+    if (story && story.is_stream) {
+      trackTitleEl.textContent = "🔴 Live-Stream";
+      trackTitleEl.hidden = false;
+    } else if (story && story.track_title) {
       trackTitleEl.textContent = story.track_title;
       trackTitleEl.hidden = false;
     } else {
       trackTitleEl.hidden = true;
     }
+    progressRow.hidden = !!(story && story.is_stream);
 
     const coverUrl = story && story.cover_url ? story.cover_url : null;
     if (coverUrl !== lastCoverUrl) {

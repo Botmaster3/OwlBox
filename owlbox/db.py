@@ -21,9 +21,19 @@ def init_db(database_path: Path) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys=ON")
     with open(_SCHEMA_PATH, "r", encoding="utf-8") as fh:
         conn.executescript(fh.read())
+    _migrate(conn)
     conn.commit()
     _connection = conn
     return conn
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """`CREATE TABLE IF NOT EXISTS` in schema.sql only takes effect for brand-new
+    databases - existing ones need columns added after the fact when the schema
+    for an existing table evolves (new tables need no such step)."""
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(stories)")}
+    if "stream_url" not in columns:
+        conn.execute("ALTER TABLE stories ADD COLUMN stream_url TEXT")
 
 
 def get_connection() -> sqlite3.Connection:

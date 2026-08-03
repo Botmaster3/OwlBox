@@ -1,8 +1,11 @@
+-- A story is either a local playlist (tracks table) or a livestream (stream_url
+-- set, no tracks) - a chip plays whichever one it's assigned to the same way.
 CREATE TABLE IF NOT EXISTS stories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     uid TEXT UNIQUE,
     title TEXT NOT NULL,
     cover_path TEXT,
+    stream_url TEXT,
     shuffle INTEGER NOT NULL DEFAULT 0,
     repeat INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))

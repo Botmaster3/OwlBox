@@ -9,10 +9,13 @@
   const coverAutoHint = document.getElementById("cover-auto-hint");
   const filesField = document.getElementById("files-field");
   const folderField = document.getElementById("folder-field");
+  const streamField = document.getElementById("stream-field");
   const audioFilesInput = document.getElementById("audio_files");
   const audioFolderInput = document.getElementById("audio_folder");
+  const streamUrlInput = document.getElementById("stream_url");
   const folderSummary = document.getElementById("folder-summary");
   const folderHint = document.getElementById("folder-hint");
+  const streamHint = document.getElementById("stream-hint");
   const toggleButtons = document.querySelectorAll("#source-toggle .segmented-btn");
 
   let mode = "files";
@@ -44,7 +47,9 @@
     toggleButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.mode === mode));
     filesField.hidden = mode !== "files";
     folderField.hidden = mode !== "folder";
+    streamField.hidden = mode !== "stream";
     folderHint.hidden = mode !== "folder";
+    streamHint.hidden = mode !== "stream";
     audioFilesInput.required = mode === "files";
   }
 
@@ -101,6 +106,14 @@
       }
       const cover = manualCover || folderCoverFile;
       if (cover) formData.append("cover", cover, cover.name);
+    } else if (mode === "stream") {
+      const url = streamUrlInput.value.trim();
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        createError.textContent = "Bitte eine gültige URL eingeben (http:// oder https://).";
+        return;
+      }
+      formData.append("stream_url", url);
+      if (manualCover) formData.append("cover", manualCover, manualCover.name);
     } else {
       if (audioFilesInput.files.length === 0) {
         createError.textContent = "Bitte mindestens eine Audiodatei auswählen.";

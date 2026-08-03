@@ -12,6 +12,9 @@ den Pi geladen und einem Chip zugewiesen.
   die Geschichte läuft weiter, nur die Position wird laufend gespeichert. Erst
   ein anderer Chip (oder ein Funktions-Chip/Taster für Pause) wechselt bzw.
   stoppt die Wiedergabe; denselben Chip wieder aufzulegen ist ein No-Op.
+- **Livestream-Chips**: ein Chip kann statt einer lokalen Playlist auch direkt
+  eine Audio-Livestream-URL (Internetradio o.ä.) abspielen - verbindet beim
+  Auflegen immer live, ohne gespeicherte Position und ohne Vor-/Zurückspulen.
 - **Funktions-Chips**: eigene Chips, die statt einer Geschichte eine Aktion
   auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus,
   Einschlaf-Timer starten (15/30/45/60 Min.) oder abbrechen, Pi neu
@@ -28,7 +31,8 @@ den Pi geladen und einem Chip zugewiesen.
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - reine "Jetzt läuft"-Anzeige (groß, wie auf dem Display), die erste Seite nach dem Login.
   - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle/Repeat, Track-Reihenfolge, löschen.
-  - **Hinzufügen** - einzelne Dateien oder einen ganzen Ordner hochladen, Cover/Titel wird aus dem Ordner erkannt.
+  - **Hinzufügen** - einzelne Dateien, einen ganzen Ordner oder eine Livestream-URL (Internetradio o.ä.)
+    hochladen/anlegen, Cover/Titel wird aus dem Ordner erkannt.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);

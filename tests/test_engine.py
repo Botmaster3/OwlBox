@@ -349,3 +349,35 @@ def test_sleep_timer_function_tags_start_and_cancel(config):
         assert state["function_tag"] == "sleep_timer_cancel"
     finally:
         engine.stop()
+
+
+def test_stream_tag_plays_url_without_track_resume(config):
+    config.rfid.poll_interval = 0.01
+    stream_story = repository.create_story(title="Radio Owl", stream_url="https://stream.example.com/radio.mp3")
+    repository.assign_uid(stream_story.id, "RADIOCARD")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("RADIOCARD")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["story"]["id"] == stream_story.id
+        assert state["story"]["is_stream"] is True
+        assert state["story"]["track_title"] is None
+        assert state["story"]["upcoming_tracks"] == []
+        assert state["player"]["playing"] is True
+
+        # Holding next/prev or seeking is a no-op while streaming, not a track
+        # change/rewind - there's nothing to switch to or resume within a stream.
+        engine.manual_next()
+        engine.manual_prev()
+        engine.manual_seek(30)
+        assert engine.get_state()["player"]["playlist_pos"] == 0
+
+        # Removing the chip shouldn't try to save/resume a position for a stream.
+        engine.simulate_remove()
+        time.sleep(0.2)
+        assert repository.get_playback_state("RADIOCARD") == (0, 0.0)
+    finally:
+        engine.stop()

@@ -12,10 +12,16 @@
       <div class="segmented" id="source-toggle">
         <button type="button" class="segmented-btn active" data-mode="files">Einzelne Dateien</button>
         <button type="button" class="segmented-btn" data-mode="folder">Ganzer Ordner</button>
+        <button type="button" class="segmented-btn" data-mode="stream">Livestream-URL</button>
       </div>
       <span class="hint" id="folder-hint" hidden>
         Ordner auswählen - alle enthaltenen Audiodateien werden (alphabetisch sortiert) übernommen,
         ein darin liegendes Cover-Bild (z.B. <code>cover.jpg</code>) wird automatisch erkannt.
+      </span>
+      <span class="hint" id="stream-hint" hidden>
+        Direkte URL eines Audio-Livestreams (Internetradio o.ä.), beginnend mit <code>http://</code> oder
+        <code>https://</code>. Der Chip verbindet beim Auflegen immer live - es gibt keine gespeicherte
+        Position und kein Vor-/Zurückspulen.
       </span>
     </div>
 
@@ -37,6 +43,10 @@
         <label for="audio_folder">Ordner</label>
         <input type="file" id="audio_folder" webkitdirectory directory multiple>
         <span class="hint" id="folder-summary"></span>
+      </div>
+      <div class="field" id="stream-field" hidden>
+        <label for="stream_url">Livestream-URL</label>
+        <input type="url" id="stream_url" name="stream_url" placeholder="https://stream.example.com/radio.mp3">
       </div>
       <button class="btn" type="submit">Anlegen</button>
       <span id="create-error" class="error"></span>
