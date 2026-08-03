@@ -165,3 +165,11 @@ def test_create_story_with_stream_url(config):
     # A normal file-based story has no stream_url.
     file_story = repository.create_story(title="Normal")
     assert file_story.stream_url is None
+
+
+def test_stream_story_can_have_a_custom_cover(config):
+    story = repository.create_story(title="Radio Owl", stream_url="https://stream.example.com/radio.mp3")
+    repository.set_cover_path(story.id, "cover.jpg")
+    fetched = repository.get_story(story.id)
+    assert fetched.stream_url == "https://stream.example.com/radio.mp3"
+    assert fetched.cover_path == "cover.jpg"
