@@ -81,6 +81,14 @@ class Engine:
             self._min_brightness, min(self._max_brightness, repository.get_int_setting("brightness", 100))
         )
 
+        # Cached WLAN reception, refreshed periodically in _loop rather than on every
+        # get_state() call - nmcli is a subprocess call, too slow to run on every poll
+        # from every open page (kiosk + Home + Einstellungen all hit /api/state every
+        # second).
+        self._wifi_enabled = False
+        self._wifi_signal: Optional[int] = None
+        self._last_wifi_check: Optional[float] = None
+
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
 
@@ -134,6 +142,7 @@ class Engine:
                     last_save = now
 
                 self._check_sleep_timer(now)
+                self._check_wifi_status(now)
             except Exception:
                 logger.exception("engine loop iteration failed")
 
@@ -250,6 +259,15 @@ class Engine:
 
     def _set_wifi(self, enabled: bool) -> None:
         network.set_wifi_enabled(enabled)
+
+    def _check_wifi_status(self, now: float, interval: float = 5.0) -> None:
+        if self._last_wifi_check is not None and now - self._last_wifi_check < interval:
+            return
+        self._last_wifi_check = now
+        status = network.get_status()
+        with self._lock:
+            self._wifi_enabled = status["enabled"]
+            self._wifi_signal = status["signal"] if status["connected_ssid"] else None
 
     def _persist_position_locked(self) -> None:
         if self._current_uid is None or self._current_story is None:
@@ -457,6 +475,8 @@ class Engine:
             min_brightness = self._min_brightness
             max_brightness = self._max_brightness
             brightness_step = self._brightness_step
+            wifi_enabled = self._wifi_enabled
+            wifi_signal = self._wifi_signal
         status = self._player.get_status()
 
         sleep_timer_remaining = None
@@ -506,5 +526,6 @@ class Engine:
                 "minutes": sleep_timer_minutes,
                 "remaining_seconds": sleep_timer_remaining,
             },
+            "wifi": {"enabled": wifi_enabled, "signal": wifi_signal},
             "parent_mode": {"active": parent_label is not None, "label": parent_label},
         }

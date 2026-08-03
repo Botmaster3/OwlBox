@@ -46,10 +46,18 @@ def get_status() -> dict:
     enabled = _run(["nmcli", "-t", "-f", "WIFI", "radio"]).strip().lower() == "enabled"
 
     connected_ssid = None
-    for line in _run(["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"]).splitlines():
-        active, _, ssid = line.partition(":")
+    signal = None
+    # ACTIVE,SSID,SIGNAL - parsed from the right since SIGNAL is always the last,
+    # numeric field, in case a pathological SSID itself contained a colon.
+    for line in _run(["nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi"]).splitlines():
+        active, _, rest = line.partition(":")
+        ssid, _, signal_str = rest.rpartition(":")
         if active == "yes" and ssid:
             connected_ssid = ssid
+            try:
+                signal = int(signal_str)
+            except ValueError:
+                signal = None
             break
 
     ip_address = None
@@ -57,7 +65,7 @@ def get_status() -> dict:
     if hostname_output:
         ip_address = hostname_output[0]
 
-    return {"enabled": enabled, "connected_ssid": connected_ssid, "ip_address": ip_address}
+    return {"enabled": enabled, "connected_ssid": connected_ssid, "ip_address": ip_address, "signal": signal}
 
 
 def scan_networks() -> list[dict]:

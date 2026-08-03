@@ -18,6 +18,8 @@
   const npVolumeValue = document.getElementById("np-volume-value");
   const npBrightnessInput = document.getElementById("np-brightness");
   const npBrightnessValue = document.getElementById("np-brightness-value");
+  const npWifiFill = document.getElementById("np-wifi-fill");
+  const npWifiLabel = document.getElementById("np-wifi-label");
   let lastCoverUrl = null;
   let volumeSliderBeingDragged = false;
   let brightnessSliderBeingDragged = false;
@@ -71,6 +73,20 @@
     shutdown: "Pi herunterfahren",
   };
 
+  function applyWifi(wifi) {
+    wifi = wifi || {};
+    if (!wifi.enabled) {
+      npWifiFill.style.width = "0%";
+      npWifiLabel.textContent = "Aus";
+    } else if (typeof wifi.signal !== "number") {
+      npWifiFill.style.width = "0%";
+      npWifiLabel.textContent = "Getrennt";
+    } else {
+      npWifiFill.style.width = `${Math.max(0, Math.min(100, wifi.signal))}%`;
+      npWifiLabel.textContent = `${wifi.signal}%`;
+    }
+  }
+
   function formatTime(seconds) {
     seconds = Math.max(0, Math.floor(seconds || 0));
     const m = Math.floor(seconds / 60);
@@ -121,6 +137,7 @@
     npTimePos.textContent = formatTime(timePos);
     npTimeDur.textContent = formatTime(duration);
     npProgressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
+    applyWifi(state.wifi);
 
     if (!volumeSliderBeingDragged) {
       npVolumeInput.value = player.volume || 0;

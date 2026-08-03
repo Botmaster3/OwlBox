@@ -19,6 +19,8 @@
   const brightnessOsd = document.getElementById("brightness-osd");
   const brightnessOsdValue = document.getElementById("brightness-osd-value");
   const brightnessOsdFill = document.getElementById("brightness-osd-fill");
+  const wifiFill = document.getElementById("wifi-fill");
+  const wifiLabel = document.getElementById("wifi-label");
 
   let lastCoverUrl = null;
   let parentModeActive = false;
@@ -42,6 +44,20 @@
     brightnessOsdTimer = setTimeout(() => {
       brightnessOsd.hidden = true;
     }, 2000);
+  }
+
+  function applyWifi(wifi) {
+    wifi = wifi || {};
+    if (!wifi.enabled) {
+      wifiFill.style.width = "0%";
+      wifiLabel.textContent = "Aus";
+    } else if (typeof wifi.signal !== "number") {
+      wifiFill.style.width = "0%";
+      wifiLabel.textContent = "Getrennt";
+    } else {
+      wifiFill.style.width = `${Math.max(0, Math.min(100, wifi.signal))}%`;
+      wifiLabel.textContent = `${wifi.signal}%`;
+    }
   }
 
   function formatTime(seconds) {
@@ -136,6 +152,7 @@
     progressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
 
     volumeFill.style.width = `${relativePercent(player.volume || 0, 0, settings.max_volume || 100)}%`;
+    applyWifi(state.wifi);
 
     unknownBanner.hidden = !state.unknown_tag;
 

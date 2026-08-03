@@ -1,6 +1,6 @@
 import time
 
-from owlbox import repository
+from owlbox import network, repository
 from owlbox.engine import Engine
 
 
@@ -578,3 +578,33 @@ def test_brightness_range_clamps_current_and_future_changes(config):
         engine.stop()
     assert repository.get_int_setting("max_brightness", -1) == 91
     assert repository.get_int_setting("min_brightness", -1) == 90
+
+
+def test_state_includes_cached_wifi_status(config):
+    config.rfid.poll_interval = 0.01
+    engine = Engine(config)
+    engine.start()
+    try:
+        time.sleep(0.1)
+        wifi = engine.get_state()["wifi"]
+        assert "enabled" in wifi
+        assert "signal" in wifi
+    finally:
+        engine.stop()
+
+
+def test_wifi_status_check_is_throttled(config):
+    engine = Engine(config)
+    calls = []
+    original = network.get_status
+    network.get_status = lambda: calls.append(1) or original()
+    try:
+        engine._check_wifi_status(100.0, interval=5.0)
+        engine._check_wifi_status(101.0, interval=5.0)
+        engine._check_wifi_status(104.9, interval=5.0)
+        assert len(calls) == 1
+
+        engine._check_wifi_status(105.1, interval=5.0)
+        assert len(calls) == 2
+    finally:
+        network.get_status = original
