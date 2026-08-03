@@ -19,9 +19,11 @@ Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 `config/config.example.yaml`. Wer andere Pins verdrahtet, passt einfach die
 `gpio:`/`rfid:` Sektion in `config/config.yaml` an.
 
-**Verkabelungsplan als Grafik**: `docs/owlbox-wiring-diagram.svg` zeigt alle
-Komponenten und ihre Verkabelung auf einen Blick als Schaubild (Pi, HiFiBerry,
-Lautsprecher L/R, RC522, Taster, beide Encoder, Display, Backlight-Dimmen).
+**Verkabelungsplan als Grafik**: `docs/owlbox-wiring-diagram.svg` zeigt den
+kompletten, fertig verkabelten Gesamtaufbau auf einen Blick - Pi + HiFiBerry
+direkt gestapelt (inkl. Lautsprecher L/R an dessen Federklemmen), per Kabel
+verbunden mit der Adapter-Platine, die wiederum RC522, Taster, beide Encoder,
+Display und Backlight-Dimmen verkabelt.
 
 **GPIO-Pinbelegung als Grafik**: `docs/owlbox-gpio-pinout.svg` zeigt den
 kompletten 40-Pin-Header (physische Nummerierung wie auf der Pi-Platine) mit
