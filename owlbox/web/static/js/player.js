@@ -46,8 +46,19 @@
     }, 2000);
   }
 
+  // Traffic-light coloring: green from a solid connection, yellow once it's
+  // getting weak, red when it's barely usable or there's no connection at all.
+  function wifiSignalClass(enabled, signal) {
+    if (!enabled || typeof signal !== "number") return "critical";
+    if (signal >= 60) return "good";
+    if (signal >= 30) return "warn";
+    return "critical";
+  }
+
   function applyWifi(wifi) {
     wifi = wifi || {};
+    wifiFill.classList.remove("good", "warn", "critical");
+    wifiFill.classList.add(wifiSignalClass(wifi.enabled, wifi.signal));
     if (!wifi.enabled) {
       wifiFill.style.width = "0%";
       wifiLabel.textContent = "Aus";
