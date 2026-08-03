@@ -20,7 +20,8 @@ Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 
 **Verkabelungsplan als Grafik**: `docs/owlbox-wiring-diagram.svg` zeigt alle
 Komponenten und ihre Verkabelung auf einen Blick als Schaubild (Pi, HiFiBerry,
-RC522, Taster, beide Encoder, Display, optionales Backlight-Dimmen).
+Lautsprecher L/R, RC522, Taster, beide Encoder, Display, optionales
+Backlight-Dimmen).
 
 **Verteiler-Platine**: `docs/hat-wiring.html` (im Browser öffnen) zeigt den
 kompletten Schaltplan als Lochraster-HAT - inkl. 40-Pin-Belegung, Stapelaufbau
@@ -158,6 +159,21 @@ Danach mit `aplay -L` und `amixer -c 0 scontrols` das ALSA-Device bzw. den
 Mixer-Namen prüfen und in `config.yaml` unter `audio.alsa_device` /
 `audio.mixer_control` eintragen (Amp/Amp2 nutzen meist `Digital`, manche
 Boards `PCM` oder `Master`).
+
+### Lautsprecher anschließen
+
+Der HiFiBerry Amp2 hat dafür **keine Stecker** (kein Cinch/Klinke), sondern
+zwei 2-polige Federklemmen direkt auf der Platine (eine pro Kanal, jeweils
++/-). Angeschlossen wird ganz normales 2-adriges Lautsprecherkabel:
+
+- Querschnitt **≥ 0,75 mm² (AWG 18)** reicht für 15 W / 4 Ω locker; bei
+  längeren Kabelwegen (> 3-5 m) eher 1,0-1,5 mm² nehmen.
+- Enden abisolieren (~10 mm); bei feindrähtiger Litze verzinnen oder
+  Aderendhülsen verwenden, damit die Federklemme sauber greift.
+- **Polarität an beiden Lautsprechern konsistent anschließen** (+ zu + und
+  Minus zu Minus) - sonst laufen sie gegenphasig und Bass/Stereo-Ortung leiden.
+- Am Lautsprecher selbst hängt der Anschluss vom jeweiligen Modell ab
+  (blanker Draht, Flachsteckhülsen/Bananas oder Lötfahnen).
 
 ## RC522 RFID-Leser (SPI, CE1)
 
