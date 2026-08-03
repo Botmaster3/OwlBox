@@ -484,14 +484,15 @@ class Engine:
             sleep_timer_remaining = max(0, round(sleep_timer_end - time.monotonic()))
 
         track_title = None
-        upcoming_tracks: list[str] = []
+        track_titles: list[str] = []
+        current_track_index: Optional[int] = None
         if story is not None and not story.stream_url:
             tracks = repository.get_tracks(story.id)
+            track_titles = [t.title or Path(t.filename).stem for t in tracks]
             index = status.get("playlist_pos", 0)
-            if 0 <= index < len(tracks):
-                track = tracks[index]
-                track_title = track.title or Path(track.filename).stem
-            upcoming_tracks = [t.title or Path(t.filename).stem for t in tracks[index + 1 :]]
+            if 0 <= index < len(track_titles):
+                track_title = track_titles[index]
+                current_track_index = index
 
         is_unknown = (
             story is None and function_action is None and parent_label is None and current_uid is not None
@@ -506,7 +507,8 @@ class Engine:
                 "title": story.title,
                 "cover_url": f"/media/{story.id}/{story.cover_path}" if story.cover_path else None,
                 "track_title": track_title,
-                "upcoming_tracks": upcoming_tracks,
+                "tracks": track_titles,
+                "current_track_index": current_track_index,
                 "is_stream": bool(story.stream_url),
             },
             "function_tag": function_action,

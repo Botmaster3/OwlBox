@@ -322,8 +322,21 @@ body.kiosk { height: 100vh; overflow: hidden; }
 
 .np-upcoming { max-width: 640px; }
 .np-upcoming-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 6px; }
-.np-upcoming-list { margin: 0; padding-left: 1.3em; color: var(--text-dim); font-size: 0.95rem; display: flex; flex-direction: column; gap: 2px; }
+.np-upcoming-list {
+  margin: 0;
+  padding-left: 1.3em;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* The Home tracklist shows every track, not just what's left - cap it so a
+     long audiobook doesn't blow up the card, the rest stays scrollable. */
+  max-height: 7.5em;
+  overflow-y: auto;
+}
 .np-upcoming-list li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-upcoming-list li.current { color: var(--accent); font-weight: 600; }
 
 @media (max-width: 640px) {
   .now-playing { flex-direction: column; text-align: center; }

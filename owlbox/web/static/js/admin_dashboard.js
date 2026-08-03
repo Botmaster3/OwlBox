@@ -191,12 +191,14 @@
       npBrightnessValue.textContent = settings.brightness;
     }
 
-    const upcoming = (story && story.upcoming_tracks) || [];
-    if (upcoming.length === 0) {
+    const trackList = (story && story.tracks) || [];
+    if (trackList.length === 0) {
       npUpcoming.hidden = true;
     } else {
       npUpcoming.hidden = false;
-      npUpcomingList.innerHTML = upcoming.map((title) => `<li>${title}</li>`).join("");
+      npUpcomingList.innerHTML = trackList
+        .map((title, index) => `<li class="${index === story.current_track_index ? "current" : ""}">${title}</li>`)
+        .join("");
     }
 
     const sleepTimer = state.sleep_timer || {};

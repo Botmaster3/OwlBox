@@ -207,7 +207,7 @@ def test_function_tag_next_advances_playlist(config):
         engine.stop()
 
 
-def test_state_lists_upcoming_tracks_after_current_one(config):
+def test_state_lists_full_tracklist_with_current_index(config):
     config.rfid.poll_interval = 0.01
     story = repository.create_story(title="Multi")
     story_dir = config.media_dir / str(story.id)
@@ -226,13 +226,22 @@ def test_state_lists_upcoming_tracks_after_current_one(config):
         time.sleep(0.15)
         state = engine.get_state()
         assert state["story"]["track_title"] == "Erstes Kapitel"
-        assert state["story"]["upcoming_tracks"] == ["Zweites Kapitel", "Drittes Kapitel"]
+        assert state["story"]["tracks"] == ["Erstes Kapitel", "Zweites Kapitel", "Drittes Kapitel"]
+        assert state["story"]["current_track_index"] == 0
 
         engine.manual_next()
         time.sleep(0.15)
         state = engine.get_state()
         assert state["story"]["track_title"] == "Zweites Kapitel"
-        assert state["story"]["upcoming_tracks"] == ["Drittes Kapitel"]
+        assert state["story"]["tracks"] == ["Erstes Kapitel", "Zweites Kapitel", "Drittes Kapitel"]
+        assert state["story"]["current_track_index"] == 1
+
+        # Still lists everything on the last track too, not just "what's left".
+        engine.manual_next()
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["story"]["current_track_index"] == 2
+        assert state["story"]["tracks"] == ["Erstes Kapitel", "Zweites Kapitel", "Drittes Kapitel"]
     finally:
         engine.stop()
 
@@ -396,7 +405,7 @@ def test_stream_tag_plays_url_without_track_resume(config):
         assert state["story"]["id"] == stream_story.id
         assert state["story"]["is_stream"] is True
         assert state["story"]["track_title"] is None
-        assert state["story"]["upcoming_tracks"] == []
+        assert state["story"]["tracks"] == []
         assert state["player"]["playing"] is True
 
         # Holding next/prev or seeking is a no-op while streaming, not a track
