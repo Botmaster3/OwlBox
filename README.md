@@ -21,8 +21,9 @@ den Pi geladen und einem Chip zugewiesen.
   starten/herunterfahren. Praktisch als "Bedienkarten" ohne Taster anfassen
   zu müssen.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
-  Kapitel-/Track-Titel, Fortschritt, Lautstärke, WLAN-Empfang) - kein Touch,
-  Bedienung läuft ausschließlich über Taster/Encoder/Funktions-Chips (siehe docs/hardware.md).
+  Kapitel-/Track-Titel, verbleibende Zeit im Track, Track-Liste der Geschichte mit
+  hervorgehobenem aktuellen Titel, Lautstärke, WLAN-Empfang) - kein Touch, Bedienung
+  läuft ausschließlich über Taster/Encoder/Funktions-Chips (siehe docs/hardware.md).
   Helligkeit ausschließlich manuell regelbar (Regler unter Einstellungen/Home
   oder ein zweiter Dreh-Encoder am Gerät) - kein automatisches Dimmen; jede
   Änderung blendet den neuen Wert kurz auf dem Display ein. Braucht dafür die

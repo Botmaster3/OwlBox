@@ -4,8 +4,10 @@
   const storyTitleEl = document.getElementById("story-title");
   const trackTitleEl = document.getElementById("track-title");
   const timePosEl = document.getElementById("time-pos");
-  const timeDurEl = document.getElementById("time-dur");
+  const timeRemainingEl = document.getElementById("time-remaining");
   const progressRow = document.getElementById("progress-row");
+  const upcomingEl = document.getElementById("upcoming");
+  const upcomingListEl = document.getElementById("upcoming-list");
   const progressFill = document.getElementById("progress-fill");
   const volumeFill = document.getElementById("volume-fill");
   const unknownBanner = document.getElementById("unknown-banner");
@@ -187,8 +189,18 @@
     const timePos = player.time_pos || 0;
     const duration = player.duration || 0;
     timePosEl.textContent = formatTime(timePos);
-    timeDurEl.textContent = formatTime(duration);
+    timeRemainingEl.textContent = `-${formatTime(duration - timePos)}`;
     progressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
+
+    const trackList = (story && story.tracks) || [];
+    if (trackList.length === 0) {
+      upcomingEl.hidden = true;
+    } else {
+      upcomingEl.hidden = false;
+      upcomingListEl.innerHTML = trackList
+        .map((title, index) => `<li class="${index === story.current_track_index ? "current" : ""}">${title}</li>`)
+        .join("");
+    }
 
     volumeFill.style.width = `${relativePercent(player.volume || 0, 0, settings.max_volume || 100)}%`;
     setVuPlaying(!!player.playing);

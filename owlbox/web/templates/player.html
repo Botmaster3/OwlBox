@@ -46,13 +46,18 @@
     <div id="progress-row" class="progress-row">
       <span id="time-pos" class="time">0:00</span>
       <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-      <span id="time-dur" class="time">0:00</span>
+      <span id="time-remaining" class="time">-0:00</span>
     </div>
 
     <div class="volume-row">
       <span>🔉</span>
       <div class="progress-bar"><div id="volume-fill" class="progress-fill volume-fill"></div></div>
       <span>🔊</span>
+    </div>
+
+    <div id="upcoming" class="np-upcoming" hidden>
+      <div class="np-upcoming-label">Tracks</div>
+      <ol id="upcoming-list" class="np-upcoming-list"></ol>
     </div>
 
     <div id="sleep-timer-badge" class="sleep-timer-badge" hidden>

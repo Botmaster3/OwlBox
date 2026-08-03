@@ -340,6 +340,11 @@ body.kiosk { height: 100vh; overflow: hidden; }
 .np-upcoming-list li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .np-upcoming-list li.current { color: var(--accent); font-weight: 600; }
 
+/* Tighter than the admin Home version - the kiosk's info column has much less
+   room to spare (fixed small screen, several other rows already stacked). */
+.player .np-upcoming-label { font-size: 0.7rem; margin-bottom: 2px; }
+.player .np-upcoming-list { font-size: 0.85rem; max-height: 4em; gap: 0; }
+
 @media (max-width: 640px) {
   .now-playing { flex-direction: column; text-align: center; }
   .now-playing-info { align-items: center; }
