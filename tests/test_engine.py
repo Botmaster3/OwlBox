@@ -416,6 +416,111 @@ def test_sleep_timer_function_tags_start_and_cancel(config):
         engine.stop()
 
 
+def test_auto_sleep_activates_when_paused_and_wakes_on_toggle_pause(config):
+    config.rfid.poll_interval = 0.05
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine._auto_sleep_minutes = 0.01  # ~0.6 seconds, for a fast test
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine.get_state()["player"]["playing"] is True
+
+        engine.manual_pause()
+        assert engine.get_state()["auto_sleep"]["active"] is False
+
+        time.sleep(1.0)
+        assert engine.get_state()["auto_sleep"]["active"] is True
+
+        engine.manual_toggle_pause()
+        state = engine.get_state()
+        assert state["auto_sleep"]["active"] is False
+        assert state["player"]["playing"] is True
+    finally:
+        engine.stop()
+
+
+def test_auto_sleep_wakes_on_volume_increase_even_without_mute(config):
+    config.rfid.poll_interval = 0.05
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine._auto_sleep_minutes = 0.01
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        engine.manual_set_volume(50)
+        engine.manual_pause()
+        time.sleep(1.0)
+        assert engine.get_state()["auto_sleep"]["active"] is True
+
+        # Wakes even though it never hit 0/mute - any increase while asleep counts.
+        engine.manual_set_volume(60)
+        state = engine.get_state()
+        assert state["auto_sleep"]["active"] is False
+        assert state["player"]["playing"] is True
+    finally:
+        engine.stop()
+
+
+def test_auto_sleep_wakes_on_tag_rescan(config):
+    config.rfid.poll_interval = 0.05
+    config.rfid.missing_reads_to_remove = 1
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine._auto_sleep_minutes = 0.01
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        engine.manual_pause()
+        time.sleep(1.0)
+        assert engine.get_state()["auto_sleep"]["active"] is True
+
+        engine.simulate_remove()
+        time.sleep(0.15)
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+
+        state = engine.get_state()
+        assert state["auto_sleep"]["active"] is False
+        assert state["player"]["playing"] is True
+    finally:
+        engine.stop()
+
+
+def test_auto_sleep_disabled_when_minutes_is_zero(config):
+    config.rfid.poll_interval = 0.05
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine._auto_sleep_minutes = 0
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        engine.manual_pause()
+        time.sleep(1.0)
+        assert engine.get_state()["auto_sleep"]["active"] is False
+    finally:
+        engine.stop()
+
+
+def test_set_auto_sleep_minutes_is_persisted(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.set_auto_sleep_minutes(15)
+        assert engine.get_state()["settings"]["auto_sleep_minutes"] == 15
+    finally:
+        engine.stop()
+    assert repository.get_int_setting("auto_sleep_minutes", -1) == 15
+
+
 def test_stream_tag_plays_url_without_track_resume(config):
     config.rfid.poll_interval = 0.01
     stream_story = repository.create_story(title="Radio Owl", stream_url="https://stream.example.com/radio.mp3")

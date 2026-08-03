@@ -242,6 +242,28 @@ body.kiosk { height: 100vh; overflow: hidden; }
 }
 .parent-mode-hint { color: var(--text-dim); font-size: clamp(0.9rem, 2vw, 1.1rem); }
 
+.sleep-mode {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2vh;
+  text-align: center;
+  padding: 4vh 4vw;
+}
+.sleep-owl {
+  font-size: clamp(4rem, 22vw, 9rem);
+  animation: sleep-owl-breathe 3.2s ease-in-out infinite;
+}
+@keyframes sleep-owl-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.sleep-label { font-size: clamp(1.2rem, 3.2vw, 2rem); font-weight: 700; }
+.sleep-hint { color: var(--text-dim); font-size: clamp(0.9rem, 2vw, 1.1rem); max-width: 60ch; }
+
 /* Temporary on-screen readout, shown on the kiosk display for a couple of
    seconds whenever the brightness changes (encoder turn or web slider). */
 .osd {

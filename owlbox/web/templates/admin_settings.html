@@ -47,6 +47,21 @@
   </div>
 
   <div class="card">
+    <h2>Automatischer Ruhemodus</h2>
+    <p class="hint" id="auto-sleep-status">Wache Eule.</p>
+    <div class="field">
+      <label for="auto-sleep-minutes">Nach dieser Pause-Dauer schläft die Eule ein (Minuten, 0 = aus)</label>
+      <input type="number" id="auto-sleep-minutes" min="0" max="480" value="20">
+    </div>
+    <button class="btn" id="auto-sleep-save-btn" type="button">Speichern</button>
+    <p class="hint">
+      Greift, sobald eine Geschichte pausiert ist - egal ob über die Play/Pause-Taste/-Tag oder weil
+      die Lautstärke auf 0 gedreht wurde. Aufwecken (der Track läuft an derselben Stelle weiter):
+      Lautstärke erhöhen, Play/Pause drücken oder einen RFID-Tag auflegen.
+    </p>
+  </div>
+
+  <div class="card">
     <h2>Einschlaf-Timer</h2>
     <p class="hint" id="sleep-timer-status">Kein Timer aktiv.</p>
     <div class="field">

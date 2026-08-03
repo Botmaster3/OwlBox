@@ -70,6 +70,12 @@ class GpioConfig:
 class PlaybackConfig:
     restart_track_after_seconds: float = 3
     position_save_interval: float = 5
+    # Minutes spent paused (via the pause button/tag or by turning the volume
+    # down to 0) before the kiosk shows a sleeping-owl screen. Configurable in
+    # Einstellungen; 0 disables it. Waking up (volume raised, play/pause
+    # pressed, or an RFID tag scanned) resumes the track from the exact
+    # position it was paused at.
+    auto_sleep_minutes: float = 20
 
 
 @dataclass

@@ -27,14 +27,19 @@ den Pi geladen und einem Chip zugewiesen.
   Helligkeit ausschließlich manuell regelbar (Regler unter Einstellungen/Home
   oder ein zweiter Dreh-Encoder am Gerät) - kein automatisches Dimmen; jede
   Änderung blendet den neuen Wert kurz auf dem Display ein. Braucht dafür die
-  optionale Backlight-Verkabelung per Software-PWM statt fest an 3.3V.
+  Backlight-Verkabelung per Software-PWM statt fest an 3.3V (siehe docs/hardware.md).
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,
-  lang drücken = herunterfahren) + optionaler zweiter Dreh-Encoder (drehen =
-  Helligkeit, nur zusammen mit dimmbarem Backlight). Lautstärke ganz runter
-  drehen (0%) pausiert automatisch, wieder hochdrehen setzt die Wiedergabe
-  fort - egal ob per Encoder oder Web-Regler.
+  lang drücken = herunterfahren) + zweiter Dreh-Encoder (drehen = Helligkeit).
+  Lautstärke ganz runter drehen (0%) pausiert automatisch, wieder hochdrehen
+  setzt die Wiedergabe fort - egal ob per Encoder oder Web-Regler.
+- **Automatischer Ruhemodus (schlafende Eule)**: bleibt eine Geschichte eine
+  konfigurierbare Zeit lang pausiert - egal ob per Play/Pause-Taste/-Chip oder
+  weil die Lautstärke auf 0 gedreht wurde - zeigt das Display eine schlafende
+  Eule statt der Now-Playing-Ansicht. Aufwecken (Track läuft exakt an der
+  Pausenstelle weiter): Lautstärke erhöhen, Play/Pause drücken oder einen
+  RFID-Chip auflegen. Dauer unter Einstellungen konfigurierbar, 0 schaltet es ab.
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - "Jetzt läuft"-Anzeige (groß, wie auf dem Display, inkl. WLAN-Empfang) als erste
@@ -51,7 +56,8 @@ den Pi geladen und einem Chip zugewiesen.
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
     Helligkeit (aktuelle Helligkeit, sowie ein einstellbarer Minimal-/Maximalwert, der den
-    Schieberegler hier und den Helligkeits-Encoder am Gerät begrenzt); Einschlaf-Timer
+    Schieberegler hier und den Helligkeits-Encoder am Gerät begrenzt); Automatischer Ruhemodus
+    (Minuten bis zur schlafenden Eule nach dem Pausieren, 0 = aus); Einschlaf-Timer
     (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert automatisch nach Ablauf);
     WLAN (Status, an/aus, nach Netzwerken suchen und verbinden); Pi neu starten/herunterfahren.
   - **Info** - Systeminfos: Hardware-Modell, Betriebssystem, Laufzeit, CPU-Temperatur,

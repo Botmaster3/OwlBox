@@ -84,6 +84,11 @@ playback:
   # Save playback position to the database this often (seconds), so power loss
   # doesn't lose more than this much progress.
   position_save_interval: 5
+  # Minutes spent paused (pause button/tag, or volume turned down to 0) before
+  # the kiosk shows a sleeping-owl screen. 0 disables it. Waking up (volume
+  # raised, play/pause pressed, or an RFID tag scanned) resumes right where
+  # the track was paused.
+  auto_sleep_minutes: 20
 
 network:
   # Recovery hotspot: if WiFi is on but not connected to any network for this

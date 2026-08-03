@@ -144,6 +144,26 @@
     }
   });
 
+  // -- auto-sleep (sleeping-owl screen) ----------------------------------
+
+  const autoSleepStatus = document.getElementById("auto-sleep-status");
+  const autoSleepMinutesInput = document.getElementById("auto-sleep-minutes");
+  const autoSleepSaveBtn = document.getElementById("auto-sleep-save-btn");
+
+  autoSleepSaveBtn.addEventListener("click", async () => {
+    try {
+      const settings = await api("/api/settings/auto-sleep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auto_sleep_minutes: parseInt(autoSleepMinutesInput.value, 10) }),
+      });
+      autoSleepMinutesInput.value = settings.auto_sleep_minutes;
+      showToast("Automatischer Ruhemodus gespeichert.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
   // -- sleep timer --------------------------------------------------------
 
   const sleepTimerStatus = document.getElementById("sleep-timer-status");
@@ -325,6 +345,7 @@
       brightnessStepInput.value = state.settings.brightness_step;
       currentBrightnessInput.min = state.settings.min_brightness;
       currentBrightnessInput.max = state.settings.max_brightness;
+      autoSleepMinutesInput.value = state.settings.auto_sleep_minutes;
     } catch (err) {
       // ignore, fields keep their HTML defaults
     }
@@ -354,6 +375,10 @@
         sleepTimerStatus.textContent = "Kein Timer aktiv.";
         sleepTimerCancelBtn.hidden = true;
       }
+
+      autoSleepStatus.textContent = state.auto_sleep.active
+        ? "😴 Die Eule schläft gerade - aufwecken per Lautstärke, Play/Pause oder RFID-Tag."
+        : "Wache Eule.";
     } catch (err) {
       // ignore, try again next tick
     } finally {

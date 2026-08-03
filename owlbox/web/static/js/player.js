@@ -13,6 +13,7 @@
   const unknownBanner = document.getElementById("unknown-banner");
   const playerEl = document.querySelector(".player");
   const parentModeEl = document.getElementById("parent-mode");
+  const sleepModeEl = document.getElementById("sleep-mode");
   const parentModeLabelEl = document.getElementById("parent-mode-label");
   const parentModeQrEl = document.getElementById("parent-mode-qr");
   const sleepTimerBadge = document.getElementById("sleep-timer-badge");
@@ -174,6 +175,17 @@
     playerEl.hidden = parentModeActive;
     if (parentModeActive) {
       parentModeLabelEl.textContent = `Eltern-Modus: ${parentMode.label}`;
+      return;
+    }
+
+    // Auto-sleep: the story has been paused long enough that the box shows a
+    // sleeping owl instead of the now-playing view. Raising the volume,
+    // pressing play/pause, or scanning a tag wakes it back up (engine-side) -
+    // the state then simply stops reporting auto_sleep.active on the next poll.
+    const autoSleep = state.auto_sleep || { active: false };
+    sleepModeEl.hidden = !autoSleep.active;
+    if (autoSleep.active) {
+      playerEl.hidden = true;
       return;
     }
 

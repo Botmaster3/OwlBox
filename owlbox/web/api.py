@@ -438,6 +438,18 @@ def update_brightness():
     return jsonify(_engine().get_state()["settings"])
 
 
+@api_bp.route("/settings/auto-sleep", methods=["POST"])
+@admin_required
+def update_auto_sleep():
+    data = request.get_json(silent=True) or {}
+    if "auto_sleep_minutes" in data:
+        try:
+            _engine().set_auto_sleep_minutes(int(data["auto_sleep_minutes"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "auto_sleep_minutes must be an integer"}), 400
+    return jsonify(_engine().get_state()["settings"])
+
+
 @api_bp.route("/sleep-timer", methods=["POST"])
 @admin_required
 def start_sleep_timer():

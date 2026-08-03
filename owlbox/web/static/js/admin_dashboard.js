@@ -12,6 +12,7 @@
   const npUpcomingList = document.getElementById("np-upcoming-list");
   const npSleepTimerBadge = document.getElementById("np-sleep-timer-badge");
   const npSleepTimerRemaining = document.getElementById("np-sleep-timer-remaining");
+  const npAutoSleepBadge = document.getElementById("np-auto-sleep-badge");
   const npBtnPrev = document.getElementById("np-btn-prev");
   const npBtnToggle = document.getElementById("np-btn-toggle");
   const npBtnNext = document.getElementById("np-btn-next");
@@ -241,6 +242,9 @@
     } else {
       npSleepTimerBadge.hidden = true;
     }
+
+    const autoSleep = state.auto_sleep || {};
+    npAutoSleepBadge.hidden = !autoSleep.active;
   }
 
   async function poll() {

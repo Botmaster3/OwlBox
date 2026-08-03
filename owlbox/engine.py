@@ -73,6 +73,15 @@ class Engine:
         self._sleep_timer_end: Optional[float] = None
         self._sleep_timer_minutes: Optional[float] = None
 
+        # Auto-sleep (sleeping-owl screen) - distinct from the sleep timer above:
+        # this triggers *because* playback has been paused for a while, rather
+        # than forcing a pause after a set time.
+        self._auto_sleep_minutes = repository.get_int_setting(
+            "auto_sleep_minutes", int(config.playback.auto_sleep_minutes)
+        )
+        self._paused_since: Optional[float] = None
+        self._sleep_mode_active = False
+
         self._backlight = create_backlight(config)
         self._min_brightness = repository.get_int_setting("min_brightness", 0)
         self._max_brightness = repository.get_int_setting("max_brightness", 100)
@@ -134,9 +143,16 @@ class Engine:
                 uid = self._rfid.read_uid()
                 if uid is not None:
                     self._missing_reads = 0
+                    was_present = self._tag_present
                     if uid != self._current_uid:
                         self._handle_tag_present(uid)
                     self._tag_present = True
+                    if not was_present:
+                        # Edge-triggered: only an actual placement (tag was off,
+                        # now it's on) wakes the box - a tag that's been sitting
+                        # there the whole time it was asleep must not re-wake it
+                        # on every single poll tick just for still being present.
+                        self._wake_from_sleep_on_scan()
                 else:
                     if self._tag_present:
                         self._missing_reads += 1
@@ -150,6 +166,7 @@ class Engine:
                     last_save = now
 
                 self._check_sleep_timer(now)
+                self._check_auto_sleep(now)
                 self._check_wifi_status(now)
             except Exception:
                 logger.exception("engine loop iteration failed")
@@ -231,11 +248,11 @@ class Engine:
     def _execute_function_action(self, action: str) -> None:
         logger.info("executing RFID function tag action: %s", action)
         if action == "play":
-            self._player.play()
+            self.manual_play()
         elif action == "pause":
-            self._player.pause()
+            self.manual_pause()
         elif action == "toggle_pause":
-            self._player.toggle_pause()
+            self.manual_toggle_pause()
         elif action == "next":
             self.manual_next()
         elif action == "previous":
@@ -398,12 +415,16 @@ class Engine:
         self._player.seek(max(0, seconds), absolute=True)
 
     def manual_play(self) -> None:
+        with self._lock:
+            self._wake_from_sleep_locked()
         self._player.play()
 
     def manual_pause(self) -> None:
         self._player.pause()
 
     def manual_toggle_pause(self) -> None:
+        with self._lock:
+            self._wake_from_sleep_locked()
         self._player.toggle_pause()
 
     def manual_set_volume(self, percent: int) -> None:
@@ -420,9 +441,12 @@ class Engine:
         self._player.set_volume(self._volume)
         # Turning all the way down to 0 pauses, turning back up resumes - mirrors
         # a real volume knob/mute button instead of just playing silently at 0.
+        # Raising the volume also wakes the box from the auto-sleep screen, even
+        # if it was paused (asleep) at a level above 0, not just from mute.
         if previous > 0 and self._volume == 0:
             self._player.pause()
-        elif previous == 0 and self._volume > 0:
+        elif self._volume > previous and (previous == 0 or self._sleep_mode_active):
+            self._wake_from_sleep_locked()
             self._player.play()
 
     def set_max_volume(self, percent: int) -> None:
@@ -509,6 +533,50 @@ class Engine:
             self._persist_position_locked()
             self._player.pause()
 
+    # -- auto-sleep (sleeping-owl screen) --------------------------------------
+
+    def set_auto_sleep_minutes(self, minutes: int) -> None:
+        with self._lock:
+            self._auto_sleep_minutes = max(0, minutes)
+            repository.set_setting("auto_sleep_minutes", self._auto_sleep_minutes)
+
+    def _wake_from_sleep_locked(self) -> None:
+        # Safe to call unconditionally from any "resume-ish" action - a no-op
+        # unless the box was actually asleep.
+        if self._sleep_mode_active:
+            self._sleep_mode_active = False
+            self._paused_since = None
+            logger.info("auto-sleep: woke up")
+
+    def _wake_from_sleep_on_scan(self) -> None:
+        # Placing/re-scanning a tag while a chip is already sitting on the reader
+        # doesn't go through _handle_tag_present (uid hasn't changed) - checked
+        # here on every poll instead so "scan a tag" reliably wakes the box up.
+        with self._lock:
+            if not self._sleep_mode_active:
+                return
+            self._wake_from_sleep_locked()
+        self._player.play()
+
+    def _check_auto_sleep(self, now: float) -> None:
+        with self._lock:
+            if self._sleep_mode_active or self._auto_sleep_minutes <= 0:
+                return
+            if self._current_story is None or self._is_streaming():
+                self._paused_since = None
+                return
+            if not self._player.get_status().get("paused"):
+                self._paused_since = None
+                return
+            if self._paused_since is None:
+                self._paused_since = now
+                return
+            if now - self._paused_since >= self._auto_sleep_minutes * 60:
+                self._sleep_mode_active = True
+                logger.info(
+                    "auto-sleep: paused for %.0f min, showing sleeping-owl screen", self._auto_sleep_minutes
+                )
+
     def _handle_shutdown(self) -> None:
         logger.warning("shutdown requested via encoder long-press")
         self.request_shutdown()
@@ -552,6 +620,8 @@ class Engine:
             volume_step = self._volume_step
             sleep_timer_end = self._sleep_timer_end
             sleep_timer_minutes = self._sleep_timer_minutes
+            auto_sleep_minutes = self._auto_sleep_minutes
+            sleep_mode_active = self._sleep_mode_active
             brightness = self._brightness
             min_brightness = self._min_brightness
             max_brightness = self._max_brightness
@@ -605,11 +675,16 @@ class Engine:
                 "min_brightness": min_brightness,
                 "max_brightness": max_brightness,
                 "brightness_step": brightness_step,
+                "auto_sleep_minutes": auto_sleep_minutes,
             },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,
                 "minutes": sleep_timer_minutes,
                 "remaining_seconds": sleep_timer_remaining,
+            },
+            "auto_sleep": {
+                "active": sleep_mode_active,
+                "minutes": auto_sleep_minutes,
             },
             "wifi": {
                 "enabled": wifi_enabled,
