@@ -63,6 +63,19 @@ gpio:
   seek_hold_seconds: 0.4
   # Seconds seeked per repeat tick while next/prev is held past seek_hold_seconds.
   seek_step_seconds: 10
+  # BCM pin driving the display backlight for software-PWM dimming, via a driver
+  # transistor (a Pi GPIO can't source the backlight's current directly) - see
+  # docs/hardware.md. Leave unset (null) if the backlight is still wired straight
+  # to 3.3V (the default, non-dimmable wiring) - the brightness slider in
+  # Einstellungen has no effect until this is set.
+  backlight_pin: null
+
+display:
+  # Brightness (%) to fall back to once dimmed.
+  dim_brightness_percent: 20
+  # Idle time (seconds, no RFID/button/web activity) before auto-dimming, when no
+  # sleep timer is running. A running sleep timer dims immediately instead.
+  dim_after_seconds: 300
 
 playback:
   # When pressing "previous", restart the current track instead of jumping to the

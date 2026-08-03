@@ -471,3 +471,53 @@ def test_livestream_play_counts_and_accumulates_listening_time_too(config):
         assert fetched.total_seconds > 0
     finally:
         engine.stop()
+
+
+def test_manual_set_brightness_is_persisted_and_reflected_in_state(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.manual_set_brightness(42)
+        assert engine.get_state()["settings"]["brightness"] == 42
+        assert repository.get_int_setting("brightness", -1) == 42
+    finally:
+        engine.stop()
+
+
+def test_display_dims_after_inactivity_and_undims_on_activity(config):
+    config.rfid.poll_interval = 0.01
+    config.display.dim_after_seconds = 0.1
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        assert engine.get_state()["display"]["dimmed"] is False
+
+        time.sleep(0.3)
+        assert engine.get_state()["display"]["dimmed"] is True
+
+        # Any activity (a button/API action) should undim it again.
+        engine.manual_toggle_pause()
+        time.sleep(0.05)
+        assert engine.get_state()["display"]["dimmed"] is False
+    finally:
+        engine.stop()
+
+
+def test_starting_a_sleep_timer_dims_the_display_immediately(config):
+    config.rfid.poll_interval = 0.01
+    config.display.dim_after_seconds = 999  # long enough that only the timer explains dimming
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        assert engine.get_state()["display"]["dimmed"] is False
+        engine.start_sleep_timer(30)
+        time.sleep(0.05)
+        assert engine.get_state()["display"]["dimmed"] is True
+
+        engine.cancel_sleep_timer()
+        time.sleep(0.05)
+        assert engine.get_state()["display"]["dimmed"] is False
+    finally:
+        engine.stop()

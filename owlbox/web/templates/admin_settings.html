@@ -67,6 +67,19 @@
   </div>
 
   <div class="card">
+    <h2>Anzeige</h2>
+    <div class="field">
+      <label for="current-brightness">Helligkeit (<span id="current-brightness-value">–</span>%)</label>
+      <input type="range" id="current-brightness" min="0" max="100" value="100">
+    </div>
+    <p class="hint">
+      Dimmt automatisch nach 5 Minuten Inaktivität, und sofort wenn ein Einschlaf-Timer läuft.
+      Braucht die Hintergrundbeleuchtung auf einem eigenen GPIO statt fest an 3.3V (siehe docs/hardware.md) -
+      ohne diese Verkabelung hat der Regler hier keine sichtbare Wirkung.
+    </p>
+  </div>
+
+  <div class="card">
     <h2>WLAN</h2>
     <p class="hint" id="wifi-status">Lädt…</p>
     <button class="btn secondary" id="wifi-toggle-btn" type="button"></button>

@@ -23,6 +23,9 @@ den Pi geladen und einem Chip zugewiesen.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
   Kapitel-/Track-Titel, Fortschritt, Lautstärke) - kein Touch, Bedienung
   läuft ausschließlich über Taster/Encoder/Funktions-Chips (siehe docs/hardware.md).
+  Helligkeit regelbar (Einstellungen) und dimmt automatisch nach 5 Minuten
+  Inaktivität bzw. sofort bei laufendem Einschlaf-Timer - braucht dafür die
+  optionale Backlight-Verkabelung per Software-PWM statt fest an 3.3V.
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,

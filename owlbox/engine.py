@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import network, repository
+from .backlight import create_backlight
 from .controls import create_controls
 from .player import create_player
 from .rfid import create_reader
@@ -71,12 +72,18 @@ class Engine:
         self._sleep_timer_end: Optional[float] = None
         self._sleep_timer_minutes: Optional[float] = None
 
+        self._backlight = create_backlight(config)
+        self._brightness = repository.get_int_setting("brightness", 100)
+        self._dimmed = False
+        self._last_activity_time = time.monotonic()
+
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
 
     def start(self) -> None:
         self._player.start()
         self._player.set_volume(self._volume)
+        self._backlight.set_brightness(self._brightness)
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
         logger.info("engine started (simulate=%s)", self._config.simulate)
@@ -92,6 +99,7 @@ class Engine:
         self._controls.close()
         self._rfid.close()
         self._player.stop()
+        self._backlight.close()
 
     # -- background loop -------------------------------------------------
 
@@ -122,6 +130,7 @@ class Engine:
                     last_save = now
 
                 self._check_sleep_timer(now)
+                self._check_auto_dim(now)
             except Exception:
                 logger.exception("engine loop iteration failed")
 
@@ -134,6 +143,7 @@ class Engine:
 
     def _handle_tag_present(self, uid: str) -> None:
         with self._lock:
+            self._touch_activity_locked()
             if self._current_uid is not None:
                 self._persist_position_locked()
 
@@ -186,6 +196,7 @@ class Engine:
         with self._lock:
             if self._current_uid is None:
                 return
+            self._touch_activity_locked()
             if self._current_story is not None:
                 # Story tags keep playing after the chip is lifted (unlike function/
                 # parent tags below, which are momentary) - uid/story stay "current"
@@ -267,12 +278,21 @@ class Engine:
     def _is_streaming(self) -> bool:
         return bool(self._current_story and self._current_story.stream_url)
 
+    def _touch_activity_locked(self) -> None:
+        self._last_activity_time = time.monotonic()
+
+    def _touch_activity(self) -> None:
+        with self._lock:
+            self._touch_activity_locked()
+
     def manual_next(self) -> None:
+        self._touch_activity()
         if self._is_streaming():
             return
         self._player.next()
 
     def manual_prev(self) -> None:
+        self._touch_activity()
         if self._is_streaming():
             return
         status = self._player.get_status()
@@ -282,26 +302,32 @@ class Engine:
             self._player.previous()
 
     def manual_seek(self, delta_seconds: float) -> None:
+        self._touch_activity()
         if self._is_streaming():
             return
         self._player.seek(delta_seconds, absolute=False)
 
     def manual_play(self) -> None:
+        self._touch_activity()
         self._player.play()
 
     def manual_pause(self) -> None:
+        self._touch_activity()
         self._player.pause()
 
     def manual_toggle_pause(self) -> None:
+        self._touch_activity()
         self._player.toggle_pause()
 
     def manual_set_volume(self, percent: int) -> None:
         with self._lock:
+            self._touch_activity_locked()
             self._volume = max(0, min(self._max_volume, percent))
             self._player.set_volume(self._volume)
 
     def _handle_volume_delta(self, direction: int) -> None:
         with self._lock:
+            self._touch_activity_locked()
             self._volume = max(0, min(self._max_volume, self._volume + direction * self._volume_step))
             self._player.set_volume(self._volume)
 
@@ -317,6 +343,30 @@ class Engine:
         with self._lock:
             self._volume_step = max(1, min(50, percent))
             repository.set_setting("volume_step", self._volume_step)
+
+    # -- display brightness / auto-dim -----------------------------------------
+
+    def manual_set_brightness(self, percent: int) -> None:
+        with self._lock:
+            self._touch_activity_locked()
+            self._brightness = max(0, min(100, percent))
+            repository.set_setting("brightness", self._brightness)
+            # If currently dimmed, leave the dim level alone for now - the next
+            # _check_auto_dim tick applies this new target once dimming ends
+            # (immediately, since touching activity just reset the idle clock).
+            if not self._dimmed:
+                self._backlight.set_brightness(self._brightness)
+
+    def _check_auto_dim(self, now: float) -> None:
+        with self._lock:
+            should_dim = self._sleep_timer_end is not None or (
+                now - self._last_activity_time >= self._config.display.dim_after_seconds
+            )
+            if should_dim == self._dimmed:
+                return
+            self._dimmed = should_dim
+            target = self._config.display.dim_brightness_percent if should_dim else self._brightness
+            self._backlight.set_brightness(target)
 
     # -- sleep timer ----------------------------------------------------------
 
@@ -384,6 +434,8 @@ class Engine:
             volume_step = self._volume_step
             sleep_timer_end = self._sleep_timer_end
             sleep_timer_minutes = self._sleep_timer_minutes
+            brightness = self._brightness
+            dimmed = self._dimmed
         status = self._player.get_status()
 
         sleep_timer_remaining = None
@@ -420,7 +472,8 @@ class Engine:
             "unknown_tag": current_uid if is_unknown else None,
             "last_unknown_uid": last_unknown,
             "player": status,
-            "settings": {"max_volume": max_volume, "volume_step": volume_step},
+            "settings": {"max_volume": max_volume, "volume_step": volume_step, "brightness": brightness},
+            "display": {"dimmed": dimmed},
             "sleep_timer": {
                 "active": sleep_timer_end is not None,
                 "minutes": sleep_timer_minutes,

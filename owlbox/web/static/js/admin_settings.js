@@ -91,6 +91,30 @@
     }
   });
 
+  // -- display brightness -------------------------------------------------
+
+  const currentBrightnessInput = document.getElementById("current-brightness");
+  const currentBrightnessValue = document.getElementById("current-brightness-value");
+
+  let brightnessSliderBeingDragged = false;
+
+  currentBrightnessInput.addEventListener("input", () => {
+    brightnessSliderBeingDragged = true;
+    currentBrightnessValue.textContent = currentBrightnessInput.value;
+  });
+  currentBrightnessInput.addEventListener("change", async () => {
+    try {
+      await api("/api/settings/brightness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brightness: parseInt(currentBrightnessInput.value, 10) }),
+      });
+    } catch (err) {
+      showToast(err.message, true);
+    }
+    brightnessSliderBeingDragged = false;
+  });
+
   // -- sleep timer --------------------------------------------------------
 
   const sleepTimerStatus = document.getElementById("sleep-timer-status");
@@ -260,6 +284,11 @@
       if (!volumeSliderBeingDragged) {
         currentVolumeInput.value = state.player.volume;
         currentVolumeValue.textContent = state.player.volume;
+      }
+
+      if (!brightnessSliderBeingDragged) {
+        currentBrightnessInput.value = state.settings.brightness;
+        currentBrightnessValue.textContent = state.settings.brightness;
       }
 
       if (state.sleep_timer.active) {

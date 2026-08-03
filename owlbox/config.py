@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 
@@ -53,6 +53,19 @@ class GpioConfig:
     seek_hold_seconds: float = 0.4
     # Seconds seeked per repeat tick while a button is held past seek_hold_seconds.
     seek_step_seconds: float = 10
+    # Display backlight, for dimming (see docs/hardware.md) - None/0 means the
+    # backlight is still hardwired straight to 3.3V (its original, non-dimmable
+    # default) rather than rewired to this GPIO through a driver transistor.
+    backlight_pin: Optional[int] = None
+
+
+@dataclass
+class DisplayConfig:
+    # Brightness to fall back to once dimmed (percent, 0-100).
+    dim_brightness_percent: int = 20
+    # Idle time (no RFID/button/web activity) before auto-dimming, when no
+    # sleep timer is running. A running sleep timer dims immediately instead.
+    dim_after_seconds: float = 300
 
 
 @dataclass
@@ -76,6 +89,7 @@ class Config:
     rfid: RfidConfig = field(default_factory=RfidConfig)
     gpio: GpioConfig = field(default_factory=GpioConfig)
     playback: PlaybackConfig = field(default_factory=PlaybackConfig)
+    display: DisplayConfig = field(default_factory=DisplayConfig)
 
     @property
     def media_dir(self) -> Path:
@@ -130,5 +144,6 @@ def load_config(path: str | Path | None = None) -> Config:
         rfid=_section(RfidConfig, data.get("rfid", {})),
         gpio=_section(GpioConfig, data.get("gpio", {})),
         playback=_section(PlaybackConfig, data.get("playback", {})),
+        display=_section(DisplayConfig, data.get("display", {})),
     )
     return cfg

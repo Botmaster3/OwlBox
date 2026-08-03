@@ -400,6 +400,18 @@ def update_volume_settings():
     return jsonify(_engine().get_state()["settings"])
 
 
+@api_bp.route("/settings/brightness", methods=["POST"])
+@admin_required
+def update_brightness():
+    data = request.get_json(silent=True) or {}
+    try:
+        brightness = int(data["brightness"])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"error": "brightness is required and must be an integer"}), 400
+    _engine().manual_set_brightness(brightness)
+    return jsonify(_engine().get_state()["settings"])
+
+
 @api_bp.route("/sleep-timer", methods=["POST"])
 @admin_required
 def start_sleep_timer():

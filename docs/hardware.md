@@ -68,17 +68,39 @@ Nur diese Leitungen vom Display-Header zum Pi verbinden:
 | CS/CE0     | GPIO8       | Display-Chipselect |
 | DC/RS      | GPIO24      | Data/Command (Standardwert des tft35a-Overlays) |
 | RST        | GPIO25      | Reset (Standardwert des tft35a-Overlays) |
-| LED/Backlight | **3.3V direkt**, nicht an einen GPIO | siehe unten |
+| LED/Backlight | **3.3V direkt** (Standard) oder GPIO13 (optional, dimmbar) | siehe unten |
 | T_CLK, T_CS, T_DIN, T_DO, T_IRQ (Touch) | **nicht anschließen** | Touch bleibt so auch elektrisch inaktiv |
 
 **Zur Hintergrundbeleuchtung**: Je nach Fertigungscharge ist die LED-Leitung
 bei diesem Board-Typ entweder fest verdrahtet oder für Software-Dimmen auf
 einen GPIO gelegt (öfter berichtet: GPIO18 - genau der Pin, den der
-HiFiBerry für die I2S-Bit-Clock braucht). Da wir per Kabel verdrahten,
-einfach **die LED-Leitung direkt an einen 3.3V-Pin des Pi anschließen**
-statt an einen GPIO - Beleuchtung ist dann dauerhaft an (Dimmen brauchen
-wir für eine reine Infoanzeige ohnehin nicht) und GPIO18 bleibt frei für
-den HiFiBerry.
+HiFiBerry für die I2S-Bit-Clock braucht, hier also nicht verwendbar).
+
+**Standard (keine Dimmung)**: die LED-Leitung direkt an einen 3.3V-Pin des
+Pi anschließen - Beleuchtung ist dann dauerhaft an, GPIO18 bleibt frei für
+den HiFiBerry, keine zusätzlichen Bauteile nötig.
+
+**Optional: dimmbares Backlight per Software-PWM** - dann steuert OwlBox
+die Helligkeit (Regler unter Einstellungen, plus automatisches Dimmen nach
+5 Minuten Inaktivität bzw. sofort bei laufendem Einschlaf-Timer):
+
+1. Die LED-Leitung nicht an 3.3V, sondern an einen freien GPIO anschließen -
+   empfohlen **GPIO13** (physischer Pin 33, einer der Hardware-PWM-fähigen
+   Pins neben 12/18/19, von denen 18/19 dem HiFiBerry gehören).
+2. Da ein Pi-GPIO nicht genug Strom für die Hintergrundbeleuchtung liefern
+   kann, einen kleinen NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET
+   als Schalter dazwischenschalten: GPIO13 → Basis/Gate (über ~1kΩ
+   Vorwiderstand bei einem BJT), Kollektor/Drain → LED-Kathode, Emitter/
+   Source → GND. Die LED-Anode bleibt wie gehabt an 3.3V bzw. an der vom
+   Board vorgesehenen Versorgung.
+3. In `config.yaml`: `gpio.backlight_pin: 13` setzen (Default `null` = alte
+   3.3V-Direktverdrahtung, OwlBox steuert dann nichts und der Regler in den
+   Einstellungen hat keine Wirkung).
+4. Optional in `config.yaml` unter `display:` `dim_brightness_percent`
+   (Standard 20) und `dim_after_seconds` (Standard 300 = 5 Minuten) anpassen.
+
+Diese Variante ist in `docs/hat-wiring.html`/`OwlBox-Wiring.pdf` noch nicht
+eingezeichnet, da sie optional ist - bei Bedarf ergänze ich das dort auch.
 
 ## GPIO-Belegung im Überblick
 
@@ -101,6 +123,7 @@ den HiFiBerry.
 | Encoder CLK                     | 17      | Encoder             |
 | Encoder DT                      | 27      | Encoder             |
 | Encoder SW                      | 22      | Encoder             |
+| Display-Backlight (optional)    | 13      | Nur falls dimmbar verdrahtet (s.o.) - sonst frei |
 
 ## HiFiBerry Amp
 
