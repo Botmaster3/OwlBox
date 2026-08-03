@@ -18,7 +18,7 @@
   const npVolumeValue = document.getElementById("np-volume-value");
   const npBrightnessInput = document.getElementById("np-brightness");
   const npBrightnessValue = document.getElementById("np-brightness-value");
-  const npWifiFill = document.getElementById("np-wifi-fill");
+  const npWifiBars = document.querySelectorAll("#np-wifi-bars .wifi-bar");
   const npWifiLabel = document.getElementById("np-wifi-label");
   const npVuBars = document.querySelectorAll("#np-vu-meter .vu-bar");
   let lastCoverUrl = null;
@@ -105,16 +105,22 @@
 
   function applyWifi(wifi) {
     wifi = wifi || {};
-    npWifiFill.classList.remove("good", "warn", "critical");
-    npWifiFill.classList.add(wifiSignalClass(wifi.enabled, wifi.signal));
+    const cls = wifiSignalClass(wifi.enabled, wifi.signal);
+    const activeBars =
+      wifi.enabled && typeof wifi.signal === "number"
+        ? Math.min(4, Math.max(0, Math.ceil((wifi.signal / 100) * 4)))
+        : 0;
+    npWifiBars.forEach((bar, index) => {
+      bar.classList.remove("active", "good", "warn", "critical");
+      if (index < activeBars) {
+        bar.classList.add("active", cls);
+      }
+    });
     if (!wifi.enabled) {
-      npWifiFill.style.width = "0%";
       npWifiLabel.textContent = "Aus";
     } else if (typeof wifi.signal !== "number") {
-      npWifiFill.style.width = "0%";
       npWifiLabel.textContent = "Getrennt";
     } else {
-      npWifiFill.style.width = `${Math.max(0, Math.min(100, wifi.signal))}%`;
       npWifiLabel.textContent = `${wifi.signal}%`;
     }
   }

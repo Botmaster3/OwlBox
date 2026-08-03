@@ -19,7 +19,7 @@
   const brightnessOsd = document.getElementById("brightness-osd");
   const brightnessOsdValue = document.getElementById("brightness-osd-value");
   const brightnessOsdFill = document.getElementById("brightness-osd-fill");
-  const wifiFill = document.getElementById("wifi-fill");
+  const wifiBars = document.querySelectorAll("#wifi-bars .wifi-bar");
   const wifiLabel = document.getElementById("wifi-label");
   const vuBars = document.querySelectorAll("#vu-meter .vu-bar");
 
@@ -78,16 +78,22 @@
 
   function applyWifi(wifi) {
     wifi = wifi || {};
-    wifiFill.classList.remove("good", "warn", "critical");
-    wifiFill.classList.add(wifiSignalClass(wifi.enabled, wifi.signal));
+    const cls = wifiSignalClass(wifi.enabled, wifi.signal);
+    const activeBars =
+      wifi.enabled && typeof wifi.signal === "number"
+        ? Math.min(4, Math.max(0, Math.ceil((wifi.signal / 100) * 4)))
+        : 0;
+    wifiBars.forEach((bar, index) => {
+      bar.classList.remove("active", "good", "warn", "critical");
+      if (index < activeBars) {
+        bar.classList.add("active", cls);
+      }
+    });
     if (!wifi.enabled) {
-      wifiFill.style.width = "0%";
       wifiLabel.textContent = "Aus";
     } else if (typeof wifi.signal !== "number") {
-      wifiFill.style.width = "0%";
       wifiLabel.textContent = "Getrennt";
     } else {
-      wifiFill.style.width = `${Math.max(0, Math.min(100, wifi.signal))}%`;
       wifiLabel.textContent = `${wifi.signal}%`;
     }
   }
@@ -100,8 +106,8 @@
   }
 
   function applyState(state) {
-    // Shown regardless of splash/parent-mode/tag state, since brightness can
-    // change (via the encoder or the web UI) at any time.
+    // Shown regardless of splash/parent-mode/tag state, like a phone's own
+    // status bar - the brightness OSD change-detection needs it up here too.
     const settings = state.settings || {};
     if (typeof settings.brightness === "number") {
       if (lastBrightness !== null && settings.brightness !== lastBrightness) {
@@ -109,6 +115,7 @@
       }
       lastBrightness = settings.brightness;
     }
+    applyWifi(state.wifi);
 
     const story = state.story;
     const player = state.player || {};
@@ -184,7 +191,6 @@
     progressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
 
     volumeFill.style.width = `${relativePercent(player.volume || 0, 0, settings.max_volume || 100)}%`;
-    applyWifi(state.wifi);
     setVuPlaying(!!player.playing);
 
     unknownBanner.hidden = !state.unknown_tag;

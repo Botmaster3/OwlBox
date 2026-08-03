@@ -5,6 +5,15 @@
   {% include "_admin_nav.html" %}
 
   <div class="card now-playing" id="now-playing">
+    <div class="wifi-indicator" id="wifi-indicator">
+      <div class="wifi-bars" id="np-wifi-bars">
+        <span class="wifi-bar"></span>
+        <span class="wifi-bar"></span>
+        <span class="wifi-bar"></span>
+        <span class="wifi-bar"></span>
+      </div>
+      <span id="np-wifi-label" class="wifi-label">–</span>
+    </div>
     <div class="now-playing-cover" id="np-cover-wrap">
       <img id="np-cover" alt="" hidden>
       <div id="np-cover-placeholder" class="now-playing-placeholder">🦉</div>
@@ -24,11 +33,6 @@
         <span id="np-time-pos" class="time">0:00</span>
         <div class="progress-bar"><div id="np-progress-fill" class="progress-fill"></div></div>
         <span id="np-time-dur" class="time">0:00</span>
-      </div>
-      <div class="volume-row wifi-row">
-        <span>📶</span>
-        <div class="progress-bar"><div id="np-wifi-fill" class="progress-fill"></div></div>
-        <span id="np-wifi-label">–</span>
       </div>
       <div id="np-sleep-timer-badge" class="sleep-timer-badge" hidden>
         😴 Einschlaf-Timer: <span id="np-sleep-timer-remaining"></span>
