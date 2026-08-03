@@ -18,17 +18,25 @@
         <div class="progress-bar"><div id="np-progress-fill" class="progress-fill"></div></div>
         <span id="np-time-dur" class="time">0:00</span>
       </div>
-      <div class="volume-row">
-        <span>🔉</span>
-        <div class="progress-bar"><div id="np-volume-fill" class="progress-fill volume-fill"></div></div>
-        <span>🔊</span>
-      </div>
       <div id="np-sleep-timer-badge" class="sleep-timer-badge" hidden>
         😴 Einschlaf-Timer: <span id="np-sleep-timer-remaining"></span>
       </div>
       <div id="np-upcoming" class="np-upcoming" hidden>
         <div class="np-upcoming-label">Als Nächstes</div>
         <ol id="np-upcoming-list" class="np-upcoming-list"></ol>
+      </div>
+      <div class="control-buttons">
+        <button class="btn secondary" id="np-btn-prev" type="button">⏮ Zurück</button>
+        <button class="btn secondary" id="np-btn-toggle" type="button">⏯ Play/Pause</button>
+        <button class="btn secondary" id="np-btn-next" type="button">⏭ Weiter</button>
+      </div>
+      <div class="field">
+        <label for="np-volume">Lautstärke (<span id="np-volume-value">–</span>%)</label>
+        <input type="range" id="np-volume" min="0" max="100" value="60">
+      </div>
+      <div class="field">
+        <label for="np-brightness">Helligkeit (<span id="np-brightness-value">–</span>%)</label>
+        <input type="range" id="np-brightness" min="0" max="100" value="100">
       </div>
     </div>
   </div>

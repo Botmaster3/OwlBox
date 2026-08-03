@@ -23,9 +23,10 @@ den Pi geladen und einem Chip zugewiesen.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
   Kapitel-/Track-Titel, Fortschritt, Lautstärke) - kein Touch, Bedienung
   läuft ausschließlich über Taster/Encoder/Funktions-Chips (siehe docs/hardware.md).
-  Helligkeit ausschließlich manuell regelbar (Regler unter Einstellungen oder
-  ein zweiter Dreh-Encoder am Gerät) - kein automatisches Dimmen; braucht dafür
-  die optionale Backlight-Verkabelung per Software-PWM statt fest an 3.3V.
+  Helligkeit ausschließlich manuell regelbar (Regler unter Einstellungen/Home
+  oder ein zweiter Dreh-Encoder am Gerät) - kein automatisches Dimmen; jede
+  Änderung blendet den neuen Wert kurz auf dem Display ein. Braucht dafür die
+  optionale Backlight-Verkabelung per Software-PWM statt fest an 3.3V.
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,
@@ -33,7 +34,9 @@ den Pi geladen und einem Chip zugewiesen.
   Helligkeit, nur zusammen mit dimmbarem Backlight).
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
-  - **Home** - reine "Jetzt läuft"-Anzeige (groß, wie auf dem Display), die erste Seite nach dem Login.
+  - **Home** - "Jetzt läuft"-Anzeige (groß, wie auf dem Display) als erste Seite nach dem Login,
+    zusätzlich als Fernbedienung nutzbar: Zurück/Play-Pause/Weiter sowie Lautstärke- und
+    Helligkeits-Regler direkt bedienbar, ohne den echten Taster/Encoder anzufassen.
   - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle/Repeat, Track-Reihenfolge, löschen;
     Hörstatistik (Wiedergaben insgesamt, Gesamt-Hördauer, Meistgehört-Liste, pro Geschichte/Ordner/Livestream
     wie oft und wie lange gehört sowie zuletzt gespielt).

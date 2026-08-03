@@ -7,12 +7,50 @@
   const npTimeDur = document.getElementById("np-time-dur");
   const npProgressRow = document.getElementById("np-progress-row");
   const npProgressFill = document.getElementById("np-progress-fill");
-  const npVolumeFill = document.getElementById("np-volume-fill");
   const npUpcoming = document.getElementById("np-upcoming");
   const npUpcomingList = document.getElementById("np-upcoming-list");
   const npSleepTimerBadge = document.getElementById("np-sleep-timer-badge");
   const npSleepTimerRemaining = document.getElementById("np-sleep-timer-remaining");
+  const npBtnPrev = document.getElementById("np-btn-prev");
+  const npBtnToggle = document.getElementById("np-btn-toggle");
+  const npBtnNext = document.getElementById("np-btn-next");
+  const npVolumeInput = document.getElementById("np-volume");
+  const npVolumeValue = document.getElementById("np-volume-value");
+  const npBrightnessInput = document.getElementById("np-brightness");
+  const npBrightnessValue = document.getElementById("np-brightness-value");
   let lastCoverUrl = null;
+  let volumeSliderBeingDragged = false;
+  let brightnessSliderBeingDragged = false;
+
+  async function postJson(url, body) {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  npBtnPrev.addEventListener("click", () => fetch("/api/control/prev", { method: "POST" }));
+  npBtnToggle.addEventListener("click", () => fetch("/api/control/toggle", { method: "POST" }));
+  npBtnNext.addEventListener("click", () => fetch("/api/control/next", { method: "POST" }));
+
+  npVolumeInput.addEventListener("input", () => {
+    volumeSliderBeingDragged = true;
+    npVolumeValue.textContent = npVolumeInput.value;
+  });
+  npVolumeInput.addEventListener("change", async () => {
+    await postJson("/api/settings/volume", { current_volume: parseInt(npVolumeInput.value, 10) });
+    volumeSliderBeingDragged = false;
+  });
+
+  npBrightnessInput.addEventListener("input", () => {
+    brightnessSliderBeingDragged = true;
+    npBrightnessValue.textContent = npBrightnessInput.value;
+  });
+  npBrightnessInput.addEventListener("change", async () => {
+    await postJson("/api/settings/brightness", { brightness: parseInt(npBrightnessInput.value, 10) });
+    brightnessSliderBeingDragged = false;
+  });
 
   const FUNCTION_LABELS = {
     play: "Play",
@@ -83,7 +121,19 @@
     npTimePos.textContent = formatTime(timePos);
     npTimeDur.textContent = formatTime(duration);
     npProgressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
-    npVolumeFill.style.width = `${Math.max(0, Math.min(100, player.volume || 0))}%`;
+
+    if (!volumeSliderBeingDragged) {
+      npVolumeInput.value = player.volume || 0;
+      npVolumeValue.textContent = player.volume || 0;
+    }
+
+    const settings = state.settings || {};
+    if (!brightnessSliderBeingDragged && typeof settings.brightness === "number") {
+      npBrightnessInput.min = settings.min_brightness;
+      npBrightnessInput.max = settings.max_brightness;
+      npBrightnessInput.value = settings.brightness;
+      npBrightnessValue.textContent = settings.brightness;
+    }
 
     const upcoming = (story && story.upcoming_tracks) || [];
     if (upcoming.length === 0) {

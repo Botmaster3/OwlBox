@@ -16,10 +16,23 @@
   const sleepTimerBadge = document.getElementById("sleep-timer-badge");
   const sleepTimerRemaining = document.getElementById("sleep-timer-remaining");
   const splashEl = document.getElementById("splash");
+  const brightnessOsd = document.getElementById("brightness-osd");
+  const brightnessOsdValue = document.getElementById("brightness-osd-value");
 
   let lastCoverUrl = null;
   let parentModeActive = false;
   let hasScannedTag = false;
+  let lastBrightness = null;
+  let brightnessOsdTimer = null;
+
+  function showBrightnessOsd(percent) {
+    brightnessOsdValue.textContent = percent;
+    brightnessOsd.hidden = false;
+    clearTimeout(brightnessOsdTimer);
+    brightnessOsdTimer = setTimeout(() => {
+      brightnessOsd.hidden = true;
+    }, 2000);
+  }
 
   function formatTime(seconds) {
     seconds = Math.max(0, Math.floor(seconds || 0));
@@ -29,6 +42,16 @@
   }
 
   function applyState(state) {
+    // Shown regardless of splash/parent-mode/tag state, since brightness can
+    // change (via the encoder or the web UI) at any time.
+    const settings = state.settings || {};
+    if (typeof settings.brightness === "number") {
+      if (lastBrightness !== null && settings.brightness !== lastBrightness) {
+        showBrightnessOsd(settings.brightness);
+      }
+      lastBrightness = settings.brightness;
+    }
+
     const story = state.story;
     const player = state.player || {};
     const parentMode = state.parent_mode || { active: false, label: null };
