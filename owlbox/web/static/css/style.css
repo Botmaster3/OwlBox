@@ -341,50 +341,65 @@ html[data-theme="weihnachten"][data-advent-candles="4"] .advent-wreath::after {
 }
 html[data-theme="ostern"] .easter-eggs {
   display: block;
-  height: 56px;
+  height: 64px;
 }
-/* Separate pseudo-element (::before, painted behind ::after) for the grass
-   patch, same split as the wreath's texture/candles - keeps the blades'
-   layer independent of the eggs' own animation and stacking. A soft ground
-   ellipse (same "radial-gradient with a soft-edged fill" trick as the
-   wreath's own base) plus a row of individual thin blades along its top
-   edge, alternating height/color for texture instead of a flat green bar. */
+/* A woven Osterkörbchen (Easter basket) instead of eggs loose on a patch of
+   grass - three layers, back to front: the handle (a real element, an arc
+   made from a half-bordered circle rather than a gradient - much simpler
+   than trying to fake a ring with radial-gradient stops), the basket body
+   on ::before (a trapezoid via clip-path, filled with a striped
+   repeating-linear-gradient for a woven look), and the grass + eggs on
+   ::after, positioned to overflow the top of the basket rim so they read as
+   sitting inside it. ::before is always painted before real children and
+   ::after always after, regardless of source order, so this three-way
+   split gives the paint order (back to front) basket -> handle -> contents
+   "for free" without any z-index. */
+.easter-eggs .basket-handle {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 30px;
+  height: 32px;
+  margin-left: -15px;
+  box-sizing: border-box;
+  border: 3px solid #7a4a24;
+  border-bottom: none;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
 .easter-eggs::before {
   content: "";
   position: absolute;
-  inset: 0;
+  left: 50%;
+  bottom: 4px;
+  width: 62%;
+  height: 22px;
+  transform: translateX(-50%);
+  clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
+  background: repeating-linear-gradient(0deg, #8a5a2b 0 3px, #a9723c 3px 6px);
+  border-top: 2px solid #6b431f;
   pointer-events: none;
-  background-image:
-    radial-gradient(2px 7px at 6% 42px, #6fae4a, transparent 90%),
-    radial-gradient(1.5px 5px at 14% 40px, #4a8236, transparent 90%),
-    radial-gradient(2px 8px at 22% 43px, #6fae4a, transparent 90%),
-    radial-gradient(1.5px 6px at 30% 41px, #4a8236, transparent 90%),
-    radial-gradient(2px 7px at 40% 42px, #6fae4a, transparent 90%),
-    radial-gradient(1.5px 5px at 48% 40px, #4a8236, transparent 90%),
-    radial-gradient(2px 8px at 58% 43px, #6fae4a, transparent 90%),
-    radial-gradient(1.5px 6px at 66% 41px, #4a8236, transparent 90%),
-    radial-gradient(2px 7px at 76% 42px, #6fae4a, transparent 90%),
-    radial-gradient(1.5px 5px at 84% 40px, #4a8236, transparent 90%),
-    radial-gradient(2px 8px at 92% 43px, #6fae4a, transparent 90%),
-    radial-gradient(42% 5px at 50% 46px, rgba(160, 210, 120, 0.35), transparent 82%),
-    radial-gradient(48% 7px at 50% 50px, #4a8236 75%, transparent 92%);
-  background-repeat: no-repeat;
 }
-/* Eggs sit lower - resting in the grass instead of floating in the middle
-   of the box - and animate on their own layer so the bobbing doesn't also
-   shift the grass underneath them. */
+/* Grass blades and eggs share one layer (and so bob together on the same
+   gentle animation) rather than needing a fourth paint layer just to keep
+   the grass still - a whole little nest swaying together reads fine. */
 .easter-eggs::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(11px 14px at 15% 40px, #f6d365 92%, transparent 94%),
-    radial-gradient(11px 14px at 38% 28px, #a8e6cf 92%, transparent 94%),
-    radial-gradient(11px 14px at 85% 36px, #c7a2d6 92%, transparent 94%),
-    radial-gradient(11px 14px at 62% 42px, #ef8ba8 92%, transparent 94%);
+    radial-gradient(2.5px 9px at 20% 34px, #6fae4a, transparent 90%),
+    radial-gradient(2px 8px at 30% 31px, #4a8236, transparent 90%),
+    radial-gradient(2.5px 10px at 42% 34px, #6fae4a, transparent 90%),
+    radial-gradient(2px 8px at 54% 31px, #4a8236, transparent 90%),
+    radial-gradient(2.5px 9px at 66% 34px, #6fae4a, transparent 90%),
+    radial-gradient(2px 8px at 78% 31px, #4a8236, transparent 90%),
+    radial-gradient(10px 13px at 28% 34px, #f6d365 92%, transparent 94%),
+    radial-gradient(10px 13px at 46% 30px, #a8e6cf 92%, transparent 94%),
+    radial-gradient(10px 13px at 72% 33px, #c7a2d6 92%, transparent 94%),
+    radial-gradient(10px 13px at 58% 37px, #ef8ba8 92%, transparent 94%);
   background-repeat: no-repeat;
-  opacity: 0.85;
+  opacity: 0.92;
   animation: egg-bob 4.5s ease-in-out infinite;
 }
 @keyframes egg-bob {
