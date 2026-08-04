@@ -341,18 +341,48 @@ html[data-theme="weihnachten"][data-advent-candles="4"] .advent-wreath::after {
 }
 html[data-theme="ostern"] .easter-eggs {
   display: block;
-  height: 40px;
+  height: 56px;
 }
+/* Separate pseudo-element (::before, painted behind ::after) for the grass
+   patch, same split as the wreath's texture/candles - keeps the blades'
+   layer independent of the eggs' own animation and stacking. A soft ground
+   ellipse (same "radial-gradient with a soft-edged fill" trick as the
+   wreath's own base) plus a row of individual thin blades along its top
+   edge, alternating height/color for texture instead of a flat green bar. */
+.easter-eggs::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 7px at 6% 42px, #6fae4a, transparent 90%),
+    radial-gradient(1.5px 5px at 14% 40px, #4a8236, transparent 90%),
+    radial-gradient(2px 8px at 22% 43px, #6fae4a, transparent 90%),
+    radial-gradient(1.5px 6px at 30% 41px, #4a8236, transparent 90%),
+    radial-gradient(2px 7px at 40% 42px, #6fae4a, transparent 90%),
+    radial-gradient(1.5px 5px at 48% 40px, #4a8236, transparent 90%),
+    radial-gradient(2px 8px at 58% 43px, #6fae4a, transparent 90%),
+    radial-gradient(1.5px 6px at 66% 41px, #4a8236, transparent 90%),
+    radial-gradient(2px 7px at 76% 42px, #6fae4a, transparent 90%),
+    radial-gradient(1.5px 5px at 84% 40px, #4a8236, transparent 90%),
+    radial-gradient(2px 8px at 92% 43px, #6fae4a, transparent 90%),
+    radial-gradient(42% 5px at 50% 46px, rgba(160, 210, 120, 0.35), transparent 82%),
+    radial-gradient(48% 7px at 50% 50px, #4a8236 75%, transparent 92%);
+  background-repeat: no-repeat;
+}
+/* Eggs sit lower - resting in the grass instead of floating in the middle
+   of the box - and animate on their own layer so the bobbing doesn't also
+   shift the grass underneath them. */
 .easter-eggs::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(11px 14px at 15% 24px, #f6d365 92%, transparent 94%),
-    radial-gradient(11px 14px at 38% 12px, #a8e6cf 92%, transparent 94%),
-    radial-gradient(11px 14px at 85% 20px, #c7a2d6 92%, transparent 94%),
-    radial-gradient(11px 14px at 62% 26px, #ef8ba8 92%, transparent 94%);
+    radial-gradient(11px 14px at 15% 40px, #f6d365 92%, transparent 94%),
+    radial-gradient(11px 14px at 38% 28px, #a8e6cf 92%, transparent 94%),
+    radial-gradient(11px 14px at 85% 36px, #c7a2d6 92%, transparent 94%),
+    radial-gradient(11px 14px at 62% 42px, #ef8ba8 92%, transparent 94%);
   background-repeat: no-repeat;
   opacity: 0.85;
   animation: egg-bob 4.5s ease-in-out infinite;
