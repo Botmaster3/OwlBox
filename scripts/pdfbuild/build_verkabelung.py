@@ -366,25 +366,41 @@ p(
 )
 code(["#dtoverlay=vc4-kms-v3d"])
 p(
-    "und über sudo raspi-config → System Options → Boot / Desktop den Pi auf den klassischen "
-    "X11-Desktop (nicht Wayland) stellen."
+    "und über sudo raspi-config → Advanced Options → GL Driver auf „Legacy“ stellen. Empfohlenes "
+    "Basis-Image ist deshalb Raspberry Pi OS (Legacy) Lite, 64-bit - der alte Grafiktreiber, aber "
+    "bewusst ohne mitinstallierte Desktop-Umgebung (siehe Kapitel 9, warum)."
 )
 
 # ============================================================ 9. Kiosk-Autostart
-h1("9. Kiosk-Autostart (Chromium Vollbild)")
+h1("9. Kiosk-Autostart (kein Desktop)")
 p(
     "scripts/kiosk.sh startet Chromium im Kiosk-Modus gegen http://localhost:5000/ - das "
-    "funktioniert, sobald fbcp läuft und X11 (nicht Wayland) aktiv ist."
+    "funktioniert, sobald fbcp läuft und der legacy Grafiktreiber (nicht Wayland) aktiv ist. Auf "
+    "„Legacy Lite“ gibt es aber keine Desktop-Umgebung (kein lightdm, kein LXDE), in die sich der "
+    "Kiosk einhängen könnte - deshalb startet ein eigener systemd-Dienst "
+    "(owlbox-kiosk.service) X direkt selbst per startx, übernimmt dafür tty1 und lässt "
+    "scripts/kiosk.sh als einzigen X-Client laufen. Kein Panel, kein Dateimanager-Desktop, kein "
+    "Login-Bildschirm - das spart gegenüber einer vollen Desktop-Umgebung spürbar Bootzeit."
 )
 code([
-    "mkdir -p ~/.config/systemd/user",
-    "cp /opt/owlbox/systemd/owlbox-kiosk.service ~/.config/systemd/user/",
-    "systemctl --user daemon-reload",
-    "systemctl --user enable --now owlbox-kiosk.service",
-    "sudo loginctl enable-linger $USER   # optional: startet auch ohne aktive Anmeldung",
+    "# X ohne Display-Manager erlauben:",
+    "cat > /etc/X11/Xwrapper.config <<'EOF'",
+    "allowed_users=anybody",
+    "needs_root_rights=yes",
+    "EOF",
+    "",
+    "sudo cp /opt/owlbox/systemd/owlbox-kiosk.service /etc/systemd/system/",
+    "sudo systemctl daemon-reload",
+    "sudo systemctl enable --now owlbox-kiosk.service",
 ])
+story.append(note_box(
+    "owlbox-kiosk.service bringt Conflicts=getty@tty1.service schon mit und übernimmt tty1 damit "
+    "automatisch - sauberer läuft es trotzdem mit sudo systemctl disable getty@tty1.service, damit "
+    "dort kein ungenutzter Login-Prompt mehr mitstartet."
+))
 p(
-    "Alternativ über die Autostart-Datei der Desktop-Umgebung: "
+    "Läuft doch eine volle Desktop-Umgebung (z.B. die volle „Legacy“-Variante statt Lite geflasht): "
+    "alternativ über deren Autostart-Datei einhängen - "
     "~/.config/lxsession/LXDE-pi/autostart um die Zeile @/opt/owlbox/scripts/kiosk.sh ergänzen."
 )
 

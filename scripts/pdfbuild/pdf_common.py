@@ -181,7 +181,7 @@ def imager_window_mockup(highlight):
     bar = _window_bar("Raspberry Pi Imager", width)
     btn_defs = [
         ("device", "CHOOSE DEVICE", "Raspberry Pi 3"),
-        ("os", "CHOOSE OS", "Raspberry Pi OS (Legacy)"),
+        ("os", "CHOOSE OS", "Raspberry Pi OS (Legacy) Lite"),
         ("storage", "CHOOSE STORAGE", "SD-Karte"),
     ]
     btn_w = (width - 16 * mm) / 3

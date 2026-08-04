@@ -3,11 +3,12 @@
 **Für genau die unten stehende Standardhardware macht `scripts/install.sh`
 inzwischen alle Software-Schritte auf dieser Seite automatisch** (HiFiBerry-
 und Display-Overlay in `config.txt`, GL-Treiber, `fbcp` bauen, Display-Treiber
-installieren, ALSA-Gerät/Mixer erkennen, Kiosk-Autostart) - einfach zweimal
-mit einem Neustart dazwischen laufen lassen, siehe README. Diese Seite bleibt
-trotzdem die vollständige Referenz: für abweichende Hardware, zum
-Nachvollziehen, was das Skript eigentlich tut, oder falls ein automatischer
-Schritt einmal fehlschlägt und von Hand nachgeholt werden muss.
+installieren, ALSA-Gerät/Mixer erkennen, Kiosk-Autostart ohne Desktop-Umgebung,
+ein paar Boot-Zeit-Trimms) - einfach zweimal mit einem Neustart dazwischen
+laufen lassen, siehe README. Diese Seite bleibt trotzdem die vollständige
+Referenz: für abweichende Hardware, zum Nachvollziehen, was das Skript
+eigentlich tut, oder falls ein automatischer Schritt einmal fehlschlägt und
+von Hand nachgeholt werden muss.
 
 Zielhardware:
 
@@ -381,10 +382,12 @@ deaktivieren bzw. auskommentieren:
 #dtoverlay=vc4-kms-v3d
 ```
 
-und über `sudo raspi-config` → System Options → Boot / Desktop den Pi auf
-den klassischen X11-Desktop (nicht Wayland) stellen. Das ist auch der Weg,
-den praktisch alle Tutorials für dieses Board beschreiben - Wayland/labwc
-lohnt sich hier nicht zu erzwingen. (Alternative für alle, die KMS/Wayland
+Empfohlenes Basis-Image ist deshalb **Raspberry Pi OS (Legacy) Lite, 64-bit**
+(Bookworm, alter Grafiktreiber, aber *ohne* Desktop-Umgebung) - nicht die
+volle "Legacy"-Variante mit Desktop. Der Kiosk startet X selbst nur für
+Chromium (siehe "Kiosk-Autostart" unten), eine mitinstallierte
+Desktop-Umgebung (lightdm, LXDE) würde beim Boot nur unnötig Zeit kosten,
+ohne dass sie je zu sehen wäre. (Alternative für alle, die KMS/Wayland
 behalten wollen: der Fork `fbcp-ili9341`, der über DRM statt `/dev/fb0`
 liest - aufwändiger einzurichten, hier nicht weiter dokumentiert.)
 
@@ -394,23 +397,39 @@ Sollte die Anleitung/Download-Karte, die dem Display beilag, einen
 anderen Overlay-/Treibernamen nennen als oben: gerne den genauen Namen
 schicken, dann passe ich `config.txt` und die Pin-Tabelle entsprechend an.
 
-## Kiosk-Autostart (Chromium fullscreen)
+## Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)
 
-`scripts/kiosk.sh` startet Chromium im Kiosk-Modus gegen
-`http://localhost:5000/` - das funktioniert unverändert, sobald `fbcp`
-läuft und X11 (nicht Wayland) aktiv ist, weil Chromium dann ganz normal
-auf den virtuellen HDMI-Ausgang rendert.
+Da die Basis "Legacy Lite" **keine** Desktop-Umgebung mitbringt, gibt es
+auch kein lightdm/LXDE, in das sich der Kiosk einhängen könnte. Stattdessen
+startet ein eigener systemd-Dienst (`owlbox-kiosk.service`) X direkt selbst
+(per `startx`), übernimmt dafür `tty1` und lässt `scripts/kiosk.sh` (das
+Chromium im Kiosk-Modus gegen `http://localhost:5000/` startet) als
+einzigen "Client" laufen - keine Fensterleiste, kein Dateimanager-Desktop,
+kein Panel. Das funktioniert, sobald `fbcp` läuft und der legacy
+Grafiktreiber (nicht Wayland) aktiv ist, weil Chromium dann ganz normal auf
+den virtuellen HDMI-Ausgang rendert.
 
 **Autostart einrichten:**
 
 ```
-mkdir -p ~/.config/systemd/user
-cp /opt/owlbox/systemd/owlbox-kiosk.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now owlbox-kiosk.service
-sudo loginctl enable-linger $USER   # optional: startet auch ohne aktive Anmeldung
+# X ohne Display-Manager erlauben:
+cat > /etc/X11/Xwrapper.config <<'EOF'
+allowed_users=anybody
+needs_root_rights=yes
+EOF
+
+sudo cp /opt/owlbox/systemd/owlbox-kiosk.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now owlbox-kiosk.service
 ```
 
-Alternativ über die Autostart-Datei der Desktop-Umgebung:
+`owlbox-kiosk.service` bringt `Conflicts=getty@tty1.service` schon mit, muss
+also `getty@tty1.service` nicht extra deaktiviert bekommen - läuft aber
+sauberer, wenn man es trotzdem tut (`sudo systemctl disable getty@tty1.service`),
+damit dort kein ungenutzter Login-Prompt mehr mitstartet.
+
+Läuft doch eine volle Desktop-Umgebung (z.B. weil bewusst die volle
+"Legacy"-Variante statt Lite geflasht wurde), lässt sich der Kiosk
+alternativ ganz klassisch über deren Autostart-Datei einhängen:
 `~/.config/lxsession/LXDE-pi/autostart` um die Zeile
 `@/opt/owlbox/scripts/kiosk.sh` ergänzen.

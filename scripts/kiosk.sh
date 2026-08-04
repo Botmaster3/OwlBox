@@ -1,9 +1,21 @@
 #!/usr/bin/env bash
-# Launches Chromium in kiosk mode against the local OwlBox now-playing page.
-# Waits for the web server to be reachable first since it's started separately.
+# The X "client" started by `startx` from owlbox-kiosk.service - this is the only
+# thing that ever runs in the X session, there is no desktop environment around
+# it (see systemd/owlbox-kiosk.service for why). Launches Chromium in kiosk mode
+# against the local OwlBox now-playing page. Waits for the web server to be
+# reachable first since it's started separately.
 set -euo pipefail
 
 URL="http://localhost:5000/"
+
+# No desktop environment means nothing else turns off the screensaver/DPMS -
+# the display is meant to always show the now-playing screen.
+command -v xset >/dev/null 2>&1 && { xset s off; xset s noblank; xset -dpms; } || true
+
+# Minimal window manager: not strictly required for a single fullscreen kiosk
+# window, but negligible overhead and keeps things well-behaved if a stray JS
+# alert()/confirm() (or similar transient window) ever pops up in Chromium.
+command -v matchbox-window-manager >/dev/null 2>&1 && matchbox-window-manager -use_titlebar no &
 
 CHROMIUM_BIN="$(command -v chromium-browser || command -v chromium || true)"
 if [ -z "$CHROMIUM_BIN" ]; then

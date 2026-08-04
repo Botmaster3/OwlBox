@@ -143,17 +143,21 @@ story.append(screenshot(str(ASSETS / "imager-main-window.png"),
 step(1, "Gerät wählen", "„CHOOSE DEVICE“ → Raspberry Pi 3.")
 story.append(imager_window_mockup("device"))
 step(2, "Betriebssystem wählen",
-     "„CHOOSE OS“ → „Raspberry Pi OS (other)“ → <b>„Raspberry Pi OS (Legacy)“</b> (ohne den "
-     "Zusatz „Full“ und ohne „Lite“).",
-     "Diese Variante basiert auf demselben aktuellen Debian Bookworm wie die Standard-Variante, "
-     "bringt aber den klassischen X11-Desktop statt Wayland/labwc mit - das SPI-Display braucht "
-     "später X11 (siehe Kapitel 6), damit entfällt der sonst nötige manuelle Umstieg weg von "
-     "Wayland komplett.")
+     "„CHOOSE OS“ → „Raspberry Pi OS (other)“ → <b>„Raspberry Pi OS (Legacy) Lite“</b>.",
+     "Diese Variante basiert auf demselben aktuellen Debian Bookworm wie die Standard-Variante "
+     "und bringt den alten Grafiktreiber statt Wayland/labwc mit - das braucht später <font "
+     "face=\"DejaVuSansMono\" size=\"9\">fbcp</font> fürs SPI-Display (siehe Kapitel 6). Bewusst "
+     "„Lite“ statt der vollen Desktop-Variante: OwlBox "
+     "startet für den Kiosk selbst nur ein minimales X ohne Desktop-Umgebung (kein lightdm/LXDE) - "
+     "„Lite“ bringt so eine Desktop-Umgebung gar nicht erst mit, die beim Boot nur unnötig Zeit "
+     "kosten würde, ohne dass sie je zu sehen wäre.")
 story.append(screenshot(str(ASSETS / "imager-os-list.png"),
                          "„CHOOSE OS“ - die oberste Auswahlebene."))
 story.append(screenshot(str(ASSETS / "imager-os-legacy.png"),
                          "Nach Klick auf „Raspberry Pi OS (other)“ - hier „Raspberry Pi OS "
-                         "(Legacy)“ auswählen."))
+                         "(Legacy) Lite“ auswählen (weiter unten in der Liste)."))
+story.append(screenshot(str(ASSETS / "imager-os-lite-selected.png"),
+                         "„Raspberry Pi OS (Legacy) Lite“ ausgewählt."))
 step(3, "Speicherziel wählen", "„CHOOSE STORAGE“ → die eingelegte SD-Karte auswählen. "
      "Vorsicht: alles darauf wird überschrieben.")
 story.append(imager_window_mockup("storage"))
@@ -260,8 +264,9 @@ p(
 )
 bullets([
     "Benötigte System-Pakete installieren (Python, mpv, alsa-utils, git, Chromium, cmake, "
-    "libraspberrypi-dev, ...)",
+    "libraspberrypi-dev, ein minimaler X-Stack für den Kiosk, ...)",
     "SPI aktivieren",
+    "Ungenutzte Dienste und Boot-Wartezeiten abschalten, um den Bootvorgang zu verkürzen",
     "Einen eigenen Service-User „owlbox“ anlegen (mit Zugriff auf gpio/spi/audio/video/i2c)",
     "Die Anwendung nach <font face=\"DejaVuSansMono\" size=\"9\">/opt/owlbox</font> kopieren, eine "
     "Python-virtuelle-Umgebung anlegen und alle Abhängigkeiten installieren",
@@ -279,6 +284,12 @@ story.append(note_box(
     "wenn nur config.txt geändert wurde, fordert das Skript zu einem Neustart auf, bevor der "
     "zweite Durchlauf sinnvoll ist."
 ))
+story.append(note_box(
+    "Was konkret abgeschaltet wird: die Dienste bluetooth, hciuart, triggerhappy, ModemManager "
+    "und dphys-swapfile (auf dieser Box ungenutzt), der Text-Login auf tty1 (der Kiosk übernimmt "
+    "dieses Terminal direkt), das Warten auf eine Netzwerkverbindung beim Boot sowie der "
+    "Boot-Splash-Bildschirm. Alles reine Boot-Zeit-Optimierungen ohne Funktionsverlust für OwlBox."
+))
 h2("6.3 Installationsskript erneut ausführen (2. Durchlauf, nach dem Neustart)")
 p("Nach dem Neustart erneut per SSH verbinden und das Skript noch einmal starten:")
 story.append(terminal_mockup("Terminal - 2. Durchlauf", [
@@ -294,8 +305,9 @@ bullets([
     "amixer scontrols) und in config.yaml eintragen",
     "Die vom Display-Installer gesetzte Touch-Zeile (dtoverlay=ads7846,...) wieder aus "
     "config.txt entfernen - Touch bleibt bei diesem Aufbau bewusst deaktiviert",
-    "Den Kiosk-Autostart (Chromium im Vollbild) für den aktuellen Benutzer einrichten und "
-    "aktivieren",
+    "Den Kiosk-Autostart einrichten und aktivieren: ein eigener systemd-Dienst "
+    "(<font face=\"DejaVuSansMono\" size=\"9\">owlbox-kiosk.service</font>) startet X direkt "
+    "(kein Desktop, kein Login-Bildschirm) und darin Chromium im Vollbild",
     "Den systemd-Dienst <font face=\"DejaVuSansMono\" size=\"9\">owlbox.service</font> "
     "installieren, aktivieren und starten",
 ])
@@ -394,6 +406,10 @@ story.append(spec_table(
         ["Display bleibt schwarz", "sudo systemctl status owlbox-fbcp prüfen; GL-Driver wirklich "
          "auf „Legacy“ (Kapitel 4); scripts/install.sh noch einmal ausführen, falls der "
          "Display-Treiber-Installer noch nicht durchgelaufen ist (Kapitel 6)."],
+        ["Display zeigt nur einen Textcursor/Login, kein Chromium",
+         "sudo systemctl status owlbox-kiosk prüfen; sudo journalctl -u owlbox-kiosk -n 50 für "
+         "die Fehlermeldung von X/Chromium; Xwrapper.config wurde von scripts/install.sh unter "
+         "/etc/X11/Xwrapper.config angelegt - prüfen, ob die Datei noch existiert."],
         ["Verwaltung im Browser nicht erreichbar", "IP-Adresse erneut prüfen; auf dem Kiosk-Display "
          "nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Kapitel 7)."],
     ],

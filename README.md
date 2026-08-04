@@ -162,6 +162,11 @@ Im Simulationsmodus wird RFID/GPIO/mpv durch Software-Stubs ersetzt, siehe
 
 ## Installation auf dem Raspberry Pi
 
+Empfohlenes Basis-Image: **Raspberry Pi OS (Legacy) Lite, 64-bit** - Bookworm
+mit dem alten Grafiktreiber (Pflicht für `fbcp`), aber bewusst *ohne*
+Desktop-Umgebung, da der Kiosk-Autostart X nur für Chromium selbst startet
+(kein lightdm/LXDE, das beim Boot nur unnötig Zeit kosten würde).
+
 Für die Standardhardware (Pi 3B+, HiFiBerry Amp/Amp2, 3.5" SPI-Display der
 tft35a/MHS-35-Familie, RC522, Taster/Encoder auf den Standard-Pins - siehe
 [docs/hardware.md](docs/hardware.md)) genügt es, das Skript **zweimal mit
@@ -173,18 +178,20 @@ cd owlbox
 sudo ./scripts/install.sh
 ```
 
-**1. Durchlauf:** installiert Systempakete (mpv, ALSA, Chromium, …), aktiviert
-SPI, legt einen `owlbox`-Systembenutzer an, richtet ein Python-venv ein,
-trägt den HiFiBerry- und Display-Overlay automatisch in `config.txt` ein,
-baut und installiert `fbcp`, lädt und startet den Display-Treiber
-(`goodtft/LCD-show`) - der Pi startet am Ende von selbst neu.
+**1. Durchlauf:** installiert Systempakete (mpv, ALSA, Chromium, minimaler
+X-Stack, …), aktiviert SPI, deaktiviert ungenutzte Dienste und
+Boot-Wartezeiten (Bluetooth, Netzwerk-Wartezeit, Boot-Splash - siehe
+docs/hardware.md), legt einen `owlbox`-Systembenutzer an, richtet ein
+Python-venv ein, trägt den HiFiBerry- und Display-Overlay automatisch in
+`config.txt` ein, baut und installiert `fbcp`, lädt und startet den
+Display-Treiber (`goodtft/LCD-show`) - der Pi startet am Ende von selbst neu.
 
 **Danach das Skript einmal erneut ausführen** (`sudo ./scripts/install.sh`):
 jetzt ist die HiFiBerry-Soundkarte aktiv, das Skript erkennt automatisch das
 richtige ALSA-Gerät/den Mixer und trägt es in `config/config.yaml` ein,
 entfernt die vom Display-Treiber gesetzte Touch-Overlay-Zeile wieder (Touch
-bleibt bewusst aus), richtet den Kiosk-Autostart ein und startet
-`owlbox.service`.
+bleibt bewusst aus), richtet den Kiosk-Autostart ein (eigener systemd-Dienst,
+startet X direkt ohne Desktop-Umgebung) und startet `owlbox.service`.
 
 Das Skript ist beliebig oft wiederholbar (idempotent) - jeder Schritt prüft
 zuerst, ob er schon erledigt ist. Danach bleiben nur zwei Dinge wirklich

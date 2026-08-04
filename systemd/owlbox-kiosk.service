@@ -1,12 +1,27 @@
 [Unit]
-Description=OwlBox kiosk display (Chromium fullscreen on the 3.5" SPI display, touch disabled)
-After=graphical-session.target owlbox.service
-PartOf=graphical-session.target
+Description=OwlBox kiosk display (minimal X + Chromium fullscreen, no desktop environment)
+# Takes tty1 over directly instead of a login prompt - there is deliberately
+# no display manager/desktop session on this ("Legacy Lite") base image.
+Conflicts=getty@tty1.service
+After=owlbox.service systemd-user-sessions.service getty@tty1.service plymouth-quit.service
+Wants=owlbox.service
 
 [Service]
-ExecStart=/opt/owlbox/scripts/kiosk.sh
-Restart=on-failure
-RestartSec=3
+User=owlbox
+Group=owlbox
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+Type=simple
+# No ~/.xinitrc involved: the client to run is passed to startx explicitly.
+ExecStart=/usr/bin/startx /opt/owlbox/scripts/kiosk.sh -- :0 vt1 -nolisten tcp
+Restart=always
+RestartSec=2
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=multi-user.target

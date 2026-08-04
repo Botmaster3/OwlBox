@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs OwlBox onto a Raspberry Pi (tested against Raspberry Pi OS Bookworm/Legacy).
+# Installs OwlBox onto a Raspberry Pi (tested against Raspberry Pi OS Bookworm/Legacy Lite).
 # Run as root (sudo ./scripts/install.sh) from inside a checkout of this repo.
 #
 # Targets the project's standard hardware (see docs/hardware.md): Pi 3B+, HiFiBerry
@@ -11,13 +11,23 @@
 #   - physically wiring the RC522/buttons/encoders/display (this is hardware, not software)
 #   - the one-time admin login setup in the browser (no auto-generated default password)
 #
+# Deliberately targets "Legacy Lite" (no desktop environment at all) rather than the
+# full "Legacy" desktop image: Chromium is the only thing that ever needs to appear on
+# screen, so this script brings up just enough X (no display manager, no window manager
+# desktop, no panel/file manager/screensaver a full desktop would otherwise start) via
+# its own systemd service instead of lightdm+LXDE - that alone skips several seconds of
+# boot time that would otherwise go into starting a desktop nothing ever looks at. A few
+# more small, safe boot-time trims are applied for the same reason (see the "boot speed"
+# section below): unneeded services disabled, network-wait-at-boot off, splash off.
+#
 # Idempotent and meant to be run TWICE with a reboot in between:
-#   1st run: installs everything, edits config.txt (HiFiBerry + display + GL driver),
-#            builds fbcp, installs the display's own driver/overlay files, then reboots.
+#   1st run: installs everything, edits config.txt (HiFiBerry + display + GL driver +
+#            boot-speed tweaks), builds fbcp, installs the display's own driver/overlay
+#            files, then reboots.
 #   2nd run (after the reboot): the HiFiBerry sound card and display overlay are now
 #            live, so this run auto-detects the ALSA device/mixer, writes them into
 #            config.yaml, strips the display driver's touch overlay back out, and
-#            finally starts owlbox.service.
+#            finally starts owlbox.service and the kiosk display.
 # Every step below checks what's already in place first, so running it more than
 # twice (or after manually tweaking something) is always safe.
 set -euo pipefail
@@ -30,7 +40,6 @@ fi
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALL_DIR="/opt/owlbox"
 SERVICE_USER="owlbox"
-REAL_USER="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
 
 MARKER_BEGIN="# --- OwlBox: begin (managed by scripts/install.sh - re-running the script"
 MARKER_BEGIN="$MARKER_BEGIN replaces everything between these two markers) ---"
@@ -75,14 +84,6 @@ write_config_block() {
   rm -f "$tmp"
 }
 
-run_as_real_user() {
-  if [ "$REAL_USER" = "root" ]; then
-    "$@"
-  else
-    sudo -u "$REAL_USER" "$@"
-  fi
-}
-
 echo "==> Installing system packages"
 apt-get update
 apt-get install -y \
@@ -95,12 +96,34 @@ apt-get install -y \
 apt-get install -y chromium-browser || apt-get install -y chromium || true
 # Needed to build fbcp against the legacy VideoCore firmware interface.
 apt-get install -y libraspberrypi-dev || true
+# Minimal X stack for the kiosk display - deliberately no desktop environment
+# (no lightdm, no LXDE) on top of the "Legacy Lite" base image. xserver-xorg-legacy
+# provides the Xwrapper.config mechanism needed to start X without a display
+# manager; matchbox-window-manager is tiny but keeps things well-behaved if a
+# stray JS alert()/confirm() window ever pops up in Chromium.
+apt-get install -y \
+  xserver-xorg xserver-xorg-legacy xinit x11-xserver-utils \
+  matchbox-window-manager \
+  || true
 
 echo "==> Enabling SPI (needed for the RC522 RFID reader and the display)"
 if command -v raspi-config >/dev/null 2>&1; then
   raspi-config nonint do_spi 0 || true
 else
   echo "raspi-config not found, enable SPI manually: add 'dtparam=spi=on' to $CONFIG_TXT" >&2
+fi
+
+echo "==> Boot-speed trims (disabling services this box never uses)"
+for svc in bluetooth hciuart triggerhappy ModemManager dphys-swapfile; do
+  systemctl disable --now "$svc" >/dev/null 2>&1 || true
+done
+# The kiosk takes over tty1 directly (see the "kiosk autostart" section below),
+# so the text-login getty on it would just be wasted work/RAM, never actually usable.
+systemctl disable getty@tty1.service >/dev/null 2>&1 || true
+if command -v raspi-config >/dev/null 2>&1; then
+  # Don't block the rest of boot waiting for the network to come up - OwlBox
+  # and the kiosk start independently of whether WLAN has associated yet.
+  raspi-config nonint do_boot_wait 1 || true
 fi
 
 echo "==> Creating service user '$SERVICE_USER'"
@@ -148,7 +171,9 @@ if [ -n "$CONFIG_TXT" ]; then
 
   write_config_block "$CONFIG_TXT" \
     "dtparam=audio=off" \
-    "dtoverlay=hifiberry-amp"
+    "dtoverlay=hifiberry-amp" \
+    "disable_splash=1" \
+    "boot_delay=0"
 
   AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
   [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1
@@ -200,28 +225,26 @@ if command -v fbcp >/dev/null 2>&1; then
   # after the reboot triggered below/by the display installer.
 fi
 
-# -- kiosk autostart (Chromium fullscreen, runs as the real login user) -----
+# -- kiosk autostart (minimal X + Chromium, no desktop environment) --------
+# Runs as its own system-level systemd service (owlbox-kiosk.service), which
+# takes tty1 over directly (PAMName=login/TTYPath) and starts X itself via
+# `startx` - there is no display manager and no desktop session to hook into
+# on this deliberately minimal "Legacy Lite" base image.
 
-if [ "$REAL_USER" != "root" ]; then
-  echo "==> Setting up kiosk autostart for user '$REAL_USER'"
-  REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
-  run_as_real_user mkdir -p "$REAL_HOME/.config/systemd/user"
-  cp "$INSTALL_DIR/systemd/owlbox-kiosk.service" "$REAL_HOME/.config/systemd/user/owlbox-kiosk.service"
-  chown "$REAL_USER":"$REAL_USER" "$REAL_HOME/.config/systemd/user/owlbox-kiosk.service"
-  loginctl enable-linger "$REAL_USER" || true
-  # A user systemd instance only exists once that user has an active (or
-  # lingering) session - reliable right after `enable-linger` only post-
-  # reboot, so this is best-effort here and repeated on the next run.
-  if [ -n "${XDG_RUNTIME_DIR:-}" ] || [ -d "/run/user/$(id -u "$REAL_USER")" ]; then
-    XDG_RUNTIME_DIR="/run/user/$(id -u "$REAL_USER")" \
-      sudo -u "$REAL_USER" systemctl --user daemon-reload || true
-    XDG_RUNTIME_DIR="/run/user/$(id -u "$REAL_USER")" \
-      sudo -u "$REAL_USER" systemctl --user enable --now owlbox-kiosk.service || true
-  fi
-else
-  echo "WARNUNG: konnte den aufrufenden Benutzer nicht bestimmen (lief das Skript als root ohne sudo?)." >&2
-  echo "         Kiosk-Autostart manuell einrichten, siehe OwlBox-Verkabelung.pdf Kapitel 9." >&2
-fi
+echo "==> Setting up kiosk autostart (minimal X, no desktop environment)"
+cat > /etc/X11/Xwrapper.config <<'EOF'
+allowed_users=anybody
+needs_root_rights=yes
+EOF
+
+cp "$INSTALL_DIR/systemd/owlbox-kiosk.service" /etc/systemd/system/owlbox-kiosk.service
+systemctl daemon-reload
+systemctl enable owlbox-kiosk.service
+# Not started with --now here: the display overlay/GL driver only become
+# live after the reboot this script asks for below, so a first-run start
+# attempt would just fail against a framebuffer that isn't ready yet. It's
+# started (best-effort) at the very end once that reboot has happened - see
+# the owlbox-fbcp.service start line further down for the same pattern.
 
 # -- audio auto-detection (only meaningful once the HiFiBerry is live) ------
 
@@ -259,6 +282,8 @@ systemctl daemon-reload
 systemctl enable --now owlbox.service
 [ "$(systemctl is-active owlbox-fbcp.service 2>/dev/null || true)" != "active" ] \
   && systemctl start owlbox-fbcp.service 2>/dev/null || true
+[ "$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)" != "active" ] \
+  && systemctl start owlbox-kiosk.service 2>/dev/null || true
 
 # -- summary -----------------------------------------------------------------
 

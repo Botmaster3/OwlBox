@@ -516,8 +516,9 @@ story.append(spec_table(
          "flach auf dem markierten Lesebereich liegen. Siehe auch OwlBox-Verkabelung.pdf, RC522-Verkabelung."],
         ["Kein Ton", "Lautstärke unter Einstellungen → Audio prüfen; ALSA-Gerät/Mixer in config.yaml "
          "gegen aplay -L / amixer scontrols abgleichen (OwlBox-Verkabelung.pdf)."],
-        ["Display bleibt schwarz", "fbcp-Dienst prüfen (systemctl status owlbox-fbcp), legacy-X11 statt "
-         "Wayland aktiv? Siehe OwlBox-Verkabelung.pdf."],
+        ["Display bleibt schwarz", "fbcp-Dienst prüfen (systemctl status owlbox-fbcp), legacy "
+         "Grafiktreiber statt Wayland aktiv? Kiosk-Dienst prüfen (systemctl status owlbox-kiosk). "
+         "Siehe OwlBox-Verkabelung.pdf."],
         ["Verwaltung im Browser nicht erreichbar", "IP-Adresse erneut prüfen; auf dem Kiosk-Display "
          "nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Kapitel 10.5)."],
         ["Helligkeitsregler ohne Wirkung", "Backlight-Pin in config.yaml (gpio.backlight_pin) muss "
