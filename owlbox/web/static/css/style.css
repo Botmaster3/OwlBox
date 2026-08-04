@@ -202,88 +202,107 @@ html[data-theme="weihnachten"]::after {
   background-repeat: no-repeat;
   animation: candle-flicker 2.4s ease-in-out infinite;
 }
-/* Each candle stands noticeably taller when unlit/freshly-lit (24px) and
-   burns down by 5px per additional Advent Sunday it's been burning (19/14/9px)
-   - the wick end (bottom) stays anchored at a fixed point on the ring's own
-   curve (see below), so only the top visibly melts down over the weeks
-   instead of the whole candle just shrinking in place. The flame sits 9px
-   above whatever the current top is, same idea. Candle 1 (leftmost) is
-   always the one lit longest once several are burning, so it's always the
-   shortest among the lit ones - see themes.get_advent_candle_count().
+/* Redesigned after a reference photo the user shared (4 same-height red
+   candles standing in a near-flat row on a full, lush pine wreath, not a
+   thin ring outline) - the wreath is now a solid filled oval (two layered
+   green gradients for a bit of depth) instead of a hollow donut shape, gold
+   star accents added among the existing berries, and the candles sit almost
+   in a line (a subtle 4px stagger between the outer and inner pair) instead
+   of the pronounced ellipse-arc curve tried before.
 
-   Candle base points sit exactly on the ring's own ellipse (170px 32px at
-   50% 92%, same numbers as the ring gradient below), at t=0.86 of that
-   ellipse (its visible outer edge) and at angles 15/75/105/165 degrees from
-   the horizontal - i.e. (dx, dy) = (170*0.86*cos, -32*0.86*sin). That puts
-   the two outer candles (1,4) far out near the ring's flat sides (small dy,
-   close to the ring's own vertical center) and the two inner ones (2,3)
-   further in near its highest point (large dy) - a real point-on-ellipse
-   arc instead of an approximated flat offset, and it visibly sits on the
-   drawn ring rather than floating above or beside it. */
+   Each candle stands noticeably taller when unlit/freshly-lit (24px) and
+   burns down by 5px per additional Advent Sunday it's been burning (19/14/9px)
+   - the wick end (bottom) stays anchored at a fixed spot via
+   calc(93% + (14 - ry - anchor)px), so only the top visibly melts down over
+   the weeks instead of the whole candle just shrinking in place. The flame
+   sits 11px above whatever the current top is, same idea. Candle 1
+   (leftmost) is always the one lit longest once several are burning, so
+   it's always the shortest among the lit ones - see
+   themes.get_advent_candle_count(). */
 html[data-theme="weihnachten"][data-advent-candles="0"]::after {
   background-image:
-    radial-gradient(8px 24px at calc(50% - 140px) calc(92% - 31px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% - 40px) calc(92% - 50px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 40px) calc(92% - 50px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 140px) calc(92% - 31px), #c0392b 68%, transparent 71%),
-    radial-gradient(5px 5px at 32% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 50% 95%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 68% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(170px 32px at 50% 92%, transparent 58%, rgba(28, 92, 52, 0.65) 64%, rgba(28, 92, 52, 0.65) 86%, transparent 92%);
+    radial-gradient(8px 24px at 38% calc(93% - 22px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 46% calc(93% - 26px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 54% calc(93% - 26px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 62% calc(93% - 22px), #c0392b 68%, transparent 71%),
+    radial-gradient(3.5px 3.5px at 41% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 90.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 59% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(5px 5px at 32% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
 }
 html[data-theme="weihnachten"][data-advent-candles="1"]::after {
   background-image:
-    radial-gradient(6px 9px at calc(50% - 140px) calc(92% - 66px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(8px 24px at calc(50% - 140px) calc(92% - 31px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% - 40px) calc(92% - 50px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 40px) calc(92% - 50px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 140px) calc(92% - 31px), #c0392b 68%, transparent 71%),
-    radial-gradient(5px 5px at 32% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 50% 95%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 68% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(170px 32px at 50% 92%, transparent 58%, rgba(28, 92, 52, 0.65) 64%, rgba(28, 92, 52, 0.65) 86%, transparent 92%);
+    radial-gradient(6px 9px at 38% calc(93% - 57px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(8px 24px at 38% calc(93% - 22px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 46% calc(93% - 26px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 54% calc(93% - 26px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 62% calc(93% - 22px), #c0392b 68%, transparent 71%),
+    radial-gradient(3.5px 3.5px at 41% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 90.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 59% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(5px 5px at 32% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
 }
 html[data-theme="weihnachten"][data-advent-candles="2"]::after {
   background-image:
-    radial-gradient(6px 9px at calc(50% - 140px) calc(92% - 56px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 9px at calc(50% - 40px) calc(92% - 85px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(8px 19px at calc(50% - 140px) calc(92% - 26px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% - 40px) calc(92% - 50px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 40px) calc(92% - 50px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 140px) calc(92% - 31px), #c0392b 68%, transparent 71%),
-    radial-gradient(5px 5px at 32% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 50% 95%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 68% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(170px 32px at 50% 92%, transparent 58%, rgba(28, 92, 52, 0.65) 64%, rgba(28, 92, 52, 0.65) 86%, transparent 92%);
+    radial-gradient(6px 9px at 38% calc(93% - 47px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 9px at 46% calc(93% - 61px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(8px 19px at 38% calc(93% - 17px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 46% calc(93% - 26px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 54% calc(93% - 26px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 62% calc(93% - 22px), #c0392b 68%, transparent 71%),
+    radial-gradient(3.5px 3.5px at 41% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 90.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 59% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(5px 5px at 32% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
 }
 html[data-theme="weihnachten"][data-advent-candles="3"]::after {
   background-image:
-    radial-gradient(6px 9px at calc(50% - 140px) calc(92% - 46px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 9px at calc(50% - 40px) calc(92% - 75px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 9px at calc(50% + 40px) calc(92% - 85px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(8px 14px at calc(50% - 140px) calc(92% - 21px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 19px at calc(50% - 40px) calc(92% - 45px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 40px) calc(92% - 50px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 140px) calc(92% - 31px), #c0392b 68%, transparent 71%),
-    radial-gradient(5px 5px at 32% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 50% 95%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 68% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(170px 32px at 50% 92%, transparent 58%, rgba(28, 92, 52, 0.65) 64%, rgba(28, 92, 52, 0.65) 86%, transparent 92%);
+    radial-gradient(6px 9px at 38% calc(93% - 37px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 9px at 46% calc(93% - 51px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 9px at 54% calc(93% - 61px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(8px 14px at 38% calc(93% - 12px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 19px at 46% calc(93% - 21px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 54% calc(93% - 26px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 62% calc(93% - 22px), #c0392b 68%, transparent 71%),
+    radial-gradient(3.5px 3.5px at 41% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 90.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 59% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(5px 5px at 32% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
 }
 html[data-theme="weihnachten"][data-advent-candles="4"]::after {
   background-image:
-    radial-gradient(6px 9px at calc(50% - 140px) calc(92% - 36px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 9px at calc(50% - 40px) calc(92% - 65px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 9px at calc(50% + 40px) calc(92% - 75px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 9px at calc(50% + 140px) calc(92% - 66px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(8px 9px at calc(50% - 140px) calc(92% - 16px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 14px at calc(50% - 40px) calc(92% - 40px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 19px at calc(50% + 40px) calc(92% - 45px), #c0392b 68%, transparent 71%),
-    radial-gradient(8px 24px at calc(50% + 140px) calc(92% - 31px), #c0392b 68%, transparent 71%),
-    radial-gradient(5px 5px at 32% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 50% 95%, #c0392b, transparent 70%),
-    radial-gradient(5px 5px at 68% 93.5%, #c0392b, transparent 70%),
-    radial-gradient(170px 32px at 50% 92%, transparent 58%, rgba(28, 92, 52, 0.65) 64%, rgba(28, 92, 52, 0.65) 86%, transparent 92%);
+    radial-gradient(6px 9px at 38% calc(93% - 27px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 9px at 46% calc(93% - 41px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 9px at 54% calc(93% - 51px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 9px at 62% calc(93% - 57px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(8px 9px at 38% calc(93% - 7px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 14px at 46% calc(93% - 16px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 19px at 54% calc(93% - 21px), #c0392b 68%, transparent 71%),
+    radial-gradient(8px 24px at 62% calc(93% - 22px), #c0392b 68%, transparent 71%),
+    radial-gradient(3.5px 3.5px at 41% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 90.5%, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 59% 91.5%, #f0c419, transparent 70%),
+    radial-gradient(5px 5px at 32% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
+    radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
+    radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
 }
 
 /* Ostern: ein paar pastellfarbene Ostereier unten im Bild, mit einem sehr
