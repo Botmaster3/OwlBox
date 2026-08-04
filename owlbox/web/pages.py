@@ -88,13 +88,18 @@ def admin_settings_page():
             user = repository.get_admin_user()
             success = "Gespeichert."
 
+    theme_groups = [
+        (themes.CATEGORY_LABELS[category], [(id_, t) for id_, t in themes.THEMES.items() if t["category"] == category])
+        for category in ("standard", "sonderedition")
+    ]
+
     return render_template(
         "admin_settings.html",
         active="settings",
         username=user.username if user else "",
         error=error,
         success=success,
-        theme_catalog=themes.THEMES,
+        theme_groups=theme_groups,
     )
 
 

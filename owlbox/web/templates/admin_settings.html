@@ -45,20 +45,25 @@
   <div class="card">
     <h2>Design</h2>
     <p class="hint">Gilt für die ganze Oberfläche - Kiosk-Anzeige genauso wie diese Einstellungsseite.</p>
-    <div class="theme-picker" id="theme-picker">
-      {% for id, t in theme_catalog.items() %}
-      <button type="button" class="theme-swatch{{ ' active' if theme == id else '' }}" data-theme-id="{{ id }}">
-        <div class="theme-swatch-preview" style="background: {{ t.swatch.bg }};">
-          <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }};"></div>
-          <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }}; opacity: 0.6;"></div>
-          <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }}; opacity: 0.35;"></div>
-        </div>
-        <div class="theme-swatch-label" style="background: {{ t.swatch.panel }}; color: {{ t.swatch.text }};">
-          <span>{{ t.label }}</span>
-          <span class="theme-swatch-check">✓</span>
-        </div>
-        <p class="theme-swatch-desc">{{ t.description }}</p>
-      </button>
+    <div id="theme-picker">
+      {% for group_label, group_themes in theme_groups %}
+      <label class="theme-group-label">{{ group_label }}</label>
+      <div class="theme-picker-grid">
+        {% for id, t in group_themes %}
+        <button type="button" class="theme-swatch{{ ' active' if theme == id else '' }}" data-theme-id="{{ id }}">
+          <div class="theme-swatch-preview" style="background: {{ t.swatch.bg }};">
+            <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }};"></div>
+            <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }}; opacity: 0.6;"></div>
+            <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }}; opacity: 0.35;"></div>
+          </div>
+          <div class="theme-swatch-label" style="background: {{ t.swatch.panel }}; color: {{ t.swatch.text }};">
+            <span>{{ t.label }}</span>
+            <span class="theme-swatch-check">✓</span>
+          </div>
+          <p class="theme-swatch-desc">{{ t.description }}</p>
+        </button>
+        {% endfor %}
+      </div>
       {% endfor %}
     </div>
   </div>

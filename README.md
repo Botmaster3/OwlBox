@@ -61,8 +61,9 @@ den Pi geladen und einem Chip zugewiesen.
     hochladen/anlegen, Cover/Titel wird aus dem Ordner erkannt.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
-  - **Einstellungen** - Zugangsdaten ändern; Design (4 auswählbare Farb-/Hintergrund-Themes für
-    Kiosk-Anzeige und Web-UI, inkl. unterschiedlicher Balken-Optik); Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
+  - **Einstellungen** - Zugangsdaten ändern; Design (4 Standard- plus 3 Sonderedition-Themes -
+    Weihnachten, Ostern, Winter mit sanft fallendem Schnee - für Kiosk-Anzeige und Web-UI, inkl.
+    unterschiedlicher Balken-Optik); Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
     Akustisches Feedback (Töne beim Scannen/Hoch-/Herunterfahren an/aus); Helligkeit (aktuelle Helligkeit, sowie ein
     einstellbarer Minimal-/Maximalwert, der den Schieberegler hier und den Helligkeits-Encoder am
     Gerät begrenzt); Automatischer Ruhemodus (Minuten bis zur schlafenden Eule nach dem Pausieren,

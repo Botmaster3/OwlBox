@@ -89,6 +89,114 @@
     linear-gradient(180deg, #eef1f6 0%, #e4ebf1 100%);
 }
 
+/* -- Sonderedition: Weihnachten / Ostern / Winter (mit Schnee) -- */
+
+:root[data-theme="weihnachten"] {
+  color-scheme: dark;
+  --bg: #0d1f14;
+  --panel: #16291c;
+  --accent: #e0483f;
+  --accent-dim: #7a231e;
+  --text: #f7f0dc;
+  --text-dim: #a9b8a9;
+  --border: #234030;
+  --input-bg: #0a170f;
+  --on-accent: #2a0a08;
+  --bar-radius: 10px;
+  /* Tannengrün mit ein paar warmen Lichterketten-Punkten oben, statt der
+     Waldnacht-Eulenaugen. */
+  --bg-image:
+    radial-gradient(6px 6px at 15% 10%, rgba(224, 72, 63, 0.6), transparent 70%),
+    radial-gradient(6px 6px at 35% 6%, rgba(212, 175, 55, 0.55), transparent 70%),
+    radial-gradient(6px 6px at 55% 12%, rgba(224, 72, 63, 0.55), transparent 70%),
+    radial-gradient(6px 6px at 75% 7%, rgba(212, 175, 55, 0.55), transparent 70%),
+    radial-gradient(90px 70px at 50% 105%, rgba(224, 72, 63, 0.16), transparent 70%),
+    linear-gradient(180deg, #08130d 0%, #0d1f14 55%, #142418 100%);
+}
+
+:root[data-theme="ostern"] {
+  color-scheme: light;
+  --bg: #faf3fb;
+  --panel: #ffffff;
+  --accent: #ef8ba8;
+  --accent-dim: #f8d3de;
+  --text: #3a2a3a;
+  --text-dim: #7a6a7a;
+  --border: #ecdcec;
+  --input-bg: #f7eef8;
+  --on-accent: #ffffff;
+  --bar-radius: 999px;
+  --bg-image:
+    radial-gradient(50% 35% at 20% 10%, rgba(242, 193, 78, 0.16), transparent 70%),
+    radial-gradient(50% 35% at 80% 15%, rgba(239, 139, 168, 0.16), transparent 70%),
+    linear-gradient(180deg, #faf3fb 0%, #f3edf7 100%);
+}
+
+:root[data-theme="winter"] {
+  color-scheme: light;
+  --bg: #eef3f8;
+  --panel: #ffffff;
+  --accent: #3f8fd1;
+  --accent-dim: #cfe4f3;
+  --text: #1c2a36;
+  --text-dim: #5c7386;
+  --border: #d3e2ee;
+  --input-bg: #f5f9fc;
+  --on-accent: #ffffff;
+  --bar-radius: 999px;
+  --bg-image:
+    radial-gradient(55% 35% at 50% 0%, rgba(63, 143, 209, 0.14), transparent 70%),
+    linear-gradient(180deg, #eef3f8 0%, #dfeaf3 100%);
+}
+
+/* Sanft fallender Schnee, nur im Winter-Theme - zwei versetzte Ebenen (je
+   eigene Punktgröße/-tempo) für einen leichten Tiefeneffekt, rein aus
+   CSS-Gradients statt einzelner DOM-Elemente pro Flocke. Dekorativ und
+   klickdurchlässig (pointer-events: none), bewusst unter Status-/OSD-Overlays
+   (z-index 90-100) einsortiert, damit die nie verdeckt werden. */
+html[data-theme="winter"] body::before,
+html[data-theme="winter"] body::after {
+  content: "";
+  position: fixed;
+  inset: -10vh 0 0 0;
+  z-index: 40;
+  pointer-events: none;
+  background-repeat: repeat;
+  animation: snowfall linear infinite;
+  /* The theme's own background is a very pale icy blue/white, so a flat white
+     dot barely registers - a soft blue-grey halo around each flake gives it
+     just enough contrast to read against that background too. */
+  filter: drop-shadow(0 0 1.5px rgba(28, 42, 54, 0.5));
+}
+html[data-theme="winter"] body::before {
+  /* Varied x/y per dot (not all at y:0%) so tiling reads as scattered
+     snow rather than a visible grid of repeating horizontal rows. */
+  background-image:
+    radial-gradient(3px 3px at 8% 15%, #fff, transparent 70%),
+    radial-gradient(3.5px 3.5px at 32% 55%, #fff, transparent 70%),
+    radial-gradient(3px 3px at 58% 10%, #fff, transparent 70%),
+    radial-gradient(3.5px 3.5px at 82% 65%, #fff, transparent 70%),
+    radial-gradient(2.5px 2.5px at 95% 30%, #fff, transparent 70%);
+  background-size: 220px 260px;
+  opacity: 0.95;
+  animation-duration: 11s;
+}
+html[data-theme="winter"] body::after {
+  background-image:
+    radial-gradient(2.5px 2.5px at 15% 40%, #fff, transparent 70%),
+    radial-gradient(2.5px 2.5px at 45% 75%, #fff, transparent 70%),
+    radial-gradient(2.5px 2.5px at 70% 20%, #fff, transparent 70%),
+    radial-gradient(2.5px 2.5px at 90% 50%, #fff, transparent 70%);
+  background-size: 180px 200px;
+  opacity: 0.75;
+  animation-duration: 17s;
+}
+@keyframes snowfall {
+  0% { background-position: 0 0; }
+  50% { background-position: 40px 50vh; }
+  100% { background-position: 0 100vh; }
+}
+
 * { box-sizing: border-box; }
 
 /* Component classes below set their own `display`, which otherwise wins over the
@@ -535,8 +643,18 @@ a.btn { display: inline-block; text-decoration: none; }
 /* Theme picker (Einstellungen > Design) - each swatch renders a small live
    preview using that theme's own bg/panel/accent/bar-radius, inlined as
    style attributes from the server-side theme catalog (owlbox/themes.py),
-   not the page's *current* CSS variables. */
-.theme-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+   not the page's *current* CSS variables. Grouped into standard/sonderedition
+   sections, each its own grid, inside one #theme-picker wrapper. */
+.theme-group-label {
+  display: block;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 14px 0 8px;
+}
+.theme-group-label:first-of-type { margin-top: 0; }
+.theme-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 6px; }
 .theme-swatch {
   display: block;
   width: 100%;
