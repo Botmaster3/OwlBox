@@ -219,10 +219,18 @@ class Engine:
 
                 tracks = repository.get_tracks(story.id)
                 filepaths = [str(self._media_path(story, t)) for t in tracks]
-                track_pos, seek_seconds = repository.get_playback_state(uid)
-                if track_pos >= len(filepaths):
+                if story.shuffle:
+                    # A saved resume position was recorded against last
+                    # time's track order - meaningless once shuffle puts a
+                    # different track at that same index, so start fresh
+                    # rather than resuming into whatever landed there.
                     track_pos, seek_seconds = 0, 0.0
+                else:
+                    track_pos, seek_seconds = repository.get_playback_state(uid)
+                    if track_pos >= len(filepaths):
+                        track_pos, seek_seconds = 0, 0.0
                 self._player.load_playlist(filepaths, start_index=track_pos, start_seconds=seek_seconds)
+                self._player.set_shuffle(story.shuffle)
                 self._player.set_repeat_mode(story.repeat)
                 self._player.set_volume(self._volume)
                 logger.info("playing '%s' (uid=%s) from track %s @ %.1fs", story.title, uid, track_pos, seek_seconds)
@@ -459,6 +467,16 @@ class Engine:
                 self._current_story.repeat = mode
                 self._player.set_repeat_mode(mode)
         return True
+
+    def set_story_shuffle(self, story_id: int, enabled: bool) -> None:
+        """Persists the story's shuffle flag and, if that story is the one
+        currently loaded, applies it to the live player right away too -
+        same reasoning as set_story_repeat above."""
+        repository.update_story_flags(story_id, shuffle=enabled)
+        with self._lock:
+            if self._current_story is not None and self._current_story.id == story_id:
+                self._current_story.shuffle = enabled
+                self._player.set_shuffle(enabled)
 
     def manual_set_volume(self, percent: int) -> None:
         with self._lock:
@@ -867,6 +885,8 @@ class Engine:
                 "tracks": track_titles,
                 "current_track_index": current_track_index,
                 "is_stream": bool(story.stream_url),
+                "shuffle": story.shuffle,
+                "repeat": story.repeat,
             },
             "function_tag": function_action,
             "unknown_tag": current_uid if is_unknown else None,

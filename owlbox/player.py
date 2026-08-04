@@ -150,6 +150,7 @@ class PlayerBase(Protocol):
     def stop(self) -> None: ...
     def load_playlist(self, filepaths: list[str], start_index: int = 0, start_seconds: float = 0.0) -> None: ...
     def set_repeat_mode(self, mode: str) -> None: ...
+    def set_shuffle(self, enabled: bool) -> None: ...
     def play(self) -> None: ...
     def pause(self) -> None: ...
     def toggle_pause(self) -> None: ...
@@ -223,6 +224,22 @@ class MpvPlayer:
         self._ipc.command("set_property", "loop-file", "inf" if mode == "track" else "no")
         self._ipc.command("set_property", "loop-playlist", "inf" if mode == "folder" else "no")
 
+    def set_shuffle(self, enabled: bool) -> None:
+        if self._ipc is None:
+            return
+        # mpv's own playlist-shuffle/-unshuffle commands, not a persistent
+        # property like the loop modes above - shuffle randomizes the
+        # playlist array in place once, unshuffle restores mpv's remembered
+        # original order. Both are safe to call on an already-playing
+        # playlist (the currently playing entry keeps playing, only the
+        # order of the rest changes) - swallowed like next()/previous()
+        # below since there's nothing to recover into if e.g. unshuffle has
+        # no original order left to restore to.
+        try:
+            self._ipc.command("playlist-shuffle" if enabled else "playlist-unshuffle")
+        except PlayerError:
+            pass
+
     def play(self) -> None:
         self._ipc.command("set_property", "pause", False)
 
@@ -288,6 +305,7 @@ class StubPlayer:
         self._paused = True
         self._position = 0.0
         self._repeat_mode = "off"
+        self._shuffle_enabled = False
 
     def start(self) -> None:
         pass
@@ -306,6 +324,9 @@ class StubPlayer:
         # time passing on its own) - just recorded so tests/dev mode can
         # confirm the Engine asked for the right mode.
         self._repeat_mode = mode
+
+    def set_shuffle(self, enabled: bool) -> None:
+        self._shuffle_enabled = enabled
 
     def play(self) -> None:
         self._paused = False

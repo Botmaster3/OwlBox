@@ -377,6 +377,92 @@ def test_set_story_repeat_rejects_invalid_mode(config):
     assert repository.get_story(story.id).repeat == "off"
 
 
+def test_scanning_a_shuffled_story_applies_shuffle_and_skips_saved_position(config):
+    config.rfid.poll_interval = 0.01
+    story = repository.create_story(title="Story")
+    story_dir = config.media_dir / str(story.id)
+    story_dir.mkdir(parents=True, exist_ok=True)
+    for i in range(3):
+        (story_dir / f"track{i}.mp3").write_bytes(b"fake audio")
+        repository.add_track(story.id, i, f"track{i}.mp3", None, None)
+    repository.assign_uid(story.id, "AABBCC")
+    repository.update_story_flags(story.id, shuffle=True)
+    # A valid, in-bounds resume position - not merely out of range, which
+    # would already reset to 0 regardless of shuffle (see the existing
+    # bounds check in Engine._handle_tag_present) and so wouldn't actually
+    # prove the shuffle-specific behavior this test is for.
+    repository.save_playback_state("AABBCC", 2, 42.0)
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine._player._shuffle_enabled is True
+        # A resume position saved under the old (unshuffled) track order is
+        # meaningless once shuffle reorders things - starts fresh instead.
+        state = engine.get_state()
+        assert state["player"]["playlist_pos"] == 0
+        assert state["player"]["time_pos"] == 0.0
+    finally:
+        engine.stop()
+
+
+def test_set_story_shuffle_applies_live_to_the_currently_playing_story(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine._player._shuffle_enabled is False
+
+        engine.set_story_shuffle(story.id, True)
+        assert engine._player._shuffle_enabled is True
+        assert repository.get_story(story.id).shuffle is True
+        assert engine.get_state()["story"]["shuffle"] is True
+    finally:
+        engine.stop()
+
+
+def test_set_story_shuffle_does_not_disturb_a_different_playing_story(config):
+    config.rfid.poll_interval = 0.01
+    story_a = _make_story_with_file(config, "AAAA", title="Story A")
+    story_b = _make_story_with_file(config, "BBBB", title="Story B")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AAAA")
+        time.sleep(0.15)
+
+        engine.set_story_shuffle(story_b.id, True)
+        assert engine._player._shuffle_enabled is False
+        assert repository.get_story(story_b.id).shuffle is True
+        assert repository.get_story(story_a.id).shuffle is False
+    finally:
+        engine.stop()
+
+
+def test_state_exposes_repeat_and_shuffle_for_the_current_story(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+    repository.update_story_flags(story.id, shuffle=True, repeat="folder")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["story"]["shuffle"] is True
+        assert state["story"]["repeat"] == "folder"
+    finally:
+        engine.stop()
+
+
 def test_parent_tag_activates_parent_mode_without_being_treated_as_unknown(config):
     config.rfid.poll_interval = 0.01
     config.rfid.missing_reads_to_remove = 2

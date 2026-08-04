@@ -51,7 +51,9 @@ den Pi geladen und einem Chip zugewiesen.
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - "Jetzt läuft"-Anzeige (groß, wie auf dem Display, inkl. WLAN-Empfang) als erste
     Seite nach dem Login, zusätzlich als Fernbedienung nutzbar: Zurück/Play-Pause/Weiter sowie
-    Lautstärke- und Helligkeits-Regler direkt bedienbar, ohne den echten Taster/Encoder anzufassen.
+    Shuffle/Wiederholung für die gerade laufende Geschichte direkt bedienbar (wirkt sofort auf die
+    Wiedergabe, kein Umweg über die Bibliothek nötig), dazu Lautstärke- und Helligkeits-Regler,
+    ohne den echten Taster/Encoder anzufassen.
     Fortschrittsanzeige zeigt links die bereits gespielte und rechts die verbleibende Zeit,
     ein Klick auf die Leiste spult direkt zur angeklickten Stelle im Track.
   - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle, Wiederholung (Aus/ganzen Ordner in

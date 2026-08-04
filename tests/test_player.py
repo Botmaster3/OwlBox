@@ -48,6 +48,19 @@ def test_stub_player_defaults_to_no_repeat(config):
     assert player._repeat_mode == "off"
 
 
+def test_stub_player_defaults_to_no_shuffle(config):
+    player = StubPlayer(config)
+    assert player._shuffle_enabled is False
+
+
+def test_stub_player_records_the_requested_shuffle_state(config):
+    player = StubPlayer(config)
+    player.set_shuffle(True)
+    assert player._shuffle_enabled is True
+    player.set_shuffle(False)
+    assert player._shuffle_enabled is False
+
+
 def test_stub_player_records_the_requested_repeat_mode(config):
     player = StubPlayer(config)
     player.set_repeat_mode("folder")

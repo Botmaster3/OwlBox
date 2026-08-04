@@ -223,12 +223,13 @@ def set_flags(story_id):
         return jsonify({"error": "not found"}), 404
     shuffle = data.get("shuffle")
     if shuffle is not None:
-        repository.update_story_flags(story_id, shuffle=shuffle)
+        # Routed through the Engine (not repository directly) so a change
+        # to the currently-playing story's shuffle flag takes effect
+        # immediately instead of only on the next chip scan.
+        _engine().set_story_shuffle(story_id, bool(shuffle))
     repeat = data.get("repeat")
     if repeat is not None:
-        # Routed through the Engine (not repository directly, unlike
-        # shuffle) so a change to the currently-playing story's repeat mode
-        # takes effect immediately instead of only on the next chip scan.
+        # Same reasoning as shuffle above.
         if not _engine().set_story_repeat(story_id, repeat):
             return jsonify({"error": "invalid repeat mode"}), 400
     return jsonify({"ok": True})

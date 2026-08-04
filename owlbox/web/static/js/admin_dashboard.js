@@ -13,9 +13,11 @@
   const npSleepTimerBadge = document.getElementById("np-sleep-timer-badge");
   const npSleepTimerRemaining = document.getElementById("np-sleep-timer-remaining");
   const npAutoSleepBadge = document.getElementById("np-auto-sleep-badge");
+  const npBtnShuffle = document.getElementById("np-btn-shuffle");
   const npBtnPrev = document.getElementById("np-btn-prev");
   const npBtnToggle = document.getElementById("np-btn-toggle");
   const npBtnNext = document.getElementById("np-btn-next");
+  const npBtnRepeat = document.getElementById("np-btn-repeat");
   const npVolumeInput = document.getElementById("np-volume");
   const npVolumeValue = document.getElementById("np-volume-value");
   const npBrightnessInput = document.getElementById("np-brightness");
@@ -32,6 +34,15 @@
   let brightnessSliderBeingDragged = false;
   let vuTimer = null;
   let lastDuration = 0;
+  let currentStory = null;
+
+  // Same "off" plays through once and stops; "folder" loops the whole story
+  // from the first track once the last one ends; "track" repeats whichever
+  // single track is currently playing - see admin_library.js, where this
+  // constant is duplicated rather than shared since none of this app's JS
+  // is split into shared modules.
+  const REPEAT_MODE_ORDER = ["off", "folder", "track"];
+  const REPEAT_MODE_LABELS = { off: "🔁 Aus", folder: "🔁 Ordner", track: "🔂 Track" };
 
   // Decorative "is audio playing" animation, not a real audio-level analysis -
   // mpv doesn't expose one over the IPC socket we already talk to it through.
@@ -63,6 +74,18 @@
   npBtnPrev.addEventListener("click", () => fetch("/api/control/prev", { method: "POST" }));
   npBtnToggle.addEventListener("click", () => fetch("/api/control/toggle", { method: "POST" }));
   npBtnNext.addEventListener("click", () => fetch("/api/control/next", { method: "POST" }));
+
+  npBtnShuffle.addEventListener("click", () => {
+    if (!currentStory) return;
+    postJson(`/api/stories/${currentStory.id}/flags`, { shuffle: !currentStory.shuffle });
+  });
+
+  npBtnRepeat.addEventListener("click", () => {
+    if (!currentStory) return;
+    const currentIndex = REPEAT_MODE_ORDER.indexOf(currentStory.repeat);
+    const nextMode = REPEAT_MODE_ORDER[(Math.max(currentIndex, 0) + 1) % REPEAT_MODE_ORDER.length];
+    postJson(`/api/stories/${currentStory.id}/flags`, { repeat: nextMode });
+  });
 
   npProgressBar.addEventListener("click", (event) => {
     if (lastDuration <= 0) return;
@@ -167,6 +190,17 @@
   function applyState(state) {
     const story = state.story;
     const player = state.player || {};
+    currentStory = story;
+
+    // Shuffle/Repeat only make sense for a local track list, not a
+    // livestream (no fixed playlist to shuffle or loop) or when nothing is
+    // loaded at all (there'd be no story id to send the change to).
+    const shuffleRepeatUsable = !!(story && !story.is_stream);
+    npBtnShuffle.disabled = !shuffleRepeatUsable;
+    npBtnRepeat.disabled = !shuffleRepeatUsable;
+    npBtnShuffle.classList.toggle("active", shuffleRepeatUsable && story.shuffle);
+    npBtnRepeat.classList.toggle("active", shuffleRepeatUsable && story.repeat !== "off");
+    npBtnRepeat.textContent = REPEAT_MODE_LABELS[(shuffleRepeatUsable && story.repeat) || "off"];
 
     if (story) {
       npTitle.textContent = story.title;

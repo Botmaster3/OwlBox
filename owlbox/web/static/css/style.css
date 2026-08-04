@@ -1028,6 +1028,15 @@ input[type="file"] { color: var(--text-dim); }
   border-color: var(--border);
   box-shadow: none;
 }
+/* An engaged toggle (Shuffle on, Wiederholung != Aus) switches to the same
+   solid accent fill as a primary .btn instead of staying outline, so its
+   on/off state reads at a glance instead of needing to parse the label. */
+.btn.secondary.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+.btn.secondary.active:hover:not(:disabled) { filter: brightness(1.06); }
 .btn.danger { background: var(--danger); color: #250000; }
 .btn.small { padding: 5px 12px; font-size: 0.82rem; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
