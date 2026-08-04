@@ -120,8 +120,9 @@ Bedienelemente, keine Kür:
    die Helligkeit bleibt, wie sie zuletzt eingestellt wurde.
 
 Beide Erweiterungen (Backlight-Dimmen, Helligkeits-Encoder) sind in
-`docs/hat-wiring.html` eingezeichnet - `OwlBox-Wiring.pdf` ist nur eine
-ältere PDF-Momentaufnahme davon und noch nicht aktualisiert.
+`docs/hat-wiring.html` eingezeichnet - dieselben Inhalte liegen als
+PDF-Referenz auch unter `owlbox/web/static/docs/OwlBox-Verkabelung.pdf`
+(Download über die Info-Seite in der Verwaltung).
 
 ## GPIO-Belegung im Überblick
 
