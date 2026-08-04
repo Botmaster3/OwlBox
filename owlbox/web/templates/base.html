@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
+  <script>
+    if (localStorage.getItem("owlbox-help-mode") === "1") {
+      document.body.classList.add("help-mode");
+    }
+  </script>
   {% block body %}{% endblock %}
 </body>
 </html>

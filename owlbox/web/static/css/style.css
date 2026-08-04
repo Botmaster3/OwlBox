@@ -833,7 +833,6 @@ html[data-theme="weihnachten"] .advent-wreath {
 
 .admin { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
 .admin h1 { display: flex; align-items: center; gap: 10px; }
-.admin h1 .logout { margin-left: auto; }
 
 .admin-nav {
   display: flex;
@@ -1157,6 +1156,24 @@ a.btn { display: inline-block; text-decoration: none; }
 
 .banner-info { background: var(--panel); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
 .hint { color: var(--text-dim); font-size: 0.85rem; }
+
+/* Per-control help text ("was passiert, wenn ich das ändere?") - hidden by
+   default, revealed everywhere at once via body.help-mode so it stays out
+   of the way until someone actually wants it. Toggled from the nav bar. */
+.field-help {
+  display: none;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+  background: var(--panel);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin: 2px 0 0;
+}
+body.help-mode .field-help { display: block; }
+.nav-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+#help-mode-toggle.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 
 /* Recovery-hotspot notice on admin pages - same info/urgency as the kiosk's
    .hotspot-banner, just laid out as a normal page block instead of fixed. */

@@ -21,10 +21,14 @@
       <div class="field">
         <label for="username">Benutzername</label>
         <input type="text" id="username" name="username" value="{{ username }}" autocapitalize="off" required>
+        <p class="field-help">Ändert den Login-Namen für die gesamte Verwaltung - gilt ab dem
+          nächsten Login.</p>
       </div>
       <div class="field">
         <label for="new_password">Neues Passwort (leer lassen, um es nicht zu ändern)</label>
         <input type="password" id="new_password" name="new_password" autocomplete="new-password">
+        <p class="field-help">Leer lassen, um das aktuelle Passwort zu behalten. Ausgefüllt, ersetzt
+          es das bisherige Passwort komplett.</p>
       </div>
       <div class="field">
         <label for="new_password_confirm">Neues Passwort wiederholen</label>
@@ -33,6 +37,8 @@
       <div class="field">
         <label for="current_password">Aktuelles Passwort (zur Bestätigung)</label>
         <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+        <p class="field-help">Sicherheitsbestätigung - ohne korrektes aktuelles Passwort wird
+          nichts gespeichert, auch nicht der geänderte Benutzername.</p>
       </div>
       {% if error %}<p class="error">{{ error }}</p>{% endif %}
       {% if success %}<p class="hint">{{ success }}</p>{% endif %}
@@ -73,6 +79,9 @@
       </div>
     </div>
 
+    <p class="field-help">Ein Klick auf ein Design unten wählt es sofort als aktuelles Design und
+      als deinen manuellen Favoriten - dieser gilt automatisch immer dann, wenn gerade kein
+      automatisches Design (siehe oben) aktiv ist.</p>
     <div id="theme-picker">
       {% for group_label, group_themes in theme_groups %}
       <label class="theme-group-label">{{ group_label }}</label>
@@ -130,6 +139,10 @@
         </select>
       </div>
     </div>
+    <p class="field-help">Jede der neun Farben ist frei wählbar und ergibt zusammen ein
+      vollständig eigenes Farbschema; die Rundung bestimmt, wie stark Buttons und Leisten
+      abgerundet sind (999px = vollständig rund). Erst „Speichern &amp; aktivieren“ übernimmt die
+      Änderungen tatsächlich.</p>
     <button class="btn" type="button" id="custom-theme-save-btn">Eigenes Design speichern &amp; aktivieren</button>
   </div>
 
@@ -140,14 +153,20 @@
     <div class="field">
       <label for="current-volume">Aktuelle Lautstärke (<span id="current-volume-value">–</span>%)</label>
       <input type="range" id="current-volume" min="0" max="100" value="60">
+      <p class="field-help">Ändert die Lautstärke sofort - derselbe Wert wie auf der Home-Seite und
+        am Lautstärke-Encoder direkt am Gerät.</p>
     </div>
     <div class="field">
       <label for="max-volume">Maximale Lautstärke (%)</label>
       <input type="number" id="max-volume" min="1" max="100" value="100">
+      <p class="field-help">Obergrenze, über die die Lautstärke - egal ob per Regler, Encoder oder
+        Funktions-Chip - nicht hinausgehen kann.</p>
     </div>
     <div class="field">
       <label for="volume-step">Schrittweite pro Tastendruck/Encoder-Schritt (%)</label>
       <input type="number" id="volume-step" min="1" max="50" value="4">
+      <p class="field-help">Um wie viel Prozent sich die Lautstärke bei „Lauter“/„Leiser“
+        (Funktions-Chip) bzw. pro Rastung des Lautstärke-Encoders ändert.</p>
     </div>
     <button class="btn" id="volume-save-btn" type="button">Speichern</button>
   </div>
@@ -161,9 +180,14 @@
         <button class="btn secondary" id="chime-test-btn" type="button">🔊 Testen</button>
       </div>
       <span id="chime-test-status" class="hint"></span>
+      <p class="field-help">Legt fest, wie laut die Hinweistöne relativ zur maximalen Lautstärke
+        sind - unabhängig davon, wie laut die Geschichte gerade läuft. „Testen“ spielt sofort mit
+        dem eingetragenen Wert, auch ohne vorher zu speichern.</p>
     </div>
     <div class="field">
       <label>Welche Töne sollen abgespielt werden?</label>
+      <p class="field-help">Jeder Ereignistyp lässt sich einzeln stummschalten, ohne die anderen zu
+        beeinflussen. „▶ Testen“ spielt den jeweiligen Ton sofort ab, unabhängig vom Häkchen.</p>
       <div class="checkbox-list">
         <div class="checkbox-row">
           <label><input type="checkbox" id="chime-type-known" checked> Chip erkannt</label>
@@ -204,6 +228,10 @@
     <div class="field">
       <label for="auto-sleep-minutes">Nach dieser Pause-Dauer schläft die Eule ein (Minuten, 0 = aus)</label>
       <input type="number" id="auto-sleep-minutes" min="0" max="480" value="20">
+      <p class="field-help">Greift, sobald eine Geschichte pausiert ist (Play/Pause-Taste/-Chip oder
+        Lautstärke auf 0). Aufwecken: Lautstärke erhöhen, Play/Pause drücken oder einen beliebigen
+        RFID-Chip auflegen - der Track läuft an derselben Stelle weiter. 0 schaltet den Ruhemodus
+        komplett ab.</p>
     </div>
     <button class="btn" id="auto-sleep-save-btn" type="button">Speichern</button>
     <p class="hint">
@@ -224,13 +252,19 @@
         <button type="button" class="btn secondary" data-minutes="45">45 min</button>
         <button type="button" class="btn secondary" data-minutes="60">60 min</button>
       </div>
+      <p class="field-help">Startet sofort einen Timer mit der gewählten Dauer, der die Wiedergabe
+        danach beendet - in den letzten 60 Sekunden wird die Lautstärke sanft ausgeblendet statt
+        hart abzuschneiden.</p>
     </div>
     <div class="field">
       <label for="sleep-timer-custom">Eigene Dauer (Minuten)</label>
       <input type="number" id="sleep-timer-custom" min="1" max="480">
+      <p class="field-help">Startet mit „Timer starten“ einen Timer mit frei gewählter Länge.</p>
     </div>
     <button class="btn" id="sleep-timer-start-btn" type="button">Timer starten</button>
     <button class="btn danger" id="sleep-timer-cancel-btn" type="button" hidden>Timer abbrechen</button>
+    <p class="field-help">„Timer abbrechen“ bricht einen laufenden Timer sofort ab, ohne die
+      Wiedergabe zu beenden.</p>
   </div>
 
   <h2 class="settings-section-heading" id="section-anzeige">Anzeige</h2>
@@ -240,18 +274,23 @@
     <div class="field">
       <label for="current-brightness">Helligkeit (<span id="current-brightness-value">–</span>%)</label>
       <input type="range" id="current-brightness" min="0" max="100" value="100">
+      <p class="field-help">Ändert die Display-Helligkeit sofort - derselbe Wert wie auf der
+        Home-Seite und am Helligkeits-Encoder direkt am Gerät.</p>
     </div>
     <div class="field">
       <label for="min-brightness">Minimale Helligkeit (%)</label>
       <input type="number" id="min-brightness" min="0" max="99" value="0">
+      <p class="field-help">Untere Grenze für den Helligkeitsregler und den Helligkeits-Encoder.</p>
     </div>
     <div class="field">
       <label for="max-brightness">Maximale Helligkeit (%)</label>
       <input type="number" id="max-brightness" min="1" max="100" value="100">
+      <p class="field-help">Obere Grenze für Helligkeitsregler und -Encoder.</p>
     </div>
     <div class="field">
       <label for="brightness-step">Schrittweite pro Tastendruck/Encoder-Schritt (%)</label>
       <input type="number" id="brightness-step" min="1" max="50" value="5">
+      <p class="field-help">Änderung pro Rastung des Helligkeits-Encoders.</p>
     </div>
     <button class="btn" id="brightness-save-btn" type="button">Speichern</button>
     <p class="hint">
@@ -277,6 +316,9 @@
     <p class="hint" id="wifi-status">Lädt…</p>
     <button class="btn secondary" id="wifi-toggle-btn" type="button"></button>
     <button class="btn secondary" id="wifi-scan-btn" type="button">Netzwerke suchen</button>
+    <p class="field-help">„WLAN aus“ schaltet das Funkmodul komplett ab (auch der Notfall-Hotspot
+      startet dann nicht). „Netzwerke suchen“ scannt nach Netzwerken in Reichweite und zeigt sie
+      zur Auswahl darunter an.</p>
     <div id="wifi-networks"></div>
     <div class="field" id="wifi-connect-field" hidden>
       <label for="wifi-password">Passwort für <span id="wifi-connect-ssid" class="mono"></span></label>
@@ -297,6 +339,9 @@
     <p class="hint">Aktuelle Wiedergabeposition wird vor dem Herunterfahren/Neustart gespeichert.</p>
     <button class="btn secondary" id="restart-btn" type="button">Pi neu starten</button>
     <button class="btn danger" id="shutdown-btn" type="button">Pi herunterfahren</button>
+    <p class="field-help">„Neu starten“ startet den Raspberry Pi neu. „Herunterfahren“ fährt ihn
+      sicher aus - danach muss die Stromversorgung manuell wieder getrennt und verbunden werden, um
+      ihn erneut zu starten.</p>
     <span id="system-status" class="hint"></span>
   </div>
 </div>

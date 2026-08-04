@@ -64,13 +64,24 @@
           <button type="button" class="segmented-btn" data-mode="track">🔂 Track</button>
         </div>
       </div>
+      <p class="field-help">
+        Shuffle mischt die Tracks der aktuellen Geschichte in zufälliger Reihenfolge. Zurück/Weiter
+        springen zum vorherigen/nächsten Track. Play/Pause zeigt immer die Aktion, die der nächste
+        Klick auslöst. „Ordner“ wiederholt die ganze Geschichte endlos, „Track“ nur den gerade
+        laufenden Titel, „Aus“ beendet die Wiedergabe nach dem letzten Track. Alle vier sind
+        deaktiviert, solange kein Chip mit lokalen Tracks aufliegt (z.B. bei einem Livestream).
+      </p>
       <div class="field">
         <label for="np-volume">Lautstärke (<span id="np-volume-value">–</span>%)</label>
         <input type="range" id="np-volume" min="0" max="100" value="60">
+        <p class="field-help">Ändert die Lautstärke sofort - derselbe Wert wie unter Einstellungen →
+          Audio und am Lautstärke-Encoder direkt am Gerät.</p>
       </div>
       <div class="field">
         <label for="np-brightness">Helligkeit (<span id="np-brightness-value">–</span>%)</label>
         <input type="range" id="np-brightness" min="0" max="100" value="100">
+        <p class="field-help">Ändert die Display-Helligkeit sofort, begrenzt auf den unter
+          Einstellungen → Anzeige festgelegten Min/Max-Bereich.</p>
       </div>
     </div>
   </div>

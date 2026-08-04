@@ -169,6 +169,14 @@
           }
           <button class="btn danger" data-action="delete">Löschen</button>
         </div>
+        <p class="field-help">
+          „Chip zuweisen“ verknüpft den nächsten aufgelegten Chip mit dieser Geschichte, „Chip
+          entfernen“ löst die Verknüpfung wieder (löscht die Geschichte nicht). Shuffle mischt die
+          Tracks zufällig. „Ordner“ wiederholt die ganze Geschichte endlos, „Track“ nur den
+          gerade laufenden Titel, „Aus“ beendet die Wiedergabe nach dem letzten Track - wirkt
+          sofort, falls diese Geschichte gerade läuft. „Löschen“ entfernt die Geschichte
+          inklusive aller Audiodateien unwiderruflich.
+        </p>
       `;
       header.querySelector('[data-action="assign"]').addEventListener("click", () => startAssign(story));
       const unassignBtn = header.querySelector('[data-action="unassign"]');
@@ -227,6 +235,13 @@
       story.tracks.forEach((track, index) => tracks.appendChild(trackRow(story, track, index, story.tracks.length)));
 
       row.appendChild(header);
+      if (story.tracks.length > 0) {
+        const trackHelp = document.createElement("p");
+        trackHelp.className = "field-help";
+        trackHelp.textContent =
+          "▲/▼ verschieben einen Track in der Abspielreihenfolge, das Papierkorb-Symbol entfernt ihn aus der Geschichte (die Datei wird dabei ebenfalls gelöscht).";
+        row.appendChild(trackHelp);
+      }
       row.appendChild(tracks);
       storyList.appendChild(row);
     }

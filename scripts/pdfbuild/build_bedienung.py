@@ -174,6 +174,13 @@ bullets([
     "<b>Info</b> - Systeminfos, Bibliotheks-Statistik, Backup, Update (Kapitel 11).",
 ])
 p("Der Button „Abmelden“ rechts oben in der Kopfzeile beendet die angemeldete Sitzung sofort.")
+story.append(note_box(
+    "Der Button „Hilfe“ links daneben blendet unter jedem Regler und Eingabefeld auf allen sechs "
+    "Seiten eine kurze Erklärung ein, was eine Änderung bewirkt - genau die Inhalte dieses "
+    "Kapitels 6-11, direkt am jeweiligen Steuerelement. Einmal aktiviert, bleibt die Einstellung "
+    "auch nach dem Navigieren zwischen Seiten erhalten, bis sie wieder ausgeschaltet wird; "
+    "ausgeschaltet sieht jede Seite genauso aus wie ohne dieses Kapitel gelesen zu haben."
+))
 
 # ============================================================ 6. Home
 h1("6. Web-Verwaltung: Home („Jetzt läuft“)")

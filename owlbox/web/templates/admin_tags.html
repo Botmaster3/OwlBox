@@ -17,8 +17,13 @@
     <div class="field">
       <label for="parent-tag-label">Bezeichnung</label>
       <input type="text" id="parent-tag-label" placeholder="z.B. Vater, Mutter">
+      <p class="field-help">Freier Name zur Wiedererkennung in der Liste oben - hat keine
+        Auswirkung auf die Funktion des Chips.</p>
     </div>
     <button class="btn" id="parent-tag-add-btn" type="button">Chip auflegen und speichern</button>
+    <p class="field-help">Startet den Scan-Modus - der nächste erkannte Chip wird als Eltern-Chip
+      gespeichert: beim Auflegen loggt er automatisch in die Verwaltung ein und zeigt auf dem
+      Kiosk-Display einen QR-Code zur Login-Seite.</p>
   </div>
 
   <div class="card">
@@ -37,8 +42,13 @@
         <option value="{{ value }}">{{ label }}</option>
         {% endfor %}
       </select>
+      <p class="field-help">Legt fest, welche Aktion der neue Chip beim Auflegen auslöst - statt
+        eine Geschichte abzuspielen. Shuffle- und Wiederholungs-Aktionen schalten bei jedem
+        erneuten Auflegen desselben Chips zwischen an und aus um, statt eine Geschichte zu
+        starten.</p>
     </div>
     <button class="btn" id="function-tag-add-btn" type="button">Chip auflegen und speichern</button>
+    <p class="field-help">Startet den Scan-Modus für die oben gewählte Aktion.</p>
   </div>
 
   <div class="card">

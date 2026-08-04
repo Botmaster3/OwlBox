@@ -1,7 +1,11 @@
 <h1>🦉 OwlBox
-  <form action="{{ url_for('pages.logout') }}" method="post" class="logout">
-    <button class="btn secondary" type="submit">Abmelden</button>
-  </form>
+  <div class="nav-actions">
+    <button class="btn secondary" id="help-mode-toggle" type="button"
+      title="Erklärungen zu jedem Regler und Eingabefeld dauerhaft ein-/ausblenden">❓ Hilfe</button>
+    <form action="{{ url_for('pages.logout') }}" method="post" class="logout">
+      <button class="btn secondary" type="submit">Abmelden</button>
+    </form>
+  </div>
 </h1>
 
 <nav class="admin-nav">
@@ -12,3 +16,20 @@
   <a href="{{ url_for('pages.admin_settings_page') }}" class="{{ 'active' if active == 'settings' }}">Einstellungen</a>
   <a href="{{ url_for('pages.admin_info_page') }}" class="{{ 'active' if active == 'info' }}">Info</a>
 </nav>
+
+<script>
+  (function () {
+    var KEY = "owlbox-help-mode";
+    var btn = document.getElementById("help-mode-toggle");
+    function apply(enabled) {
+      document.body.classList.toggle("help-mode", enabled);
+      btn.classList.toggle("active", enabled);
+    }
+    apply(localStorage.getItem(KEY) === "1");
+    btn.addEventListener("click", function () {
+      var enabled = !document.body.classList.contains("help-mode");
+      localStorage.setItem(KEY, enabled ? "1" : "0");
+      apply(enabled);
+    });
+  })();
+</script>

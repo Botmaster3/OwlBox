@@ -14,6 +14,9 @@
         <button type="button" class="segmented-btn" data-mode="folder">Ganzer Ordner</button>
         <button type="button" class="segmented-btn" data-mode="stream">Livestream-URL</button>
       </div>
+      <p class="field-help">Bestimmt, welches Eingabefeld unten erscheint - einzelne Audiodateien,
+        ein kompletter Ordner oder eine Stream-Adresse. Nachträglich nicht mehr änderbar, ohne die
+        Geschichte neu anzulegen.</p>
       <span class="hint" id="folder-hint" hidden>
         Ordner auswählen - alle enthaltenen Audiodateien werden (alphabetisch sortiert) übernommen,
         ein darin liegendes Cover-Bild (z.B. <code>cover.jpg</code>) wird automatisch erkannt.
@@ -29,25 +32,35 @@
       <div class="field">
         <label for="title">Titel</label>
         <input type="text" id="title" name="title" required>
+        <p class="field-help">Name der Geschichte, wie er später überall in der Verwaltung und auf
+          dem Kiosk-Display erscheint.</p>
       </div>
       <div class="field">
         <label for="cover">Cover-Bild (optional)</label>
         <input type="file" id="cover" name="cover" accept="image/*">
         <span class="hint">Funktioniert in allen drei Modi, auch für eine Livestream-URL.</span>
         <span class="hint" id="cover-auto-hint" hidden></span>
+        <p class="field-help">Ohne eigenes Cover übernimmt OwlBox im Modus „Ganzer Ordner“
+          automatisch ein im Ordner liegendes Bild (z.B. cover.jpg), falls vorhanden.</p>
       </div>
       <div class="field" id="files-field">
         <label for="audio_files">Audio-Dateien (mehrere möglich, Reihenfolge = Auswahlreihenfolge)</label>
         <input type="file" id="audio_files" name="audio_files" accept="audio/*" multiple>
+        <p class="field-help">Die Auswahlreihenfolge im Dateidialog bestimmt die spätere
+          Abspielreihenfolge - später in der Bibliothek über die ▲/▼-Buttons noch änderbar.</p>
       </div>
       <div class="field" id="folder-field" hidden>
         <label for="audio_folder">Ordner</label>
         <input type="file" id="audio_folder" webkitdirectory directory multiple>
         <span class="hint" id="folder-summary"></span>
+        <p class="field-help">Alle enthaltenen Audiodateien werden alphabetisch sortiert
+          übernommen.</p>
       </div>
       <div class="field" id="stream-field" hidden>
         <label for="stream_url">Livestream-URL</label>
         <input type="url" id="stream_url" name="stream_url" placeholder="https://stream.example.com/radio.mp3">
+        <p class="field-help">Ein zugehöriger Chip verbindet beim Auflegen immer live - es gibt
+          weder eine gespeicherte Position noch Vor-/Zurückspulen noch Shuffle/Wiederholung.</p>
       </div>
       <button class="btn" type="submit">Anlegen</button>
       <span id="create-error" class="error"></span>
