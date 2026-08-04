@@ -4,6 +4,16 @@
 <div class="admin" id="app">
   {% include "_admin_nav.html" %}
 
+  <nav class="jump-nav">
+    <a href="#section-konto">Konto</a>
+    <a href="#section-audio">Audio</a>
+    <a href="#section-anzeige">Anzeige</a>
+    <a href="#section-netzwerk">Netzwerk</a>
+    <a href="#section-system">System</a>
+  </nav>
+
+  <h2 class="settings-section-heading" id="section-konto">Konto</h2>
+
   <div class="card">
     <h2>Zugangsdaten ändern</h2>
     <form method="post">
@@ -28,6 +38,8 @@
       <button class="btn" type="submit">Speichern</button>
     </form>
   </div>
+
+  <h2 class="settings-section-heading" id="section-audio">Audio</h2>
 
   <div class="card">
     <h2>Lautstärke</h2>
@@ -96,6 +108,8 @@
     <button class="btn danger" id="sleep-timer-cancel-btn" type="button" hidden>Timer abbrechen</button>
   </div>
 
+  <h2 class="settings-section-heading" id="section-anzeige">Anzeige</h2>
+
   <div class="card">
     <h2>Anzeige</h2>
     <div class="field">
@@ -123,6 +137,8 @@
     </p>
   </div>
 
+  <h2 class="settings-section-heading" id="section-netzwerk">Netzwerk</h2>
+
   <div class="card">
     <h2>WLAN</h2>
     <div id="hotspot-banner" class="hotspot-notice" hidden>
@@ -148,6 +164,8 @@
     <p class="hint">Schon einmal verbundene Zugangspunkte - ohne erneutes Passwort wechseln oder entfernen.</p>
     <div id="wifi-known-list"></div>
   </div>
+
+  <h2 class="settings-section-heading" id="section-system">System</h2>
 
   <div class="card">
     <h2>System</h2>

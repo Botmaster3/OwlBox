@@ -310,6 +310,38 @@ body.kiosk { height: 100vh; overflow: hidden; }
   border-bottom-color: var(--accent);
 }
 
+/* Quick-jump pills at the top of a long settings-style page, plus the
+   uppercase dividers they scroll to - a lighter-weight second level under
+   the top .admin-nav tabs, for pages with many stacked .card sections. */
+.jump-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.jump-nav a {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #2a2f42;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.jump-nav a:hover { color: var(--text); border-color: var(--accent); }
+
+.settings-section-heading {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 32px 0 10px;
+  padding-top: 20px;
+  border-top: 1px solid #2a2f42;
+  scroll-margin-top: 16px;
+}
+.settings-section-heading:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+
 .segmented { display: inline-flex; border-radius: 8px; overflow: hidden; border: 1px solid #2a2f42; }
 .segmented-btn {
   border: none;
