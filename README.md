@@ -21,10 +21,10 @@ den Pi geladen und einem Chip zugewiesen.
   letzten 60s sanft aus statt hart abzuschneiden) oder abbrechen, Pi neu
   starten/herunterfahren. Praktisch als "Bedienkarten" ohne Taster anfassen
   zu müssen.
-- **Akustisches Feedback beim Scannen**: kurzer, unterschiedlicher Ton für
-  Chip erkannt / unbekannter Chip / Funktions-Chip - läuft über `aplay`
-  parallel zur laufenden Geschichte, unterbricht sie also nicht. In
-  Einstellungen abschaltbar.
+- **Akustisches Feedback**: kurzer, unterschiedlicher Ton für Chip erkannt /
+  unbekannter Chip / Funktions-Chip sowie beim Hochfahren und beim
+  Herunterfahren/Neustart - läuft über `aplay` parallel zur laufenden
+  Geschichte, unterbricht sie also nicht. In Einstellungen abschaltbar.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
   Kapitel-/Track-Titel, verbleibende Zeit im Track, Track-Liste der Geschichte mit
   hervorgehobenem aktuellen Titel, Lautstärke, WLAN-Empfang) - kein Touch, Bedienung
@@ -60,7 +60,7 @@ den Pi geladen und einem Chip zugewiesen.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
-    Akustisches Feedback (Ton beim Scannen an/aus); Helligkeit (aktuelle Helligkeit, sowie ein
+    Akustisches Feedback (Töne beim Scannen/Hoch-/Herunterfahren an/aus); Helligkeit (aktuelle Helligkeit, sowie ein
     einstellbarer Minimal-/Maximalwert, der den Schieberegler hier und den Helligkeits-Encoder am
     Gerät begrenzt); Automatischer Ruhemodus (Minuten bis zur schlafenden Eule nach dem Pausieren,
     0 = aus); Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert

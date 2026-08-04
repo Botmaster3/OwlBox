@@ -1,3 +1,4 @@
+import subprocess
 import time
 
 from owlbox import feedback, network, repository
@@ -55,7 +56,45 @@ def test_chime_plays_on_known_unknown_and_function_tag_scans(config):
         engine.simulate_scan("VOLUPCARD")
         time.sleep(0.15)
 
-        assert calls == ["known", "unknown", "function"]
+        assert calls == ["startup", "known", "unknown", "function"]
+    finally:
+        engine.stop()
+        feedback.play_chime = original
+
+
+def test_chime_plays_on_startup(config):
+    calls = []
+    original = feedback.play_chime
+    feedback.play_chime = lambda name, alsa_device: calls.append(name)
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        assert calls == ["startup"]
+    finally:
+        engine.stop()
+        feedback.play_chime = original
+
+
+def test_chime_plays_on_shutdown_and_restart_requests(config):
+    calls = []
+    original = feedback.play_chime
+    feedback.play_chime = lambda name, alsa_device: calls.append(name)
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        calls.clear()  # drop the startup chime, only interested in shutdown/restart here
+
+        original_run = subprocess.run
+        subprocess.run = lambda *a, **k: None
+        try:
+            engine.request_shutdown()
+            engine.request_restart()
+        finally:
+            subprocess.run = original_run
+
+        assert calls == ["shutdown", "shutdown"]
     finally:
         engine.stop()
         feedback.play_chime = original

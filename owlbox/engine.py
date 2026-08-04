@@ -120,6 +120,7 @@ class Engine:
         self._backlight.set_brightness(self._brightness)
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
+        self._play_chime("startup")
         logger.info("engine started (simulate=%s)", self._config.simulate)
 
     def stop(self) -> None:
@@ -625,6 +626,7 @@ class Engine:
 
     def request_shutdown(self) -> None:
         self._persist_current_position()
+        self._play_chime("shutdown")
         try:
             subprocess.run(["sudo", "shutdown", "-h", "now"], check=False)
         except Exception:
@@ -632,6 +634,7 @@ class Engine:
 
     def request_restart(self) -> None:
         self._persist_current_position()
+        self._play_chime("shutdown")
         try:
             subprocess.run(["sudo", "shutdown", "-r", "now"], check=False)
         except Exception:
