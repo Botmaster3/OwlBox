@@ -268,11 +268,38 @@
     }
   }
 
+  // The Weihnachten wreath decoration (html::before/::after) is sized and
+  // positioned in CSS to stay clear of the Player's .info column (title,
+  // progress/volume bars, track list, sleep-timer badge) for typical
+  // content, but that's a guess based on common cases, not a guarantee - on
+  // a small kiosk display, a chaptered story plus a running sleep timer can
+  // still push .info's bottom edge into the wreath's space. Checked live
+  // every poll (rather than only once on load) since that combination can
+  // appear or disappear while a story is already playing.
+  function updateWreathOverlap() {
+    if (document.documentElement.dataset.theme !== "weihnachten") {
+      document.documentElement.removeAttribute("data-wreath-clash");
+      return;
+    }
+    const infoEl = document.querySelector(".info");
+    const rect = infoEl ? infoEl.getBoundingClientRect() : null;
+    // rect.bottom is 0 while .info isn't actually shown (e.g. still on the
+    // splash screen, or hidden behind parent-mode/auto-sleep) - never hide
+    // the wreath on account of stale/absent layout.
+    const safeBottom = window.innerHeight * 0.96 - 45;
+    if (rect && rect.bottom > 0 && rect.bottom > safeBottom) {
+      document.documentElement.setAttribute("data-wreath-clash", "1");
+    } else {
+      document.documentElement.removeAttribute("data-wreath-clash");
+    }
+  }
+
   async function poll() {
     try {
       const res = await fetch("/api/state");
       if (res.ok) {
         applyState(await res.json());
+        updateWreathOverlap();
       }
     } catch (err) {
       // network hiccup, just try again next tick

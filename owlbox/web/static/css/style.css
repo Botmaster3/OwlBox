@@ -339,6 +339,20 @@ html[data-theme="weihnachten"][data-advent-candles="4"]::after {
     radial-gradient(115px 5px at 50% 94%, rgba(70, 150, 90, 0.4), transparent 82%),
     radial-gradient(130px 7px at 50% 97%, #1c5c34 75%, transparent 92%);
 }
+/* Even scaled down, a fixed size/position can't be guaranteed clear of the
+   Player's .info column on every screen - a 3.5" kiosk display (320px tall)
+   leaves so little room that a chaptered story (Tracks list) plus a running
+   Einschlaf-Timer can still push .info's bottom edge into the wreath's own
+   space. player.js measures the actual rendered .info box against the
+   viewport on every poll and sets data-wreath-clash when they'd collide;
+   removing the pseudo-elements' content is the simplest way to hide them
+   without touching the sizing/positioning rules above. Needs to come after
+   the [data-advent-candles="N"] rules to win - same selector specificity,
+   so source order decides. */
+html[data-theme="weihnachten"][data-wreath-clash]::before,
+html[data-theme="weihnachten"][data-wreath-clash]::after {
+  content: none;
+}
 
 /* Ostern: ein paar pastellfarbene Ostereier unten im Bild, mit einem sehr
    sanften gemeinsamen Wippen statt starr platzierter Formen. */
