@@ -202,6 +202,27 @@ html[data-theme="weihnachten"]::after {
   background-repeat: no-repeat;
   animation: candle-flicker 2.4s ease-in-out infinite;
 }
+/* Separate pseudo-element (::before, painted behind ::after in normal box
+   order) just for the pine-branch texture - a repeating-conic-gradient
+   radiates infinitely in every direction with no size of its own, so it
+   needs its own mask to stay confined to the wreath's footprint. Keeping it
+   off of ::after matters: that mask's small vertical radius would otherwise
+   also clip the candles/flames sitting on the same element, since those
+   extend much further above the wreath than the texture does. The solid
+   fill oval in each ::after variant below is narrower than this texture, so
+   the texture's spiky edges show past it - a "sprigs poking out from a
+   solid clump" look instead of a flat oval. */
+html[data-theme="weihnachten"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-image: repeating-conic-gradient(from 0deg at 50% 94%, #123419 0deg 4deg, #1c5c34 4deg 9deg, #2f7a4a 9deg 11deg, transparent 11deg 13deg);
+  mask-image: radial-gradient(190px 38px at 50% 94%, black 50%, black 78%, transparent 96%);
+  -webkit-mask-image: radial-gradient(190px 38px at 50% 94%, black 50%, black 78%, transparent 96%);
+}
 /* Redesigned after a reference photo the user shared (4 same-height red
    candles standing in a near-flat row on a full, lush pine wreath, not a
    thin ring outline) - the wreath is now a solid filled oval (two layered
@@ -232,7 +253,7 @@ html[data-theme="weihnachten"][data-advent-candles="0"]::after {
     radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
     radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
     radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
+    radial-gradient(140px 20px at 50% 94%, #1c5c34 75%, transparent 92%);
 }
 html[data-theme="weihnachten"][data-advent-candles="1"]::after {
   background-image:
@@ -248,7 +269,7 @@ html[data-theme="weihnachten"][data-advent-candles="1"]::after {
     radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
     radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
     radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
+    radial-gradient(140px 20px at 50% 94%, #1c5c34 75%, transparent 92%);
 }
 html[data-theme="weihnachten"][data-advent-candles="2"]::after {
   background-image:
@@ -265,7 +286,7 @@ html[data-theme="weihnachten"][data-advent-candles="2"]::after {
     radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
     radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
     radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
+    radial-gradient(140px 20px at 50% 94%, #1c5c34 75%, transparent 92%);
 }
 html[data-theme="weihnachten"][data-advent-candles="3"]::after {
   background-image:
@@ -283,7 +304,7 @@ html[data-theme="weihnachten"][data-advent-candles="3"]::after {
     radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
     radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
     radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
+    radial-gradient(140px 20px at 50% 94%, #1c5c34 75%, transparent 92%);
 }
 html[data-theme="weihnachten"][data-advent-candles="4"]::after {
   background-image:
@@ -302,7 +323,7 @@ html[data-theme="weihnachten"][data-advent-candles="4"]::after {
     radial-gradient(5px 5px at 50% 96%, #c0392b, transparent 70%),
     radial-gradient(5px 5px at 68% 94.5%, #c0392b, transparent 70%),
     radial-gradient(130px 14px at 50% 91%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(165px 24px at 50% 94%, #1c5c34 68%, transparent 90%);
+    radial-gradient(140px 20px at 50% 94%, #1c5c34 75%, transparent 92%);
 }
 
 /* Ostern: ein paar pastellfarbene Ostereier unten im Bild, mit einem sehr
