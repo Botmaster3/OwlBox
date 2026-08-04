@@ -32,11 +32,9 @@ FUNCTION_ACTIONS = [
     ("volume_down", "Leiser"),
     ("wifi_on", "WLAN an"),
     ("wifi_off", "WLAN aus"),
-    ("shuffle_on", "Shuffle an"),
-    ("shuffle_off", "Shuffle aus"),
-    ("repeat_off", "Wiederholung aus"),
-    ("repeat_folder", "Wiederholung: Ordner"),
-    ("repeat_track", "Wiederholung: Track"),
+    ("shuffle_toggle", "Shuffle an/aus"),
+    ("repeat_folder_toggle", "Wiederholung Ordner an/aus"),
+    ("repeat_track_toggle", "Wiederholung Track an/aus"),
     ("sleep_timer_15", "Einschlaf-Timer 15 Min"),
     ("sleep_timer_30", "Einschlaf-Timer 30 Min"),
     ("sleep_timer_45", "Einschlaf-Timer 45 Min"),
@@ -307,16 +305,12 @@ class Engine:
             self._set_wifi(True)
         elif action == "wifi_off":
             self._set_wifi(False)
-        elif action == "shuffle_on":
-            self._set_current_shuffle(True)
-        elif action == "shuffle_off":
-            self._set_current_shuffle(False)
-        elif action == "repeat_off":
-            self._set_current_repeat("off")
-        elif action == "repeat_folder":
-            self._set_current_repeat("folder")
-        elif action == "repeat_track":
-            self._set_current_repeat("track")
+        elif action == "shuffle_toggle":
+            self._toggle_current_shuffle()
+        elif action == "repeat_folder_toggle":
+            self._toggle_current_repeat("folder")
+        elif action == "repeat_track_toggle":
+            self._toggle_current_repeat("track")
         elif action == "sleep_timer_15":
             self.start_sleep_timer(15)
         elif action == "sleep_timer_30":
@@ -337,16 +331,30 @@ class Engine:
     def _set_wifi(self, enabled: bool) -> None:
         network.set_wifi_enabled(enabled)
 
-    def _set_current_shuffle(self, enabled: bool) -> None:
+    def _toggle_current_shuffle(self) -> None:
         # Scanning this function tag has already cleared _current_story (see
         # _handle_tag_present), so target whatever story is actually loaded
         # into the player instead - a no-op if nothing has ever played yet.
-        if self._loaded_story_id is not None:
-            self.set_story_shuffle(self._loaded_story_id, enabled)
+        # First placement turns shuffle on, lifting the chip and placing it
+        # again turns it back off (each placement is a fresh scan, since
+        # _handle_tag_removed resets _current_uid once the chip is lifted).
+        if self._loaded_story_id is None:
+            return
+        story = repository.get_story(self._loaded_story_id)
+        if story is not None:
+            self.set_story_shuffle(self._loaded_story_id, not story.shuffle)
 
-    def _set_current_repeat(self, mode: str) -> None:
-        if self._loaded_story_id is not None:
-            self.set_story_repeat(self._loaded_story_id, mode)
+    def _toggle_current_repeat(self, mode: str) -> None:
+        # Same on/off-per-placement idea as shuffle above, but per repeat
+        # mode: placing the "Ordner" card again while it's already the
+        # active mode turns repeat off; placing it while "Track" is active
+        # switches straight to "Ordner" instead of turning it off.
+        if self._loaded_story_id is None:
+            return
+        story = repository.get_story(self._loaded_story_id)
+        if story is not None:
+            new_mode = "off" if story.repeat == mode else mode
+            self.set_story_repeat(self._loaded_story_id, new_mode)
 
     def _check_wifi_status(self, now: float, interval: float = 5.0) -> None:
         if self._last_wifi_check is not None and now - self._last_wifi_check < interval:
