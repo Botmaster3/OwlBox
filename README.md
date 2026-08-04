@@ -16,11 +16,13 @@ den Pi geladen und einem Chip zugewiesen.
   eine Audio-Livestream-URL (Internetradio o.ä.) abspielen - verbindet beim
   Auflegen immer live, ohne gespeicherte Position und ohne Vor-/Zurückspulen.
 - **Funktions-Chips**: eigene Chips, die statt einer Geschichte eine Aktion
-  auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus,
-  Einschlaf-Timer starten (15/30/45/60 Min., blendet die Lautstärke in den
-  letzten 60s sanft aus statt hart abzuschneiden) oder abbrechen, Pi neu
-  starten/herunterfahren. Praktisch als "Bedienkarten" ohne Taster anfassen
-  zu müssen.
+  auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus, Shuffle
+  an/aus, Wiederholung aus/Ordner/Track, Einschlaf-Timer starten (15/30/45/60
+  Min., blendet die Lautstärke in den letzten 60s sanft aus statt hart
+  abzuschneiden) oder abbrechen, Pi neu starten/herunterfahren. Praktisch als
+  "Bedienkarten" ohne Taster anfassen zu müssen. Die Shuffle-/Wiederholungs-Chips
+  wirken auf die zuletzt geladene Geschichte, auch nachdem deren eigener Chip
+  schon wieder abgenommen wurde.
 - **Akustisches Feedback**: kurzer, unterschiedlicher Ton für Chip erkannt /
   unbekannter Chip / Funktions-Chip sowie beim Hochfahren und beim
   Herunterfahren/Neustart - läuft über `aplay` parallel zur laufenden

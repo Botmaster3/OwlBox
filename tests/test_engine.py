@@ -463,6 +463,84 @@ def test_state_exposes_repeat_and_shuffle_for_the_current_story(config):
         engine.stop()
 
 
+def test_shuffle_function_tag_applies_to_the_loaded_story_even_after_the_story_chip_is_lifted(config):
+    config.rfid.poll_interval = 0.01
+    config.rfid.missing_reads_to_remove = 2
+    story = _make_story_with_file(config, "AABBCC")
+    repository.set_function_tag("SHUFFLEONCARD", "shuffle_on")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine._player._shuffle_enabled is False
+
+        # Swap the story chip for the function card, as you would physically -
+        # only one chip fits on the reader at a time.
+        engine.simulate_scan("SHUFFLEONCARD")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["story"] is None
+        assert state["function_tag"] == "shuffle_on"
+        assert engine._player._shuffle_enabled is True
+        assert repository.get_story(story.id).shuffle is True
+    finally:
+        engine.stop()
+
+
+def test_repeat_function_tags_apply_to_the_loaded_story_even_after_the_story_chip_is_lifted(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+    repository.set_function_tag("REPEATTRACKCARD", "repeat_track")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+
+        engine.simulate_scan("REPEATTRACKCARD")
+        time.sleep(0.15)
+        assert engine._player._repeat_mode == "track"
+        assert repository.get_story(story.id).repeat == "track"
+    finally:
+        engine.stop()
+
+
+def test_shuffle_function_tag_is_a_no_op_when_no_story_has_ever_been_loaded(config):
+    config.rfid.poll_interval = 0.01
+    repository.set_function_tag("SHUFFLEONCARD", "shuffle_on")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("SHUFFLEONCARD")
+        time.sleep(0.15)
+        assert engine._player._shuffle_enabled is False
+    finally:
+        engine.stop()
+
+
+def test_shuffle_and_repeat_function_tags_do_not_affect_a_livestream(config):
+    config.rfid.poll_interval = 0.01
+    story = repository.create_story(title="Radio", stream_url="http://example.com/stream")
+    repository.assign_uid(story.id, "STREAMCARD")
+    repository.set_function_tag("SHUFFLEONCARD", "shuffle_on")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("STREAMCARD")
+        time.sleep(0.15)
+
+        engine.simulate_scan("SHUFFLEONCARD")
+        time.sleep(0.15)
+        assert engine._player._shuffle_enabled is False
+    finally:
+        engine.stop()
+
+
 def test_parent_tag_activates_parent_mode_without_being_treated_as_unknown(config):
     config.rfid.poll_interval = 0.01
     config.rfid.missing_reads_to_remove = 2

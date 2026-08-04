@@ -32,6 +32,11 @@ FUNCTION_ACTIONS = [
     ("volume_down", "Leiser"),
     ("wifi_on", "WLAN an"),
     ("wifi_off", "WLAN aus"),
+    ("shuffle_on", "Shuffle an"),
+    ("shuffle_off", "Shuffle aus"),
+    ("repeat_off", "Wiederholung aus"),
+    ("repeat_folder", "Wiederholung: Ordner"),
+    ("repeat_track", "Wiederholung: Track"),
     ("sleep_timer_15", "Einschlaf-Timer 15 Min"),
     ("sleep_timer_30", "Einschlaf-Timer 30 Min"),
     ("sleep_timer_45", "Einschlaf-Timer 45 Min"),
@@ -62,6 +67,13 @@ class Engine:
         self._lock = threading.RLock()
         self._current_uid: Optional[str] = None
         self._current_story: Optional[repository.Story] = None
+        # Unlike _current_story (which reflects whatever tag is on the
+        # reader right now, and goes back to None the moment a function or
+        # parent tag is scanned), this tracks whichever local story's
+        # playlist is actually loaded into mpv - so a shuffle/repeat
+        # function-card scanned after lifting the story chip still knows
+        # what to apply itself to.
+        self._loaded_story_id: Optional[int] = None
         self._current_function_action: Optional[str] = None
         self._current_parent_label: Optional[str] = None
         self._last_unknown_uid: Optional[str] = None
@@ -211,12 +223,15 @@ class Engine:
                 self._play_chime("known")
 
                 if story.stream_url:
-                    # A livestream has no tracks/position to resume - always join live.
+                    # A livestream has no tracks/position to resume - always join live,
+                    # and it has no shuffle/repeat concept either.
+                    self._loaded_story_id = None
                     self._player.load_playlist([story.stream_url])
                     self._player.set_volume(self._volume)
                     logger.info("streaming '%s' (uid=%s) from %s", story.title, uid, story.stream_url)
                     return
 
+                self._loaded_story_id = story.id
                 tracks = repository.get_tracks(story.id)
                 filepaths = [str(self._media_path(story, t)) for t in tracks]
                 if story.shuffle:
@@ -292,6 +307,16 @@ class Engine:
             self._set_wifi(True)
         elif action == "wifi_off":
             self._set_wifi(False)
+        elif action == "shuffle_on":
+            self._set_current_shuffle(True)
+        elif action == "shuffle_off":
+            self._set_current_shuffle(False)
+        elif action == "repeat_off":
+            self._set_current_repeat("off")
+        elif action == "repeat_folder":
+            self._set_current_repeat("folder")
+        elif action == "repeat_track":
+            self._set_current_repeat("track")
         elif action == "sleep_timer_15":
             self.start_sleep_timer(15)
         elif action == "sleep_timer_30":
@@ -311,6 +336,17 @@ class Engine:
 
     def _set_wifi(self, enabled: bool) -> None:
         network.set_wifi_enabled(enabled)
+
+    def _set_current_shuffle(self, enabled: bool) -> None:
+        # Scanning this function tag has already cleared _current_story (see
+        # _handle_tag_present), so target whatever story is actually loaded
+        # into the player instead - a no-op if nothing has ever played yet.
+        if self._loaded_story_id is not None:
+            self.set_story_shuffle(self._loaded_story_id, enabled)
+
+    def _set_current_repeat(self, mode: str) -> None:
+        if self._loaded_story_id is not None:
+            self.set_story_repeat(self._loaded_story_id, mode)
 
     def _check_wifi_status(self, now: float, interval: float = 5.0) -> None:
         if self._last_wifi_check is not None and now - self._last_wifi_check < interval:
@@ -456,26 +492,31 @@ class Engine:
 
     def set_story_repeat(self, story_id: int, mode: str) -> bool:
         """Persists the story's repeat mode and, if that story is the one
-        currently loaded, applies it to the live player right away too -
+        actually loaded into the player, applies it live right away too -
         otherwise a change made while it's playing would only take effect
-        the next time this chip gets scanned again."""
+        the next time this chip gets scanned again. Checked against
+        _loaded_story_id rather than _current_story: a shuffle/repeat
+        function-card scanned after lifting the story chip has already
+        cleared _current_story, but the story's audio is still loaded."""
         if mode not in repository.REPEAT_MODES:
             return False
         repository.update_story_flags(story_id, repeat=mode)
         with self._lock:
             if self._current_story is not None and self._current_story.id == story_id:
                 self._current_story.repeat = mode
+            if self._loaded_story_id == story_id:
                 self._player.set_repeat_mode(mode)
         return True
 
     def set_story_shuffle(self, story_id: int, enabled: bool) -> None:
         """Persists the story's shuffle flag and, if that story is the one
-        currently loaded, applies it to the live player right away too -
+        actually loaded into the player, applies it live right away too -
         same reasoning as set_story_repeat above."""
         repository.update_story_flags(story_id, shuffle=enabled)
         with self._lock:
             if self._current_story is not None and self._current_story.id == story_id:
                 self._current_story.shuffle = enabled
+            if self._loaded_story_id == story_id:
                 self._player.set_shuffle(enabled)
 
     def manual_set_volume(self, percent: int) -> None:
