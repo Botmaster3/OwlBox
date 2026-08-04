@@ -136,7 +136,7 @@ step(2, "Betriebssystem wählen",
      "Zusatz „Full“ und ohne „Lite“).",
      "Diese Variante basiert auf demselben aktuellen Debian Bookworm wie die Standard-Variante, "
      "bringt aber den klassischen X11-Desktop statt Wayland/labwc mit - das SPI-Display braucht "
-     "später X11 (siehe Kapitel 8), damit entfällt der sonst nötige manuelle Umstieg weg von "
+     "später X11 (siehe Kapitel 6), damit entfällt der sonst nötige manuelle Umstieg weg von "
      "Wayland komplett.")
 step(3, "Speicherziel wählen", "„CHOOSE STORAGE“ → die eingelegte SD-Karte auswählen. "
      "Vorsicht: alles darauf wird überschrieben.")
@@ -190,7 +190,7 @@ bullets([
     "hier schon „Enabled“ steht, ist nichts weiter zu tun).",
     "<b>Advanced Options → GL Driver</b>: sollte bei der „Legacy“-Variante aus Kapitel 2 bereits "
     "passend stehen; falls dort „OpenGL (Full KMS)“ oder „OpenGL (Fake KMS)“ ausgewählt ist, auf "
-    "„Legacy“ umstellen - wichtig für das SPI-Display in Kapitel 8.",
+    "„Legacy“ umstellen - wichtig für das SPI-Display in Kapitel 6.",
     "Hostname/Zeitzone/Tastaturlayout, falls beim Flashen in Kapitel 2 nicht schon gesetzt.",
 ])
 p("Menü mit „Finish“ verlassen, bei Aufforderung neu starten.")
@@ -215,24 +215,58 @@ p("Danach den Pi wieder mit Strom versorgen und erneut per SSH verbinden.")
 h1("6. OwlBox-Software installieren")
 h2("6.1 Code herunterladen")
 code(["git clone https://github.com/Botmaster3/owlbox.git", "cd owlbox"])
-h2("6.2 Installationsskript ausführen")
+h2("6.2 Installationsskript ausführen (1. Durchlauf)")
 code(["sudo ./scripts/install.sh"])
-p("Das Skript erledigt automatisch:")
+p(
+    "Für die in Kapitel 1 gelistete Standardhardware (HiFiBerry Amp/Amp2, 3,5″-SPI-Touchdisplay "
+    "der tft35a/MHS-35-Familie) automatisiert das Skript inzwischen praktisch alles, was früher "
+    "von Hand nachgetragen werden musste. Im ersten Durchlauf erledigt es:"
+)
 bullets([
-    "Benötigte System-Pakete installieren (Python, mpv, alsa-utils, git, Chromium, ...)",
+    "Benötigte System-Pakete installieren (Python, mpv, alsa-utils, git, Chromium, cmake, "
+    "libraspberrypi-dev, ...)",
     "SPI aktivieren",
     "Einen eigenen Service-User „owlbox“ anlegen (mit Zugriff auf gpio/spi/audio/video/i2c)",
-    "Die Anwendung nach <font face=\"DejaVuSansMono\" size=\"9\">/opt/owlbox</font> kopieren",
-    "Eine Python-virtuelle-Umgebung anlegen und alle Abhängigkeiten installieren",
+    "Die Anwendung nach <font face=\"DejaVuSansMono\" size=\"9\">/opt/owlbox</font> kopieren, eine "
+    "Python-virtuelle-Umgebung anlegen und alle Abhängigkeiten installieren",
     "<font face=\"DejaVuSansMono\" size=\"9\">config/config.yaml</font> aus der Vorlage anlegen, "
     "falls noch nicht vorhanden",
-    "Den systemd-Dienst <font face=\"DejaVuSansMono\" size=\"9\">owlbox.service</font> installieren "
-    "und starten",
+    "HiFiBerry-Overlay (<font face=\"DejaVuSansMono\" size=\"9\">dtoverlay=hifiberry-amp</font>) "
+    "und GL-Treiber (Legacy statt KMS/Fake-KMS) in config.txt eintragen",
+    "<font face=\"DejaVuSansMono\" size=\"9\">fbcp</font> aus dem Quellcode bauen und installieren",
+    "Den Display-Treiber-Installer (goodtft/LCD-show) automatisch herunterladen und starten - "
+    "dieser bootet den Pi am Ende meist selbst neu",
+])
+story.append(note_box(
+    "Läuft der Neustart nicht automatisch an, meldet das Skript das am Ende deutlich - dann "
+    "einmal von Hand <font face=\"DejaVuSansMono\" size=\"9\">sudo reboot</font> ausführen. Auch "
+    "wenn nur config.txt geändert wurde, fordert das Skript zu einem Neustart auf, bevor der "
+    "zweite Durchlauf sinnvoll ist."
+))
+h2("6.3 Installationsskript erneut ausführen (2. Durchlauf, nach dem Neustart)")
+p("Nach dem Neustart erneut per SSH verbinden und das Skript noch einmal starten:")
+code(["cd owlbox", "sudo ./scripts/install.sh"])
+p("Jetzt ist die Hardware aktiv, deshalb erledigt das Skript in diesem Durchlauf zusätzlich:")
+bullets([
+    "Das aktive ALSA-Gerät und den passenden Mixer-Namen automatisch erkennen (aplay -l / "
+    "amixer scontrols) und in config.yaml eintragen",
+    "Die vom Display-Installer gesetzte Touch-Zeile (dtoverlay=ads7846,...) wieder aus "
+    "config.txt entfernen - Touch bleibt bei diesem Aufbau bewusst deaktiviert",
+    "Den Kiosk-Autostart (Chromium im Vollbild) für den aktuellen Benutzer einrichten und "
+    "aktivieren",
+    "Den systemd-Dienst <font face=\"DejaVuSansMono\" size=\"9\">owlbox.service</font> "
+    "installieren, aktivieren und starten",
 ])
 p(
-    "Am Ende gibt das Skript selbst eine Liste der noch verbleibenden manuellen Schritte aus - "
-    "genau die werden in den folgenden Kapiteln 7 und 8 durchgegangen."
+    "Ist alles fertig, meldet das Skript das explizit. Bleibt danach noch eine Meldung zu einem "
+    "weiteren nötigen Neustart übrig, das Skript einfach ein drittes Mal laufen lassen - es ist "
+    "beliebig oft gefahrlos wiederholbar und bricht nichts, wenn ein Schritt schon erledigt ist."
 )
+story.append(note_box(
+    "Abweichende Hardware (anderes HiFiBerry-Modell, anderes Display, kein Display)? Dann bitte "
+    "OwlBox-Verkabelung.pdf zurate ziehen - dort steht jeder Schritt, den das Skript für die "
+    "Standardhardware automatisch erledigt, einzeln zum manuellen Nachvollziehen und Anpassen."
+))
 story.append(note_box(
     "Mit <font face=\"DejaVuSansMono\" size=\"9\">sudo systemctl status owlbox</font> lässt sich "
     "jederzeit prüfen, ob der Dienst sauber läuft; <font face=\"DejaVuSansMono\" size=\"9\">"
@@ -240,61 +274,8 @@ story.append(note_box(
     "aussieht."
 ))
 
-# ============================================================ 7. Audio konfigurieren
-h1("7. Audio konfigurieren (HiFiBerry)")
-p("In /boot/firmware/config.txt (per SSH, z.B. mit nano) folgende Zeilen ergänzen bzw. anpassen:")
-code(["sudo nano /boot/firmware/config.txt", "", "dtparam=audio=off", "dtoverlay=hifiberry-amp"])
-p(
-    "Für andere HiFiBerry-Varianten den passenden Overlay-Namen verwenden (z.B. "
-    "hifiberry-dacplus für ein reines DAC+ - siehe OwlBox-Verkabelung.pdf). Speichern (Strg+O, "
-    "Enter), Editor schließen (Strg+X), dann neu starten:"
-)
-code(["sudo reboot"])
-p("Nach dem Neustart das richtige ALSA-Gerät und den Mixer-Namen ermitteln:")
-code(["aplay -L", "amixer -c 0 scontrols"])
-p(
-    "Beide Werte in <font face=\"DejaVuSansMono\" size=\"9\">/opt/owlbox/config/config.yaml</font> "
-    "unter <font face=\"DejaVuSansMono\" size=\"9\">audio.alsa_device</font> / <font "
-    "face=\"DejaVuSansMono\" size=\"9\">audio.mixer_control</font> eintragen (Amp/Amp2 nutzen meist "
-    "„Digital“, manche Boards „PCM“ oder „Master“), danach den Dienst neu starten:"
-)
-code(["sudo nano /opt/owlbox/config/config.yaml", "sudo systemctl restart owlbox"])
-
-# ============================================================ 8. Display & Kiosk
-h1("8. Display-Treiber und Kiosk-Anzeige einrichten")
-h2("8.1 Display-Treiber installieren")
-p(
-    "Den vom Display-Verkäufer verlinkten Treiber-Installer benutzen, oder alternativ das "
-    "quelloffene goodtft/LCD-show-Skript (Skriptname meist MHS35-show oder LCD35-show). Es setzt "
-    "automatisch die passenden config.txt-Werte, kompiliert fbcp und richtet üblicherweise schon "
-    "einen Autostart ein."
-)
-story.append(note_box(
-    "Danach in /boot/firmware/config.txt die vom Installer eingetragene Touch-Zeile "
-    "(beginnt mit dtoverlay=ads7846,...) wieder entfernen/auskommentieren - Touch bleibt bei "
-    "diesem Aufbau bewusst deaktiviert. Alle weiteren Details, Referenzwerte und die Begründung "
-    "dafür stehen in OwlBox-Verkabelung.pdf, Kapitel 8."
-))
-h2("8.2 fbcp als Dienst einrichten")
-p("Falls der Installer noch keinen eigenen Autostart eingerichtet hat:")
-code([
-    "sudo cp /opt/owlbox/systemd/owlbox-fbcp.service /etc/systemd/system/",
-    "sudo systemctl daemon-reload",
-    "sudo systemctl enable --now owlbox-fbcp.service",
-])
-h2("8.3 Kiosk-Autostart (Chromium Vollbild)")
-code([
-    "mkdir -p ~/.config/systemd/user",
-    "cp /opt/owlbox/systemd/owlbox-kiosk.service ~/.config/systemd/user/",
-    "systemctl --user daemon-reload",
-    "systemctl --user enable --now owlbox-kiosk.service",
-    "sudo loginctl enable-linger $USER",
-])
-p("Nach einem letzten Neustart sollte auf dem Display die OwlBox-Startanzeige erscheinen:")
-code(["sudo reboot"])
-
-# ============================================================ 9. Erste Einrichtung
-h1("9. Erste Einrichtung im Browser")
+# ============================================================ 7. Erste Einrichtung
+h1("7. Erste Einrichtung im Browser")
 step(1, "IP-Adresse ermitteln",
      "Direkt am Pi: <font face=\"DejaVuSansMono\" size=\"9\">hostname -I</font>. Oder am Router "
      "nachsehen. Oder den Hostnamen aus Kapitel 2 verwenden.")
@@ -311,8 +292,8 @@ story.append(note_box(
     "Verwaltung ebenfalls erreichbar ist - siehe OwlBox-Bedienungsanleitung.pdf, Kapitel 10.5."
 ))
 
-# ============================================================ 10. Erste Geschichte
-h1("10. Erste Geschichte anlegen und Chip zuweisen")
+# ============================================================ 8. Erste Geschichte
+h1("8. Erste Geschichte anlegen und Chip zuweisen")
 p(
     "Unter „Hinzufügen“ Titel vergeben und Audiodateien bzw. einen Ordner hochladen, dann in der "
     "„Bibliothek“ bei dieser Geschichte auf „Chip zuweisen“ klicken und einen RFID-Chip an den "
@@ -323,8 +304,8 @@ story.append(note_box(
     "OwlBox-Schnellstart.pdf."
 ))
 
-# ============================================================ 11. Fertig
-h1("11. Fertig - wie geht es weiter?")
+# ============================================================ 9. Fertig
+h1("9. Fertig - wie geht es weiter?")
 bullets([
     "<b>OwlBox-Schnellstart.pdf</b> - die ersten Schritte im Alltag, kompakt auf drei Seiten.",
     "<b>OwlBox-Bedienungsanleitung.pdf</b> - jede Seite der Verwaltung und jeder physische Taster "
@@ -337,8 +318,8 @@ p(
     "zum Download bereit."
 )
 
-# ============================================================ 12. Fehlerbehebung
-h1("12. Fehlerbehebung bei der Installation")
+# ============================================================ 10. Fehlerbehebung
+h1("10. Fehlerbehebung bei der Installation")
 story.append(spec_table(
     [
         ["Problem", "Lösungsansatz"],
@@ -356,15 +337,17 @@ story.append(spec_table(
          "Netzwerkpaket oder fehlende Root-Rechte (mit sudo ausführen). Skript ist mehrfach "
          "gefahrlos wiederholbar."],
         ["systemctl status owlbox zeigt „failed“", "sudo journalctl -u owlbox -n 50 für die "
-         "letzten Log-Zeilen; häufigste Ursache: config.yaml noch nicht an die eigene Hardware "
-         "angepasst (Kapitel 7)."],
-        ["Kein Ton", "ALSA-Gerät/Mixer in config.yaml gegen aplay -L / amixer scontrols "
-         "abgleichen (Kapitel 7); HiFiBerry-Overlay in config.txt korrekt gesetzt?"],
+         "letzten Log-Zeilen; scripts/install.sh ein weiteres Mal ausführen - meist fehlt nur "
+         "der zweite Durchlauf nach einem Neustart (Kapitel 6)."],
+        ["Kein Ton", "aplay -l zeigt die HiFiBerry-Karte erst nach einem Neustart mit aktivem "
+         "Overlay; danach scripts/install.sh erneut ausführen, das trägt ALSA-Gerät und Mixer "
+         "automatisch in config.yaml ein (Kapitel 6). Bleibt es stumm, HiFiBerry-Overlay in "
+         "config.txt und Verkabelung prüfen."],
         ["Display bleibt schwarz", "sudo systemctl status owlbox-fbcp prüfen; GL-Driver wirklich "
-         "auf „Legacy“ (Kapitel 4); Touch-Zeile in config.txt entfernt, nicht die "
-         "Display-Zeilen selbst (Kapitel 8.1)."],
+         "auf „Legacy“ (Kapitel 4); scripts/install.sh noch einmal ausführen, falls der "
+         "Display-Treiber-Installer noch nicht durchgelaufen ist (Kapitel 6)."],
         ["Verwaltung im Browser nicht erreichbar", "IP-Adresse erneut prüfen; auf dem Kiosk-Display "
-         "nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Kapitel 9)."],
+         "nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Kapitel 7)."],
     ],
     col_widths=[55 * mm, 105 * mm],
 ))

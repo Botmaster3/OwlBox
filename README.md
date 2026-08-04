@@ -162,23 +162,49 @@ Im Simulationsmodus wird RFID/GPIO/mpv durch Software-Stubs ersetzt, siehe
 
 ## Installation auf dem Raspberry Pi
 
+Für die Standardhardware (Pi 3B+, HiFiBerry Amp/Amp2, 3.5" SPI-Display der
+tft35a/MHS-35-Familie, RC522, Taster/Encoder auf den Standard-Pins - siehe
+[docs/hardware.md](docs/hardware.md)) genügt es, das Skript **zweimal mit
+einem Neustart dazwischen** laufen zu lassen:
+
 ```bash
 git clone <dieses-repo> owlbox
 cd owlbox
 sudo ./scripts/install.sh
 ```
 
-Das Skript installiert Systempakete (mpv, ALSA, Chromium, …), aktiviert SPI,
-legt einen `owlbox`-Systembenutzer an, richtet ein Python-venv ein und
-startet den `owlbox.service`. Was danach noch manuell zu tun ist (HiFiBerry-
-Overlay, Verkabelung, Kiosk-Autostart), steht am Ende der Skriptausgabe und
-ausführlich in [docs/hardware.md](docs/hardware.md).
+**1. Durchlauf:** installiert Systempakete (mpv, ALSA, Chromium, …), aktiviert
+SPI, legt einen `owlbox`-Systembenutzer an, richtet ein Python-venv ein,
+trägt den HiFiBerry- und Display-Overlay automatisch in `config.txt` ein,
+baut und installiert `fbcp`, lädt und startet den Display-Treiber
+(`goodtft/LCD-show`) - der Pi startet am Ende von selbst neu.
+
+**Danach das Skript einmal erneut ausführen** (`sudo ./scripts/install.sh`):
+jetzt ist die HiFiBerry-Soundkarte aktiv, das Skript erkennt automatisch das
+richtige ALSA-Gerät/den Mixer und trägt es in `config/config.yaml` ein,
+entfernt die vom Display-Treiber gesetzte Touch-Overlay-Zeile wieder (Touch
+bleibt bewusst aus), richtet den Kiosk-Autostart ein und startet
+`owlbox.service`.
+
+Das Skript ist beliebig oft wiederholbar (idempotent) - jeder Schritt prüft
+zuerst, ob er schon erledigt ist. Danach bleiben nur zwei Dinge wirklich
+manuell, weil kein Skript sie übernehmen kann:
+
+1. RC522-RFID-Leser (an CE1, nicht CE0), Taster und Dreh-Encoder verkabeln -
+   siehe [docs/hardware.md](docs/hardware.md) bzw. **OwlBox-Verkabelung.pdf**.
+2. `http://<pi-ip>:5000/admin` öffnen und die Ersteinrichtung (Benutzername/
+   Passwort) durchlaufen - aus Sicherheitsgründen bewusst ohne automatisch
+   gesetztes Standardpasswort.
+
+Abweichende Hardware (andere HiFiBerry-Variante, anderes Display) lässt sich
+weiterhin ganz nach [docs/hardware.md](docs/hardware.md) von Hand einrichten -
+die dort beschriebenen Schritte sind genau das, was das Skript für die
+Standardhardware automatisch erledigt.
 
 Komplett von einer leeren SD-Karte bis zur fertig eingerichteten Box (inkl.
-Raspberry Pi OS flashen, `raspi-config`, Verkabelungsreihenfolge, HiFiBerry/
-Display-Treiber, Kiosk-Autostart, erste Einrichtung im Browser) - siehe
-**OwlBox-Installation.pdf**, mitgeliefert unter
-`owlbox/web/static/docs/` bzw. herunterladbar über die Verwaltung
+Raspberry Pi OS flashen, `raspi-config`, Verkabelungsreihenfolge, erste
+Einrichtung im Browser) - siehe **OwlBox-Installation.pdf**, mitgeliefert
+unter `owlbox/web/static/docs/` bzw. herunterladbar über die Verwaltung
 (Info → Dokumentation), sobald einmal ein `owlbox`-Dienst läuft.
 
 ## Bedienkonzept

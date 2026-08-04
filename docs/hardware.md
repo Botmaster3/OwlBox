@@ -1,5 +1,14 @@
 # Hardware-Aufbau
 
+**Für genau die unten stehende Standardhardware macht `scripts/install.sh`
+inzwischen alle Software-Schritte auf dieser Seite automatisch** (HiFiBerry-
+und Display-Overlay in `config.txt`, GL-Treiber, `fbcp` bauen, Display-Treiber
+installieren, ALSA-Gerät/Mixer erkennen, Kiosk-Autostart) - einfach zweimal
+mit einem Neustart dazwischen laufen lassen, siehe README. Diese Seite bleibt
+trotzdem die vollständige Referenz: für abweichende Hardware, zum
+Nachvollziehen, was das Skript eigentlich tut, oder falls ein automatischer
+Schritt einmal fehlschlägt und von Hand nachgeholt werden muss.
+
 Zielhardware:
 
 - Raspberry Pi 3B+

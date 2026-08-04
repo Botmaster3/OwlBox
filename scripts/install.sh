@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
-# Installs OwlBox onto a Raspberry Pi (tested against Raspberry Pi OS Bookworm).
+# Installs OwlBox onto a Raspberry Pi (tested against Raspberry Pi OS Bookworm/Legacy).
 # Run as root (sudo ./scripts/install.sh) from inside a checkout of this repo.
+#
+# Targets the project's standard hardware (see docs/hardware.md): Pi 3B+, HiFiBerry
+# Amp/Amp2, 3.5" SPI display (tft35a/MHS-35 family), RC522 on CE1, buttons/encoders on
+# the documented default pins. On that combination this script alone gets you from a
+# freshly-flashed SD card to a fully working box - no manual config.txt editing, no
+# manually running aplay/amixer and copying values by hand, no manually compiling fbcp
+# or wiring up systemd units. Two things stay manual on purpose:
+#   - physically wiring the RC522/buttons/encoders/display (this is hardware, not software)
+#   - the one-time admin login setup in the browser (no auto-generated default password)
+#
+# Idempotent and meant to be run TWICE with a reboot in between:
+#   1st run: installs everything, edits config.txt (HiFiBerry + display + GL driver),
+#            builds fbcp, installs the display's own driver/overlay files, then reboots.
+#   2nd run (after the reboot): the HiFiBerry sound card and display overlay are now
+#            live, so this run auto-detects the ALSA device/mixer, writes them into
+#            config.yaml, strips the display driver's touch overlay back out, and
+#            finally starts owlbox.service.
+# Every step below checks what's already in place first, so running it more than
+# twice (or after manually tweaking something) is always safe.
 set -euo pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -11,23 +30,77 @@ fi
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALL_DIR="/opt/owlbox"
 SERVICE_USER="owlbox"
+REAL_USER="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
+
+MARKER_BEGIN="# --- OwlBox: begin (managed by scripts/install.sh - re-running the script"
+MARKER_BEGIN="$MARKER_BEGIN replaces everything between these two markers) ---"
+MARKER_END="# --- OwlBox: end ---"
+
+CONFIG_TXT=""
+for candidate in /boot/firmware/config.txt /boot/config.txt; do
+  [ -f "$candidate" ] && { CONFIG_TXT="$candidate"; break; }
+done
+
+# -- helpers --------------------------------------------------------------
+
+# Replaces the whole OwlBox-managed block (deleting any previous one first) so
+# re-running the script always converges to exactly this set of lines, instead
+# of accumulating duplicates or fighting a hand-edited version of an old block.
+write_config_block() {
+  local file="$1"; shift
+  local tmp
+  tmp="$(mktemp)"
+  awk -v b="$MARKER_BEGIN" -v e="$MARKER_END" '
+    $0==b {skip=1}
+    !skip {print}
+    $0==e {skip=0}
+  ' "$file" | awk '
+    # Trims trailing blank lines left over from the previous blocks
+    # separator - without this a re-run would grow one more blank line
+    # before the block every time instead of converging to a fixed point.
+    {lines[NR]=$0}
+    END {
+      n=NR
+      while (n>0 && lines[n]=="") n--
+      for (i=1;i<=n;i++) print lines[i]
+    }
+  ' > "$tmp"
+  {
+    cat "$tmp"
+    echo ""
+    echo "$MARKER_BEGIN"
+    printf '%s\n' "$@"
+    echo "$MARKER_END"
+  } > "$file"
+  rm -f "$tmp"
+}
+
+run_as_real_user() {
+  if [ "$REAL_USER" = "root" ]; then
+    "$@"
+  else
+    sudo -u "$REAL_USER" "$@"
+  fi
+}
 
 echo "==> Installing system packages"
 apt-get update
 apt-get install -y \
   python3-venv python3-pip python3-dev build-essential \
   mpv alsa-utils \
-  git curl \
+  git curl cmake \
   unclutter \
   || true
 # Debian's chromium package name varies by release; try both.
 apt-get install -y chromium-browser || apt-get install -y chromium || true
+# Needed to build fbcp against the legacy VideoCore firmware interface.
+apt-get install -y libraspberrypi-dev || true
 
-echo "==> Enabling SPI (needed for the RC522 RFID reader)"
+echo "==> Enabling SPI (needed for the RC522 RFID reader and the display)"
 if command -v raspi-config >/dev/null 2>&1; then
   raspi-config nonint do_spi 0 || true
 else
-  echo "raspi-config not found, enable SPI manually: add 'dtparam=spi=on' to /boot/firmware/config.txt"
+  echo "raspi-config not found, enable SPI manually: add 'dtparam=spi=on' to $CONFIG_TXT" >&2
 fi
 
 echo "==> Creating service user '$SERVICE_USER'"
@@ -50,37 +123,186 @@ python3 -m venv "$INSTALL_DIR/.venv"
 
 if [ ! -f "$INSTALL_DIR/config/config.yaml" ]; then
   cp "$INSTALL_DIR/config/config.example.yaml" "$INSTALL_DIR/config/config.yaml"
-  echo "==> Wrote default config/config.yaml - review it (audio device, GPIO pins, admin password)"
+  echo "==> Wrote default config/config.yaml"
 fi
 
 mkdir -p "$INSTALL_DIR/media" "$INSTALL_DIR/data"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 chmod +x "$INSTALL_DIR/scripts/kiosk.sh"
 
+# -- HiFiBerry Amp2 + display + GL driver (config.txt) ---------------------
+
+NEEDS_REBOOT=0
+DISPLAY_DRIVER_INSTALLED=0
+
+if [ -n "$CONFIG_TXT" ]; then
+  echo "==> Configuring audio (HiFiBerry Amp2) and display in $CONFIG_TXT"
+  BEFORE_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
+
+  # Onboard audio off in favour of the HiFiBerry.
+  sed -i 's/^dtparam=audio=on/dtparam=audio=off/' "$CONFIG_TXT"
+
+  # "Legacy" GL driver: fbcp needs /dev/fb0, which the modern KMS/Fake-KMS
+  # driver doesn't expose in a usable form - comment out whichever is active.
+  sed -i -E 's/^(dtoverlay=vc4-f?kms-v3d.*)/#\1/' "$CONFIG_TXT"
+
+  write_config_block "$CONFIG_TXT" \
+    "dtparam=audio=off" \
+    "dtoverlay=hifiberry-amp"
+
+  AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
+  [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1
+
+  # 3.5" SPI display driver (tft35a/MHS-35 family, see docs/hardware.md) - this
+  # is the one piece delegated to the display's own installer rather than
+  # reimplemented here, because it ships a device-tree overlay *binary* this
+  # script has no reliable way to reproduce on its own. Only run it once: it
+  # edits config.txt itself and reboots at the end, and running it again on
+  # top of an already-patched config.txt is the installer's problem to be
+  # idempotent about, not guaranteed.
+  if ! grep -q "tft35a" "$CONFIG_TXT" 2>/dev/null; then
+    echo "==> Installing the 3.5\" SPI display driver (goodtft/LCD-show)"
+    if git clone --depth 1 https://github.com/goodtft/LCD-show.git /tmp/LCD-show; then
+      chmod +x /tmp/LCD-show/MHS35-show
+      # The installer reboots on its own once done; NEEDS_REBOOT is moot after
+      # this point but kept accurate in case the clone/install fails instead.
+      DISPLAY_DRIVER_INSTALLED=1
+    else
+      echo "WARNUNG: Display-Treiber-Repo konnte nicht geladen werden (kein Internet?)." >&2
+      echo "         Manuell nachholen, siehe OwlBox-Verkabelung.pdf Kapitel 8." >&2
+    fi
+  fi
+else
+  echo "WARNUNG: config.txt nicht gefunden (weder /boot/firmware/config.txt noch /boot/config.txt)." >&2
+  echo "         HiFiBerry-/Display-Overlays konnten nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
+fi
+
+# -- fbcp (mirrors the framebuffer onto the SPI display) --------------------
+
+if ! command -v fbcp >/dev/null 2>&1; then
+  echo "==> Building fbcp"
+  if [ -d /tmp/rpi-fbcp ]; then rm -rf /tmp/rpi-fbcp; fi
+  if git clone --depth 1 https://github.com/tasanakorn/rpi-fbcp.git /tmp/rpi-fbcp; then
+    mkdir -p /tmp/rpi-fbcp/build
+    (cd /tmp/rpi-fbcp/build && cmake .. && make)
+    install -m 0755 /tmp/rpi-fbcp/build/fbcp /usr/local/bin/fbcp
+    rm -rf /tmp/rpi-fbcp
+  else
+    echo "WARNUNG: fbcp konnte nicht gebaut werden (kein Internet? fehlende Build-Header?)." >&2
+    echo "         Manuell nachholen, siehe OwlBox-Verkabelung.pdf Kapitel 8." >&2
+  fi
+fi
+if command -v fbcp >/dev/null 2>&1; then
+  cp "$INSTALL_DIR/systemd/owlbox-fbcp.service" /etc/systemd/system/owlbox-fbcp.service
+  systemctl daemon-reload
+  systemctl enable owlbox-fbcp.service
+  # Not started yet on a first run - the display overlay only becomes active
+  # after the reboot triggered below/by the display installer.
+fi
+
+# -- kiosk autostart (Chromium fullscreen, runs as the real login user) -----
+
+if [ "$REAL_USER" != "root" ]; then
+  echo "==> Setting up kiosk autostart for user '$REAL_USER'"
+  REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
+  run_as_real_user mkdir -p "$REAL_HOME/.config/systemd/user"
+  cp "$INSTALL_DIR/systemd/owlbox-kiosk.service" "$REAL_HOME/.config/systemd/user/owlbox-kiosk.service"
+  chown "$REAL_USER":"$REAL_USER" "$REAL_HOME/.config/systemd/user/owlbox-kiosk.service"
+  loginctl enable-linger "$REAL_USER" || true
+  # A user systemd instance only exists once that user has an active (or
+  # lingering) session - reliable right after `enable-linger` only post-
+  # reboot, so this is best-effort here and repeated on the next run.
+  if [ -n "${XDG_RUNTIME_DIR:-}" ] || [ -d "/run/user/$(id -u "$REAL_USER")" ]; then
+    XDG_RUNTIME_DIR="/run/user/$(id -u "$REAL_USER")" \
+      sudo -u "$REAL_USER" systemctl --user daemon-reload || true
+    XDG_RUNTIME_DIR="/run/user/$(id -u "$REAL_USER")" \
+      sudo -u "$REAL_USER" systemctl --user enable --now owlbox-kiosk.service || true
+  fi
+else
+  echo "WARNUNG: konnte den aufrufenden Benutzer nicht bestimmen (lief das Skript als root ohne sudo?)." >&2
+  echo "         Kiosk-Autostart manuell einrichten, siehe OwlBox-Verkabelung.pdf Kapitel 9." >&2
+fi
+
+# -- audio auto-detection (only meaningful once the HiFiBerry is live) ------
+
+AUDIO_CONFIGURED=0
+if command -v aplay >/dev/null 2>&1 && aplay -l 2>/dev/null | grep -qi hifiberry; then
+  CARD_NUM="$(aplay -l | grep -i hifiberry | head -n1 | sed -n 's/^card \([0-9]*\).*/\1/p')"
+  if [ -n "$CARD_NUM" ]; then
+    ALSA_DEVICE="hw:$CARD_NUM,0"
+    MIXER_CONTROL="Digital"
+    if amixer -c "$CARD_NUM" scontrols 2>/dev/null | grep -qi "'PCM'" \
+       && ! amixer -c "$CARD_NUM" scontrols 2>/dev/null | grep -qi "'Digital'"; then
+      MIXER_CONTROL="PCM"
+    fi
+    echo "==> HiFiBerry erkannt (Karte $CARD_NUM) - trage $ALSA_DEVICE / $MIXER_CONTROL in config.yaml ein"
+    # Targeted line-replace instead of a full YAML parse/dump round-trip -
+    # config.yaml's inline comments (the whole point of the shipped example
+    # file) would otherwise get silently dropped by a re-serialize.
+    sed -i -E "s/^(\s*alsa_device:).*/\1 \"$ALSA_DEVICE\"/" "$INSTALL_DIR/config/config.yaml"
+    sed -i -E "s/^(\s*mixer_control:).*/\1 \"$MIXER_CONTROL\"/" "$INSTALL_DIR/config/config.yaml"
+    chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config/config.yaml"
+    AUDIO_CONFIGURED=1
+  fi
+
+  # Second run and the display driver installer has already run before: its
+  # touch overlay line can now be safely removed (harmless to run repeatedly).
+  if [ -n "$CONFIG_TXT" ] && grep -q "^dtoverlay=ads7846" "$CONFIG_TXT" 2>/dev/null; then
+    echo "==> Removing the touch overlay line (touch stays off on purpose)"
+    sed -i '/^dtoverlay=ads7846/d' "$CONFIG_TXT"
+  fi
+fi
+
 echo "==> Installing systemd service"
 cp "$INSTALL_DIR/systemd/owlbox.service" /etc/systemd/system/owlbox.service
 systemctl daemon-reload
 systemctl enable --now owlbox.service
+[ "$(systemctl is-active owlbox-fbcp.service 2>/dev/null || true)" != "active" ] \
+  && systemctl start owlbox-fbcp.service 2>/dev/null || true
+
+# -- summary -----------------------------------------------------------------
 
 cat <<EOF
 
-==> Core service installed and started (systemctl status owlbox).
-
-Still to do manually:
-  1. Add the HiFiBerry device tree overlay to /boot/firmware/config.txt, e.g. for a
-     HiFiBerry Amp/Amp2: dtoverlay=hifiberry-amp   (see docs/hardware.md), then reboot.
-  2. Run 'aplay -L' and 'amixer -c 0 scontrols' to confirm the ALSA device/mixer name
-     in $INSTALL_DIR/config/config.yaml (audio.alsa_device / audio.mixer_control) match your board.
-  3. Install the 3.5" SPI display's driver (the vendor's installer, or
-     goodtft/LCD-show) and then remove the ads7846 touch overlay line it adds
-     to keep touch off; disable vc4-kms-v3d (Wayland) in favor of legacy X11
-     so fbcp works, and wire the display via jumper cables rather than
-     plugging it onto the header directly (see docs/hardware.md - there's a
-     real physical conflict there with the HiFiBerry).
-  4. Wire the RC522 reader (CE1, not CE0) and the buttons/encoder per docs/hardware.md.
-  5. Install and enable systemd/owlbox-fbcp.service so the display mirror
-     runs, then set up the kiosk display autostart (see docs/hardware.md) so
-     it shows http://localhost:5000/ full-screen on boot - this depends on
-     your desktop session/user and isn't done by this script.
-  6. Open http://<pi-ip>:5000/admin to upload stories and assign RFID chips.
+==> owlbox.service installiert und gestartet (systemctl status owlbox).
 EOF
+
+if [ "$DISPLAY_DRIVER_INSTALLED" -eq 1 ]; then
+  cat <<'EOF'
+
+==> Installiere Display-Treiber (Ausgabe des Installers folgt) ...
+EOF
+  # Not `exec`'d on purpose: goodtft/LCD-show usually reboots on its own once
+  # done, but if it doesn't (or only prompts instead), falling straight
+  # through to our own explicit "please reboot" message below still gets you
+  # there instead of silently stopping short.
+  ( cd /tmp/LCD-show && ./MHS35-show ) || true
+  cat <<EOF
+
+==> Display-Treiber-Installation abgeschlossen. Falls der Pi sich nicht schon
+    von selbst neu gestartet hat, jetzt bitte manuell:
+      sudo reboot
+    Nach dem Neustart dieses Skript per SSH einmal erneut ausführen
+    (sudo ./scripts/install.sh) - dann werden ALSA-Gerät/Mixer automatisch
+    erkannt und eingetragen, die Touch-Overlay-Zeile wieder entfernt, und der
+    Kiosk-Autostart aktiviert.
+EOF
+elif [ "$NEEDS_REBOOT" -eq 1 ] || [ "$AUDIO_CONFIGURED" -eq 0 ]; then
+  cat <<EOF
+
+==> config.txt wurde geändert - bitte jetzt neu starten:
+      sudo reboot
+    Danach dieses Skript einmal erneut ausführen, um die Audio-Erkennung und
+    den Kiosk-Autostart abzuschließen:
+      sudo ./scripts/install.sh
+EOF
+else
+  cat <<EOF
+
+==> Alles eingerichtet. Noch zu erledigen (kein Skript kann das für dich tun):
+  1. RC522-RFID-Leser (an CE1, nicht CE0), beide Taster und beide Dreh-Encoder
+     verkabeln - siehe OwlBox-Verkabelung.pdf.
+  2. http://<pi-ip>:5000/admin öffnen, Ersteinrichtung (Benutzername/Passwort)
+     durchlaufen, erste Geschichte hochladen und einem Chip zuweisen.
+EOF
+fi
