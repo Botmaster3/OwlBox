@@ -272,8 +272,10 @@ ctrl("Verfügbare Titel / Playlist", "Liste mit „+ Hinzufügen“ je Titel, da
      "Liste mit ▲/▼ und „Entfernen“ (Modus „Playlist aus Bibliothek“)",
      "Baut eine neue Geschichte aus bereits hochgeladenen Titeln anderer Geschichten zusammen, ohne "
      "erneutes Hochladen - die Reihenfolge in der unteren Liste ist die spätere Abspielreihenfolge. "
-     "Die Originaldateien bleiben unverändert und werden nicht dupliziert (Hardlink auf dieselbe "
-     "Datei); Löschen der Quell-Geschichte lässt die Playlist unangetastet.")
+     "Die Originaldateien werden nicht dupliziert (Hardlink auf dieselbe Datei). Wird die "
+     "Quell-Geschichte oder einzeln einer ihrer Titel später gelöscht, verschwindet der jeweilige "
+     "Titel automatisch auch aus jeder Playlist, die ihn enthält - der Rest der Playlist bleibt "
+     "bestehen.")
 ctrl("„Anlegen“", "Button", "Lädt alles hoch bzw. verknüpft die gewählten Titel und legt die "
      "Geschichte/Playlist an. Ein Chip wird anschließend in der Bibliothek zugewiesen (Kapitel 7.2).")
 

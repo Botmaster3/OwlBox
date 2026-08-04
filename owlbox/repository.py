@@ -21,6 +21,10 @@ class Track:
     filename: str
     title: Optional[str]
     duration: Optional[float]
+    # Set only for a track hard-linked into a playlist story from an
+    # existing one (see create_story_from_tracks in web/api.py) - points at
+    # the original track. None for every normally-uploaded track.
+    source_track_id: Optional[int] = None
 
 
 @dataclass
@@ -66,11 +70,19 @@ def create_story(
     return get_story(story_id)
 
 
-def add_track(story_id: int, position: int, filename: str, title: Optional[str], duration: Optional[float]) -> Track:
+def add_track(
+    story_id: int,
+    position: int,
+    filename: str,
+    title: Optional[str],
+    duration: Optional[float],
+    source_track_id: Optional[int] = None,
+) -> Track:
     with write_cursor() as cur:
         cur.execute(
-            "INSERT INTO tracks (story_id, position, filename, title, duration) VALUES (?, ?, ?, ?, ?)",
-            (story_id, position, filename, title, duration),
+            "INSERT INTO tracks (story_id, position, filename, title, duration, source_track_id) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (story_id, position, filename, title, duration, source_track_id),
         )
         track_id = cur.lastrowid
     row = get_connection().execute("SELECT * FROM tracks WHERE id = ?", (track_id,)).fetchone()
@@ -244,6 +256,31 @@ def list_all_tracks() -> list[dict]:
         }
         for r in rows
     ]
+
+
+def get_cascade_track_ids(seed_track_ids: list[int]) -> list[Track]:
+    """Every track that disappears if the given tracks are deleted: the
+    seeds themselves plus, transitively, every playlist's hard-linked copy
+    of any of them (tracks.source_track_id ON DELETE CASCADE - see
+    schema.sql). Call this *before* the actual delete (the DB rows are
+    gone afterwards) so callers can also remove the now-orphaned
+    hard-linked files from disk, which the DB-level cascade doesn't
+    touch."""
+    if not seed_track_ids:
+        return []
+    placeholders = ",".join("?" for _ in seed_track_ids)
+    rows = get_connection().execute(
+        f"""
+        WITH RECURSIVE cascade(id) AS (
+            SELECT id FROM tracks WHERE id IN ({placeholders})
+            UNION
+            SELECT tracks.id FROM tracks JOIN cascade ON tracks.source_track_id = cascade.id
+        )
+        SELECT tracks.* FROM tracks JOIN cascade ON tracks.id = cascade.id
+        """,
+        seed_track_ids,
+    ).fetchall()
+    return [Track(**dict(r)) for r in rows]
 
 
 def delete_story(story_id: int) -> None:

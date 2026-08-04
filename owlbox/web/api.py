@@ -236,7 +236,9 @@ def create_story_from_tracks():
             # filesystem just doesn't support hardlinks - fall back to a
             # real copy so the playlist still works either way.
             shutil.copy2(src_path, dest_path)
-        repository.add_track(story.id, position, dest_filename, track.title, track.duration)
+        repository.add_track(
+            story.id, position, dest_filename, track.title, track.duration, source_track_id=track.id
+        )
 
     cover_story_id = data.get("cover_story_id")
     if cover_story_id:
@@ -263,8 +265,20 @@ def delete_story(story_id):
     story = repository.get_story(story_id)
     if story is None:
         return jsonify({"error": "not found"}), 404
+    # Any track hard-linked into a playlist from one of this story's tracks
+    # gets its DB row cascade-deleted automatically (tracks.source_track_id
+    # ON DELETE CASCADE) - collected here first since that only happens
+    # once delete_story() actually runs, and cleaning up the now-orphaned
+    # hard-linked file on disk needs to know where each one lived.
+    seed_ids = [t.id for t in repository.get_tracks(story_id)]
+    cascaded = repository.get_cascade_track_ids(seed_ids)
     repository.delete_story(story_id)
-    shutil.rmtree(_config().media_dir / str(story_id), ignore_errors=True)
+    media_dir = _config().media_dir
+    shutil.rmtree(media_dir / str(story_id), ignore_errors=True)
+    for track in cascaded:
+        if track.story_id == story_id:
+            continue  # already gone via rmtree above
+        (media_dir / str(track.story_id) / track.filename).unlink(missing_ok=True)
     return jsonify({"ok": True})
 
 
@@ -339,7 +353,13 @@ def add_tracks(story_id):
 @api_bp.route("/stories/<int:story_id>/tracks/<int:track_id>", methods=["DELETE"])
 @admin_required
 def delete_track(story_id, track_id):
+    # Includes track_id itself (the recursive query's base case) plus any
+    # playlist's hard-linked copy of it - same reasoning as delete_story above.
+    cascaded = repository.get_cascade_track_ids([track_id])
     repository.delete_track(track_id)
+    media_dir = _config().media_dir
+    for track in cascaded:
+        (media_dir / str(track.story_id) / track.filename).unlink(missing_ok=True)
     return jsonify({"ok": True})
 
 

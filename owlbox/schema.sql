@@ -24,7 +24,15 @@ CREATE TABLE IF NOT EXISTS tracks (
     position INTEGER NOT NULL,
     filename TEXT NOT NULL,
     title TEXT,
-    duration REAL
+    duration REAL,
+    -- Set only for a track hard-linked into a "Playlist aus Bibliothek" story
+    -- (see create_story_from_tracks in web/api.py) - points at the original
+    -- track it was copied from. ON DELETE CASCADE means deleting that
+    -- original track (directly, or via its story being deleted) also
+    -- deletes every playlist's copy of it automatically; web/api.py reads
+    -- this chain first to remove the now-orphaned hard-linked files too,
+    -- since SQLite's cascade only removes the DB rows, not files on disk.
+    source_track_id INTEGER REFERENCES tracks(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_tracks_story ON tracks(story_id, position);
 

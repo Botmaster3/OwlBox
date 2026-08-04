@@ -106,6 +106,80 @@ def test_list_all_tracks_includes_story_title_and_excludes_streams(config):
     assert alpha_track["story_id"] == story_a.id
 
 
+def test_get_cascade_track_ids_returns_only_the_seeds_when_nothing_derives_from_them(config):
+    story = repository.create_story(title="Story")
+    track = repository.add_track(story.id, 0, "a.mp3", None, None)
+
+    cascaded = repository.get_cascade_track_ids([track.id])
+    assert [t.id for t in cascaded] == [track.id]
+
+
+def test_get_cascade_track_ids_includes_playlist_copies_transitively(config):
+    source_story = repository.create_story(title="Source")
+    source_track = repository.add_track(source_story.id, 0, "a.mp3", None, None)
+
+    playlist = repository.create_story(title="Playlist")
+    playlist_track = repository.add_track(
+        playlist.id, 0, "000_a.mp3", None, None, source_track_id=source_track.id
+    )
+
+    # A second-generation playlist built from the first playlist's copy -
+    # cascading must walk this chain too, not just one hop.
+    playlist_of_playlist = repository.create_story(title="Playlist of playlist")
+    nested_track = repository.add_track(
+        playlist_of_playlist.id, 0, "000_000_a.mp3", None, None, source_track_id=playlist_track.id
+    )
+
+    cascaded_ids = {t.id for t in repository.get_cascade_track_ids([source_track.id])}
+    assert cascaded_ids == {source_track.id, playlist_track.id, nested_track.id}
+
+
+def test_deleting_the_source_track_cascades_to_playlist_copies(config):
+    source_story = repository.create_story(title="Source")
+    source_track = repository.add_track(source_story.id, 0, "a.mp3", None, None)
+    other_track = repository.add_track(source_story.id, 1, "b.mp3", None, None)
+
+    playlist = repository.create_story(title="Playlist")
+    playlist_track = repository.add_track(
+        playlist.id, 0, "000_a.mp3", None, None, source_track_id=source_track.id
+    )
+    other_playlist_track = repository.add_track(
+        playlist.id, 1, "000_b.mp3", None, None, source_track_id=other_track.id
+    )
+
+    repository.delete_track(source_track.id)
+
+    assert repository.get_track(source_track.id) is None
+    assert repository.get_track(playlist_track.id) is None
+    # Unrelated tracks (including the rest of the same playlist) survive.
+    assert repository.get_track(other_track.id) is not None
+    assert repository.get_track(other_playlist_track.id) is not None
+
+
+def test_deleting_the_source_story_cascades_to_playlist_copies(config):
+    source_story = repository.create_story(title="Source")
+    track_a = repository.add_track(source_story.id, 0, "a.mp3", None, None)
+    track_b = repository.add_track(source_story.id, 1, "b.mp3", None, None)
+
+    playlist = repository.create_story(title="Playlist")
+    playlist_track_a = repository.add_track(playlist.id, 0, "000_a.mp3", None, None, source_track_id=track_a.id)
+    playlist_track_b = repository.add_track(playlist.id, 1, "000_b.mp3", None, None, source_track_id=track_b.id)
+
+    unrelated_story = repository.create_story(title="Unrelated")
+    unrelated_track = repository.add_track(unrelated_story.id, 0, "c.mp3", None, None)
+
+    repository.delete_story(source_story.id)
+
+    assert repository.get_story(source_story.id) is None
+    assert repository.get_track(playlist_track_a.id) is None
+    assert repository.get_track(playlist_track_b.id) is None
+    # The playlist story itself survives (just with fewer/no tracks left).
+    assert repository.get_story(playlist.id) is not None
+    assert repository.get_tracks(playlist.id) == []
+    # A completely unrelated story/track is untouched.
+    assert repository.get_track(unrelated_track.id) is not None
+
+
 def test_playback_state_roundtrip(config):
     assert repository.get_playback_state("XYZ") == (0, 0.0)
     repository.save_playback_state("XYZ", 2, 12.5)

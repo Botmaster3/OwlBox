@@ -69,7 +69,9 @@ den Pi geladen und einem Chip zugewiesen.
     Bibliothek“: eine neue Geschichte aus bereits hochgeladenen Titeln anderer Geschichten
     zusammenstellen (durchsuchbar, eigene Reihenfolge per ▲/▼) - ohne erneutes Hochladen und ohne
     doppelten Speicherbedarf (Hardlinks auf dieselben Dateien), danach ganz normal wie jede andere
-    Geschichte einem Chip zuweisbar. Löschen der Quell-Geschichte lässt die Playlist unangetastet.
+    Geschichte einem Chip zuweisbar. Wird die Quell-Geschichte (oder einzeln einer ihrer Titel)
+    später gelöscht, verschwindet der jeweilige Titel automatisch auch aus jeder Playlist, die ihn
+    enthält - der Rest der Playlist bleibt bestehen.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Design (4 Standard- plus 4 Sonderedition-Themes und ein

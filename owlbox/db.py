@@ -47,6 +47,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
     conn.execute("UPDATE stories SET repeat = 'folder' WHERE repeat = '1'")
     conn.execute("UPDATE stories SET repeat = 'off' WHERE repeat = '0'")
 
+    track_columns = {row["name"] for row in conn.execute("PRAGMA table_info(tracks)")}
+    if "source_track_id" not in track_columns:
+        conn.execute("ALTER TABLE tracks ADD COLUMN source_track_id INTEGER REFERENCES tracks(id) ON DELETE CASCADE")
+
 
 def get_connection() -> sqlite3.Connection:
     if _connection is None:
