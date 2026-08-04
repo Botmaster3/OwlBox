@@ -40,6 +40,12 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE stories ADD COLUMN total_seconds REAL NOT NULL DEFAULT 0")
     if "last_played_at" not in columns:
         conn.execute("ALTER TABLE stories ADD COLUMN last_played_at TEXT")
+    # `repeat` used to be a 0/1 boolean; now a text enum ('off'/'track'/
+    # 'folder' - see schema.sql). SQLite has no real column typing to gate
+    # this on, so it just migrates any leftover legacy value forward -
+    # idempotent, a no-op once every row already holds a new-style value.
+    conn.execute("UPDATE stories SET repeat = 'folder' WHERE repeat = '1'")
+    conn.execute("UPDATE stories SET repeat = 'off' WHERE repeat = '0'")
 
 
 def get_connection() -> sqlite3.Connection:

@@ -41,3 +41,16 @@ def test_stub_player_relative_seek_clamps_at_zero(config):
 
     player.seek(-100, absolute=False)
     assert player.get_status()["time_pos"] == 0.0
+
+
+def test_stub_player_defaults_to_no_repeat(config):
+    player = StubPlayer(config)
+    assert player._repeat_mode == "off"
+
+
+def test_stub_player_records_the_requested_repeat_mode(config):
+    player = StubPlayer(config)
+    player.set_repeat_mode("folder")
+    assert player._repeat_mode == "folder"
+    player.set_repeat_mode("track")
+    assert player._repeat_mode == "track"

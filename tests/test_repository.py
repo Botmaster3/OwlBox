@@ -1,3 +1,5 @@
+import pytest
+
 from owlbox import repository
 
 
@@ -5,6 +7,40 @@ def test_create_and_fetch_story(config):
     story = repository.create_story(title="Die drei ???")
     assert story.id is not None
     assert repository.get_story(story.id).title == "Die drei ???"
+
+
+def test_new_story_defaults_to_no_repeat(config):
+    story = repository.create_story(title="Die drei ???")
+    assert story.repeat == "off"
+
+
+def test_update_story_flags_sets_repeat_mode(config):
+    story = repository.create_story(title="Story")
+    repository.update_story_flags(story.id, repeat="folder")
+    assert repository.get_story(story.id).repeat == "folder"
+
+    repository.update_story_flags(story.id, repeat="track")
+    assert repository.get_story(story.id).repeat == "track"
+
+    repository.update_story_flags(story.id, repeat="off")
+    assert repository.get_story(story.id).repeat == "off"
+
+
+def test_update_story_flags_rejects_invalid_repeat_mode(config):
+    story = repository.create_story(title="Story")
+    with pytest.raises(ValueError):
+        repository.update_story_flags(story.id, repeat="loop-forever")
+    # A rejected call must not partially apply.
+    assert repository.get_story(story.id).repeat == "off"
+
+
+def test_update_story_flags_leaves_repeat_untouched_when_only_shuffle_given(config):
+    story = repository.create_story(title="Story")
+    repository.update_story_flags(story.id, repeat="track")
+    repository.update_story_flags(story.id, shuffle=True)
+    updated = repository.get_story(story.id)
+    assert updated.shuffle is True
+    assert updated.repeat == "track"
 
 
 def test_assign_and_lookup_by_uid(config):

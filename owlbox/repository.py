@@ -6,6 +6,12 @@ from typing import Optional
 
 from .db import get_connection, write_cursor
 
+# 'off' plays through once and stops; 'folder' loops the whole story from
+# the first track once the last one ends; 'track' repeats whichever single
+# track is currently playing instead of advancing. See Engine._apply_repeat
+# and Player.set_repeat_mode for where this actually takes effect.
+REPEAT_MODES = ("off", "track", "folder")
+
 
 @dataclass
 class Track:
@@ -25,7 +31,7 @@ class Story:
     cover_path: Optional[str]
     stream_url: Optional[str]
     shuffle: bool
-    repeat: bool
+    repeat: str
     play_count: int
     total_seconds: float
     last_played_at: Optional[str]
@@ -40,7 +46,7 @@ class Story:
             cover_path=row["cover_path"],
             stream_url=row["stream_url"],
             shuffle=bool(row["shuffle"]),
-            repeat=bool(row["repeat"]),
+            repeat=row["repeat"] if row["repeat"] in REPEAT_MODES else "off",
             play_count=row["play_count"],
             total_seconds=row["total_seconds"],
             last_played_at=row["last_played_at"],
@@ -252,16 +258,18 @@ def set_cover_path(story_id: int, cover_path: str) -> None:
         cur.execute("UPDATE stories SET cover_path = ? WHERE id = ?", (cover_path, story_id))
 
 
-def update_story_flags(story_id: int, shuffle: Optional[bool] = None, repeat: Optional[bool] = None) -> None:
+def update_story_flags(story_id: int, shuffle: Optional[bool] = None, repeat: Optional[str] = None) -> None:
     story = get_story(story_id)
     if story is None:
         return
     shuffle = story.shuffle if shuffle is None else shuffle
     repeat = story.repeat if repeat is None else repeat
+    if repeat not in REPEAT_MODES:
+        raise ValueError(f"invalid repeat mode: {repeat!r}")
     with write_cursor() as cur:
         cur.execute(
             "UPDATE stories SET shuffle = ?, repeat = ? WHERE id = ?",
-            (int(shuffle), int(repeat), story_id),
+            (int(shuffle), repeat, story_id),
         )
 
 

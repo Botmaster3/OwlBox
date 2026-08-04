@@ -1,4 +1,11 @@
 (function () {
+  // "off" plays through once and stops; "folder" loops the whole story from
+  // the first track once the last one ends; "track" repeats whichever
+  // single track is currently playing instead of advancing. Clicking the
+  // repeat button on a story cycles through these three in order.
+  const REPEAT_MODE_ORDER = ["off", "folder", "track"];
+  const REPEAT_MODE_LABELS = { off: "🔁 Aus", folder: "🔁 Ordner", track: "🔂 Track" };
+
   const storyList = document.getElementById("story-list");
   const assignOverlay = document.getElementById("assign-overlay");
   const assignStatus = document.getElementById("assign-status");
@@ -161,7 +168,7 @@
             story.stream_url
               ? ""
               : `<button class="btn secondary" data-action="shuffle">${story.shuffle ? "🔀 an" : "🔀 aus"}</button>
-          <button class="btn secondary" data-action="repeat">${story.repeat ? "🔁 an" : "🔁 aus"}</button>`
+          <button class="btn secondary" data-action="repeat" title="Wiederholung: Aus -> Ordner -> Track">${REPEAT_MODE_LABELS[story.repeat] || REPEAT_MODE_LABELS.off}</button>`
           }
           <button class="btn danger" data-action="delete">Löschen</button>
         </div>
@@ -193,12 +200,18 @@
       const repeatBtn = header.querySelector('[data-action="repeat"]');
       if (repeatBtn) {
         repeatBtn.addEventListener("click", async () => {
-          await api(`/api/stories/${story.id}/flags`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ repeat: !story.repeat }),
-          });
-          loadStories();
+          const currentIndex = REPEAT_MODE_ORDER.indexOf(story.repeat);
+          const nextMode = REPEAT_MODE_ORDER[(Math.max(currentIndex, 0) + 1) % REPEAT_MODE_ORDER.length];
+          try {
+            await api(`/api/stories/${story.id}/flags`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ repeat: nextMode }),
+            });
+            loadStories();
+          } catch (err) {
+            showToast(err.message, true);
+          }
         });
       }
       header.querySelector('[data-action="delete"]').addEventListener("click", async () => {

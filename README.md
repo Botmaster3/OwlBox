@@ -54,7 +54,9 @@ den Pi geladen und einem Chip zugewiesen.
     Lautstärke- und Helligkeits-Regler direkt bedienbar, ohne den echten Taster/Encoder anzufassen.
     Fortschrittsanzeige zeigt links die bereits gespielte und rechts die verbleibende Zeit,
     ein Klick auf die Leiste spult direkt zur angeklickten Stelle im Track.
-  - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle/Repeat, Track-Reihenfolge, löschen;
+  - **Bibliothek** - Geschichten verwalten: Chip zuweisen/entfernen, Shuffle, Wiederholung (Aus/ganzen Ordner in
+    Dauerschleife/nur den aktuellen Track wiederholen - ohne Wiederholung geht die Geschichte nach dem letzten
+    Track einfach aus), Track-Reihenfolge, löschen;
     Hörstatistik (Wiedergaben insgesamt, Gesamt-Hördauer, Meistgehört-Liste, pro Geschichte/Ordner/Livestream
     wie oft und wie lange gehört sowie zuletzt gespielt).
   - **Hinzufügen** - einzelne Dateien, einen ganzen Ordner oder eine Livestream-URL (Internetradio o.ä.)

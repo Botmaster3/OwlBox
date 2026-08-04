@@ -149,6 +149,7 @@ class PlayerBase(Protocol):
     def start(self) -> None: ...
     def stop(self) -> None: ...
     def load_playlist(self, filepaths: list[str], start_index: int = 0, start_seconds: float = 0.0) -> None: ...
+    def set_repeat_mode(self, mode: str) -> None: ...
     def play(self) -> None: ...
     def pause(self) -> None: ...
     def toggle_pause(self) -> None: ...
@@ -209,6 +210,18 @@ class MpvPlayer:
         if start_seconds:
             self._ipc.command("seek", start_seconds, "absolute")
         self._ipc.command("set_property", "pause", False)
+
+    def set_repeat_mode(self, mode: str) -> None:
+        if self._ipc is None:
+            return
+        # mpv handles both loop modes entirely on its own once these are set -
+        # no engine-side end-of-file/advance logic needed for either. Both
+        # properties are always set explicitly (not just the one that
+        # matters for `mode`) so switching straight from one mode to another
+        # - e.g. "track" to "folder" - can't leave the previous mode's
+        # property still active underneath.
+        self._ipc.command("set_property", "loop-file", "inf" if mode == "track" else "no")
+        self._ipc.command("set_property", "loop-playlist", "inf" if mode == "folder" else "no")
 
     def play(self) -> None:
         self._ipc.command("set_property", "pause", False)
@@ -274,6 +287,7 @@ class StubPlayer:
         self._index = 0
         self._paused = True
         self._position = 0.0
+        self._repeat_mode = "off"
 
     def start(self) -> None:
         pass
@@ -286,6 +300,12 @@ class StubPlayer:
         self._index = min(start_index, max(len(filepaths) - 1, 0))
         self._position = start_seconds
         self._paused = False
+
+    def set_repeat_mode(self, mode: str) -> None:
+        # No actual playback loop to drive here (StubPlayer never simulates
+        # time passing on its own) - just recorded so tests/dev mode can
+        # confirm the Engine asked for the right mode.
+        self._repeat_mode = mode
 
     def play(self) -> None:
         self._paused = False

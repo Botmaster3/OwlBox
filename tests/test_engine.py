@@ -302,6 +302,81 @@ def test_removing_tag_then_scanning_a_different_story_switches(config):
         engine.stop()
 
 
+def test_scanning_a_story_applies_its_saved_repeat_mode(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+    repository.update_story_flags(story.id, repeat="track")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine._player._repeat_mode == "track"
+    finally:
+        engine.stop()
+
+
+def test_scanning_a_story_with_no_repeat_set_leaves_playback_unlooped(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine._player._repeat_mode == "off"
+    finally:
+        engine.stop()
+
+
+def test_set_story_repeat_applies_live_to_the_currently_playing_story(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine._player._repeat_mode == "off"
+
+        assert engine.set_story_repeat(story.id, "folder") is True
+        assert engine._player._repeat_mode == "folder"
+        assert repository.get_story(story.id).repeat == "folder"
+    finally:
+        engine.stop()
+
+
+def test_set_story_repeat_does_not_disturb_a_different_playing_story(config):
+    config.rfid.poll_interval = 0.01
+    story_a = _make_story_with_file(config, "AAAA", title="Story A")
+    story_b = _make_story_with_file(config, "BBBB", title="Story B")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AAAA")
+        time.sleep(0.15)
+
+        assert engine.set_story_repeat(story_b.id, "track") is True
+        # Story A is the one actually loaded in the player right now - its
+        # live repeat mode must stay untouched by a change aimed at B.
+        assert engine._player._repeat_mode == "off"
+        assert repository.get_story(story_b.id).repeat == "track"
+        assert repository.get_story(story_a.id).repeat == "off"
+    finally:
+        engine.stop()
+
+
+def test_set_story_repeat_rejects_invalid_mode(config):
+    story = repository.create_story(title="Story")
+    engine = Engine(config)
+    assert engine.set_story_repeat(story.id, "loop-forever") is False
+    assert repository.get_story(story.id).repeat == "off"
+
+
 def test_parent_tag_activates_parent_mode_without_being_treated_as_unknown(config):
     config.rfid.poll_interval = 0.01
     config.rfid.missing_reads_to_remove = 2

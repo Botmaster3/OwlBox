@@ -223,6 +223,7 @@ class Engine:
                 if track_pos >= len(filepaths):
                     track_pos, seek_seconds = 0, 0.0
                 self._player.load_playlist(filepaths, start_index=track_pos, start_seconds=seek_seconds)
+                self._player.set_repeat_mode(story.repeat)
                 self._player.set_volume(self._volume)
                 logger.info("playing '%s' (uid=%s) from track %s @ %.1fs", story.title, uid, track_pos, seek_seconds)
                 return
@@ -444,6 +445,20 @@ class Engine:
         with self._lock:
             self._wake_from_sleep_locked()
         self._player.toggle_pause()
+
+    def set_story_repeat(self, story_id: int, mode: str) -> bool:
+        """Persists the story's repeat mode and, if that story is the one
+        currently loaded, applies it to the live player right away too -
+        otherwise a change made while it's playing would only take effect
+        the next time this chip gets scanned again."""
+        if mode not in repository.REPEAT_MODES:
+            return False
+        repository.update_story_flags(story_id, repeat=mode)
+        with self._lock:
+            if self._current_story is not None and self._current_story.id == story_id:
+                self._current_story.repeat = mode
+                self._player.set_repeat_mode(mode)
+        return True
 
     def manual_set_volume(self, percent: int) -> None:
         with self._lock:

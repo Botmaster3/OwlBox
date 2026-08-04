@@ -7,7 +7,10 @@ CREATE TABLE IF NOT EXISTS stories (
     cover_path TEXT,
     stream_url TEXT,
     shuffle INTEGER NOT NULL DEFAULT 0,
-    repeat INTEGER NOT NULL DEFAULT 0,
+    -- 'off' plays through once and stops; 'folder' loops the whole story
+    -- from the first track once the last one ends; 'track' repeats
+    -- whichever single track is currently playing instead of advancing.
+    repeat TEXT NOT NULL DEFAULT 'off',
     -- Hörstatistik: how often and how long this story/stream has been played.
     play_count INTEGER NOT NULL DEFAULT 0,
     total_seconds REAL NOT NULL DEFAULT 0,
