@@ -6,6 +6,11 @@
   const simulate = document.getElementById("app").dataset.simulate === "true";
 
   let assignPoll = null;
+  // Cross-story track selection for "aus Bibliothek zur Playlist
+  // hinzufügen" (mirrors the picker on Hinzufügen, but starting from
+  // tracks already visible here instead of a separate search). Array, not
+  // a Set, so playlist order matches the order tracks were checked in.
+  let selectedTracks = [];
 
   function showToast(message, isError) {
     let toast = document.getElementById("toast");
@@ -63,6 +68,14 @@
 
   async function loadStories() {
     const stories = await api("/api/stories");
+    // A track can have vanished since the last render (its story or the
+    // track itself got deleted, possibly cascaded away as part of some
+    // other playlist) - drop it from the pending selection too, otherwise
+    // "+ Playlist erstellen" would submit a stale, now-invalid track_id.
+    const liveTrackIds = new Set(stories.flatMap((s) => (s.tracks || []).map((t) => t.id)));
+    const prevCount = selectedTracks.length;
+    selectedTracks = selectedTracks.filter((t) => liveTrackIds.has(t.id));
+    if (selectedTracks.length !== prevCount) updateSelectionBar();
     renderStories(stories);
   }
 
@@ -92,22 +105,96 @@
   }
 
   function trackRow(story, track, index, total) {
+    const label = `${track.title || track.filename}`;
     const li = document.createElement("li");
     li.innerHTML = `
+      <input type="checkbox" class="track-select" title="Für Playlist auswählen">
       <span class="track-order">
         <button data-action="up" ${index === 0 ? "disabled" : ""}>▲</button>
         <button data-action="down" ${index === total - 1 ? "disabled" : ""}>▼</button>
       </span>
-      <span>${index + 1}. ${track.title || track.filename} ${track.duration ? "(" + formatDuration(track.duration) + ")" : ""}</span>
+      <span>${index + 1}. ${label} ${track.duration ? "(" + formatDuration(track.duration) + ")" : ""}</span>
       <button data-action="delete">🗑</button>
     `;
+    const checkbox = li.querySelector(".track-select");
+    checkbox.checked = selectedTracks.some((t) => t.id === track.id);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        if (!selectedTracks.some((t) => t.id === track.id)) {
+          selectedTracks.push({ id: track.id, label: `${label} - ${story.title}` });
+        }
+      } else {
+        selectedTracks = selectedTracks.filter((t) => t.id !== track.id);
+      }
+      updateSelectionBar();
+    });
     li.querySelector('[data-action="up"]').addEventListener("click", () => moveTrack(story, index, -1));
     li.querySelector('[data-action="down"]').addEventListener("click", () => moveTrack(story, index, 1));
     li.querySelector('[data-action="delete"]').addEventListener("click", async () => {
       await api(`/api/stories/${story.id}/tracks/${track.id}`, { method: "DELETE" });
+      selectedTracks = selectedTracks.filter((t) => t.id !== track.id);
+      updateSelectionBar();
       loadStories();
     });
     return li;
+  }
+
+  function updateSelectionBar() {
+    let bar = document.getElementById("playlist-selection-bar");
+    if (selectedTracks.length === 0) {
+      if (bar) bar.hidden = true;
+      document.body.classList.remove("has-playlist-selection");
+      return;
+    }
+    document.body.classList.add("has-playlist-selection");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "playlist-selection-bar";
+      bar.className = "playlist-selection-bar";
+      document.body.appendChild(bar);
+    }
+    bar.hidden = false;
+    bar.innerHTML = `
+      <span class="playlist-selection-count">${selectedTracks.length} Titel ausgewählt</span>
+      <button class="btn secondary small" id="clear-selection-btn" type="button">Auswahl aufheben</button>
+      <button class="btn small" id="create-playlist-btn" type="button">+ Playlist erstellen</button>
+    `;
+    bar.querySelector("#clear-selection-btn").addEventListener("click", () => {
+      selectedTracks = [];
+      updateSelectionBar();
+      renderCurrentSelectionState();
+    });
+    bar.querySelector("#create-playlist-btn").addEventListener("click", createPlaylistFromSelection);
+  }
+
+  // Selection lives outside the DOM the story rows get replaced with on every
+  // loadStories() call, so after the list re-renders the checkboxes need to
+  // be told which of the (freshly created) inputs should already be ticked.
+  function renderCurrentSelectionState() {
+    document.querySelectorAll(".track-list .track-select").forEach((cb) => {
+      // trackRow() already sets .checked from selectedTracks at creation
+      // time; this only runs after a manual "Auswahl aufheben" click,
+      // where the DOM still exists and just needs unticking.
+      cb.checked = false;
+    });
+  }
+
+  async function createPlaylistFromSelection() {
+    const title = (prompt("Name der neuen Playlist:") || "").trim();
+    if (!title) return;
+    try {
+      const body = await api("/api/stories/from-tracks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, track_ids: selectedTracks.map((t) => t.id) }),
+      });
+      showToast(`Playlist "${body.title}" mit ${selectedTracks.length} Titel(n) erstellt.`);
+      selectedTracks = [];
+      updateSelectionBar();
+      loadStories();
+    } catch (err) {
+      showToast(err.message, true);
+    }
   }
 
   async function moveTrack(story, index, delta) {
@@ -239,7 +326,10 @@
         const trackHelp = document.createElement("p");
         trackHelp.className = "field-help";
         trackHelp.textContent =
-          "▲/▼ verschieben einen Track in der Abspielreihenfolge, das Papierkorb-Symbol entfernt ihn aus der Geschichte (die Datei wird dabei ebenfalls gelöscht).";
+          "Checkbox markiert einen Titel für eine neue Playlist (unten erscheint dann eine Leiste " +
+          "zum Erstellen) - auch über mehrere Geschichten hinweg kombinierbar. ▲/▼ verschieben einen " +
+          "Track in der Abspielreihenfolge, das Papierkorb-Symbol entfernt ihn aus der Geschichte " +
+          "(die Datei wird dabei ebenfalls gelöscht, auch aus Playlists, die ihn enthalten).";
         row.appendChild(trackHelp);
       }
       row.appendChild(tracks);

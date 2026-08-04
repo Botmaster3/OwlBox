@@ -239,9 +239,25 @@ ctrl("Wiederholung: „Aus“ / „Ordner“ / „Track“", "Drei-Wege-Auswahl"
      "sofort auf die laufende Wiedergabe aus, falls diese Geschichte gerade aktiv ist.")
 ctrl("„Löschen“", "Button (mit Bestätigungs-Dialog)", "Entfernt die Geschichte inklusive aller zugehörigen "
      "Audiodateien unwiderruflich.")
-ctrl("Track-Liste", "Liste mit ▲/▼-Buttons und einem Löschen-Symbol pro Track",
-     "▲/▼ verschieben einen Track in der Abspielreihenfolge, das Löschen-Symbol entfernt ihn aus der "
-     "Geschichte (die Datei wird dabei ebenfalls gelöscht).")
+ctrl("Track-Liste", "Liste mit Checkbox, ▲/▼-Buttons und einem Löschen-Symbol pro Track",
+     "▲/▼ verschieben einen Track in der Abspielreihenfolge. Das Löschen-Symbol entfernt ihn aus der "
+     "Geschichte und löscht die Datei - auch aus jeder Playlist, die diesen Titel enthält (Kapitel 8). "
+     "Die Checkbox markiert einen Titel für eine neue Playlist, auch über mehrere Geschichten hinweg "
+     "kombinierbar - siehe „Auswahlleiste“ direkt im Anschluss.")
+
+h2("7.3 Playlist direkt aus der Bibliothek erstellen")
+p(
+    "Alternative zum Titel-Picker auf der Hinzufügen-Seite (Kapitel 8): Titel lassen sich auch "
+    "direkt hier per Checkbox auswählen, ohne die Seite zu wechseln oder etwas zu suchen."
+)
+ctrl("Auswahlleiste", "Leiste am unteren Bildschirmrand, erscheint automatisch sobald mindestens "
+     "ein Titel angehakt ist", "Zeigt die Anzahl ausgewählter Titel. „Auswahl aufheben“ hakt alle "
+     "wieder ab, ohne etwas anzulegen. „+ Playlist erstellen“ fragt nach einem Namen und erstellt "
+     "sofort eine neue Geschichte aus genau den ausgewählten Titeln, in der Reihenfolge, in der sie "
+     "angehakt wurden - technisch identisch zur „Playlist aus Bibliothek“ auf der Hinzufügen-Seite "
+     "(Hardlink, kein doppelter Speicherbedarf).",
+     extra="Die Auswahl bleibt beim Navigieren zwischen anderen Aktionen auf dieser Seite erhalten, "
+     "wird aber automatisch bereinigt, falls ein ausgewählter Titel zwischenzeitlich gelöscht wurde.")
 
 # ============================================================ 8. Hinzufügen
 h1("8. Web-Verwaltung: Hinzufügen")

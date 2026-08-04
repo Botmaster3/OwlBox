@@ -63,7 +63,10 @@ den Pi geladen und einem Chip zugewiesen.
     Dauerschleife/nur den aktuellen Track wiederholen - ohne Wiederholung geht die Geschichte nach dem letzten
     Track einfach aus), Track-Reihenfolge, löschen;
     Hörstatistik (Wiedergaben insgesamt, Gesamt-Hördauer, Meistgehört-Liste, pro Geschichte/Ordner/Livestream
-    wie oft und wie lange gehört sowie zuletzt gespielt).
+    wie oft und wie lange gehört sowie zuletzt gespielt). Jeder Titel hat eine Checkbox - eine oder
+    mehrere ausgewählte (auch über mehrere Geschichten hinweg gemischt) lassen sich über eine
+    einblendende Leiste am unteren Rand direkt zu einer neuen Playlist zusammenfassen, ohne den
+    Umweg über Hinzufügen.
   - **Hinzufügen** - einzelne Dateien, einen ganzen Ordner oder eine Livestream-URL (Internetradio o.ä.)
     hochladen/anlegen, Cover/Titel wird aus dem Ordner erkannt. Vierte Option „Playlist aus
     Bibliothek“: eine neue Geschichte aus bereits hochgeladenen Titeln anderer Geschichten
