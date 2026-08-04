@@ -50,7 +50,10 @@ THEMES = {
     },
     "weihnachten": {
         "label": "Weihnachten",
-        "description": "Festliches Tannengrün mit warmem Rot, goldenem Lichterglanz und flackernden Kerzen.",
+        "description": (
+            "Festliches Tannengrün mit warmem Rot, goldenem Lichterglanz und einem Adventskranz, "
+            "dessen Kerzen mit jedem Advent nacheinander angezündet werden."
+        ),
         "swatch": {"bg": "#0d1f14", "panel": "#16291c", "accent": "#e0483f", "text": "#f7f0dc"},
         "bar_radius": "10px",
         "category": "sonderedition",
@@ -132,3 +135,21 @@ def get_seasonal_theme(today: Optional[datetime.date] = None) -> Optional[str]:
         return "ostern"
 
     return None
+
+
+def get_advent_candle_count(today: Optional[datetime.date] = None) -> int:
+    """How many Adventskranz candles should be lit today (0-4) - the nth
+    candle lights on the nth Advent Sunday and stays lit for the rest of
+    Advent (all 4 remain lit through Christmas). The four Advent Sundays are
+    the Sundays on/before Dec 24th, and the three before that, one week
+    apart - computed straight from the calendar rather than a lookup table so
+    it stays correct for any year."""
+    today = today or datetime.date.today()
+    christmas_eve = datetime.date(today.year, 12, 24)
+    days_since_sunday = (christmas_eve.weekday() - 6) % 7  # Mon=0 ... Sun=6
+    fourth_advent = christmas_eve - datetime.timedelta(days=days_since_sunday)
+    for candles_lit in (4, 3, 2, 1):
+        advent_sunday = fourth_advent - datetime.timedelta(weeks=4 - candles_lit)
+        if today >= advent_sunday:
+            return candles_lit
+    return 0

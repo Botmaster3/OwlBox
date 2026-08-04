@@ -69,3 +69,26 @@ def test_get_seasonal_theme_ostern_window():
 
 def test_get_seasonal_theme_returns_none_outside_any_window():
     assert themes.get_seasonal_theme(datetime.date(2025, 7, 15)) is None
+
+
+def test_get_advent_candle_count_2025_reference_sundays():
+    # Known 2025 Advent Sundays: 30.11. (1.), 7.12. (2.), 14.12. (3.), 21.12. (4.)
+    assert themes.get_advent_candle_count(datetime.date(2025, 11, 29)) == 0
+    assert themes.get_advent_candle_count(datetime.date(2025, 11, 30)) == 1
+    assert themes.get_advent_candle_count(datetime.date(2025, 12, 6)) == 1
+    assert themes.get_advent_candle_count(datetime.date(2025, 12, 7)) == 2
+    assert themes.get_advent_candle_count(datetime.date(2025, 12, 13)) == 2
+    assert themes.get_advent_candle_count(datetime.date(2025, 12, 14)) == 3
+    assert themes.get_advent_candle_count(datetime.date(2025, 12, 20)) == 3
+    assert themes.get_advent_candle_count(datetime.date(2025, 12, 21)) == 4
+    assert themes.get_advent_candle_count(datetime.date(2025, 12, 25)) == 4
+    assert themes.get_advent_candle_count(datetime.date(2025, 12, 26)) == 4
+
+
+def test_get_advent_candle_count_2024_reference_sundays():
+    # Known 2024 Advent Sundays: 1.12. (1.), 8.12. (2.), 15.12. (3.), 22.12. (4.)
+    assert themes.get_advent_candle_count(datetime.date(2024, 11, 30)) == 0
+    assert themes.get_advent_candle_count(datetime.date(2024, 12, 1)) == 1
+    assert themes.get_advent_candle_count(datetime.date(2024, 12, 8)) == 2
+    assert themes.get_advent_candle_count(datetime.date(2024, 12, 15)) == 3
+    assert themes.get_advent_candle_count(datetime.date(2024, 12, 22)) == 4

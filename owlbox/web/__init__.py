@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from flask import Flask, send_from_directory
 
+from .. import themes
+
 
 def create_app(engine, config) -> Flask:
     app = Flask(__name__)
@@ -22,7 +24,10 @@ def create_app(engine, config) -> Flask:
         # right design is active on first paint - the kiosk page in particular
         # can stay open for days, so waiting for a JS-driven poll to apply it
         # would mean starting every fresh page load in the wrong theme.
-        return {"theme": engine.get_theme()}
+        # advent_candles is a pure date calculation (see themes.py), unrelated
+        # to engine state - only rendered as CSS on the Weihnachten theme, but
+        # harmless to always include.
+        return {"theme": engine.get_theme(), "advent_candles": themes.get_advent_candle_count()}
 
     @app.route("/media/<int:story_id>/<path:filename>")
     def media(story_id: int, filename: str):

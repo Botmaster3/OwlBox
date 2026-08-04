@@ -1249,3 +1249,13 @@ def test_set_auto_seasonal_theme_enabled_is_persisted(config):
 
     engine2 = Engine(config)
     assert engine2.get_state()["settings"]["auto_seasonal_theme"] is False
+
+
+def test_get_state_exposes_advent_candle_count(config):
+    original = themes.get_advent_candle_count
+    themes.get_advent_candle_count = lambda: 3
+    try:
+        engine = Engine(config)
+        assert engine.get_state()["settings"]["advent_candles"] == 3
+    finally:
+        themes.get_advent_candle_count = original

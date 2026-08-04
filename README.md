@@ -62,7 +62,8 @@ den Pi geladen und einem Chip zugewiesen.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Design (4 Standard- plus 3 Sonderedition-Themes -
-    Weihnachten mit flackernden Kerzen, Ostern mit Ostereiern, Winter mit sanft fallendem Schnee auf
+    Weihnachten mit einem Adventskranz, dessen Kerzen automatisch je nach aktuellem Advent
+    nacheinander angezündet werden, Ostern mit Ostereiern, Winter mit sanft fallendem Schnee auf
     dunklem Grund - für Kiosk-Anzeige und Web-UI, inkl. unterschiedlicher Balken-Optik; die
     Sonderedition kann automatisch nach Datum aktiviert werden (1.-26.12. Weihnachten, 27.12.-Ende
     Februar Winter, 9 Tage vor bis 1 Tag nach Ostern), lässt sich aber komplett abschalten); Lautstärke

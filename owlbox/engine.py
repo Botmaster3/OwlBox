@@ -809,6 +809,7 @@ class Engine:
                 "manual_theme": manual_theme,
                 "auto_seasonal_theme": auto_seasonal_theme,
                 "seasonal_theme_active": seasonal_theme_active,
+                "advent_candles": themes.get_advent_candle_count(),
             },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,

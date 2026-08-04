@@ -141,6 +141,16 @@
     if (settings.theme && document.documentElement.dataset.theme !== settings.theme) {
       document.documentElement.dataset.theme = settings.theme;
     }
+    // Only visible on the Weihnachten theme, but a kiosk left open overnight
+    // into a new Advent Sunday should still see the new candle lit live.
+    const adventCandles = String(settings.advent_candles);
+    if (typeof settings.advent_candles === "number" && document.documentElement.dataset.adventCandles !== adventCandles) {
+      document.documentElement.dataset.adventCandles = adventCandles;
+      // Nudge a reflow so the animated wreath overlay (html::after) is
+      // guaranteed to pick up the new candle count right away rather than
+      // waiting for its next unrelated style change.
+      void document.documentElement.offsetHeight;
+    }
     if (typeof settings.brightness === "number") {
       if (lastBrightness !== null && settings.brightness !== lastBrightness) {
         showBrightnessOsd(settings.brightness, settings.min_brightness, settings.max_brightness);
