@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 REPO_ROOT = Path(__file__).resolve().parents[2]
+ASSETS = Path(__file__).resolve().parent / "assets"
 from functools import partial
 
 from reportlab.lib.units import mm
@@ -16,6 +17,7 @@ from pdf_common import (
     spec_table, note_box, cover_page, draw_header_footer,
     make_toc, TocDocTemplate, style,
     imager_window_mockup, imager_settings_mockup, terminal_mockup, browser_mockup,
+    screenshot,
 )
 
 OUT = str(REPO_ROOT / "owlbox/web/static/docs/OwlBox-Installation.pdf")
@@ -131,6 +133,13 @@ p(
     "Raspberry Pi Imager herunterladen und installieren, SD-Karte in den PC stecken, Imager "
     "öffnen."
 )
+story.append(note_box(
+    "Die Screenshots in diesem Kapitel zeigen den echten Raspberry Pi Imager. Hostname, "
+    "Benutzername, Passwort und WLAN-Daten sind frei gewählte Beispielwerte zur Illustration - "
+    "beim eigenen Durchlauf hier die eigenen Werte eintragen."
+))
+story.append(screenshot(str(ASSETS / "imager-main-window.png"),
+                         "Der Raspberry Pi Imager nach dem Start."))
 step(1, "Gerät wählen", "„CHOOSE DEVICE“ → Raspberry Pi 3.")
 story.append(imager_window_mockup("device"))
 step(2, "Betriebssystem wählen",
@@ -140,7 +149,11 @@ step(2, "Betriebssystem wählen",
      "bringt aber den klassischen X11-Desktop statt Wayland/labwc mit - das SPI-Display braucht "
      "später X11 (siehe Kapitel 6), damit entfällt der sonst nötige manuelle Umstieg weg von "
      "Wayland komplett.")
-story.append(imager_window_mockup("os"))
+story.append(screenshot(str(ASSETS / "imager-os-list.png"),
+                         "„CHOOSE OS“ - die oberste Auswahlebene."))
+story.append(screenshot(str(ASSETS / "imager-os-legacy.png"),
+                         "Nach Klick auf „Raspberry Pi OS (other)“ - hier „Raspberry Pi OS "
+                         "(Legacy)“ auswählen."))
 step(3, "Speicherziel wählen", "„CHOOSE STORAGE“ → die eingelegte SD-Karte auswählen. "
      "Vorsicht: alles darauf wird überschrieben.")
 story.append(imager_window_mockup("storage"))
@@ -157,14 +170,11 @@ bullets([
     "<b>SSH aktivieren</b> (Passwort-Authentifizierung reicht für den Einstieg)",
     "Zeitzone und Tastaturlayout passend setzen",
 ])
-story.append(imager_settings_mockup([
-    ("Hostname", "owlbox"),
-    ("Benutzername", "pi"),
-    ("Passwort", "••••••••••"),
-    ("WLAN-SSID", "MeinWLAN"),
-    ("WLAN-Passwort", "••••••••••"),
-    ("SSH aktivieren", "[x] aktiviert"),
-]))
+story.append(screenshot(str(ASSETS / "imager-settings-general.png"),
+                         "Reiter „GENERAL“ - Hostname, Benutzer/Passwort und WLAN "
+                         "(Beispielwerte)."))
+story.append(screenshot(str(ASSETS / "imager-settings-services.png"),
+                         "Reiter „SERVICES“ - SSH mit Passwort-Authentifizierung aktivieren."))
 step(5, "Schreiben", "„SAVE“, dann „YES“/„WRITE“ bestätigen. Der Vorgang dauert je nach "
      "Kartengröße/-geschwindigkeit einige Minuten (Schreiben + Verifizieren). Danach die SD-Karte "
      "sicher auswerfen.")

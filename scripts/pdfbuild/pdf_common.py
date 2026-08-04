@@ -21,9 +21,10 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    Table, TableStyle, Paragraph, Spacer, KeepTogether, SimpleDocTemplate,
+    Table, TableStyle, Paragraph, Spacer, KeepTogether, SimpleDocTemplate, Image as RLImage,
 )
 from reportlab.platypus.tableofcontents import TableOfContents
+from PIL import Image as PILImage
 
 # -- fonts --------------------------------------------------------------
 _FONT_DIR_CANDIDATES = [
@@ -319,6 +320,32 @@ def browser_mockup(url, heading, field_labels, button_text):
         ("TOPPADDING", (0, 0), (-1, -1), 12), ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
     ]))
     return KeepTogether([bar, outer, Spacer(1, 8)])
+
+
+S_SCREENSHOT_CAPTION = style("ScreenshotCaption", fontSize=8, leading=11, textColor=MUTED,
+                              alignment=TA_CENTER, spaceBefore=3)
+
+
+def screenshot(path, caption=None, max_width=None):
+    """Embed a real screenshot PNG, scaled to fit the page width (or max_width),
+    with a thin border and an optional italic caption underneath."""
+    width = max_width or (PAGE_W - 2 * MARGIN)
+    with PILImage.open(path) as im:
+        iw, ih = im.size
+    scale = min(width / iw, 1.0)
+    w, h = iw * scale, ih * scale
+    img = RLImage(path, width=w, height=h, hAlign="CENTER")
+    framed = Table([[img]], colWidths=[w + 4], hAlign="CENTER")
+    framed.setStyle(TableStyle([
+        ("BOX", (0, 0), (-1, -1), 0.6, RULE),
+        ("LEFTPADDING", (0, 0), (-1, -1), 2), ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+        ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
+    parts = [framed]
+    if caption:
+        parts.append(Paragraph(f"<i>{caption}</i>", S_SCREENSHOT_CAPTION))
+    parts.append(Spacer(1, 8))
+    return KeepTogether(parts)
 
 
 def control_block(name, control_desc, effect_desc, extra=None):

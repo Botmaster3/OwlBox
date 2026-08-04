@@ -2,3 +2,4 @@
 # runtime dependency of the app itself, so kept out of the top-level
 # requirements.txt.
 reportlab>=4.0
+Pillow>=10.0
