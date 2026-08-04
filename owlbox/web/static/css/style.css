@@ -184,20 +184,29 @@ html[data-theme="weihnachten"] body::before {
   80% { opacity: 0.72; }
 }
 
-/* Weihnachten: an Adventskranz near the bottom of the screen - a green ring
-   with 3 berries plus 4 candles, 0-4 of which are "lit" (warm flickering
-   glow) depending on data-advent-candles (see themes.get_advent_candle_count,
-   rendered server-side into <html> and kept live via the /api/state poll).
-   A separate pseudo-element from the string-lights above (html::after vs.
-   body::before) so the two decorations don't collide. Each of the 5 possible
-   counts needs its own full background-image list - CSS can't toggle a
-   single gradient layer's visibility independently of the others in one
-   background-image, only swap the whole stack. */
-html[data-theme="weihnachten"]::after {
+/* Weihnachten: ein Adventskranz - a green ring with 3 berries plus 4
+   candles, 0-4 of which are "lit" (warm flickering glow) depending on
+   data-advent-candles (see themes.get_advent_candle_count, rendered
+   server-side into <html> and kept live via the /api/state poll).
+
+   Lives on .advent-wreath (see the layout rules above), a small fixed-size
+   box sitting in normal document flow directly under the cover art, not a
+   viewport-fixed overlay - previous attempts anchored this to the bottom of
+   the whole screen and had to guess/measure how tall the Player's .info
+   column (title, progress/volume bars, track list, sleep-timer badge) might
+   get so as not to draw on top of it. Under the cover art there's nothing
+   to guess: the cover has a fixed size of its own, so the wreath can never
+   compete for space with .info regardless of how much text it ends up
+   showing. All positions below are relative to this element's own 56px-tall
+   box (0,0 = top-left), not the viewport.
+
+   Each of the 5 possible counts needs its own full background-image list -
+   CSS can't toggle a single gradient layer's visibility independently of
+   the others in one background-image, only swap the whole stack. */
+.advent-wreath::after {
   content: "";
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 40;
   pointer-events: none;
   background-repeat: no-repeat;
   animation: candle-flicker 2.4s ease-in-out infinite;
@@ -208,150 +217,110 @@ html[data-theme="weihnachten"]::after {
    needs its own mask to stay confined to the wreath's footprint. Keeping it
    off of ::after matters: that mask's small vertical radius would otherwise
    also clip the candles/flames sitting on the same element, since those
-   extend much further above the wreath than the texture does. The solid
-   fill oval in each ::after variant below is narrower than this texture, so
-   the texture's spiky edges show past it - a "sprigs poking out from a
-   solid clump" look instead of a flat oval.
-
-   Anchored at 97% (not 94%) and scaled down - see the comment on the
-   ::after rules below for why: this whole decoration used to reach far
-   enough up the screen to sit behind the Player's progress/volume bars. */
-html[data-theme="weihnachten"]::before {
+   extend much further above the wreath than the texture does. */
+.advent-wreath::before {
   content: "";
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 40;
   pointer-events: none;
   background-repeat: no-repeat;
-  background-image: repeating-conic-gradient(from 0deg at 50% 97%, #123419 0deg 4deg, #1c5c34 4deg 9deg, #2f7a4a 9deg 11deg, transparent 11deg 13deg);
-  mask-image: radial-gradient(170px 12px at 50% 97%, black 50%, black 78%, transparent 96%);
-  -webkit-mask-image: radial-gradient(170px 12px at 50% 97%, black 50%, black 78%, transparent 96%);
+  background-image: repeating-conic-gradient(from 0deg at 50% 42px, #123419 0deg 4deg, #1c5c34 4deg 9deg, #2f7a4a 9deg 11deg, transparent 11deg 13deg);
+  mask-image: radial-gradient(58% 9px at 50% 42px, black 50%, black 78%, transparent 96%);
+  -webkit-mask-image: radial-gradient(58% 9px at 50% 42px, black 50%, black 78%, transparent 96%);
 }
-/* Redesigned after a reference photo the user shared (4 same-height red
-   candles standing in a near-flat row on a full, lush pine wreath, not a
-   thin ring outline) - the wreath is now a solid filled oval (two layered
-   green gradients for a bit of depth) instead of a hollow donut shape, gold
-   star accents added among the existing berries, and the candles sit almost
-   in a line (a subtle stagger between the outer and inner pair) instead
-   of the pronounced ellipse-arc curve tried before.
-
-   Shrunk and pulled down to hug the very bottom edge (anchor 96% instead of
-   93%, roughly half the previous size) after the wreath turned out to reach
-   high enough up the screen to sit on top of the Player's progress/volume
-   bars and track list once a story is actually playing - the splash screen
-   (no chip scanned) never showed that content, so the original size looked
-   fine until someone actually played something. This is still not a hard
-   guarantee against every possible .info height (a two-line title plus the
-   upcoming-tracks list plus the sleep-timer badge all at once could in
-   theory still reach this far down), but it keeps the decoration inside
-   what's normally the player's empty bottom margin.
-
-   Each candle stands noticeably taller when unlit/freshly-lit (12px) and
-   burns down by 3px per additional Advent Sunday it's been burning (9/6/3px)
-   - the wick end (bottom) stays anchored at a fixed spot via
-   calc(96% - (ry - stagger)px), so only the top visibly melts down over the
-   weeks instead of the whole candle just shrinking in place. The flame sits
-   just above whatever the current top is, same idea. Candle 1 (leftmost) is
-   always the one lit longest once several are burning, so it's always the
-   shortest among the lit ones - see themes.get_advent_candle_count(). */
-html[data-theme="weihnachten"][data-advent-candles="0"]::after {
+/* Each candle stands noticeably taller when unlit/freshly-lit (ry: 12px) and
+   burns down by 3px per additional Advent Sunday it's been burning
+   (9/6/3px) - the wick end (bottom) stays anchored at a fixed spot (44px
+   from the top of the box, +/-1px outer/inner stagger), so only the top
+   visibly melts down over the weeks instead of the whole candle just
+   shrinking in place. The flame sits just above whatever the current top
+   is, same idea. Candle 1 (leftmost) is always the one lit longest once
+   several are burning, so it's always the shortest among the lit ones -
+   see themes.get_advent_candle_count(). */
+html[data-theme="weihnachten"][data-advent-candles="0"] .advent-wreath::after {
   background-image:
-    radial-gradient(6px 12px at 34% calc(96% - 11px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 45% calc(96% - 13px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 55% calc(96% - 13px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 66% calc(96% - 11px), #c0392b 68%, transparent 71%),
-    radial-gradient(2.5px 2.5px at 37% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 50% 93.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 63% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(3.5px 3.5px at 28% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 50% 99%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 72% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(115px 5px at 50% 94%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(130px 7px at 50% 97%, #1c5c34 75%, transparent 92%);
+    radial-gradient(6px 12px at 34% 33px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 45% 31px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 55% 31px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 66% 33px, #c0392b 68%, transparent 71%),
+    radial-gradient(2.5px 2.5px at 37% 38px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 50% 36px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 63% 38px, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 28% 47px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 49px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 72% 47px, #c0392b, transparent 70%),
+    radial-gradient(42% 5px at 50% 38px, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(48% 7px at 50% 42px, #1c5c34 75%, transparent 92%);
 }
-html[data-theme="weihnachten"][data-advent-candles="1"]::after {
+html[data-theme="weihnachten"][data-advent-candles="1"] .advent-wreath::after {
   background-image:
-    radial-gradient(4px 6px at 34% calc(96% - 29px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 12px at 34% calc(96% - 11px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 45% calc(96% - 13px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 55% calc(96% - 13px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 66% calc(96% - 11px), #c0392b 68%, transparent 71%),
-    radial-gradient(2.5px 2.5px at 37% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 50% 93.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 63% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(3.5px 3.5px at 28% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 50% 99%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 72% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(115px 5px at 50% 94%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(130px 7px at 50% 97%, #1c5c34 75%, transparent 92%);
+    radial-gradient(4px 6px at 34% 15px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 12px at 34% 33px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 45% 31px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 55% 31px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 66% 33px, #c0392b 68%, transparent 71%),
+    radial-gradient(2.5px 2.5px at 37% 38px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 50% 36px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 63% 38px, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 28% 47px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 49px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 72% 47px, #c0392b, transparent 70%),
+    radial-gradient(42% 5px at 50% 38px, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(48% 7px at 50% 42px, #1c5c34 75%, transparent 92%);
 }
-html[data-theme="weihnachten"][data-advent-candles="2"]::after {
+html[data-theme="weihnachten"][data-advent-candles="2"] .advent-wreath::after {
   background-image:
-    radial-gradient(4px 6px at 34% calc(96% - 23px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(4px 6px at 45% calc(96% - 31px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 9px at 34% calc(96% - 8px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 45% calc(96% - 13px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 55% calc(96% - 13px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 66% calc(96% - 11px), #c0392b 68%, transparent 71%),
-    radial-gradient(2.5px 2.5px at 37% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 50% 93.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 63% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(3.5px 3.5px at 28% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 50% 99%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 72% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(115px 5px at 50% 94%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(130px 7px at 50% 97%, #1c5c34 75%, transparent 92%);
+    radial-gradient(4px 6px at 34% 21px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(4px 6px at 45% 13px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 9px at 34% 36px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 45% 31px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 55% 31px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 66% 33px, #c0392b 68%, transparent 71%),
+    radial-gradient(2.5px 2.5px at 37% 38px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 50% 36px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 63% 38px, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 28% 47px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 49px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 72% 47px, #c0392b, transparent 70%),
+    radial-gradient(42% 5px at 50% 38px, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(48% 7px at 50% 42px, #1c5c34 75%, transparent 92%);
 }
-html[data-theme="weihnachten"][data-advent-candles="3"]::after {
+html[data-theme="weihnachten"][data-advent-candles="3"] .advent-wreath::after {
   background-image:
-    radial-gradient(4px 6px at 34% calc(96% - 17px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(4px 6px at 45% calc(96% - 25px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(4px 6px at 55% calc(96% - 31px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 6px at 34% calc(96% - 5px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 9px at 45% calc(96% - 10px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 55% calc(96% - 13px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 66% calc(96% - 11px), #c0392b 68%, transparent 71%),
-    radial-gradient(2.5px 2.5px at 37% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 50% 93.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 63% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(3.5px 3.5px at 28% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 50% 99%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 72% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(115px 5px at 50% 94%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(130px 7px at 50% 97%, #1c5c34 75%, transparent 92%);
+    radial-gradient(4px 6px at 34% 27px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(4px 6px at 45% 19px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(4px 6px at 55% 13px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 6px at 34% 39px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 9px at 45% 34px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 55% 31px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 66% 33px, #c0392b 68%, transparent 71%),
+    radial-gradient(2.5px 2.5px at 37% 38px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 50% 36px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 63% 38px, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 28% 47px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 49px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 72% 47px, #c0392b, transparent 70%),
+    radial-gradient(42% 5px at 50% 38px, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(48% 7px at 50% 42px, #1c5c34 75%, transparent 92%);
 }
-html[data-theme="weihnachten"][data-advent-candles="4"]::after {
+html[data-theme="weihnachten"][data-advent-candles="4"] .advent-wreath::after {
   background-image:
-    radial-gradient(4px 6px at 34% calc(96% - 11px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(4px 6px at 45% calc(96% - 19px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(4px 6px at 55% calc(96% - 25px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(4px 6px at 66% calc(96% - 29px), #ffe066 40%, #ff9d2f 72%, transparent 85%),
-    radial-gradient(6px 3px at 34% calc(96% - 2px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 6px at 45% calc(96% - 7px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 9px at 55% calc(96% - 10px), #c0392b 68%, transparent 71%),
-    radial-gradient(6px 12px at 66% calc(96% - 11px), #c0392b 68%, transparent 71%),
-    radial-gradient(2.5px 2.5px at 37% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 50% 93.5%, #f0c419, transparent 70%),
-    radial-gradient(2.5px 2.5px at 63% 94.5%, #f0c419, transparent 70%),
-    radial-gradient(3.5px 3.5px at 28% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 50% 99%, #c0392b, transparent 70%),
-    radial-gradient(3.5px 3.5px at 72% 97.5%, #c0392b, transparent 70%),
-    radial-gradient(115px 5px at 50% 94%, rgba(70, 150, 90, 0.4), transparent 82%),
-    radial-gradient(130px 7px at 50% 97%, #1c5c34 75%, transparent 92%);
-}
-/* Even scaled down, a fixed size/position can't be guaranteed clear of the
-   Player's .info column on every screen - a 3.5" kiosk display (320px tall)
-   leaves so little room that a chaptered story (Tracks list) plus a running
-   Einschlaf-Timer can still push .info's bottom edge into the wreath's own
-   space. player.js measures the actual rendered .info box against the
-   viewport on every poll and sets data-wreath-clash when they'd collide;
-   removing the pseudo-elements' content is the simplest way to hide them
-   without touching the sizing/positioning rules above. Needs to come after
-   the [data-advent-candles="N"] rules to win - same selector specificity,
-   so source order decides. */
-html[data-theme="weihnachten"][data-wreath-clash]::before,
-html[data-theme="weihnachten"][data-wreath-clash]::after {
-  content: none;
+    radial-gradient(4px 6px at 34% 33px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(4px 6px at 45% 25px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(4px 6px at 55% 19px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(4px 6px at 66% 15px, #ffe066 40%, #ff9d2f 72%, transparent 85%),
+    radial-gradient(6px 3px at 34% 42px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 6px at 45% 37px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 9px at 55% 34px, #c0392b 68%, transparent 71%),
+    radial-gradient(6px 12px at 66% 33px, #c0392b 68%, transparent 71%),
+    radial-gradient(2.5px 2.5px at 37% 38px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 50% 36px, #f0c419, transparent 70%),
+    radial-gradient(2.5px 2.5px at 63% 38px, #f0c419, transparent 70%),
+    radial-gradient(3.5px 3.5px at 28% 47px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 50% 49px, #c0392b, transparent 70%),
+    radial-gradient(3.5px 3.5px at 72% 47px, #c0392b, transparent 70%),
+    radial-gradient(42% 5px at 50% 38px, rgba(70, 150, 90, 0.4), transparent 82%),
+    radial-gradient(48% 7px at 50% 42px, #1c5c34 75%, transparent 92%);
 }
 
 /* Ostern: ein paar pastellfarbene Ostereier unten im Bild, mit einem sehr
@@ -491,8 +460,15 @@ body.kiosk { height: 100vh; overflow: hidden; }
   position: relative;
 }
 
-.cover-wrap {
+.cover-column {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2vh;
+}
+
+.cover-wrap {
   width: min(42vh, 42vw);
   height: min(42vh, 42vw);
   border-radius: 18px;
@@ -502,6 +478,24 @@ body.kiosk { height: 100vh; overflow: hidden; }
   align-items: center;
   justify-content: center;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Weihnachten only (see the rules further down) - an empty box the rest of
+   the time, so it never reserves layout space it isn't using. Sitting right
+   under the cover art in normal document flow, instead of a viewport-fixed
+   overlay, means it can never compete for space with .info's progress bar,
+   volume bar or track list: it only ever shares the row with the cover art,
+   which has a fixed size of its own regardless of how much the story's
+   title or track list end up needing. */
+.advent-wreath {
+  display: none;
+  width: 100%;
+  position: relative;
+  pointer-events: none;
+}
+html[data-theme="weihnachten"] .advent-wreath {
+  display: block;
+  height: 56px;
 }
 
 .cover { width: 100%; height: 100%; object-fit: cover; }
