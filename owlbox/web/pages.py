@@ -92,6 +92,7 @@ def admin_settings_page():
         (themes.CATEGORY_LABELS[category], [(id_, t) for id_, t in themes.THEMES.items() if t["category"] == category])
         for category in ("standard", "sonderedition")
     ]
+    theme_settings = current_app.config["ENGINE"].get_state()["settings"]
 
     return render_template(
         "admin_settings.html",
@@ -100,6 +101,10 @@ def admin_settings_page():
         error=error,
         success=success,
         theme_groups=theme_groups,
+        theme_catalog=themes.THEMES,
+        manual_theme=theme_settings["manual_theme"],
+        auto_seasonal_theme=theme_settings["auto_seasonal_theme"],
+        seasonal_theme_active=theme_settings["seasonal_theme_active"],
     )
 
 

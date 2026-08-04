@@ -103,8 +103,10 @@
   --input-bg: #0a170f;
   --on-accent: #2a0a08;
   --bar-radius: 10px;
-  /* Tannengrün mit ein paar warmen Lichterketten-Punkten oben, statt der
-     Waldnacht-Eulenaugen. */
+  /* Tannengrün mit den gleichen 4 Lichterketten-Punkten, die weiter unten
+     als flackernde Kerzen animiert werden - die Positionen müssen mit dem
+     ::before-Overlay dort übereinstimmen, sonst driften Glühen und Flackern
+     sichtbar auseinander. */
   --bg-image:
     radial-gradient(6px 6px at 15% 10%, rgba(224, 72, 63, 0.6), transparent 70%),
     radial-gradient(6px 6px at 35% 6%, rgba(212, 175, 55, 0.55), transparent 70%),
@@ -133,27 +135,82 @@
 }
 
 :root[data-theme="winter"] {
-  color-scheme: light;
-  --bg: #eef3f8;
-  --panel: #ffffff;
-  --accent: #3f8fd1;
-  --accent-dim: #cfe4f3;
-  --text: #1c2a36;
-  --text-dim: #5c7386;
-  --border: #d3e2ee;
-  --input-bg: #f5f9fc;
-  --on-accent: #ffffff;
+  color-scheme: dark;
+  /* Dunkler als das erste Winter-Design, extra für die Schneeflocken
+     darunter - hellweiße Punkte brauchen einen dunklen Grund, um wirklich
+     aufzufallen, statt auf fast-weiß fast zu verschwinden. */
+  --bg: #0d1822;
+  --panel: #16232f;
+  --accent: #5fb4e8;
+  --accent-dim: #274864;
+  --text: #e8f1f8;
+  --text-dim: #8fa7ba;
+  --border: #24384a;
+  --input-bg: #0a141c;
+  --on-accent: #04141f;
   --bar-radius: 999px;
   --bg-image:
-    radial-gradient(55% 35% at 50% 0%, rgba(63, 143, 209, 0.14), transparent 70%),
-    linear-gradient(180deg, #eef3f8 0%, #dfeaf3 100%);
+    radial-gradient(55% 35% at 50% 0%, rgba(95, 180, 232, 0.16), transparent 70%),
+    linear-gradient(180deg, #060d14 0%, #0d1822 55%, #101f2c 100%);
 }
 
-/* Sanft fallender Schnee, nur im Winter-Theme - zwei versetzte Ebenen (je
-   eigene Punktgröße/-tempo) für einen leichten Tiefeneffekt, rein aus
-   CSS-Gradients statt einzelner DOM-Elemente pro Flocke. Dekorativ und
-   klickdurchlässig (pointer-events: none), bewusst unter Status-/OSD-Overlays
-   (z-index 90-100) einsortiert, damit die nie verdeckt werden. */
+/* Sonderedition-Effekte: dekorative, klickdurchlässige (pointer-events: none)
+   ::before/::after-Overlays statt zusätzlicher DOM-Elemente pro Template -
+   bewusst unter Status-/OSD-Overlays (z-index 90-100) einsortiert, damit die
+   nie verdeckt werden. */
+
+/* Weihnachten: die 4 Lichterketten-Punkte aus --bg-image oben bekommen ein
+   flackerndes Glühen obendrauf, an denselben Positionen - macht aus
+   statischen Punkten Kerzen. */
+html[data-theme="weihnachten"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background-image:
+    radial-gradient(9px 15px at 15% 10%, rgba(255, 191, 92, 0.95), rgba(224, 72, 63, 0.2) 65%, transparent 78%),
+    radial-gradient(9px 15px at 35% 6%, rgba(255, 210, 120, 0.95), rgba(212, 175, 55, 0.2) 65%, transparent 78%),
+    radial-gradient(9px 15px at 55% 12%, rgba(255, 191, 92, 0.95), rgba(224, 72, 63, 0.2) 65%, transparent 78%),
+    radial-gradient(9px 15px at 75% 7%, rgba(255, 210, 120, 0.95), rgba(212, 175, 55, 0.2) 65%, transparent 78%);
+  background-repeat: no-repeat;
+  animation: candle-flicker 2.4s ease-in-out infinite;
+}
+@keyframes candle-flicker {
+  0%, 100% { opacity: 0.85; }
+  22% { opacity: 1; }
+  38% { opacity: 0.68; }
+  61% { opacity: 0.95; }
+  80% { opacity: 0.72; }
+}
+
+/* Ostern: ein paar pastellfarbene Ostereier unten im Bild, mit einem sehr
+   sanften gemeinsamen Wippen statt starr platzierter Formen. */
+html[data-theme="ostern"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background-image:
+    radial-gradient(13px 17px at 8% 93%, #f6d365 92%, transparent 94%),
+    radial-gradient(13px 17px at 22% 89%, #a8e6cf 92%, transparent 94%),
+    radial-gradient(13px 17px at 91% 91%, #c7a2d6 92%, transparent 94%),
+    radial-gradient(13px 17px at 79% 95%, #ef8ba8 92%, transparent 94%);
+  background-repeat: no-repeat;
+  opacity: 0.85;
+  animation: egg-bob 4.5s ease-in-out infinite;
+}
+@keyframes egg-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Winter: sanft fallender Schnee, zwei versetzte Ebenen (je eigene
+   Punktgröße/-tempo) für einen leichten Tiefeneffekt. Auf dem jetzt dunklen
+   Winter-Hintergrund braucht es keinen Kontrast-Halo mehr wie bei der ersten
+   (hellen) Fassung - ein sanftes weißes Glühen genügt und passt besser zum
+   Nachthimmel-Look. */
 html[data-theme="winter"] body::before,
 html[data-theme="winter"] body::after {
   content: "";
@@ -163,10 +220,7 @@ html[data-theme="winter"] body::after {
   pointer-events: none;
   background-repeat: repeat;
   animation: snowfall linear infinite;
-  /* The theme's own background is a very pale icy blue/white, so a flat white
-     dot barely registers - a soft blue-grey halo around each flake gives it
-     just enough contrast to read against that background too. */
-  filter: drop-shadow(0 0 1.5px rgba(28, 42, 54, 0.5));
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
 }
 html[data-theme="winter"] body::before {
   /* Varied x/y per dot (not all at y:0%) so tiling reads as scattered
@@ -689,6 +743,8 @@ a.btn { display: inline-block; text-decoration: none; }
 .theme-swatch-check { opacity: 0; }
 .theme-swatch.active .theme-swatch-check { opacity: 1; }
 .theme-swatch-desc { padding: 0 12px 10px; margin: 0; font-size: 0.78rem; color: var(--text-dim); }
+.theme-swatch-season { padding: 0 12px 10px; margin: 0; font-size: 0.75rem; color: var(--text-dim); opacity: 0.8; }
+.checkbox-inline { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; color: var(--text); cursor: pointer; }
 
 .story-row {
   display: flex;

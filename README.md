@@ -62,8 +62,11 @@ den Pi geladen und einem Chip zugewiesen.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Design (4 Standard- plus 3 Sonderedition-Themes -
-    Weihnachten, Ostern, Winter mit sanft fallendem Schnee - für Kiosk-Anzeige und Web-UI, inkl.
-    unterschiedlicher Balken-Optik); Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
+    Weihnachten mit flackernden Kerzen, Ostern mit Ostereiern, Winter mit sanft fallendem Schnee auf
+    dunklem Grund - für Kiosk-Anzeige und Web-UI, inkl. unterschiedlicher Balken-Optik; die
+    Sonderedition kann automatisch nach Datum aktiviert werden (1.-26.12. Weihnachten, 27.12.-Ende
+    Februar Winter, 9 Tage vor bis 1 Tag nach Ostern), lässt sich aber komplett abschalten); Lautstärke
+    (aktuelle Lautstärke, Maximum, Schrittweite);
     Akustisches Feedback (Töne beim Scannen/Hoch-/Herunterfahren an/aus); Helligkeit (aktuelle Helligkeit, sowie ein
     einstellbarer Minimal-/Maximalwert, der den Schieberegler hier und den Helligkeits-Encoder am
     Gerät begrenzt); Automatischer Ruhemodus (Minuten bis zur schlafenden Eule nach dem Pausieren,

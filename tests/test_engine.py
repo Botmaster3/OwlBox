@@ -1131,30 +1131,121 @@ def test_hotspot_stops_if_wifi_explicitly_disabled(config):
 
 
 def test_theme_defaults_to_waldnacht(config):
-    engine = Engine(config)
-    assert engine.get_theme() == "waldnacht"
-    assert engine.get_state()["settings"]["theme"] == "waldnacht"
+    # Auto-seasonal is on by default (see below) - pin "no season active" so
+    # this test's result doesn't depend on which day it happens to run on.
+    original = themes.get_seasonal_theme
+    themes.get_seasonal_theme = lambda: None
+    try:
+        engine = Engine(config)
+        assert engine.get_theme() == "waldnacht"
+        assert engine.get_state()["settings"]["theme"] == "waldnacht"
+    finally:
+        themes.get_seasonal_theme = original
 
 
 def test_set_theme_is_persisted(config):
-    engine = Engine(config)
-    assert engine.set_theme("mondschein") is True
-    assert engine.get_theme() == "mondschein"
-    assert engine.get_state()["settings"]["theme"] == "mondschein"
-    assert repository.get_setting("theme") == "mondschein"
+    original = themes.get_seasonal_theme
+    themes.get_seasonal_theme = lambda: None
+    try:
+        engine = Engine(config)
+        assert engine.set_theme("mondschein") is True
+        assert engine.get_theme() == "mondschein"
+        assert engine.get_state()["settings"]["theme"] == "mondschein"
+        assert repository.get_setting("theme") == "mondschein"
 
-    # A freshly constructed engine reads the persisted choice back on boot.
-    engine2 = Engine(config)
-    assert engine2.get_theme() == "mondschein"
+        # A freshly constructed engine reads the persisted choice back on boot.
+        engine2 = Engine(config)
+        assert engine2.get_theme() == "mondschein"
+    finally:
+        themes.get_seasonal_theme = original
 
 
 def test_set_theme_rejects_unknown_name(config):
-    engine = Engine(config)
-    assert engine.set_theme("not-a-real-theme") is False
-    assert engine.get_theme() == themes.DEFAULT_THEME
+    original = themes.get_seasonal_theme
+    themes.get_seasonal_theme = lambda: None
+    try:
+        engine = Engine(config)
+        assert engine.set_theme("not-a-real-theme") is False
+        assert engine.get_theme() == themes.DEFAULT_THEME
+    finally:
+        themes.get_seasonal_theme = original
 
 
 def test_set_theme_falls_back_to_default_for_corrupted_setting(config):
     repository.set_setting("theme", "not-a-real-theme")
+    original = themes.get_seasonal_theme
+    themes.get_seasonal_theme = lambda: None
+    try:
+        engine = Engine(config)
+        assert engine.get_theme() == themes.DEFAULT_THEME
+    finally:
+        themes.get_seasonal_theme = original
+
+
+def test_auto_seasonal_theme_is_enabled_by_default(config):
     engine = Engine(config)
-    assert engine.get_theme() == themes.DEFAULT_THEME
+    assert engine.get_state()["settings"]["auto_seasonal_theme"] is True
+
+
+def test_get_theme_prefers_seasonal_theme_when_auto_enabled_and_in_season(config):
+    original = themes.get_seasonal_theme
+    themes.get_seasonal_theme = lambda: "weihnachten"
+    try:
+        engine = Engine(config)
+        assert engine.get_theme() == "weihnachten"
+        assert engine.get_manual_theme() == "waldnacht"
+        state = engine.get_state()["settings"]
+        assert state["theme"] == "weihnachten"
+        assert state["manual_theme"] == "waldnacht"
+        assert state["seasonal_theme_active"] == "weihnachten"
+    finally:
+        themes.get_seasonal_theme = original
+
+
+def test_get_theme_falls_back_to_manual_theme_outside_any_season(config):
+    original = themes.get_seasonal_theme
+    themes.get_seasonal_theme = lambda: None
+    try:
+        engine = Engine(config)
+        assert engine.get_theme() == "waldnacht"
+        assert engine.get_state()["settings"]["seasonal_theme_active"] is None
+    finally:
+        themes.get_seasonal_theme = original
+
+
+def test_get_theme_ignores_season_when_auto_disabled(config):
+    original = themes.get_seasonal_theme
+    themes.get_seasonal_theme = lambda: "winter"
+    try:
+        engine = Engine(config)
+        engine.set_auto_seasonal_theme_enabled(False)
+        assert engine.get_theme() == "waldnacht"
+        assert engine.get_seasonal_theme_active() is None
+    finally:
+        themes.get_seasonal_theme = original
+
+
+def test_set_theme_disables_auto_seasonal(config):
+    original = themes.get_seasonal_theme
+    themes.get_seasonal_theme = lambda: "winter"
+    try:
+        engine = Engine(config)
+        assert engine.get_state()["settings"]["auto_seasonal_theme"] is True
+        engine.set_theme("herbstwald")
+        assert engine.get_state()["settings"]["auto_seasonal_theme"] is False
+        # With auto off, the seasonal override no longer wins even though
+        # themes.get_seasonal_theme() still reports "winter".
+        assert engine.get_theme() == "herbstwald"
+        assert repository.get_int_setting("auto_seasonal_theme", -1) == 0
+    finally:
+        themes.get_seasonal_theme = original
+
+
+def test_set_auto_seasonal_theme_enabled_is_persisted(config):
+    engine = Engine(config)
+    engine.set_auto_seasonal_theme_enabled(False)
+    assert engine.get_state()["settings"]["auto_seasonal_theme"] is False
+    assert repository.get_int_setting("auto_seasonal_theme", -1) == 0
+
+    engine2 = Engine(config)
+    assert engine2.get_state()["settings"]["auto_seasonal_theme"] is False

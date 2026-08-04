@@ -549,6 +549,16 @@ def update_theme():
     return jsonify(_engine().get_state()["settings"])
 
 
+@api_bp.route("/settings/theme/auto", methods=["POST"])
+@admin_required
+def update_theme_auto():
+    data = request.get_json(silent=True) or {}
+    if "enabled" not in data:
+        return jsonify({"error": "enabled is required"}), 400
+    _engine().set_auto_seasonal_theme_enabled(bool(data["enabled"]))
+    return jsonify(_engine().get_state()["settings"])
+
+
 @api_bp.route("/sleep-timer", methods=["POST"])
 @admin_required
 def start_sleep_timer():

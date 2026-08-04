@@ -76,6 +76,7 @@ class Engine:
         )
         stored_theme = repository.get_setting("theme")
         self._theme = stored_theme if themes.is_valid_theme(stored_theme) else themes.DEFAULT_THEME
+        self._auto_seasonal_theme = bool(repository.get_int_setting("auto_seasonal_theme", 1))
         self._missing_reads = 0
         self._tag_present = False
         self._last_stat_time: Optional[float] = None
@@ -490,8 +491,25 @@ class Engine:
             repository.set_setting("chime_volume_percent", self._chime_volume_percent)
 
     def get_theme(self) -> str:
+        """The theme actually in effect right now - a currently-active
+        Sonderedition date window (see themes.get_seasonal_theme) wins over
+        the manually picked one whenever auto-seasonal is on."""
+        with self._lock:
+            if self._auto_seasonal_theme:
+                seasonal = themes.get_seasonal_theme()
+                if seasonal is not None:
+                    return seasonal
+            return self._theme
+
+    def get_manual_theme(self) -> str:
         with self._lock:
             return self._theme
+
+    def get_seasonal_theme_active(self) -> Optional[str]:
+        with self._lock:
+            if not self._auto_seasonal_theme:
+                return None
+        return themes.get_seasonal_theme()
 
     def set_theme(self, name: str) -> bool:
         if not themes.is_valid_theme(name):
@@ -499,7 +517,19 @@ class Engine:
         with self._lock:
             self._theme = name
             repository.set_setting("theme", name)
+            # Picking a theme by hand is a clear "use this one now" signal -
+            # leaving auto-seasonal on would silently override it the next
+            # time a Sonderedition window is active, which would make this
+            # click look like it didn't stick.
+            if self._auto_seasonal_theme:
+                self._auto_seasonal_theme = False
+                repository.set_setting("auto_seasonal_theme", 0)
         return True
+
+    def set_auto_seasonal_theme_enabled(self, enabled: bool) -> None:
+        with self._lock:
+            self._auto_seasonal_theme = bool(enabled)
+            repository.set_setting("auto_seasonal_theme", int(enabled))
 
     def _play_chime(self, name: str) -> None:
         # No simulate-mode gate here on purpose - feedback.play_chime() already
@@ -711,7 +741,10 @@ class Engine:
             volume_step = self._volume_step
             chime_enabled = dict(self._chime_enabled)
             chime_volume_percent = self._chime_volume_percent
-            theme = self._theme
+            manual_theme = self._theme
+            auto_seasonal_theme = self._auto_seasonal_theme
+            seasonal_theme_active = themes.get_seasonal_theme() if auto_seasonal_theme else None
+            theme = seasonal_theme_active or manual_theme
             sleep_timer_end = self._sleep_timer_end
             sleep_timer_minutes = self._sleep_timer_minutes
             auto_sleep_minutes = self._auto_sleep_minutes
@@ -773,6 +806,9 @@ class Engine:
                 "chime_enabled": chime_enabled,
                 "chime_volume_percent": chime_volume_percent,
                 "theme": theme,
+                "manual_theme": manual_theme,
+                "auto_seasonal_theme": auto_seasonal_theme,
+                "seasonal_theme_active": seasonal_theme_active,
             },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,

@@ -45,6 +45,24 @@
   <div class="card">
     <h2>Design</h2>
     <p class="hint">Gilt für die ganze Oberfläche - Kiosk-Anzeige genauso wie diese Einstellungsseite.</p>
+
+    <div class="field">
+      <label class="checkbox-inline">
+        <input type="checkbox" id="theme-auto-seasonal" {{ 'checked' if auto_seasonal_theme else '' }}>
+        Sonderedition automatisch nach Datum aktivieren
+      </label>
+      <p class="hint" id="theme-auto-status">
+        {% if seasonal_theme_active %}
+        🎉 Gerade automatisch aktiv: <strong>{{ theme_catalog[seasonal_theme_active].label }}</strong>
+        - dein gespeicherter Favorit <strong>{{ theme_catalog[manual_theme].label }}</strong> läuft danach weiter.
+        {% else %}
+        Gerade ist keine Sonderedition-Zeit - es gilt dein gespeicherter Favorit
+        <strong>{{ theme_catalog[manual_theme].label }}</strong>.
+        {% endif %}
+        Ein Klick auf ein Design unten wählt es sofort aus und schaltet die Automatik ab.
+      </p>
+    </div>
+
     <div id="theme-picker">
       {% for group_label, group_themes in theme_groups %}
       <label class="theme-group-label">{{ group_label }}</label>
@@ -61,6 +79,9 @@
             <span class="theme-swatch-check">✓</span>
           </div>
           <p class="theme-swatch-desc">{{ t.description }}</p>
+          {% if t.season_label %}
+          <p class="theme-swatch-season">🗓 {{ t.season_label }}</p>
+          {% endif %}
         </button>
         {% endfor %}
       </div>

@@ -94,27 +94,82 @@
   // -- design theme ---------------------------------------------------------
 
   const themePicker = document.getElementById("theme-picker");
+  const themeAutoCheckbox = document.getElementById("theme-auto-seasonal");
+  const themeAutoStatus = document.getElementById("theme-auto-status");
+
+  // Built from the picker's own swatch labels rather than duplicating the
+  // German theme names in JS - one source of truth (the Jinja template).
+  const themeLabels = {};
+  if (themePicker) {
+    themePicker.querySelectorAll("[data-theme-id]").forEach((btn) => {
+      const labelEl = btn.querySelector(".theme-swatch-label span");
+      if (labelEl) themeLabels[btn.dataset.themeId] = labelEl.textContent;
+    });
+  }
+
+  function themeLabel(id) {
+    return themeLabels[id] || id;
+  }
+
+  function applyThemeSettings(settings) {
+    document.documentElement.dataset.theme = settings.theme;
+    if (themePicker) {
+      themePicker.querySelectorAll("[data-theme-id]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.themeId === settings.theme);
+      });
+    }
+    if (themeAutoCheckbox) themeAutoCheckbox.checked = settings.auto_seasonal_theme;
+    if (themeAutoStatus) {
+      const favorite = `<strong>${themeLabel(settings.manual_theme)}</strong>`;
+      const hint = "Ein Klick auf ein Design unten wählt es sofort aus und schaltet die Automatik ab.";
+      themeAutoStatus.innerHTML = settings.seasonal_theme_active
+        ? `🎉 Gerade automatisch aktiv: <strong>${themeLabel(settings.seasonal_theme_active)}</strong> - dein gespeicherter Favorit ${favorite} läuft danach weiter. ${hint}`
+        : `Gerade ist keine Sonderedition-Zeit - es gilt dein gespeicherter Favorit ${favorite}. ${hint}`;
+    }
+  }
+
   if (themePicker) {
     themePicker.querySelectorAll("[data-theme-id]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = btn.dataset.themeId;
         // Apply immediately for instant feedback, persist in the background -
         // a theme choice isn't destructive, so there's nothing to gain from
-        // waiting on the round-trip before showing the new look.
+        // waiting on the round-trip before showing the new look. Picking a
+        // theme by hand always turns auto-seasonal off server-side (see
+        // Engine.set_theme), so reflect that in the checkbox right away too.
         document.documentElement.dataset.theme = id;
         themePicker.querySelectorAll("[data-theme-id]").forEach((other) => {
           other.classList.toggle("active", other === btn);
         });
+        if (themeAutoCheckbox) themeAutoCheckbox.checked = false;
         try {
-          await api("/api/settings/theme", {
+          const settings = await api("/api/settings/theme", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ theme: id }),
           });
+          applyThemeSettings(settings);
         } catch (err) {
           showToast(err.message, true);
         }
       });
+    });
+  }
+
+  if (themeAutoCheckbox) {
+    themeAutoCheckbox.addEventListener("change", async () => {
+      const enabled = themeAutoCheckbox.checked;
+      try {
+        const settings = await api("/api/settings/theme/auto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        });
+        applyThemeSettings(settings);
+      } catch (err) {
+        themeAutoCheckbox.checked = !enabled;
+        showToast(err.message, true);
+      }
     });
   }
 
