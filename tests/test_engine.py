@@ -1131,21 +1131,21 @@ def test_hotspot_stops_if_wifi_explicitly_disabled(config):
 
 
 def test_theme_defaults_to_waldnacht(config):
-    # Auto-seasonal is on by default (see below) - pin "no season active" so
+    # Auto-theme is on by default (see below) - pin "no auto theme active" so
     # this test's result doesn't depend on which day it happens to run on.
-    original = themes.get_seasonal_theme
-    themes.get_seasonal_theme = lambda: None
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: None
     try:
         engine = Engine(config)
         assert engine.get_theme() == "waldnacht"
         assert engine.get_state()["settings"]["theme"] == "waldnacht"
     finally:
-        themes.get_seasonal_theme = original
+        themes.get_auto_theme = original
 
 
 def test_set_theme_is_persisted(config):
-    original = themes.get_seasonal_theme
-    themes.get_seasonal_theme = lambda: None
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: None
     try:
         engine = Engine(config)
         assert engine.set_theme("mondschein") is True
@@ -1157,39 +1157,41 @@ def test_set_theme_is_persisted(config):
         engine2 = Engine(config)
         assert engine2.get_theme() == "mondschein"
     finally:
-        themes.get_seasonal_theme = original
+        themes.get_auto_theme = original
 
 
 def test_set_theme_rejects_unknown_name(config):
-    original = themes.get_seasonal_theme
-    themes.get_seasonal_theme = lambda: None
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: None
     try:
         engine = Engine(config)
         assert engine.set_theme("not-a-real-theme") is False
         assert engine.get_theme() == themes.DEFAULT_THEME
     finally:
-        themes.get_seasonal_theme = original
+        themes.get_auto_theme = original
 
 
 def test_set_theme_falls_back_to_default_for_corrupted_setting(config):
     repository.set_setting("theme", "not-a-real-theme")
-    original = themes.get_seasonal_theme
-    themes.get_seasonal_theme = lambda: None
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: None
     try:
         engine = Engine(config)
         assert engine.get_theme() == themes.DEFAULT_THEME
     finally:
-        themes.get_seasonal_theme = original
+        themes.get_auto_theme = original
 
 
-def test_auto_seasonal_theme_is_enabled_by_default(config):
+def test_auto_theme_enabled_defaults_to_on_for_every_auto_themeable_theme(config):
     engine = Engine(config)
-    assert engine.get_state()["settings"]["auto_seasonal_theme"] is True
+    enabled = engine.get_state()["settings"]["auto_theme_enabled"]
+    assert set(enabled.keys()) == set(themes.auto_themeable_ids())
+    assert all(enabled.values())
 
 
-def test_get_theme_prefers_seasonal_theme_when_auto_enabled_and_in_season(config):
-    original = themes.get_seasonal_theme
-    themes.get_seasonal_theme = lambda: "weihnachten"
+def test_get_theme_prefers_auto_theme_when_in_season(config):
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: "weihnachten"
     try:
         engine = Engine(config)
         assert engine.get_theme() == "weihnachten"
@@ -1199,56 +1201,131 @@ def test_get_theme_prefers_seasonal_theme_when_auto_enabled_and_in_season(config
         assert state["manual_theme"] == "waldnacht"
         assert state["seasonal_theme_active"] == "weihnachten"
     finally:
-        themes.get_seasonal_theme = original
+        themes.get_auto_theme = original
 
 
 def test_get_theme_falls_back_to_manual_theme_outside_any_season(config):
-    original = themes.get_seasonal_theme
-    themes.get_seasonal_theme = lambda: None
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: None
     try:
         engine = Engine(config)
         assert engine.get_theme() == "waldnacht"
         assert engine.get_state()["settings"]["seasonal_theme_active"] is None
     finally:
-        themes.get_seasonal_theme = original
+        themes.get_auto_theme = original
 
 
-def test_get_theme_ignores_season_when_auto_disabled(config):
-    original = themes.get_seasonal_theme
-    themes.get_seasonal_theme = lambda: "winter"
+def test_get_theme_ignores_a_theme_once_its_own_toggle_is_off(config):
+    # A fake that actually consults the enabled-map passed in, so this test
+    # exercises the real wiring (Engine passing its own _auto_theme_enabled
+    # through) rather than just asserting on a canned return value.
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: ("winter" if enabled.get("winter", True) else None)
     try:
         engine = Engine(config)
-        engine.set_auto_seasonal_theme_enabled(False)
+        assert engine.get_theme() == "winter"
+        assert engine.set_auto_theme_enabled("winter", False) is True
         assert engine.get_theme() == "waldnacht"
         assert engine.get_seasonal_theme_active() is None
     finally:
-        themes.get_seasonal_theme = original
+        themes.get_auto_theme = original
 
 
-def test_set_theme_disables_auto_seasonal(config):
-    original = themes.get_seasonal_theme
-    themes.get_seasonal_theme = lambda: "winter"
+def test_set_theme_disables_only_the_currently_active_auto_theme(config):
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: ("winter" if enabled.get("winter", True) else None)
     try:
         engine = Engine(config)
-        assert engine.get_state()["settings"]["auto_seasonal_theme"] is True
+        assert engine.get_state()["settings"]["auto_theme_enabled"]["winter"] is True
         engine.set_theme("herbstwald")
-        assert engine.get_state()["settings"]["auto_seasonal_theme"] is False
-        # With auto off, the seasonal override no longer wins even though
-        # themes.get_seasonal_theme() still reports "winter".
+        state = engine.get_state()["settings"]
+        assert state["auto_theme_enabled"]["winter"] is False
+        # Every other theme's toggle is left alone - unlike the old single
+        # global switch, picking a theme doesn't disable unrelated ones.
+        assert state["auto_theme_enabled"]["weihnachten"] is True
         assert engine.get_theme() == "herbstwald"
-        assert repository.get_int_setting("auto_seasonal_theme", -1) == 0
     finally:
-        themes.get_seasonal_theme = original
+        themes.get_auto_theme = original
 
 
-def test_set_auto_seasonal_theme_enabled_is_persisted(config):
+def test_set_theme_does_not_touch_toggles_when_no_auto_theme_is_active(config):
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: None
+    try:
+        engine = Engine(config)
+        engine.set_theme("herbstwald")
+        state = engine.get_state()["settings"]
+        assert all(state["auto_theme_enabled"].values())
+    finally:
+        themes.get_auto_theme = original
+
+
+def test_set_auto_theme_enabled_is_persisted(config):
     engine = Engine(config)
-    engine.set_auto_seasonal_theme_enabled(False)
-    assert engine.get_state()["settings"]["auto_seasonal_theme"] is False
-    assert repository.get_int_setting("auto_seasonal_theme", -1) == 0
+    assert engine.set_auto_theme_enabled("weihnachten", False) is True
+    assert engine.get_state()["settings"]["auto_theme_enabled"]["weihnachten"] is False
 
     engine2 = Engine(config)
-    assert engine2.get_state()["settings"]["auto_seasonal_theme"] is False
+    assert engine2.get_state()["settings"]["auto_theme_enabled"]["weihnachten"] is False
+
+
+def test_set_auto_theme_enabled_rejects_theme_without_a_calendar_window(config):
+    engine = Engine(config)
+    assert engine.set_auto_theme_enabled("mondschein", False) is False
+    assert engine.set_auto_theme_enabled("not-a-real-theme", False) is False
+
+
+def test_custom_theme_colors_default_to_the_module_defaults(config):
+    engine = Engine(config)
+    assert engine.get_custom_theme_colors() == themes.DEFAULT_CUSTOM_THEME_COLORS
+
+
+def test_set_custom_theme_colors_validates_before_applying_anything(config):
+    engine = Engine(config)
+    assert engine.set_custom_theme_colors({"bg": "#111111", "accent": "not-a-color"}) is False
+    # A rejected call must not partially apply - "bg" should still be unchanged.
+    assert engine.get_custom_theme_colors()["bg"] == themes.DEFAULT_CUSTOM_THEME_COLORS["bg"]
+
+
+def test_set_custom_theme_colors_merges_a_partial_update(config):
+    engine = Engine(config)
+    assert engine.set_custom_theme_colors({"bg": "#111111"}) is True
+    colors = engine.get_custom_theme_colors()
+    assert colors["bg"] == "#111111"
+    assert colors["accent"] == themes.DEFAULT_CUSTOM_THEME_COLORS["accent"]
+    assert engine.get_theme() == themes.CUSTOM_THEME_ID
+
+
+def test_set_custom_theme_colors_rejects_unknown_keys(config):
+    engine = Engine(config)
+    assert engine.set_custom_theme_colors({"not_a_real_var": "#111111"}) is False
+
+
+def test_set_custom_theme_colors_validates_bar_radius_against_the_preset_list(config):
+    engine = Engine(config)
+    assert engine.set_custom_theme_colors({"bar_radius": "13px"}) is False
+    assert engine.set_custom_theme_colors({"bar_radius": "999px"}) is True
+
+
+def test_set_custom_theme_colors_turns_off_the_currently_active_auto_theme(config):
+    original = themes.get_auto_theme
+    themes.get_auto_theme = lambda enabled, today=None: ("winter" if enabled.get("winter", True) else None)
+    try:
+        engine = Engine(config)
+        engine.set_custom_theme_colors({"bg": "#111111"})
+        assert engine.get_state()["settings"]["auto_theme_enabled"]["winter"] is False
+        assert engine.get_theme() == themes.CUSTOM_THEME_ID
+    finally:
+        themes.get_auto_theme = original
+
+
+def test_custom_theme_colors_are_persisted(config):
+    engine = Engine(config)
+    engine.set_custom_theme_colors({"accent": "#abcdef"})
+
+    engine2 = Engine(config)
+    assert engine2.get_custom_theme_colors()["accent"] == "#abcdef"
+    assert engine2.get_theme() == themes.CUSTOM_THEME_ID
 
 
 def test_get_state_exposes_advent_candle_count(config):

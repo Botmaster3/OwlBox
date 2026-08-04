@@ -27,7 +27,24 @@ def create_app(engine, config) -> Flask:
         # advent_candles is a pure date calculation (see themes.py), unrelated
         # to engine state - only rendered as CSS on the Weihnachten theme, but
         # harmless to always include.
-        return {"theme": engine.get_theme(), "advent_candles": themes.get_advent_candle_count()}
+        theme = engine.get_theme()
+        custom_theme_style = ""
+        if theme == themes.CUSTOM_THEME_ID:
+            # The "custom" theme has no static `:root[data-theme="custom"]`
+            # CSS block - its colors are entirely user-supplied, so they're
+            # injected here as inline custom properties instead, which beat
+            # the default :root block on specificity the same way a themed
+            # block normally would. Engine.set_custom_theme_colors() already
+            # validates every value (hex colors / an allow-listed
+            # bar-radius) before it's ever stored, so this is safe to inline
+            # directly rather than needing to re-validate/escape here.
+            colors = engine.get_custom_theme_colors()
+            custom_theme_style = " ".join(f"--{key.replace('_', '-')}: {value};" for key, value in colors.items())
+        return {
+            "theme": theme,
+            "advent_candles": themes.get_advent_candle_count(),
+            "custom_theme_style": custom_theme_style,
+        }
 
     @app.route("/media/<int:story_id>/<path:filename>")
     def media(story_id: int, filename: str):

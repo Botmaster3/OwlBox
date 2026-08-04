@@ -47,20 +47,30 @@
     <p class="hint">Gilt für die ganze Oberfläche - Kiosk-Anzeige genauso wie diese Einstellungsseite.</p>
 
     <div class="field">
-      <label class="checkbox-inline">
-        <input type="checkbox" id="theme-auto-seasonal" {{ 'checked' if auto_seasonal_theme else '' }}>
-        Sonderedition automatisch nach Datum aktivieren
-      </label>
       <p class="hint" id="theme-auto-status">
         {% if seasonal_theme_active %}
         🎉 Gerade automatisch aktiv: <strong>{{ theme_catalog[seasonal_theme_active].label }}</strong>
         - dein gespeicherter Favorit <strong>{{ theme_catalog[manual_theme].label }}</strong> läuft danach weiter.
         {% else %}
-        Gerade ist keine Sonderedition-Zeit - es gilt dein gespeicherter Favorit
+        Gerade ist keine automatische Zeit aktiv - es gilt dein gespeicherter Favorit
         <strong>{{ theme_catalog[manual_theme].label }}</strong>.
         {% endif %}
-        Ein Klick auf ein Design unten wählt es sofort aus und schaltet die Automatik ab.
+        Ein Klick auf ein Design unten wählt es sofort aus.
       </p>
+    </div>
+
+    <div class="field">
+      <label class="theme-group-label">Automatische Auswahl nach Datum</label>
+      <p class="hint">Für jedes Design einzeln abschaltbar - ein deaktiviertes Design wird nie automatisch ausgewählt, bleibt aber weiter oben in der Liste manuell wählbar.</p>
+      <div id="theme-auto-list" class="theme-auto-list">
+        {% for id in auto_themeable_ids %}
+        <label class="checkbox-inline">
+          <input type="checkbox" class="theme-auto-checkbox" data-theme-id="{{ id }}" {{ 'checked' if auto_theme_enabled[id] else '' }}>
+          {{ theme_catalog[id].label }}
+          <span class="hint">({{ theme_catalog[id].season_label }})</span>
+        </label>
+        {% endfor %}
+      </div>
     </div>
 
     <div id="theme-picker">
@@ -87,6 +97,40 @@
       </div>
       {% endfor %}
     </div>
+  </div>
+
+  <div class="card">
+    <h2>Eigenes Design</h2>
+    <p class="hint">Jede Farbe frei wählbar - Speichern aktiviert das eigene Design sofort.</p>
+
+    {% set custom_theme_var_labels = {
+      "bg": "Hintergrund",
+      "panel": "Fläche/Panel",
+      "accent": "Akzentfarbe",
+      "accent_dim": "Akzentfarbe (gedämpft)",
+      "text": "Text",
+      "text_dim": "Text (gedämpft)",
+      "border": "Rahmen",
+      "input_bg": "Eingabefeld-Hintergrund",
+      "on_accent": "Text auf Akzentfläche",
+    } %}
+    <div id="custom-theme-editor" class="custom-theme-editor">
+      {% for var in custom_theme_vars %}
+      <div class="field custom-theme-field">
+        <label for="custom-{{ var }}">{{ custom_theme_var_labels[var] }}</label>
+        <input type="color" id="custom-{{ var }}" data-custom-var="{{ var }}" value="{{ custom_theme_colors[var] }}">
+      </div>
+      {% endfor %}
+      <div class="field custom-theme-field">
+        <label for="custom-bar-radius">Rundung der Balken</label>
+        <select id="custom-bar-radius">
+          {% for preset in bar_radius_presets %}
+          <option value="{{ preset }}" {{ 'selected' if custom_theme_colors.bar_radius == preset else '' }}>{{ preset }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <button class="btn" type="button" id="custom-theme-save-btn">Eigenes Design speichern &amp; aktivieren</button>
   </div>
 
   <h2 class="settings-section-heading" id="section-audio">Audio</h2>

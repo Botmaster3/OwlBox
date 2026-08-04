@@ -154,6 +154,36 @@
     linear-gradient(180deg, #060d14 0%, #0d1822 55%, #101f2c 100%);
 }
 
+:root[data-theme="silvester"] {
+  color-scheme: dark;
+  --bg: #0c0c18;
+  --panel: #17172c;
+  --accent: #f2c14e;
+  --accent-dim: #7a621f;
+  --text: #f5f0e6;
+  --text-dim: #a9a6c0;
+  --border: #262640;
+  --input-bg: #0a0a16;
+  --on-accent: #241a00;
+  --bar-radius: 8px;
+  /* Mitternachtsblauer Himmel - die eigentlichen Feuerwerk-Funken kommen als
+     eigenes, animiertes Overlay weiter unten dazu. */
+  --bg-image:
+    radial-gradient(70% 45% at 50% 0%, rgba(242, 193, 78, 0.1), transparent 70%),
+    linear-gradient(180deg, #05050c 0%, #0c0c18 55%, #131328 100%);
+}
+
+/* "custom" has no fixed color palette to design a matching --bg-image
+   gradient around (it's user-picked at runtime, injected as inline style -
+   see web/__init__.py), so it explicitly resets --bg-image to none rather
+   than silently inheriting the default :root block's warm amber owl-eye
+   glow, which would otherwise clash with whatever colors were actually
+   chosen. The solid --bg color (also inlined) still shows through fine on
+   its own via the `background-color` on html/body below. */
+:root[data-theme="custom"] {
+  --bg-image: none;
+}
+
 /* Sonderedition-Effekte: dekorative, klickdurchlässige (pointer-events: none)
    ::before/::after-Overlays statt zusätzlicher DOM-Elemente pro Template -
    bewusst unter Status-/OSD-Overlays (z-index 90-100) einsortiert, damit die
@@ -450,6 +480,60 @@ html[data-theme="winter"] body::after {
   0% { background-position: 0 0; }
   50% { background-position: 40px 50vh; }
   100% { background-position: 0 100vh; }
+}
+
+/* Silvester: ein paar Feuerwerk-Funken oben am Himmel statt eines Kranzes
+   o.ä. unten - bewusst im gleichen oberen Bereich wie die Weihnachts-
+   Lichterkette (body::before dort), der einzige Bereich, der garantiert nie
+   mit dem vertikal zentrierten Player-Inhalt (Fortschritt, Lautstärke,
+   Track-Liste, Einschlaf-Timer) kollidieren kann, ohne dass es dafür - wie
+   beim Adventskranz/Osterkörbchen - eine eigene Box im Layout bräuchte.
+   Jeder "Burst" ist ein heller Kern plus vier kleine Funken im Kreuz
+   drumherum; zwei Overlays mit leicht unterschiedlicher Dauer/Verzögerung,
+   damit nicht alle Feuerwerke exakt synchron aufblitzen. */
+html[data-theme="silvester"] body::before,
+html[data-theme="silvester"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  animation: firework-pop 3.4s ease-out infinite;
+}
+html[data-theme="silvester"] body::before {
+  background-image:
+    radial-gradient(3px 3px at 18% 12%, #f2c14e, transparent 70%),
+    radial-gradient(1.5px 1.5px at 18% 7%, #f2c14e, transparent 70%),
+    radial-gradient(1.5px 1.5px at 18% 17%, #f2c14e, transparent 70%),
+    radial-gradient(1.5px 1.5px at 13% 12%, #f2c14e, transparent 70%),
+    radial-gradient(1.5px 1.5px at 23% 12%, #f2c14e, transparent 70%),
+    radial-gradient(3px 3px at 58% 22%, #ff8fa3, transparent 70%),
+    radial-gradient(1.5px 1.5px at 58% 17%, #ff8fa3, transparent 70%),
+    radial-gradient(1.5px 1.5px at 58% 27%, #ff8fa3, transparent 70%),
+    radial-gradient(1.5px 1.5px at 53% 22%, #ff8fa3, transparent 70%),
+    radial-gradient(1.5px 1.5px at 63% 22%, #ff8fa3, transparent 70%);
+}
+html[data-theme="silvester"] body::after {
+  animation-duration: 4.1s;
+  animation-delay: 1.6s;
+  background-image:
+    radial-gradient(3px 3px at 82% 9%, #9fc9ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 82% 4%, #9fc9ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 82% 14%, #9fc9ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 77% 9%, #9fc9ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 87% 9%, #9fc9ff, transparent 70%),
+    radial-gradient(3px 3px at 38% 28%, #c9a0ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 38% 23%, #c9a0ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 38% 33%, #c9a0ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 33% 28%, #c9a0ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 43% 28%, #c9a0ff, transparent 70%);
+}
+@keyframes firework-pop {
+  0%, 100% { opacity: 0; transform: scale(0.6); }
+  15% { opacity: 1; transform: scale(1); }
+  35% { opacity: 0.7; transform: scale(1.15); }
+  60% { opacity: 0; transform: scale(1.3); }
 }
 
 * { box-sizing: border-box; }
@@ -971,6 +1055,32 @@ a.btn { display: inline-block; text-decoration: none; }
 .theme-swatch-desc { padding: 0 12px 10px; margin: 0; font-size: 0.78rem; color: var(--text-dim); }
 .theme-swatch-season { padding: 0 12px 10px; margin: 0; font-size: 0.75rem; color: var(--text-dim); opacity: 0.8; }
 .checkbox-inline { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; color: var(--text); cursor: pointer; }
+
+/* One checkbox per auto-themeable design (Einstellungen > Design) - wraps
+   onto multiple lines rather than a grid since each label's length varies a
+   lot (theme name + parenthesized date window). */
+.theme-auto-list { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 6px; }
+.theme-auto-list .checkbox-inline { gap: 6px; }
+
+/* Eigenes Design (Einstellungen > Design) - one color swatch per CSS
+   variable, small enough that a plain auto-fill grid reads fine even for
+   the long German labels. */
+.custom-theme-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px 16px;
+  margin: 10px 0 16px;
+}
+.custom-theme-field { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0; }
+.custom-theme-field input[type="color"] {
+  width: 44px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  cursor: pointer;
+}
 
 .story-row {
   display: flex;

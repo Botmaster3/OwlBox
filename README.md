@@ -61,12 +61,16 @@ den Pi geladen und einem Chip zugewiesen.
     hochladen/anlegen, Cover/Titel wird aus dem Ordner erkannt.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
-  - **Einstellungen** - Zugangsdaten ändern; Design (4 Standard- plus 3 Sonderedition-Themes -
-    Weihnachten mit einem Adventskranz, dessen Kerzen automatisch je nach aktuellem Advent
-    nacheinander angezündet werden, Ostern mit Ostereiern, Winter mit sanft fallendem Schnee auf
-    dunklem Grund - für Kiosk-Anzeige und Web-UI, inkl. unterschiedlicher Balken-Optik; die
-    Sonderedition kann automatisch nach Datum aktiviert werden (1.-26.12. Weihnachten, 27.12.-Ende
-    Februar Winter, 9 Tage vor bis 1 Tag nach Ostern), lässt sich aber komplett abschalten); Lautstärke
+  - **Einstellungen** - Zugangsdaten ändern; Design (4 Standard- plus 4 Sonderedition-Themes und ein
+    frei einstellbares eigenes Design - Weihnachten mit einem Adventskranz, dessen Kerzen automatisch
+    je nach aktuellem Advent nacheinander angezündet werden, Ostern mit einem Osterkörbchen samt Gras
+    und Eiern, Winter mit sanft fallendem Schnee auf dunklem Grund, Silvester mit Feuerwerk am Himmel -
+    für Kiosk-Anzeige und Web-UI, inkl. unterschiedlicher Balken-Optik; drei der Standard-Themes
+    stehen zusätzlich für die kalendarischen Jahreszeiten (Frühling/Sommer/Herbst), sodass zusammen
+    mit den Sonderedition-Fenstern (1.-26.12. Weihnachten, 31.12.-1.1. Silvester, 27.12.-19.3. Winter,
+    9 Tage vor bis 1 Tag nach Ostern) das ganze Jahr automatisch abgedeckt ist - jedes einzelne Theme
+    lässt sich für sich abschalten, statt nur alles auf einmal; das eigene Design erlaubt jede Farbe
+    (Hintergrund, Fläche, Akzent, Text, Rahmen u.a.) frei per Farbwähler einzustellen); Lautstärke
     (aktuelle Lautstärke, Maximum, Schrittweite);
     Akustisches Feedback (Töne beim Scannen/Hoch-/Herunterfahren an/aus); Helligkeit (aktuelle Helligkeit, sowie ein
     einstellbarer Minimal-/Maximalwert, der den Schieberegler hier und den Helligkeits-Encoder am

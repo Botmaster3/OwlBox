@@ -553,9 +553,22 @@ def update_theme():
 @admin_required
 def update_theme_auto():
     data = request.get_json(silent=True) or {}
+    theme_id = data.get("theme")
     if "enabled" not in data:
         return jsonify({"error": "enabled is required"}), 400
-    _engine().set_auto_seasonal_theme_enabled(bool(data["enabled"]))
+    if not theme_id or not _engine().set_auto_theme_enabled(theme_id, bool(data["enabled"])):
+        return jsonify({"error": "unknown auto-themeable theme"}), 400
+    return jsonify(_engine().get_state()["settings"])
+
+
+@api_bp.route("/settings/theme/custom", methods=["POST"])
+@admin_required
+def update_theme_custom():
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict) or not data:
+        return jsonify({"error": "at least one color/bar_radius field is required"}), 400
+    if not _engine().set_custom_theme_colors(data):
+        return jsonify({"error": "invalid custom theme colors"}), 400
     return jsonify(_engine().get_state()["settings"])
 
 

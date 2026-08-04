@@ -3,12 +3,13 @@ placing a known chip resumes its story, taking it off pauses and remembers where
 an unknown chip gets logged so the admin UI can offer to assign it right away."""
 from __future__ import annotations
 
+import json
 import logging
 import subprocess
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 from . import feedback, network, repository, themes
 from .backlight import create_backlight
@@ -76,7 +77,8 @@ class Engine:
         )
         stored_theme = repository.get_setting("theme")
         self._theme = stored_theme if themes.is_valid_theme(stored_theme) else themes.DEFAULT_THEME
-        self._auto_seasonal_theme = bool(repository.get_int_setting("auto_seasonal_theme", 1))
+        self._auto_theme_enabled = self._load_auto_theme_enabled()
+        self._custom_theme_colors = self._load_custom_theme_colors()
         self._missing_reads = 0
         self._tag_present = False
         self._last_stat_time: Optional[float] = None
@@ -491,15 +493,12 @@ class Engine:
             repository.set_setting("chime_volume_percent", self._chime_volume_percent)
 
     def get_theme(self) -> str:
-        """The theme actually in effect right now - a currently-active
-        Sonderedition date window (see themes.get_seasonal_theme) wins over
-        the manually picked one whenever auto-seasonal is on."""
+        """The theme actually in effect right now - whichever auto-eligible
+        theme's calendar window matches today AND still has its own toggle
+        on (see themes.get_auto_theme) wins over the manually picked one."""
         with self._lock:
-            if self._auto_seasonal_theme:
-                seasonal = themes.get_seasonal_theme()
-                if seasonal is not None:
-                    return seasonal
-            return self._theme
+            auto = themes.get_auto_theme(self._auto_theme_enabled)
+            return auto or self._theme
 
     def get_manual_theme(self) -> str:
         with self._lock:
@@ -507,9 +506,15 @@ class Engine:
 
     def get_seasonal_theme_active(self) -> Optional[str]:
         with self._lock:
-            if not self._auto_seasonal_theme:
-                return None
-        return themes.get_seasonal_theme()
+            return themes.get_auto_theme(self._auto_theme_enabled)
+
+    def get_auto_theme_enabled(self) -> Dict[str, bool]:
+        with self._lock:
+            return dict(self._auto_theme_enabled)
+
+    def get_custom_theme_colors(self) -> Dict[str, str]:
+        with self._lock:
+            return dict(self._custom_theme_colors)
 
     def set_theme(self, name: str) -> bool:
         if not themes.is_valid_theme(name):
@@ -518,18 +523,74 @@ class Engine:
             self._theme = name
             repository.set_setting("theme", name)
             # Picking a theme by hand is a clear "use this one now" signal -
-            # leaving auto-seasonal on would silently override it the next
-            # time a Sonderedition window is active, which would make this
-            # click look like it didn't stick.
-            if self._auto_seasonal_theme:
-                self._auto_seasonal_theme = False
-                repository.set_setting("auto_seasonal_theme", 0)
+            # if some *other* theme's auto window is active today and would
+            # otherwise keep overriding this choice, turn just that one
+            # toggle off so the click actually sticks. Every other theme's
+            # toggle is left alone - unlike the old single global switch,
+            # picking a theme in December no longer has to also silently
+            # disable Ostern for next spring.
+            current_auto = themes.get_auto_theme(self._auto_theme_enabled)
+            if current_auto is not None and current_auto != name:
+                self._auto_theme_enabled[current_auto] = False
+                self._save_auto_theme_enabled()
         return True
 
-    def set_auto_seasonal_theme_enabled(self, enabled: bool) -> None:
+    def set_auto_theme_enabled(self, theme_id: str, enabled: bool) -> bool:
+        if theme_id not in themes.auto_themeable_ids():
+            return False
         with self._lock:
-            self._auto_seasonal_theme = bool(enabled)
-            repository.set_setting("auto_seasonal_theme", int(enabled))
+            self._auto_theme_enabled[theme_id] = bool(enabled)
+            self._save_auto_theme_enabled()
+        return True
+
+    def set_custom_theme_colors(self, colors: Dict[str, str]) -> bool:
+        """Validates and merges `colors` into the saved custom-theme palette
+        (a partial update is fine, e.g. changing just one field) and makes
+        "custom" the active theme - same "editing it is a use-it-now signal"
+        reasoning as set_theme(). Every value is validated here rather than
+        trusting the caller: these end up in an inline `style` attribute
+        (see web/__init__.py), so an unvalidated value would be a CSS/HTML
+        injection route, not just a cosmetic bug."""
+        updated = {}
+        for key, value in colors.items():
+            if key == "bar_radius":
+                if not themes.is_valid_bar_radius(value):
+                    return False
+            elif key in themes.CUSTOM_THEME_VARS:
+                if not themes.is_valid_custom_color(value):
+                    return False
+            else:
+                return False
+            updated[key] = value
+        if not updated:
+            return False
+        with self._lock:
+            self._custom_theme_colors.update(updated)
+            repository.set_setting("custom_theme_colors", json.dumps(self._custom_theme_colors))
+            self._theme = themes.CUSTOM_THEME_ID
+            repository.set_setting("theme", themes.CUSTOM_THEME_ID)
+            current_auto = themes.get_auto_theme(self._auto_theme_enabled)
+            if current_auto is not None:
+                self._auto_theme_enabled[current_auto] = False
+                self._save_auto_theme_enabled()
+        return True
+
+    def _save_auto_theme_enabled(self) -> None:
+        repository.set_setting("auto_theme_enabled", json.dumps(self._auto_theme_enabled))
+
+    @staticmethod
+    def _load_auto_theme_enabled() -> Dict[str, bool]:
+        raw = repository.get_setting("auto_theme_enabled")
+        stored = json.loads(raw) if raw else {}
+        return {theme_id: bool(stored.get(theme_id, True)) for theme_id in themes.auto_themeable_ids()}
+
+    @staticmethod
+    def _load_custom_theme_colors() -> Dict[str, str]:
+        raw = repository.get_setting("custom_theme_colors")
+        stored = json.loads(raw) if raw else {}
+        colors = dict(themes.DEFAULT_CUSTOM_THEME_COLORS)
+        colors.update({k: v for k, v in stored.items() if k in colors})
+        return colors
 
     def _play_chime(self, name: str) -> None:
         # No simulate-mode gate here on purpose - feedback.play_chime() already
@@ -742,8 +803,9 @@ class Engine:
             chime_enabled = dict(self._chime_enabled)
             chime_volume_percent = self._chime_volume_percent
             manual_theme = self._theme
-            auto_seasonal_theme = self._auto_seasonal_theme
-            seasonal_theme_active = themes.get_seasonal_theme() if auto_seasonal_theme else None
+            auto_theme_enabled = dict(self._auto_theme_enabled)
+            custom_theme_colors = dict(self._custom_theme_colors)
+            seasonal_theme_active = themes.get_auto_theme(auto_theme_enabled)
             theme = seasonal_theme_active or manual_theme
             sleep_timer_end = self._sleep_timer_end
             sleep_timer_minutes = self._sleep_timer_minutes
@@ -807,8 +869,9 @@ class Engine:
                 "chime_volume_percent": chime_volume_percent,
                 "theme": theme,
                 "manual_theme": manual_theme,
-                "auto_seasonal_theme": auto_seasonal_theme,
+                "auto_theme_enabled": auto_theme_enabled,
                 "seasonal_theme_active": seasonal_theme_active,
+                "custom_theme_colors": custom_theme_colors,
                 "advent_candles": themes.get_advent_candle_count(),
             },
             "sleep_timer": {

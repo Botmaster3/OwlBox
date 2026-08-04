@@ -88,11 +88,24 @@ def admin_settings_page():
             user = repository.get_admin_user()
             success = "Gespeichert."
 
-    theme_groups = [
-        (themes.CATEGORY_LABELS[category], [(id_, t) for id_, t in themes.THEMES.items() if t["category"] == category])
-        for category in ("standard", "sonderedition")
-    ]
     theme_settings = current_app.config["ENGINE"].get_state()["settings"]
+    custom_theme_colors = theme_settings["custom_theme_colors"]
+
+    # The "custom" catalog entry's swatch/bar_radius are just a placeholder
+    # in themes.THEMES (there's no static CSS block to read real colors
+    # from) - overwritten here with whatever's actually saved so the picker
+    # preview and the editor's own inputs never show two different designs.
+    theme_catalog = dict(themes.THEMES)
+    theme_catalog[themes.CUSTOM_THEME_ID] = {
+        **themes.THEMES[themes.CUSTOM_THEME_ID],
+        "swatch": {key: custom_theme_colors[key] for key in ("bg", "panel", "accent", "text")},
+        "bar_radius": custom_theme_colors["bar_radius"],
+    }
+
+    theme_groups = [
+        (themes.CATEGORY_LABELS[category], [(id_, t) for id_, t in theme_catalog.items() if t["category"] == category])
+        for category in ("standard", "sonderedition", "custom")
+    ]
 
     return render_template(
         "admin_settings.html",
@@ -101,10 +114,14 @@ def admin_settings_page():
         error=error,
         success=success,
         theme_groups=theme_groups,
-        theme_catalog=themes.THEMES,
+        theme_catalog=theme_catalog,
         manual_theme=theme_settings["manual_theme"],
-        auto_seasonal_theme=theme_settings["auto_seasonal_theme"],
+        auto_theme_enabled=theme_settings["auto_theme_enabled"],
         seasonal_theme_active=theme_settings["seasonal_theme_active"],
+        auto_themeable_ids=themes.auto_themeable_ids(),
+        custom_theme_colors=custom_theme_colors,
+        custom_theme_vars=themes.CUSTOM_THEME_VARS,
+        bar_radius_presets=themes.BAR_RADIUS_PRESETS,
     )
 
 

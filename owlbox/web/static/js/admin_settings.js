@@ -94,8 +94,12 @@
   // -- design theme ---------------------------------------------------------
 
   const themePicker = document.getElementById("theme-picker");
-  const themeAutoCheckbox = document.getElementById("theme-auto-seasonal");
   const themeAutoStatus = document.getElementById("theme-auto-status");
+  const themeAutoCheckboxes = document.querySelectorAll(".theme-auto-checkbox");
+  const customThemeEditor = document.getElementById("custom-theme-editor");
+  const customThemeInputs = customThemeEditor ? customThemeEditor.querySelectorAll("[data-custom-var]") : [];
+  const customBarRadiusSelect = document.getElementById("custom-bar-radius");
+  const customThemeSaveBtn = document.getElementById("custom-theme-save-btn");
 
   // Built from the picker's own swatch labels rather than duplicating the
   // German theme names in JS - one source of truth (the Jinja template).
@@ -111,20 +115,41 @@
     return themeLabels[id] || id;
   }
 
+  // The "custom" theme's colors live as inline CSS custom properties on
+  // <html> (see base.html/web/__init__.py) instead of a static per-theme
+  // CSS block, since they're user-supplied - applied/cleared here the same
+  // way, so switching to/away from "custom" updates this page live too,
+  // not just the kiosk display.
+  const CUSTOM_THEME_VAR_NAMES = [
+    "bg", "panel", "accent", "accent-dim", "text", "text-dim", "border", "input-bg", "on-accent", "bar-radius",
+  ];
+  function applyCustomThemeVars(theme, colors) {
+    if (theme === "custom" && colors) {
+      for (const [key, value] of Object.entries(colors)) {
+        document.documentElement.style.setProperty(`--${key.replace(/_/g, "-")}`, value);
+      }
+    } else {
+      CUSTOM_THEME_VAR_NAMES.forEach((name) => document.documentElement.style.removeProperty(`--${name}`));
+    }
+  }
+
   function applyThemeSettings(settings) {
     document.documentElement.dataset.theme = settings.theme;
+    applyCustomThemeVars(settings.theme, settings.custom_theme_colors);
     if (themePicker) {
       themePicker.querySelectorAll("[data-theme-id]").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.themeId === settings.theme);
       });
     }
-    if (themeAutoCheckbox) themeAutoCheckbox.checked = settings.auto_seasonal_theme;
+    themeAutoCheckboxes.forEach((checkbox) => {
+      checkbox.checked = !!settings.auto_theme_enabled[checkbox.dataset.themeId];
+    });
     if (themeAutoStatus) {
       const favorite = `<strong>${themeLabel(settings.manual_theme)}</strong>`;
-      const hint = "Ein Klick auf ein Design unten wählt es sofort aus und schaltet die Automatik ab.";
+      const hint = "Ein Klick auf ein Design unten wählt es sofort aus.";
       themeAutoStatus.innerHTML = settings.seasonal_theme_active
         ? `🎉 Gerade automatisch aktiv: <strong>${themeLabel(settings.seasonal_theme_active)}</strong> - dein gespeicherter Favorit ${favorite} läuft danach weiter. ${hint}`
-        : `Gerade ist keine Sonderedition-Zeit - es gilt dein gespeicherter Favorit ${favorite}. ${hint}`;
+        : `Gerade ist keine automatische Zeit aktiv - es gilt dein gespeicherter Favorit ${favorite}. ${hint}`;
     }
   }
 
@@ -134,14 +159,11 @@
         const id = btn.dataset.themeId;
         // Apply immediately for instant feedback, persist in the background -
         // a theme choice isn't destructive, so there's nothing to gain from
-        // waiting on the round-trip before showing the new look. Picking a
-        // theme by hand always turns auto-seasonal off server-side (see
-        // Engine.set_theme), so reflect that in the checkbox right away too.
+        // waiting on the round-trip before showing the new look.
         document.documentElement.dataset.theme = id;
         themePicker.querySelectorAll("[data-theme-id]").forEach((other) => {
           other.classList.toggle("active", other === btn);
         });
-        if (themeAutoCheckbox) themeAutoCheckbox.checked = false;
         try {
           const settings = await api("/api/settings/theme", {
             method: "POST",
@@ -156,18 +178,39 @@
     });
   }
 
-  if (themeAutoCheckbox) {
-    themeAutoCheckbox.addEventListener("change", async () => {
-      const enabled = themeAutoCheckbox.checked;
+  themeAutoCheckboxes.forEach((checkbox) => {
+    checkbox.addEventListener("change", async () => {
+      const enabled = checkbox.checked;
       try {
         const settings = await api("/api/settings/theme/auto", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enabled }),
+          body: JSON.stringify({ theme: checkbox.dataset.themeId, enabled }),
         });
         applyThemeSettings(settings);
       } catch (err) {
-        themeAutoCheckbox.checked = !enabled;
+        checkbox.checked = !enabled;
+        showToast(err.message, true);
+      }
+    });
+  });
+
+  if (customThemeSaveBtn) {
+    customThemeSaveBtn.addEventListener("click", async () => {
+      try {
+        const colors = {};
+        customThemeInputs.forEach((input) => {
+          colors[input.dataset.customVar] = input.value;
+        });
+        if (customBarRadiusSelect) colors.bar_radius = customBarRadiusSelect.value;
+        const settings = await api("/api/settings/theme/custom", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(colors),
+        });
+        applyThemeSettings(settings);
+        showToast("Eigenes Design gespeichert und aktiviert.");
+      } catch (err) {
         showToast(err.message, true);
       }
     });

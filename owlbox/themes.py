@@ -3,21 +3,29 @@ via CSS custom properties (see static/css/style.css, `:root[data-theme=...]`
 blocks), so this module only needs to know the theme's id/label/description
 plus a few swatch colors for rendering the picker in Einstellungen. The
 actual color/gradient/bar-radius/effect values live in the CSS, not here, so
-the two have to be kept in sync by hand when adding a theme.
+the two have to be kept in sync by hand when adding a theme - the one
+exception is "custom" (see CUSTOM_THEME_ID below), whose colors are entirely
+user-supplied at runtime rather than baked into the stylesheet.
 
-`category` only groups themes in the picker UI ("standard" vs
-"sonderedition") - it has no effect on validation, persistence, or how a
-theme is applied, so a new seasonal design is just another dict entry here.
+`category` only groups themes in the picker UI ("standard", "sonderedition",
+"custom") - it has no effect on validation, persistence, or how a theme is
+applied, so a new seasonal design is just another dict entry here.
 
-The `sonderedition` themes can additionally be auto-selected by date (see
-`get_seasonal_theme` below) - that's an Engine-level opt-in
-(`auto_seasonal_theme` setting), not something this module enforces.
+Several themes can additionally be auto-selected by date - not just the
+Sonderedition ones anymore, but also three of the "standard" themes acting
+as stand-ins for the calendar seasons (Herbstwald=Herbst, Tageslicht=Sommer,
+Waldnacht=Frühling; Winter reuses the snowy Sonderedition theme rather than
+needing a fourth). See `get_seasonal_theme`/`get_auto_theme` below - auto-
+selection is an Engine-level opt-in, individually toggleable per theme
+(`auto_theme_enabled` setting), not something this module enforces.
 """
 from __future__ import annotations
 
-import calendar
 import datetime
-from typing import Optional
+import re
+from typing import Dict, Optional
+
+CUSTOM_THEME_ID = "custom"
 
 THEMES = {
     "waldnacht": {
@@ -26,6 +34,7 @@ THEMES = {
         "swatch": {"bg": "#12141c", "panel": "#1c2030", "accent": "#f2a93c", "text": "#f5f2ea"},
         "bar_radius": "4px",
         "category": "standard",
+        "season_label": "20. März bis 20. Juni",
     },
     "mondschein": {
         "label": "Mondschein",
@@ -40,6 +49,7 @@ THEMES = {
         "swatch": {"bg": "#1a1410", "panel": "#241b14", "accent": "#e2703a", "text": "#f7ece0"},
         "bar_radius": "6px",
         "category": "standard",
+        "season_label": "23. September bis 20. Dezember",
     },
     "tageslicht": {
         "label": "Tageslicht",
@@ -47,6 +57,7 @@ THEMES = {
         "swatch": {"bg": "#eef1f6", "panel": "#ffffff", "accent": "#2f8f5b", "text": "#1c2230"},
         "bar_radius": "999px",
         "category": "standard",
+        "season_label": "21. Juni bis 22. September",
     },
     "weihnachten": {
         "label": "Weihnachten",
@@ -76,7 +87,26 @@ THEMES = {
         "bar_radius": "999px",
         "category": "sonderedition",
         "effect": "snow",
-        "season_label": "27. Dezember bis Ende Februar",
+        "season_label": "27. Dezember bis 19. März",
+    },
+    "silvester": {
+        "label": "Silvester",
+        "description": "Mitternachtsblaue Feierlaune mit Gold-Akzent und Feuerwerk am Himmel.",
+        "swatch": {"bg": "#0c0c18", "panel": "#17172c", "accent": "#f2c14e", "text": "#f5f0e6"},
+        "bar_radius": "8px",
+        "category": "sonderedition",
+        "effect": "fireworks",
+        "season_label": "31. Dezember bis 1. Januar",
+    },
+    CUSTOM_THEME_ID: {
+        "label": "Eigenes Design",
+        "description": "Deine eigene Farbkombination - unter Einstellungen > Design anpassbar.",
+        # Placeholder - overwritten with the actually-saved colors wherever
+        # the picker is rendered (see pages.py), so this only matters before
+        # any custom colors have ever been saved.
+        "swatch": {"bg": "#12141c", "panel": "#1c2030", "accent": "#f2a93c", "text": "#f5f2ea"},
+        "bar_radius": "8px",
+        "category": "custom",
     },
 }
 
@@ -85,11 +115,53 @@ DEFAULT_THEME = "waldnacht"
 CATEGORY_LABELS = {
     "standard": "Standard",
     "sonderedition": "Sonderedition",
+    "custom": "Eigenes Design",
+}
+
+# The full set of CSS custom properties a theme can define, in the order the
+# custom-color editor presents them. "bar_radius" is deliberately not a free
+# text field in the UI (or validated as arbitrary CSS in the API) - a raw
+# string would let anyone inject extra CSS declarations via the inline style
+# attribute it ends up in, so it's constrained to BAR_RADIUS_PRESETS instead.
+CUSTOM_THEME_VARS = (
+    "bg",
+    "panel",
+    "accent",
+    "accent_dim",
+    "text",
+    "text_dim",
+    "border",
+    "input_bg",
+    "on_accent",
+)
+BAR_RADIUS_PRESETS = ("0px", "4px", "6px", "8px", "10px", "999px")
+DEFAULT_CUSTOM_THEME_COLORS: Dict[str, str] = {
+    "bg": "#12141c",
+    "panel": "#1c2030",
+    "accent": "#f2a93c",
+    "accent_dim": "#7a5a26",
+    "text": "#f5f2ea",
+    "text_dim": "#9a9db0",
+    "border": "#2a2f42",
+    "input_bg": "#10131c",
+    "on_accent": "#201400",
+    "bar_radius": "4px",
 }
 
 
 def is_valid_theme(name: str) -> bool:
     return name in THEMES
+
+
+_HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def is_valid_custom_color(value: str) -> bool:
+    return isinstance(value, str) and bool(_HEX_COLOR_RE.match(value))
+
+
+def is_valid_bar_radius(value: str) -> bool:
+    return value in BAR_RADIUS_PRESETS
 
 
 def _easter_sunday(year: int) -> datetime.date:
@@ -111,29 +183,95 @@ def _easter_sunday(year: int) -> datetime.date:
     return datetime.date(year, month, day)
 
 
-def get_seasonal_theme(today: Optional[datetime.date] = None) -> Optional[str]:
-    """The Sonderedition theme that matches today's date, or None outside any
-    of their windows. Weihnachten and Winter are checked before Ostern since
-    they're plain calendar ranges (cheap, no year ambiguity); Ostern needs
-    that year's computed Easter Sunday."""
-    today = today or datetime.date.today()
+def _in_weihnachten_window(today: datetime.date) -> bool:
     year = today.year
+    return datetime.date(year, 12, 1) <= today <= datetime.date(year, 12, 26)
 
-    if datetime.date(year, 12, 1) <= today <= datetime.date(year, 12, 26):
-        return "weihnachten"
 
-    # Winter spans the year boundary (27.12. of this year through the end of
-    # February next year) - checked as two halves of the same window.
-    if today >= datetime.date(year, 12, 27):
-        return "winter"
-    last_day_of_feb = 29 if calendar.isleap(year) else 28
-    if today <= datetime.date(year, 2, last_day_of_feb):
-        return "winter"
+def _in_silvester_window(today: datetime.date) -> bool:
+    # Spans the year boundary (31.12. through 1.1.) - checked as two halves
+    # of the same window, same trick as the Winter window below: whichever
+    # side `today` falls on, `today.year` is already the right year to
+    # construct that side's date from.
+    year = today.year
+    return today >= datetime.date(year, 12, 31) or today <= datetime.date(year, 1, 1)
 
-    easter = _easter_sunday(year)
-    if easter - datetime.timedelta(days=9) <= today <= easter + datetime.timedelta(days=1):
-        return "ostern"
 
+def _in_winter_window(today: datetime.date) -> bool:
+    # 27.12. of this year through 19.3. (the day before kalendarischer
+    # Frühlingsanfang) of the next - also spans the year boundary.
+    year = today.year
+    return today >= datetime.date(year, 12, 27) or today <= datetime.date(year, 3, 19)
+
+
+def _in_ostern_window(today: datetime.date) -> bool:
+    easter = _easter_sunday(today.year)
+    return easter - datetime.timedelta(days=9) <= today <= easter + datetime.timedelta(days=1)
+
+
+def _in_herbst_window(today: datetime.date) -> bool:
+    year = today.year
+    return datetime.date(year, 9, 23) <= today <= datetime.date(year, 12, 20)
+
+
+def _in_sommer_window(today: datetime.date) -> bool:
+    year = today.year
+    return datetime.date(year, 6, 21) <= today <= datetime.date(year, 9, 22)
+
+
+def _in_fruehling_window(today: datetime.date) -> bool:
+    year = today.year
+    return datetime.date(year, 3, 20) <= today <= datetime.date(year, 6, 20)
+
+
+# Ordered most to least specific - the first matching window wins. Silvester
+# and Ostern both need to be checked before Winter since their windows sit
+# inside its much wider one (Silvester always; Ostern only in an
+# early-Easter year, where the -9-days window can reach back to 13. März).
+# Herbst/Sommer/Frühling stand in for the calendar seasons using three of
+# the plain "standard" themes rather than dedicated ones - Winter already
+# has a proper Sonderedition (the snowy one) doing that job, and Weihnachten
+# still wins over it for 1.-26. Dezember regardless of Herbst's nominal
+# window nominally reaching to the 20., same as it always has.
+_AUTO_THEME_PRIORITY = (
+    ("weihnachten", _in_weihnachten_window),
+    ("silvester", _in_silvester_window),
+    ("ostern", _in_ostern_window),
+    ("winter", _in_winter_window),
+    ("herbstwald", _in_herbst_window),
+    ("tageslicht", _in_sommer_window),
+    ("waldnacht", _in_fruehling_window),
+)
+
+
+def auto_themeable_ids() -> tuple:
+    """Every theme id that has a calendar window at all - what the per-theme
+    auto-toggle in Einstellungen needs to list. Mondschein and the custom
+    theme aren't tied to any date, so they're not included."""
+    return tuple(theme_id for theme_id, _ in _AUTO_THEME_PRIORITY)
+
+
+def get_seasonal_theme(today: Optional[datetime.date] = None) -> Optional[str]:
+    """The highest-priority theme whose calendar window matches today,
+    ignoring per-theme enable/disable state entirely - see `get_auto_theme`
+    for the version the Engine actually uses, which respects it."""
+    today = today or datetime.date.today()
+    for theme_id, predicate in _AUTO_THEME_PRIORITY:
+        if predicate(today):
+            return theme_id
+    return None
+
+
+def get_auto_theme(enabled: Dict[str, bool], today: Optional[datetime.date] = None) -> Optional[str]:
+    """Like `get_seasonal_theme`, but skips any theme whose auto-toggle is
+    off, falling through to the next-lower-priority match instead of giving
+    up entirely - turning off Weihnachten in December should reveal Winter
+    underneath it, not silently do nothing. A theme absent from `enabled`
+    (e.g. one added after the setting was last saved) defaults to on."""
+    today = today or datetime.date.today()
+    for theme_id, predicate in _AUTO_THEME_PRIORITY:
+        if predicate(today) and enabled.get(theme_id, True):
+            return theme_id
     return None
 
 

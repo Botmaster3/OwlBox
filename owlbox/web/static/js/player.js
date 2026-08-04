@@ -130,6 +130,26 @@
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
+  // The "custom" theme's colors live as inline CSS custom properties on
+  // <html> (see base.html/web/__init__.py) instead of a static per-theme
+  // CSS block, since they're user-supplied. Re-applied on every poll rather
+  // than only on a theme change - the colors themselves can change while
+  // "custom" stays the active theme (editing Eigenes Design again) - cheap
+  // enough (ten property writes) that there's no need to track and compare
+  // the previous values just to skip redundant ones.
+  const CUSTOM_THEME_VAR_NAMES = [
+    "bg", "panel", "accent", "accent-dim", "text", "text-dim", "border", "input-bg", "on-accent", "bar-radius",
+  ];
+  function applyCustomThemeVars(theme, colors) {
+    if (theme === "custom" && colors) {
+      for (const [key, value] of Object.entries(colors)) {
+        document.documentElement.style.setProperty(`--${key.replace(/_/g, "-")}`, value);
+      }
+    } else {
+      CUSTOM_THEME_VAR_NAMES.forEach((name) => document.documentElement.style.removeProperty(`--${name}`));
+    }
+  }
+
   function applyState(state) {
     // Shown regardless of splash/parent-mode/tag state, like a phone's own
     // status bar - the brightness OSD change-detection needs it up here too.
@@ -140,6 +160,9 @@
     // rather than only on the next full page reload.
     if (settings.theme && document.documentElement.dataset.theme !== settings.theme) {
       document.documentElement.dataset.theme = settings.theme;
+    }
+    if (settings.theme) {
+      applyCustomThemeVars(settings.theme, settings.custom_theme_colors);
     }
     // Only visible on the Weihnachten theme, but a kiosk left open overnight
     // into a new Advent Sunday should still see the new candle lit live.
