@@ -67,8 +67,12 @@ class Engine:
         self._max_volume = repository.get_int_setting("max_volume", 100)
         self._volume_step = repository.get_int_setting("volume_step", config.audio.volume_step)
         self._volume = min(config.audio.default_volume, self._max_volume)
-        self._chime_enabled = bool(
-            repository.get_int_setting("chime_enabled", 1 if config.audio.chime_enabled else 0)
+        self._chime_enabled = {
+            name: bool(repository.get_int_setting(f"chime_enabled_{name}", 1 if config.audio.chime_enabled else 0))
+            for name in feedback.CHIMES
+        }
+        self._chime_volume_percent = repository.get_int_setting(
+            "chime_volume_percent", round(config.audio.chime_volume_ratio * 100)
         )
         self._missing_reads = 0
         self._tag_present = False
@@ -471,19 +475,26 @@ class Engine:
             self._volume_step = max(1, min(50, percent))
             repository.set_setting("volume_step", self._volume_step)
 
-    def set_chime_enabled(self, enabled: bool) -> None:
+    def set_chime_type_enabled(self, name: str, enabled: bool) -> None:
+        if name not in feedback.CHIMES:
+            return
         with self._lock:
-            self._chime_enabled = bool(enabled)
-            repository.set_setting("chime_enabled", int(self._chime_enabled))
+            self._chime_enabled[name] = bool(enabled)
+            repository.set_setting(f"chime_enabled_{name}", int(enabled))
+
+    def set_chime_volume_percent(self, percent: int) -> None:
+        with self._lock:
+            self._chime_volume_percent = max(0, min(100, percent))
+            repository.set_setting("chime_volume_percent", self._chime_volume_percent)
 
     def _play_chime(self, name: str) -> None:
         # No simulate-mode gate here on purpose - feedback.play_chime() already
         # degrades gracefully (no-op) if aplay/the audio device isn't available,
         # the same pattern as network.py/backlight.py elsewhere in this module.
-        if not self._chime_enabled:
+        if not self._chime_enabled.get(name, False):
             return
         with self._lock:
-            chime_volume = round(self._max_volume * self._config.audio.chime_volume_ratio)
+            chime_volume = round(self._max_volume * self._chime_volume_percent / 100)
             restore_to = self._volume
             # Chimes share the hardware mixer with the story (see feedback.py) -
             # drop it to a fixed, quiet level just for the chime, then restore
@@ -673,7 +684,8 @@ class Engine:
             last_unknown = self._last_unknown_uid
             max_volume = self._max_volume
             volume_step = self._volume_step
-            chime_enabled = self._chime_enabled
+            chime_enabled = dict(self._chime_enabled)
+            chime_volume_percent = self._chime_volume_percent
             sleep_timer_end = self._sleep_timer_end
             sleep_timer_minutes = self._sleep_timer_minutes
             auto_sleep_minutes = self._auto_sleep_minutes
@@ -733,6 +745,7 @@ class Engine:
                 "brightness_step": brightness_step,
                 "auto_sleep_minutes": auto_sleep_minutes,
                 "chime_enabled": chime_enabled,
+                "chime_volume_percent": chime_volume_percent,
             },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,

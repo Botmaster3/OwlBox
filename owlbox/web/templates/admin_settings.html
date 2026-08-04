@@ -61,18 +61,26 @@
   <div class="card">
     <h2>Akustisches Feedback</h2>
     <div class="field">
-      <label>
-        <input type="checkbox" id="chime-enabled" checked>
-        Kurze Töne beim Scannen (Chip erkannt / unbekannt / Funktions-Chip) sowie beim Hochfahren und
-        Herunterfahren/Neustart
-      </label>
+      <label for="chime-volume-percent">Lautstärke der Hinweistöne (% der maximalen Lautstärke)</label>
+      <input type="number" id="chime-volume-percent" min="0" max="100" value="15">
     </div>
+    <div class="field">
+      <label>Welche Töne sollen abgespielt werden?</label>
+      <div class="checkbox-list">
+        <label><input type="checkbox" id="chime-type-known" checked> Chip erkannt</label>
+        <label><input type="checkbox" id="chime-type-unknown" checked> Unbekannter Chip</label>
+        <label><input type="checkbox" id="chime-type-function" checked> Funktions-Chip</label>
+        <label><input type="checkbox" id="chime-type-startup" checked> Hochfahren</label>
+        <label><input type="checkbox" id="chime-type-shutdown" checked> Herunterfahren/Neustart</label>
+      </div>
+    </div>
+    <button class="btn" id="chime-save-btn" type="button">Speichern</button>
     <p class="hint">
       Läuft über <span class="mono">aplay</span> parallel zur laufenden Geschichte, unterbricht sie also nicht -
       braucht alsa-utils und funktioniert am zuverlässigsten mit ALSA-dmix (sonst ggf. stumm, falls das
-      Audiogerät gerade exklusiv von mpv belegt ist). Spielt immer bei einer festen, leisen Lautstärke
-      (Standard 15% der maximalen Lautstärke, s.o.), egal wie laut die Geschichte gerade läuft - danach
-      wird automatisch wieder auf die eigentliche Lautstärke zurückgestellt.
+      Audiogerät gerade exklusiv von mpv belegt ist). Spielt immer bei der oben eingestellten, festen
+      Lautstärke, egal wie laut die Geschichte gerade läuft - danach wird automatisch wieder auf die
+      eigentliche Lautstärke zurückgestellt.
     </p>
   </div>
 

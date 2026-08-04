@@ -93,18 +93,36 @@
 
   // -- acoustic feedback (scan chimes) -------------------------------------
 
-  const chimeEnabledInput = document.getElementById("chime-enabled");
+  const chimeVolumePercentInput = document.getElementById("chime-volume-percent");
+  const chimeTypeInputs = {
+    known: document.getElementById("chime-type-known"),
+    unknown: document.getElementById("chime-type-unknown"),
+    function: document.getElementById("chime-type-function"),
+    startup: document.getElementById("chime-type-startup"),
+    shutdown: document.getElementById("chime-type-shutdown"),
+  };
+  const chimeSaveBtn = document.getElementById("chime-save-btn");
 
-  chimeEnabledInput.addEventListener("change", async () => {
+  chimeSaveBtn.addEventListener("click", async () => {
     try {
-      await api("/api/settings/chime", {
+      const chimeEnabled = {};
+      for (const [name, input] of Object.entries(chimeTypeInputs)) {
+        chimeEnabled[name] = input.checked;
+      }
+      const settings = await api("/api/settings/chime", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chime_enabled: chimeEnabledInput.checked }),
+        body: JSON.stringify({
+          chime_volume_percent: parseInt(chimeVolumePercentInput.value, 10),
+          chime_enabled: chimeEnabled,
+        }),
       });
-      showToast(chimeEnabledInput.checked ? "Akustisches Feedback aktiviert." : "Akustisches Feedback deaktiviert.");
+      chimeVolumePercentInput.value = settings.chime_volume_percent;
+      for (const [name, input] of Object.entries(chimeTypeInputs)) {
+        input.checked = settings.chime_enabled[name];
+      }
+      showToast("Akustisches Feedback gespeichert.");
     } catch (err) {
-      chimeEnabledInput.checked = !chimeEnabledInput.checked;
       showToast(err.message, true);
     }
   });
@@ -358,7 +376,10 @@
       const state = await api("/api/state");
       maxVolumeInput.value = state.settings.max_volume;
       volumeStepInput.value = state.settings.volume_step;
-      chimeEnabledInput.checked = state.settings.chime_enabled;
+      chimeVolumePercentInput.value = state.settings.chime_volume_percent;
+      for (const [name, input] of Object.entries(chimeTypeInputs)) {
+        input.checked = state.settings.chime_enabled[name];
+      }
       minBrightnessInput.value = state.settings.min_brightness;
       maxBrightnessInput.value = state.settings.max_brightness;
       brightnessStepInput.value = state.settings.brightness_step;

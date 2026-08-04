@@ -503,10 +503,21 @@ def update_auto_sleep():
 @api_bp.route("/settings/chime", methods=["POST"])
 @admin_required
 def update_chime():
+    from .. import feedback
+
     data = request.get_json(silent=True) or {}
-    if "chime_enabled" in data:
-        _engine().set_chime_enabled(bool(data["chime_enabled"]))
-    return jsonify(_engine().get_state()["settings"])
+    engine = _engine()
+    if "chime_volume_percent" in data:
+        try:
+            engine.set_chime_volume_percent(int(data["chime_volume_percent"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "chime_volume_percent must be an integer"}), 400
+    chime_enabled = data.get("chime_enabled")
+    if isinstance(chime_enabled, dict):
+        for name, enabled in chime_enabled.items():
+            if name in feedback.CHIMES:
+                engine.set_chime_type_enabled(name, bool(enabled))
+    return jsonify(engine.get_state()["settings"])
 
 
 @api_bp.route("/sleep-timer", methods=["POST"])

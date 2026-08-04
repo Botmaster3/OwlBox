@@ -123,8 +123,9 @@ def test_chime_plays_on_shutdown_and_restart_requests(config):
         feedback.play_chime = original
 
 
-def test_chime_disabled_setting_suppresses_playback(config):
+def test_chime_type_disabled_suppresses_only_that_type(config):
     config.rfid.poll_interval = 0.01
+    repository.set_function_tag("VOLUPCARD", "volume_up")
     _make_story_with_file(config, "AABBCC")
 
     calls = []
@@ -132,17 +133,36 @@ def test_chime_disabled_setting_suppresses_playback(config):
     feedback.play_chime = lambda name, alsa_device: calls.append(name)
 
     engine = Engine(config)
-    engine.set_chime_enabled(False)
-    assert engine.get_state()["settings"]["chime_enabled"] is False
+    engine.set_chime_type_enabled("known", False)
+    assert engine.get_state()["settings"]["chime_enabled"]["known"] is False
+    assert engine.get_state()["settings"]["chime_enabled"]["function"] is True
     engine.start()
     try:
+        calls.clear()  # drop the startup chime, only interested in scan behaviour here
         engine.simulate_scan("AABBCC")
         time.sleep(0.15)
-        assert calls == []
+        assert calls == []  # "known" muted
+
+        engine.simulate_remove()
+        time.sleep(0.15)
+        engine.simulate_scan("VOLUPCARD")
+        time.sleep(0.15)
+        assert calls == ["function"]  # other types unaffected
     finally:
         engine.stop()
         feedback.play_chime = original
-    assert repository.get_int_setting("chime_enabled", -1) == 0
+    assert repository.get_int_setting("chime_enabled_known", -1) == 0
+
+
+def test_set_chime_volume_percent_is_persisted(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.set_chime_volume_percent(42)
+        assert engine.get_state()["settings"]["chime_volume_percent"] == 42
+    finally:
+        engine.stop()
+    assert repository.get_int_setting("chime_volume_percent", -1) == 42
 
 
 def test_scan_unknown_tag_is_logged_and_not_playing(config):
