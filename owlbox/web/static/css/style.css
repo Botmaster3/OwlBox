@@ -984,20 +984,53 @@ input[type="text"], input[type="password"], select {
 }
 input[type="file"] { color: var(--text-dim); }
 
+/* border-radius follows the active theme's --bar-radius (same variable the
+   progress/volume bars use) rather than a fixed value, so a theme with pill
+   bars (e.g. Tageslicht, Mondschein) gets pill buttons too instead of the
+   two looking like they belong to different design systems. */
 .btn {
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--bar-radius);
+  padding: 10px 20px;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   background: var(--accent);
   color: var(--on-accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
 }
-.btn.secondary { background: var(--border); color: var(--text); }
+.btn:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.97);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+/* Outline style instead of a flat gray fill - reads as a lighter-weight
+   action next to the solid accent-colored primary .btn, and won't visually
+   merge into a .card's own --panel background the way a --panel fill would. */
+.btn.secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: none;
+}
+.btn.secondary:hover:not(:disabled) {
+  background: var(--border);
+  border-color: var(--border);
+  box-shadow: none;
+}
 .btn.danger { background: var(--danger); color: #250000; }
-.btn.small { padding: 4px 10px; font-size: 0.82rem; border-radius: 6px; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.small { padding: 5px 12px; font-size: 0.82rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
 .inline-field { display: flex; gap: 8px; align-items: center; }
 .inline-field input { flex: 1; }
 a.btn { display: inline-block; text-decoration: none; }
