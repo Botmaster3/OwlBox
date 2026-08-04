@@ -267,12 +267,13 @@ Drehen ändert die Helligkeit (Schrittweite `gpio.brightness_step`, Standard
 5%), sofort und rein manuell - es gibt kein automatisches Dimmen.
 
 Damit Shutdown/Neustart (auch über die Web-UI unter Einstellungen bzw.
-über einen "Pi neu starten"/"WLAN aus"-Funktions-Chip, siehe unten) ohne
-Passwortabfrage funktionieren, braucht der Service-User `owlbox`
-passwortloses sudo dafür, z.B. in `/etc/sudoers.d/owlbox`:
+über einen "Pi neu starten"/"WLAN aus"-Funktions-Chip, siehe unten) sowie der
+Update-Button auf der Info-Seite (startet nur den `owlbox`-Dienst neu, nicht
+den ganzen Pi) ohne Passwortabfrage funktionieren, braucht der Service-User
+`owlbox` passwortloses sudo dafür, z.B. in `/etc/sudoers.d/owlbox`:
 
 ```
-owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli
+owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart owlbox
 ```
 
 ## Fallback-Hotspot (WLAN-Recovery)

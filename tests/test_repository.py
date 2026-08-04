@@ -222,3 +222,42 @@ def test_get_listening_stats_aggregates_and_ranks_by_total_seconds(config):
     assert [s["title"] for s in stats["top_stories"]] == ["Most Played", "Radio", "Some Plays"]
     assert stats["top_stories"][1]["is_stream"] is True
     assert quiet.title == "Never Played"  # sanity check the fixture itself
+
+
+def test_get_weekly_review_aggregates_todays_listening(config):
+    assert repository.get_weekly_review() == {"days": 7, "total_seconds": 0, "total_plays": 0, "top_stories": []}
+
+    favorite = repository.create_story(title="Favorite")
+    other = repository.create_story(title="Other")
+
+    repository.increment_play_count(favorite.id)
+    repository.add_listening_seconds(favorite.id, 200)
+    repository.add_listening_seconds(favorite.id, 100)
+    repository.increment_play_count(other.id)
+    repository.add_listening_seconds(other.id, 50)
+
+    review = repository.get_weekly_review()
+    assert review["days"] == 7
+    assert review["total_seconds"] == 350
+    assert review["total_plays"] == 2
+    assert [s["title"] for s in review["top_stories"]] == ["Favorite", "Other"]
+    assert review["top_stories"][0]["seconds"] == 300
+    assert review["top_stories"][0]["plays"] == 1
+
+
+def test_get_weekly_review_excludes_older_days(config):
+    from owlbox.db import write_cursor
+
+    story = repository.create_story(title="Old Story")
+    repository.add_listening_seconds(story.id, 90)
+    assert repository.get_weekly_review()["total_seconds"] == 90
+
+    # Backdate the only daily_listening row past the 7-day window.
+    with write_cursor() as cur:
+        cur.execute("UPDATE daily_listening SET date = date('now', '-30 days') WHERE story_id = ?", (story.id,))
+
+    review = repository.get_weekly_review()
+    assert review["total_seconds"] == 0
+    assert review["top_stories"] == []
+    # All-time total on the story itself is unaffected by the backdate.
+    assert repository.get_story(story.id).total_seconds == 90

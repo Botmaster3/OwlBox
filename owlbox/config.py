@@ -27,6 +27,10 @@ class AudioConfig:
     volume_step: int = 4
     mpv_binary: str = "mpv"
     mpv_ipc_socket: str = "/tmp/owlbox-mpv.sock"
+    # Short confirmation chime on RFID scans (chip erkannt/unbekannt/Funktions-
+    # Chip), played via `aplay` alongside mpv rather than through it - see
+    # feedback.py. Toggle in Einstellungen; needs `aplay` (alsa-utils).
+    chime_enabled: bool = True
 
 
 @dataclass
@@ -76,6 +80,10 @@ class PlaybackConfig:
     # pressed, or an RFID tag scanned) resumes the track from the exact
     # position it was paused at.
     auto_sleep_minutes: float = 20
+    # Seconds over which the volume gently fades out before the sleep timer
+    # (not auto-sleep, which starts from an already-paused/silent state) forces
+    # a pause - a soft transition instead of an abrupt cut. 0 disables fading.
+    sleep_fade_seconds: float = 60
 
 
 @dataclass

@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import logging
+import os
 import shutil
+import tempfile
+import zipfile
+from datetime import datetime
 from pathlib import Path
 
-from flask import Blueprint, current_app, jsonify, request, session
+from flask import Blueprint, after_this_request, current_app, jsonify, request, send_file, session
 from werkzeug.utils import secure_filename
 
 from .. import network, repository, system_info
+from ..db import backup_to
 from ..engine import FUNCTION_ACTION_VALUES
 from ..media_utils import is_allowed_audio, is_allowed_image, probe_audio
 from .auth import admin_required
@@ -289,6 +294,51 @@ def system_restart():
     return jsonify({"ok": True})
 
 
+@api_bp.route("/system/backup", methods=["GET"])
+@admin_required
+def system_backup():
+    """Downloads a ZIP with a consistent DB snapshot plus the whole media
+    folder - the only way to recover the library if the SD card dies."""
+    config = _config()
+    tmp_dir = tempfile.mkdtemp(prefix="owlbox-backup-")
+    db_snapshot = os.path.join(tmp_dir, "owlbox.db")
+    zip_path = os.path.join(tmp_dir, "backup.zip")
+    try:
+        backup_to(db_snapshot)
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.write(db_snapshot, arcname="owlbox.db")
+            media_dir = config.media_dir
+            if media_dir.exists():
+                for path in media_dir.rglob("*"):
+                    if path.is_file():
+                        zf.write(path, arcname=str(Path("media") / path.relative_to(media_dir)))
+    except Exception:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise
+
+    @after_this_request
+    def cleanup(response):
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        return response
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    return send_file(
+        zip_path,
+        as_attachment=True,
+        download_name=f"owlbox-backup-{timestamp}.zip",
+        mimetype="application/zip",
+    )
+
+
+@api_bp.route("/system/update", methods=["POST"])
+@admin_required
+def system_update():
+    from ..update import run_update
+
+    result = run_update()
+    return jsonify(result), (200 if result["ok"] else 500)
+
+
 # -- dev tools (only meaningful with the simulated RFID reader) --------------
 
 
@@ -450,6 +500,15 @@ def update_auto_sleep():
     return jsonify(_engine().get_state()["settings"])
 
 
+@api_bp.route("/settings/chime", methods=["POST"])
+@admin_required
+def update_chime():
+    data = request.get_json(silent=True) or {}
+    if "chime_enabled" in data:
+        _engine().set_chime_enabled(bool(data["chime_enabled"]))
+    return jsonify(_engine().get_state()["settings"])
+
+
 @api_bp.route("/sleep-timer", methods=["POST"])
 @admin_required
 def start_sleep_timer():
@@ -544,6 +603,7 @@ def system_info_route():
             "memory": system_info.get_memory_info(),
             "disk": system_info.get_disk_usage(config.media_dir),
             "library": repository.get_library_stats(),
+            "weekly_review": repository.get_weekly_review(),
             "app": {"version": __version__, "simulate": config.simulate},
         }
     )

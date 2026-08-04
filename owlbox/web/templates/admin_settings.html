@@ -47,6 +47,21 @@
   </div>
 
   <div class="card">
+    <h2>Akustisches Feedback</h2>
+    <div class="field">
+      <label>
+        <input type="checkbox" id="chime-enabled" checked>
+        Kurzer Ton beim Scannen (Chip erkannt / unbekannt / Funktions-Chip)
+      </label>
+    </div>
+    <p class="hint">
+      Läuft über <span class="mono">aplay</span> parallel zur laufenden Geschichte, unterbricht sie also nicht -
+      braucht alsa-utils und funktioniert am zuverlässigsten mit ALSA-dmix (sonst ggf. stumm, falls das
+      Audiogerät gerade exklusiv von mpv belegt ist).
+    </p>
+  </div>
+
+  <div class="card">
     <h2>Automatischer Ruhemodus</h2>
     <p class="hint" id="auto-sleep-status">Wache Eule.</p>
     <div class="field">

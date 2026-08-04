@@ -73,3 +73,16 @@ CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+-- Per-day, per-story listening totals (UTC calendar day) - lets the Info page's
+-- Wochenrückblick answer "how much / what got listened to in the last N days"
+-- without scanning every scan_log row (that table only keeps the last 20 anyway).
+-- stories.total_seconds/play_count above stay the all-time totals; this table is
+-- purely additive alongside them, updated in the same repository calls.
+CREATE TABLE IF NOT EXISTS daily_listening (
+    date TEXT NOT NULL,
+    story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+    seconds REAL NOT NULL DEFAULT 0,
+    plays INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (date, story_id)
+);

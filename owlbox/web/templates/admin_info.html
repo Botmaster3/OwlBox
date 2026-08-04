@@ -53,11 +53,34 @@
   </div>
 
   <div class="card">
+    <h2>Wochenrückblick</h2>
+    <p class="hint" id="weekly-review-summary">Lädt…</p>
+    <ol id="weekly-review-top" class="np-upcoming-list"></ol>
+  </div>
+
+  <div class="card">
     <h2>Software</h2>
     <dl class="info-grid">
       <dt>OwlBox-Version</dt><dd id="info-version">–</dd>
       <dt>Modus</dt><dd id="info-mode">–</dd>
     </dl>
+  </div>
+
+  <div class="card">
+    <h2>Wartung</h2>
+    <div class="field">
+      <label>Bibliotheks-Backup</label>
+      <p class="hint">Datenbank + alle Medien als ZIP herunterladen - die einzige Möglichkeit, die Bibliothek
+        wiederherzustellen, falls die SD-Karte einmal ausfällt.</p>
+      <a class="btn secondary" href="/api/system/backup">💾 Backup herunterladen</a>
+    </div>
+    <div class="field">
+      <label>Software-Update</label>
+      <p class="hint">Holt den neuesten Stand per <span class="mono">git pull</span>, installiert ggf. neue
+        Abhängigkeiten und startet den OwlBox-Dienst neu (nicht den ganzen Pi).</p>
+      <button class="btn secondary" id="update-btn" type="button">⬆️ Jetzt aktualisieren</button>
+      <span id="update-status" class="hint"></span>
+    </div>
   </div>
 
   <div class="card">

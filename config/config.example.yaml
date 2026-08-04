@@ -33,6 +33,10 @@ audio:
   volume_step: 4
   mpv_binary: mpv
   mpv_ipc_socket: /tmp/owlbox-mpv.sock
+  # Short confirmation chime on RFID scans (chip erkannt/unbekannt/Funktions-
+  # Chip), played via `aplay` alongside mpv so a running story is never
+  # interrupted. Needs alsa-utils installed. Toggle in Einstellungen too.
+  chime_enabled: true
 
 rfid:
   reader: mfrc522   # mfrc522 | simulated
@@ -89,6 +93,10 @@ playback:
   # raised, play/pause pressed, or an RFID tag scanned) resumes right where
   # the track was paused.
   auto_sleep_minutes: 20
+  # Seconds over which the volume gently fades out before the sleep timer forces
+  # a pause (auto-sleep above doesn't need this - it only starts once playback
+  # is already paused/silent). 0 disables fading, straight to a hard pause.
+  sleep_fade_seconds: 60
 
 network:
   # Recovery hotspot: if WiFi is on but not connected to any network for this

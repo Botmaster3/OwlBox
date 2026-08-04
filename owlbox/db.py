@@ -62,3 +62,19 @@ def write_cursor():
             raise
         finally:
             cur.close()
+
+
+def backup_to(dest_path: str) -> None:
+    """Writes a consistent snapshot of the live database to dest_path, via
+    sqlite's own online backup API rather than copying the .db file directly -
+    journal_mode=WAL means a raw file copy could miss recent writes still
+    sitting in the -wal sidecar file. Held under the same write lock as
+    write_cursor() so it can't interleave with an in-progress write."""
+    with _write_lock:
+        conn = get_connection()
+        dest = sqlite3.connect(dest_path)
+        try:
+            with dest:
+                conn.backup(dest)
+        finally:
+            dest.close()

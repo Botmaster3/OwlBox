@@ -11,6 +11,15 @@
     return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
   }
 
+  function formatListeningDuration(seconds) {
+    seconds = Math.floor(seconds || 0);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return `${h}h ${m}min`;
+    if (m > 0) return `${m} Min.`;
+    return `${seconds} Sek.`;
+  }
+
   function formatUptime(seconds) {
     if (seconds == null) return "unbekannt";
     const days = Math.floor(seconds / 86400);
@@ -66,6 +75,23 @@
       document.getElementById("memory-text").textContent = "nicht verfügbar";
     }
 
+    const weekly = info.weekly_review;
+    if (weekly) {
+      const summaryEl = document.getElementById("weekly-review-summary");
+      const topEl = document.getElementById("weekly-review-top");
+      if (weekly.total_seconds > 0) {
+        summaryEl.textContent =
+          `Letzte ${weekly.days} Tage: ${formatListeningDuration(weekly.total_seconds)} gehört, ` +
+          `${weekly.total_plays}x eine Geschichte gestartet.`;
+        topEl.innerHTML = weekly.top_stories
+          .map((s) => `<li>${s.title}${s.is_stream ? " (Livestream)" : ""} - ${formatListeningDuration(s.seconds)}</li>`)
+          .join("");
+      } else {
+        summaryEl.textContent = `In den letzten ${weekly.days} Tagen wurde noch nichts gehört.`;
+        topEl.innerHTML = "";
+      }
+    }
+
     document.getElementById("info-story-count").textContent = info.library.story_count;
     document.getElementById("info-track-count").textContent = info.library.track_count;
     document.getElementById("info-assigned-count").textContent = info.library.assigned_count;
@@ -75,4 +101,28 @@
   }
 
   load();
+
+  const updateBtn = document.getElementById("update-btn");
+  const updateStatus = document.getElementById("update-status");
+
+  updateBtn.addEventListener("click", async () => {
+    if (!confirm("Jetzt nach Updates suchen und den OwlBox-Dienst bei Bedarf neu starten?")) return;
+    updateBtn.disabled = true;
+    updateStatus.textContent = "Suche nach Updates…";
+    try {
+      const res = await fetch("/api/system/update", { method: "POST" });
+      const result = await res.json();
+      if (!res.ok) {
+        updateStatus.textContent = `Fehlgeschlagen (${result.step}): ${result.output || "unbekannter Fehler"}`;
+      } else if (result.restarted) {
+        updateStatus.textContent = "Update installiert, Dienst startet neu - Seite gleich neu laden.";
+      } else {
+        updateStatus.textContent = "Bereits auf dem neuesten Stand.";
+      }
+    } catch (err) {
+      updateStatus.textContent = `Fehlgeschlagen: ${err.message}`;
+    } finally {
+      updateBtn.disabled = false;
+    }
+  });
 })();

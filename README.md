@@ -17,9 +17,14 @@ den Pi geladen und einem Chip zugewiesen.
   Auflegen immer live, ohne gespeicherte Position und ohne Vor-/Zurückspulen.
 - **Funktions-Chips**: eigene Chips, die statt einer Geschichte eine Aktion
   auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus,
-  Einschlaf-Timer starten (15/30/45/60 Min.) oder abbrechen, Pi neu
+  Einschlaf-Timer starten (15/30/45/60 Min., blendet die Lautstärke in den
+  letzten 60s sanft aus statt hart abzuschneiden) oder abbrechen, Pi neu
   starten/herunterfahren. Praktisch als "Bedienkarten" ohne Taster anfassen
   zu müssen.
+- **Akustisches Feedback beim Scannen**: kurzer, unterschiedlicher Ton für
+  Chip erkannt / unbekannter Chip / Funktions-Chip - läuft über `aplay`
+  parallel zur laufenden Geschichte, unterbricht sie also nicht. In
+  Einstellungen abschaltbar.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
   Kapitel-/Track-Titel, verbleibende Zeit im Track, Track-Liste der Geschichte mit
   hervorgehobenem aktuellen Titel, Lautstärke, WLAN-Empfang) - kein Touch, Bedienung
@@ -55,13 +60,16 @@ den Pi geladen und einem Chip zugewiesen.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Lautstärke (aktuelle Lautstärke, Maximum, Schrittweite);
-    Helligkeit (aktuelle Helligkeit, sowie ein einstellbarer Minimal-/Maximalwert, der den
-    Schieberegler hier und den Helligkeits-Encoder am Gerät begrenzt); Automatischer Ruhemodus
-    (Minuten bis zur schlafenden Eule nach dem Pausieren, 0 = aus); Einschlaf-Timer
-    (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert automatisch nach Ablauf);
-    WLAN (Status, an/aus, nach Netzwerken suchen und verbinden); Pi neu starten/herunterfahren.
+    Akustisches Feedback (Ton beim Scannen an/aus); Helligkeit (aktuelle Helligkeit, sowie ein
+    einstellbarer Minimal-/Maximalwert, der den Schieberegler hier und den Helligkeits-Encoder am
+    Gerät begrenzt); Automatischer Ruhemodus (Minuten bis zur schlafenden Eule nach dem Pausieren,
+    0 = aus); Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert
+    automatisch nach Ablauf, mit sanftem Ausblenden); WLAN (Status, an/aus, nach Netzwerken suchen
+    und verbinden); Pi neu starten/herunterfahren.
   - **Info** - Systeminfos: Hardware-Modell, Betriebssystem, Laufzeit, CPU-Temperatur,
-    Speicher-/RAM-Belegung, Bibliotheks-Statistik, OwlBox-Version.
+    Speicher-/RAM-Belegung, Bibliotheks-Statistik, OwlBox-Version; Wochenrückblick (Hördauer und
+    Lieblingsgeschichte der letzten 7 Tage); Bibliotheks-Backup als ZIP-Download; Software-Update
+    per Klick (`git pull` + Neustart des Diensts).
 
   Beim ersten Besuch führt ein Einrichtungsassistent durchs Anlegen des
   Admin-Kontos. Die Now-Playing-Anzeige (`/`) für den Touchscreen selbst

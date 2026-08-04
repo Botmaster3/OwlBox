@@ -91,6 +91,24 @@
     }
   });
 
+  // -- acoustic feedback (scan chimes) -------------------------------------
+
+  const chimeEnabledInput = document.getElementById("chime-enabled");
+
+  chimeEnabledInput.addEventListener("change", async () => {
+    try {
+      await api("/api/settings/chime", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chime_enabled: chimeEnabledInput.checked }),
+      });
+      showToast(chimeEnabledInput.checked ? "Akustisches Feedback aktiviert." : "Akustisches Feedback deaktiviert.");
+    } catch (err) {
+      chimeEnabledInput.checked = !chimeEnabledInput.checked;
+      showToast(err.message, true);
+    }
+  });
+
   // -- display brightness -------------------------------------------------
 
   const currentBrightnessInput = document.getElementById("current-brightness");
@@ -340,6 +358,7 @@
       const state = await api("/api/state");
       maxVolumeInput.value = state.settings.max_volume;
       volumeStepInput.value = state.settings.volume_step;
+      chimeEnabledInput.checked = state.settings.chime_enabled;
       minBrightnessInput.value = state.settings.min_brightness;
       maxBrightnessInput.value = state.settings.max_brightness;
       brightnessStepInput.value = state.settings.brightness_step;

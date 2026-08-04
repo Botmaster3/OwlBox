@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import network, repository
+from . import feedback, network, repository
 from .backlight import create_backlight
 from .controls import create_controls
 from .player import create_player
@@ -67,11 +67,16 @@ class Engine:
         self._max_volume = repository.get_int_setting("max_volume", 100)
         self._volume_step = repository.get_int_setting("volume_step", config.audio.volume_step)
         self._volume = min(config.audio.default_volume, self._max_volume)
+        self._chime_enabled = bool(
+            repository.get_int_setting("chime_enabled", 1 if config.audio.chime_enabled else 0)
+        )
         self._missing_reads = 0
         self._tag_present = False
         self._last_stat_time: Optional[float] = None
         self._sleep_timer_end: Optional[float] = None
         self._sleep_timer_minutes: Optional[float] = None
+        self._sleep_fade_seconds = config.playback.sleep_fade_seconds
+        self._sleep_timer_fading = False
 
         # Auto-sleep (sleeping-owl screen) - distinct from the sleep timer above:
         # this triggers *because* playback has been paused for a while, rather
@@ -193,6 +198,7 @@ class Engine:
                 self._current_story = story
                 repository.increment_play_count(story.id)
                 self._last_stat_time = time.monotonic()
+                self._play_chime("known")
 
                 if story.stream_url:
                     # A livestream has no tracks/position to resume - always join live.
@@ -222,10 +228,12 @@ class Engine:
             action = repository.get_function_tag(uid)
             if action is not None:
                 self._current_function_action = action
+                self._play_chime("function")
                 self._execute_function_action(action)
                 return
 
             self._last_unknown_uid = uid
+            self._play_chime("unknown")
             logger.info("unknown RFID tag scanned: %s", uid)
 
     def _handle_tag_removed(self) -> None:
@@ -462,6 +470,18 @@ class Engine:
             self._volume_step = max(1, min(50, percent))
             repository.set_setting("volume_step", self._volume_step)
 
+    def set_chime_enabled(self, enabled: bool) -> None:
+        with self._lock:
+            self._chime_enabled = bool(enabled)
+            repository.set_setting("chime_enabled", int(self._chime_enabled))
+
+    def _play_chime(self, name: str) -> None:
+        # No simulate-mode gate here on purpose - feedback.play_chime() already
+        # degrades gracefully (no-op) if aplay/the audio device isn't available,
+        # the same pattern as network.py/backlight.py elsewhere in this module.
+        if self._chime_enabled:
+            feedback.play_chime(name, self._config.audio.alsa_device)
+
     # -- display brightness -----------------------------------------------------
 
     def manual_set_brightness(self, percent: int) -> None:
@@ -522,16 +542,38 @@ class Engine:
         with self._lock:
             self._sleep_timer_end = None
             self._sleep_timer_minutes = None
+            self._restore_volume_after_fade_locked()
+
+    def _restore_volume_after_fade_locked(self) -> None:
+        # No-op unless a fade was actually in progress - safe to call from
+        # anywhere the timer might stop before reaching zero.
+        if self._sleep_timer_fading:
+            self._sleep_timer_fading = False
+            self._player.set_volume(self._volume)
 
     def _check_sleep_timer(self, now: float) -> None:
         with self._lock:
-            if self._sleep_timer_end is None or now < self._sleep_timer_end:
+            if self._sleep_timer_end is None:
                 return
-            self._sleep_timer_end = None
-            self._sleep_timer_minutes = None
-            logger.info("sleep timer expired, pausing playback")
-            self._persist_position_locked()
-            self._player.pause()
+            remaining = self._sleep_timer_end - now
+            if remaining <= 0:
+                self._sleep_timer_end = None
+                self._sleep_timer_minutes = None
+                self._sleep_timer_fading = False
+                logger.info("sleep timer expired, pausing playback")
+                self._persist_position_locked()
+                self._player.pause()
+                # Restore the real volume so the next play/resume isn't silent -
+                # the fade only ever touches the player's instantaneous output,
+                # never the configured target volume (self._volume).
+                self._player.set_volume(self._volume)
+                return
+            if self._sleep_fade_seconds > 0 and remaining <= self._sleep_fade_seconds:
+                self._sleep_timer_fading = True
+                faded = round(self._volume * (remaining / self._sleep_fade_seconds))
+                self._player.set_volume(faded)
+            else:
+                self._restore_volume_after_fade_locked()
 
     # -- auto-sleep (sleeping-owl screen) --------------------------------------
 
@@ -618,6 +660,7 @@ class Engine:
             last_unknown = self._last_unknown_uid
             max_volume = self._max_volume
             volume_step = self._volume_step
+            chime_enabled = self._chime_enabled
             sleep_timer_end = self._sleep_timer_end
             sleep_timer_minutes = self._sleep_timer_minutes
             auto_sleep_minutes = self._auto_sleep_minutes
@@ -676,6 +719,7 @@ class Engine:
                 "max_brightness": max_brightness,
                 "brightness_step": brightness_step,
                 "auto_sleep_minutes": auto_sleep_minutes,
+                "chime_enabled": chime_enabled,
             },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,

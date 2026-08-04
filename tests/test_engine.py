@@ -1,6 +1,6 @@
 import time
 
-from owlbox import network, repository
+from owlbox import feedback, network, repository
 from owlbox.engine import Engine
 
 
@@ -28,6 +28,59 @@ def test_scan_known_tag_starts_playback(config):
         assert state["player"]["playing"] is True
     finally:
         engine.stop()
+
+
+def test_chime_plays_on_known_unknown_and_function_tag_scans(config):
+    config.rfid.poll_interval = 0.01
+    _make_story_with_file(config, "AABBCC")
+    repository.set_function_tag("VOLUPCARD", "volume_up")
+
+    calls = []
+    original = feedback.play_chime
+    feedback.play_chime = lambda name, alsa_device: calls.append(name)
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        engine.simulate_remove()
+        time.sleep(0.15)
+
+        engine.simulate_scan("DEADBEEF")
+        time.sleep(0.15)
+        engine.simulate_remove()
+        time.sleep(0.15)
+
+        engine.simulate_scan("VOLUPCARD")
+        time.sleep(0.15)
+
+        assert calls == ["known", "unknown", "function"]
+    finally:
+        engine.stop()
+        feedback.play_chime = original
+
+
+def test_chime_disabled_setting_suppresses_playback(config):
+    config.rfid.poll_interval = 0.01
+    _make_story_with_file(config, "AABBCC")
+
+    calls = []
+    original = feedback.play_chime
+    feedback.play_chime = lambda name, alsa_device: calls.append(name)
+
+    engine = Engine(config)
+    engine.set_chime_enabled(False)
+    assert engine.get_state()["settings"]["chime_enabled"] is False
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert calls == []
+    finally:
+        engine.stop()
+        feedback.play_chime = original
+    assert repository.get_int_setting("chime_enabled", -1) == 0
 
 
 def test_scan_unknown_tag_is_logged_and_not_playing(config):
@@ -376,6 +429,60 @@ def test_sleep_timer_pauses_playback_when_it_expires(config):
         state = engine.get_state()
         assert state["player"]["playing"] is False
         assert state["sleep_timer"]["active"] is False
+    finally:
+        engine.stop()
+
+
+def test_sleep_timer_fades_volume_before_pausing(config):
+    config.rfid.poll_interval = 0.05
+    config.playback.sleep_fade_seconds = 0.3
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        engine.manual_set_volume(80)
+
+        engine.start_sleep_timer(0.02)  # ~1.2 seconds total, 0.3s fade window
+
+        time.sleep(0.3)
+        state = engine.get_state()
+        assert state["player"]["playing"] is True
+        assert state["player"]["volume"] >= 70  # still outside the fade window
+
+        time.sleep(0.7)  # now ~1.0s elapsed, inside the fade window
+        state = engine.get_state()
+        assert state["player"]["playing"] is True
+        assert state["player"]["volume"] < 70
+
+        time.sleep(0.6)  # past the ~1.2s expiry
+        state = engine.get_state()
+        assert state["player"]["playing"] is False
+        assert state["player"]["volume"] == 80  # restored, not stuck faded
+    finally:
+        engine.stop()
+
+
+def test_cancelling_sleep_timer_mid_fade_restores_volume(config):
+    config.rfid.poll_interval = 0.05
+    config.playback.sleep_fade_seconds = 5
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        engine.manual_set_volume(80)
+
+        engine.start_sleep_timer(0.02)  # ~1.2 seconds, entirely inside the 5s fade window
+        time.sleep(0.3)
+        assert engine.get_state()["player"]["volume"] < 80
+
+        engine.cancel_sleep_timer()
+        assert engine.get_state()["player"]["volume"] == 80
     finally:
         engine.stop()
 

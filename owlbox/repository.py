@@ -103,6 +103,7 @@ def increment_play_count(story_id: int) -> None:
             "UPDATE stories SET play_count = play_count + 1, last_played_at = datetime('now') WHERE id = ?",
             (story_id,),
         )
+        _bump_daily_listening(cur, story_id, seconds=0, plays=1)
 
 
 def add_listening_seconds(story_id: int, seconds: float) -> None:
@@ -110,6 +111,23 @@ def add_listening_seconds(story_id: int, seconds: float) -> None:
         return
     with write_cursor() as cur:
         cur.execute("UPDATE stories SET total_seconds = total_seconds + ? WHERE id = ?", (seconds, story_id))
+        _bump_daily_listening(cur, story_id, seconds=seconds, plays=0)
+
+
+def _bump_daily_listening(cur, story_id: int, seconds: float, plays: int) -> None:
+    """Upserts today's (UTC) row in daily_listening - the per-day breakdown
+    behind the Info page's Wochenrückblick. Called from within the same
+    write_cursor transaction as the all-time total it accompanies."""
+    cur.execute(
+        """
+        INSERT INTO daily_listening (date, story_id, seconds, plays)
+        VALUES (date('now'), ?, ?, ?)
+        ON CONFLICT(date, story_id) DO UPDATE SET
+            seconds = seconds + excluded.seconds,
+            plays = plays + excluded.plays
+        """,
+        (story_id, seconds, plays),
+    )
 
 
 def get_listening_stats() -> dict:
@@ -137,6 +155,46 @@ def get_listening_stats() -> dict:
                 "play_count": r["play_count"],
                 "total_seconds": r["total_seconds"],
                 "last_played_at": r["last_played_at"],
+            }
+            for r in top_rows
+        ],
+    }
+
+
+def get_weekly_review(days: int = 7) -> dict:
+    """Listening totals over the last `days` days (UTC calendar days, today
+    included) plus the top 3 stories in that window - the Info page's
+    Wochenrückblick. Independent of the all-time totals in get_listening_stats."""
+    conn = get_connection()
+    cutoff = f"-{days - 1} days"
+    totals = conn.execute(
+        "SELECT COALESCE(SUM(seconds), 0) AS seconds, COALESCE(SUM(plays), 0) AS plays "
+        "FROM daily_listening WHERE date >= date('now', ?)",
+        (cutoff,),
+    ).fetchone()
+    top_rows = conn.execute(
+        """
+        SELECT s.id, s.title, s.stream_url, SUM(d.seconds) AS seconds, SUM(d.plays) AS plays
+        FROM daily_listening d
+        JOIN stories s ON s.id = d.story_id
+        WHERE d.date >= date('now', ?)
+        GROUP BY d.story_id
+        ORDER BY seconds DESC
+        LIMIT 3
+        """,
+        (cutoff,),
+    ).fetchall()
+    return {
+        "days": days,
+        "total_seconds": totals["seconds"],
+        "total_plays": totals["plays"],
+        "top_stories": [
+            {
+                "id": r["id"],
+                "title": r["title"],
+                "is_stream": bool(r["stream_url"]),
+                "seconds": r["seconds"],
+                "plays": r["plays"],
             }
             for r in top_rows
         ],
