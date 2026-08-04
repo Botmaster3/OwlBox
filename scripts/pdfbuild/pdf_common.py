@@ -134,6 +134,193 @@ def note_box(text, kind="note"):
     return KeepTogether([Spacer(1, 4), t, Spacer(1, 4)])
 
 
+# -- window / screen mock-ups --------------------------------------------
+# Stylised illustrations (title bar + content), not literal screenshots of any
+# specific software version - used so a printed step-by-step guide has a
+# picture to go with each step even though this build has no real display/Pi
+# to photograph. Consistent "traffic light" window-chrome look throughout.
+S_WIN_TITLE = style("WinTitle", fontName="DejaVuSans-Bold", fontSize=8.5, textColor=colors.white,
+                     leading=11, alignment=TA_CENTER)
+S_WIN_DOT = style("WinDot", fontSize=9, leading=11)
+S_MOCK_LABEL = style("MockLabel", fontName="DejaVuSans-Bold", fontSize=8.3, leading=15, textColor=MUTED)
+S_MOCK_VALUE = style("MockValue", fontName="DejaVuSansMono", fontSize=8.8, leading=15, textColor=TEXT)
+S_MOCK_BTN_LABEL = style("MockBtnLabel", fontName="DejaVuSans-Bold", fontSize=8.2, leading=11,
+                          alignment=TA_CENTER)
+S_MOCK_BTN_VALUE = style("MockBtnValue", fontSize=7.6, leading=10, alignment=TA_CENTER)
+S_TERM_CMD = style("TermCmd", fontName="DejaVuSansMono", fontSize=8.6, leading=13.5,
+                    textColor=HexColor("#7fe08a"))
+S_TERM_OUT = style("TermOut", fontName="DejaVuSansMono", fontSize=8.6, leading=13.5,
+                    textColor=HexColor("#d7dce0"))
+S_BROWSER_URL = style("BrowserUrl", fontName="DejaVuSansMono", fontSize=8.3, leading=11,
+                       textColor=HexColor("#2c3540"))
+
+
+def _window_bar(title, width):
+    dots = Paragraph(
+        '<font color="#ff5f57">⬤</font> <font color="#febc2e">⬤</font> '
+        '<font color="#28c840">⬤</font>',
+        S_WIN_DOT,
+    )
+    ttl = Paragraph(title, S_WIN_TITLE)
+    bar = Table([[dots, ttl, ""]], colWidths=[18 * mm, width - 36 * mm, 18 * mm])
+    bar.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), DARK2),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (0, 0), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    return bar
+
+
+def imager_window_mockup(highlight):
+    """Mock-up of the Raspberry Pi Imager main window's three choice buttons.
+    highlight: 'device' | 'os' | 'storage' - which button is drawn as active."""
+    width = PAGE_W - 2 * MARGIN
+    bar = _window_bar("Raspberry Pi Imager", width)
+    btn_defs = [
+        ("device", "CHOOSE DEVICE", "Raspberry Pi 3"),
+        ("os", "CHOOSE OS", "Raspberry Pi OS (Legacy)"),
+        ("storage", "CHOOSE STORAGE", "SD-Karte"),
+    ]
+    btn_w = (width - 16 * mm) / 3
+    cells, styles_row = [], []
+    for key, label, value in btn_defs:
+        active = key == highlight
+        bg = ACCENT if active else colors.white
+        fg = colors.white if active else TEXT
+        lbl_style = ParagraphStyle("l", parent=S_MOCK_BTN_LABEL, textColor=fg)
+        val_style = ParagraphStyle(
+            "v", parent=S_MOCK_BTN_VALUE, textColor=fg if active else MUTED,
+            fontName="DejaVuSans-Bold" if active else "DejaVuSans",
+        )
+        inner = Table(
+            [[Paragraph(label, lbl_style)], [Paragraph(value, val_style)]],
+            colWidths=[btn_w - 4 * mm],
+        )
+        inner.setStyle(TableStyle([
+            ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ]))
+        cells.append(inner)
+        styles_row.append(("BACKGROUND", bg, ACCENT_DARK if active else RULE))
+    row = Table([cells], colWidths=[btn_w] * 3)
+    ts = [
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+    ]
+    for i, (_, bg, box) in enumerate(styles_row):
+        ts.append(("BACKGROUND", (i, 0), (i, 0), bg))
+        ts.append(("BOX", (i, 0), (i, 0), 1, box))
+    row.setStyle(TableStyle(ts))
+    body = Table([[row]], colWidths=[width])
+    body.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), CREAM),
+        ("BOX", (0, 0), (-1, -1), 0.6, RULE),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    return KeepTogether([bar, body, Spacer(1, 8)])
+
+
+def imager_settings_mockup(rows):
+    """Mock-up of the Imager 'EDIT SETTINGS' dialog. rows: list of (label, value)."""
+    width = PAGE_W - 2 * MARGIN
+    bar = _window_bar("OS-Anpassungen (EDIT SETTINGS)", width)
+    data = [[Paragraph(lbl, S_MOCK_LABEL), Paragraph(val, S_MOCK_VALUE)] for lbl, val in rows]
+    t = Table(data, colWidths=[42 * mm, width - 42 * mm])
+    ts = [
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LINEBELOW", (0, 0), (-1, -2), 0.4, RULE),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+        ("BOX", (0, 0), (-1, -1), 0.6, RULE),
+    ]
+    t.setStyle(TableStyle(ts))
+    return KeepTogether([bar, t, Spacer(1, 8)])
+
+
+def terminal_mockup(title, lines):
+    """Mock-up of a terminal window. lines: list of (is_command: bool, text: str)."""
+    width = PAGE_W - 2 * MARGIN
+    bar = _window_bar(title, width)
+    paras = [
+        Paragraph(("$ " if is_cmd else "") + text, S_TERM_CMD if is_cmd else S_TERM_OUT)
+        for is_cmd, text in lines
+    ]
+    body = Table([[p] for p in paras], colWidths=[width])
+    body.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), DARK),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("TOPPADDING", (0, 0), (0, 0), 8), ("BOTTOMPADDING", (-1, -1), (-1, -1), 8),
+    ]))
+    return KeepTogether([bar, body, Spacer(1, 8)])
+
+
+def browser_mockup(url, heading, field_labels, button_text):
+    """Mock-up of a browser window showing a simple form page."""
+    width = PAGE_W - 2 * MARGIN
+    dots = Paragraph(
+        '<font color="#ff5f57">⬤</font> <font color="#febc2e">⬤</font> '
+        '<font color="#28c840">⬤</font>',
+        S_WIN_DOT,
+    )
+    addr = Table([[Paragraph(url, S_BROWSER_URL)]], colWidths=[width - 40 * mm])
+    addr.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+        ("BOX", (0, 0), (-1, -1), 0.5, RULE),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6), ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    bar = Table([[dots, addr]], colWidths=[18 * mm, width - 18 * mm])
+    bar.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), DARK2),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (0, 0), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (1, 0), (1, 0), 8),
+    ]))
+
+    head_p = Paragraph(heading, style("MockHeading", fontName="DejaVuSans-Bold", fontSize=12,
+                                       textColor=DARK, spaceAfter=8))
+    field_rows = []
+    for lbl in field_labels:
+        field_rows.append(Paragraph(lbl, S_MOCK_LABEL))
+        placeholder = Table([[""]], colWidths=[width - 20 * mm], rowHeights=[7 * mm])
+        placeholder.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BG),
+            ("BOX", (0, 0), (-1, -1), 0.6, RULE),
+        ]))
+        field_rows.append(placeholder)
+        field_rows.append(Spacer(1, 5))
+    btn = Table([[Paragraph(button_text, ParagraphStyle(
+        "b", parent=S_MOCK_BTN_LABEL, textColor=colors.white))]],
+        colWidths=[45 * mm], rowHeights=[8 * mm])
+    btn.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), ACCENT),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    content = [head_p] + field_rows + [btn]
+    body = Table([[c] for c in content], colWidths=[width - 20 * mm])
+    body.setStyle(TableStyle([
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 1), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+    ]))
+    outer = Table([[body]], colWidths=[width])
+    outer.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+        ("BOX", (0, 0), (-1, -1), 0.6, RULE),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 12), ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+    ]))
+    return KeepTogether([bar, outer, Spacer(1, 8)])
+
+
 def control_block(name, control_desc, effect_desc, extra=None):
     """One documented 'Regler' entry: name, what the widget is, what it does."""
     parts = [

@@ -15,6 +15,7 @@ from pdf_common import (
     S_H1, S_H2, S_H3, S_BODY, S_BODY_TIGHT, S_SMALL, S_BULLET, S_LABEL, S_MONO,
     spec_table, note_box, cover_page, draw_header_footer,
     make_toc, TocDocTemplate, style,
+    imager_window_mockup, imager_settings_mockup, terminal_mockup, browser_mockup,
 )
 
 OUT = str(REPO_ROOT / "owlbox/web/static/docs/OwlBox-Installation.pdf")
@@ -131,6 +132,7 @@ p(
     "öffnen."
 )
 step(1, "Gerät wählen", "„CHOOSE DEVICE“ → Raspberry Pi 3.")
+story.append(imager_window_mockup("device"))
 step(2, "Betriebssystem wählen",
      "„CHOOSE OS“ → „Raspberry Pi OS (other)“ → <b>„Raspberry Pi OS (Legacy)“</b> (ohne den "
      "Zusatz „Full“ und ohne „Lite“).",
@@ -138,8 +140,10 @@ step(2, "Betriebssystem wählen",
      "bringt aber den klassischen X11-Desktop statt Wayland/labwc mit - das SPI-Display braucht "
      "später X11 (siehe Kapitel 6), damit entfällt der sonst nötige manuelle Umstieg weg von "
      "Wayland komplett.")
+story.append(imager_window_mockup("os"))
 step(3, "Speicherziel wählen", "„CHOOSE STORAGE“ → die eingelegte SD-Karte auswählen. "
      "Vorsicht: alles darauf wird überschrieben.")
+story.append(imager_window_mockup("storage"))
 step(4, "Anpassungen vornehmen",
      "Nach Klick auf „NEXT“ fragt der Imager „Would you like to apply OS customisation "
      "settings?“ - <b>„EDIT SETTINGS“</b> wählen (bei älteren Imager-Versionen stattdessen vorher "
@@ -153,6 +157,14 @@ bullets([
     "<b>SSH aktivieren</b> (Passwort-Authentifizierung reicht für den Einstieg)",
     "Zeitzone und Tastaturlayout passend setzen",
 ])
+story.append(imager_settings_mockup([
+    ("Hostname", "owlbox"),
+    ("Benutzername", "pi"),
+    ("Passwort", "••••••••••"),
+    ("WLAN-SSID", "MeinWLAN"),
+    ("WLAN-Passwort", "••••••••••"),
+    ("SSH aktivieren", "[x] aktiviert"),
+]))
 step(5, "Schreiben", "„SAVE“, dann „YES“/„WRITE“ bestätigen. Der Vorgang dauert je nach "
      "Kartengröße/-geschwindigkeit einige Minuten (Schreiben + Verifizieren). Danach die SD-Karte "
      "sicher auswerfen.")
@@ -165,12 +177,17 @@ p(
     "dazu, wenn die Software-Grundlage steht."
 )
 p(
-    "Nach ca. 1-2 Minuten (erster Boot dauert etwas länger als spätere) per SSH verbinden:"
+    "Nach ca. 1-2 Minuten (erster Boot dauert etwas länger als spätere) per SSH verbinden. "
+    "Funktioniert der Hostname nicht, stattdessen die IP-Adresse verwenden (z.B. aus der "
+    "Router-Oberfläche abgelesen). System danach einmal komplett aktualisieren und neu starten:"
 )
-code(["ssh <benutzername>@owlbox.local", "# funktioniert der Hostname nicht, stattdessen die IP-Adresse",
-      "# verwenden - z.B. aus der Router-Oberfläche abgelesen"])
-p("System einmal komplett aktualisieren und neu starten:")
-code(["sudo apt update && sudo apt full-upgrade -y", "sudo reboot"])
+story.append(terminal_mockup("Terminal - ssh pi@owlbox.local", [
+    (True, "ssh pi@owlbox.local"),
+    (False, "pi@owlbox.local's password:"),
+    (False, "Linux owlbox 6.12 ..."),
+    (True, "sudo apt update && sudo apt full-upgrade -y"),
+    (True, "sudo reboot"),
+]))
 story.append(note_box(
     "Falls owlbox.local nicht gefunden wird: manche Router/Netzwerke unterstützen mDNS "
     "(.local-Namen) nicht. Dann die IP-Adresse des Pi direkt verwenden - am Router nachsehen oder, "
@@ -214,9 +231,18 @@ p("Danach den Pi wieder mit Strom versorgen und erneut per SSH verbinden.")
 # ============================================================ 6. Software installieren
 h1("6. OwlBox-Software installieren")
 h2("6.1 Code herunterladen")
-code(["git clone https://github.com/Botmaster3/owlbox.git", "cd owlbox"])
+story.append(terminal_mockup("Terminal - Code herunterladen", [
+    (True, "git clone https://github.com/Botmaster3/owlbox.git"),
+    (True, "cd owlbox"),
+]))
 h2("6.2 Installationsskript ausführen (1. Durchlauf)")
-code(["sudo ./scripts/install.sh"])
+story.append(terminal_mockup("Terminal - 1. Durchlauf", [
+    (True, "sudo ./scripts/install.sh"),
+    (False, "[*] Installiere Systempakete ..."),
+    (False, "[*] Baue fbcp ..."),
+    (False, "[*] Starte Display-Treiber-Installer ..."),
+    (False, "[*] Neustart erforderlich - starte neu ..."),
+]))
 p(
     "Für die in Kapitel 1 gelistete Standardhardware (HiFiBerry Amp/Amp2, 3,5″-SPI-Touchdisplay "
     "der tft35a/MHS-35-Familie) automatisiert das Skript inzwischen praktisch alles, was früher "
@@ -245,7 +271,13 @@ story.append(note_box(
 ))
 h2("6.3 Installationsskript erneut ausführen (2. Durchlauf, nach dem Neustart)")
 p("Nach dem Neustart erneut per SSH verbinden und das Skript noch einmal starten:")
-code(["cd owlbox", "sudo ./scripts/install.sh"])
+story.append(terminal_mockup("Terminal - 2. Durchlauf", [
+    (True, "cd owlbox"),
+    (True, "sudo ./scripts/install.sh"),
+    (False, "[*] Erkenne ALSA-Gerät ... hw:0,0"),
+    (False, "[*] Richte Kiosk-Autostart ein ..."),
+    (False, "[OK] Alles eingerichtet."),
+]))
 p("Jetzt ist die Hardware aktiv, deshalb erledigt das Skript in diesem Durchlauf zusätzlich:")
 bullets([
     "Das aktive ALSA-Gerät und den passenden Mixer-Namen automatisch erkennen (aplay -l / "
@@ -286,6 +318,12 @@ step(2, "Verwaltung öffnen",
 step(3, "Setup-Assistent durchlaufen",
      "Beim allerersten Aufruf fragt OwlBox nach Benutzername und Passwort für die Verwaltung - "
      "das gilt ab jetzt für jeden Zugriff.")
+story.append(browser_mockup(
+    "http://owlbox.local:5000/admin",
+    "OwlBox einrichten",
+    ["Benutzername", "Passwort", "Passwort bestätigen"],
+    "Konto anlegen",
+))
 story.append(note_box(
     "Kein WLAN in Reichweite bzw. die Verbindung klappt nicht? Der Pi spannt nach kurzer Zeit "
     "automatisch einen eigenen Notfall-Hotspot auf (Standard-SSID „OwlBox-Setup“), über den die "
