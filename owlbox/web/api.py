@@ -539,6 +539,16 @@ def test_chime():
     return jsonify({"ok": True})
 
 
+@api_bp.route("/settings/theme", methods=["POST"])
+@admin_required
+def update_theme():
+    data = request.get_json(silent=True) or {}
+    name = data.get("theme")
+    if not name or not _engine().set_theme(name):
+        return jsonify({"error": "unknown theme"}), 400
+    return jsonify(_engine().get_state()["settings"])
+
+
 @api_bp.route("/sleep-timer", methods=["POST"])
 @admin_required
 def start_sleep_timer():

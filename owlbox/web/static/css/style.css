@@ -1,3 +1,7 @@
+/* Waldnacht (default theme) - see the `:root[data-theme=...]` blocks further
+   down for the other selectable designs (Einstellungen > Design). Every theme
+   redefines this same set of variables plus --bg-image, so a new theme only
+   ever needs to touch CSS, never the component rules below. */
 :root {
   color-scheme: dark;
   --bg: #12141c;
@@ -7,11 +11,82 @@
   --text: #f5f2ea;
   --text-dim: #9a9db0;
   --danger: #e05c5c;
+  --border: #2a2f42;
+  --input-bg: #10131c;
+  /* Text color placed on top of an --accent-colored surface (buttons, active
+     segmented control, toasts) - needs to flip per-theme so it stays legible
+     against whatever --accent that theme picked. */
+  --on-accent: #201400;
+  --bar-radius: 4px;
+  /* Night-forest backdrop with a hint of owl eyes glowing in the dark. */
+  --bg-image:
+    radial-gradient(90px 70px at 34% 20%, rgba(242, 169, 60, 0.16), transparent 70%),
+    radial-gradient(90px 70px at 66% 20%, rgba(242, 169, 60, 0.16), transparent 70%),
+    radial-gradient(70% 45% at 50% 105%, rgba(122, 90, 38, 0.22), transparent 70%),
+    linear-gradient(180deg, #0d0f16 0%, #12141c 55%, #1a140f 100%);
   /* Status colors (good/warn/critical) - reserved for gauges/thresholds, never
-     reused as a generic accent so their meaning stays unambiguous. */
+     reused as a generic accent so their meaning stays unambiguous, and
+     deliberately NOT themed - "warn" should look the same regardless of design. */
   --status-good: #4fae6d;
   --status-warn: #e0a83c;
   --status-critical: var(--danger);
+}
+
+:root[data-theme="mondschein"] {
+  color-scheme: dark;
+  --bg: #0d1420;
+  --panel: #182234;
+  --accent: #6fc3f7;
+  --accent-dim: #2c5570;
+  --text: #eef4fa;
+  --text-dim: #90a3b8;
+  --border: #26364a;
+  --input-bg: #0b1420;
+  --on-accent: #041018;
+  --bar-radius: 999px;
+  /* Sternenklare Nacht statt Waldglühen - kleine Sterne + ein kühler Mondschein-Schein. */
+  --bg-image:
+    radial-gradient(1.5px 1.5px at 18% 24%, rgba(255, 255, 255, 0.55), transparent 60%),
+    radial-gradient(1.5px 1.5px at 72% 14%, rgba(255, 255, 255, 0.4), transparent 60%),
+    radial-gradient(1px 1px at 45% 38%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(1.5px 1.5px at 85% 45%, rgba(255, 255, 255, 0.3), transparent 60%),
+    radial-gradient(120px 100px at 78% 12%, rgba(111, 195, 247, 0.2), transparent 70%),
+    linear-gradient(180deg, #060b12 0%, #0d1420 55%, #101a2c 100%);
+}
+
+:root[data-theme="herbstwald"] {
+  color-scheme: dark;
+  --bg: #1a1410;
+  --panel: #241b14;
+  --accent: #e2703a;
+  --accent-dim: #7a3a1c;
+  --text: #f7ece0;
+  --text-dim: #b09a86;
+  --border: #3a2c20;
+  --input-bg: #150f0b;
+  --on-accent: #1a0800;
+  --bar-radius: 6px;
+  --bg-image:
+    radial-gradient(90% 60% at 50% 110%, rgba(226, 112, 58, 0.22), transparent 70%),
+    radial-gradient(80px 60px at 30% 15%, rgba(226, 112, 58, 0.14), transparent 70%),
+    linear-gradient(180deg, #120d0a 0%, #1a1410 50%, #241209 100%);
+}
+
+:root[data-theme="tageslicht"] {
+  color-scheme: light;
+  --bg: #eef1f6;
+  --panel: #ffffff;
+  --accent: #2f8f5b;
+  --accent-dim: #bfe3cf;
+  --text: #1c2230;
+  --text-dim: #5b6472;
+  --border: #d7dce4;
+  --input-bg: #f4f6f9;
+  --on-accent: #ffffff;
+  --bar-radius: 999px;
+  --bg-image:
+    radial-gradient(60% 40% at 50% 0%, rgba(47, 143, 91, 0.12), transparent 70%),
+    linear-gradient(180deg, #eef1f6 0%, #e4ebf1 100%);
 }
 
 * { box-sizing: border-box; }
@@ -28,14 +103,11 @@ html, body {
   font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Night-forest backdrop with a hint of owl eyes glowing in the dark, instead of a flat panel color. */
+/* Backdrop gradient/texture - varies per theme via --bg-image (see the
+   `:root[data-theme=...]` blocks above), instead of a flat panel color. */
 html, body {
   background-color: var(--bg);
-  background-image:
-    radial-gradient(90px 70px at 34% 20%, rgba(242, 169, 60, 0.16), transparent 70%),
-    radial-gradient(90px 70px at 66% 20%, rgba(242, 169, 60, 0.16), transparent 70%),
-    radial-gradient(70% 45% at 50% 105%, rgba(122, 90, 38, 0.22), transparent 70%),
-    linear-gradient(180deg, #0d0f16 0%, #12141c 55%, #1a140f 100%);
+  background-image: var(--bg-image);
   background-attachment: fixed;
   background-repeat: no-repeat;
 }
@@ -135,7 +207,7 @@ body.kiosk { height: 100vh; overflow: hidden; }
 .progress-bar {
   width: 100%;
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--bar-radius);
   /* Darker than --panel on purpose - cards use --panel as their own background,
      so a same-colored track would be invisible whenever the fill is empty/low. */
   background: var(--bg);
@@ -170,7 +242,7 @@ body.kiosk { height: 100vh; overflow: hidden; }
    lit up to the current strength) instead of a filled progress bar. */
 .wifi-indicator { display: inline-flex; align-items: center; gap: 8px; color: var(--text-dim); font-size: 0.85rem; }
 .wifi-bars { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
-.wifi-bar { width: 3px; border-radius: 1px; background: #2a2f42; }
+.wifi-bar { width: 3px; border-radius: 1px; background: var(--border); }
 .wifi-bar:nth-child(1) { height: 25%; }
 .wifi-bar:nth-child(2) { height: 50%; }
 .wifi-bar:nth-child(3) { height: 75%; }
@@ -186,7 +258,7 @@ body.kiosk { height: 100vh; overflow: hidden; }
   width: fit-content;
   max-width: 80vw;
   background: var(--accent);
-  color: #201400;
+  color: var(--on-accent);
   padding: 0.6rem 1.2rem;
   border-radius: 999px;
   font-weight: 600;
@@ -295,7 +367,7 @@ body.kiosk { height: 100vh; overflow: hidden; }
   display: flex;
   gap: 4px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #2a2f42;
+  border-bottom: 1px solid var(--border);
 }
 .admin-nav a {
   padding: 10px 16px;
@@ -322,7 +394,7 @@ body.kiosk { height: 100vh; overflow: hidden; }
 .jump-nav a {
   padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid #2a2f42;
+  border: 1px solid var(--border);
   color: var(--text-dim);
   text-decoration: none;
   font-size: 0.85rem;
@@ -337,21 +409,21 @@ body.kiosk { height: 100vh; overflow: hidden; }
   color: var(--text-dim);
   margin: 32px 0 10px;
   padding-top: 20px;
-  border-top: 1px solid #2a2f42;
+  border-top: 1px solid var(--border);
   scroll-margin-top: 16px;
 }
 .settings-section-heading:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
 
-.segmented { display: inline-flex; border-radius: 8px; overflow: hidden; border: 1px solid #2a2f42; }
+.segmented { display: inline-flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
 .segmented-btn {
   border: none;
-  background: #10131c;
+  background: var(--input-bg);
   color: var(--text-dim);
   padding: 8px 16px;
   font-size: 0.9rem;
   cursor: pointer;
 }
-.segmented-btn.active { background: var(--accent); color: #201400; font-weight: 600; }
+.segmented-btn.active { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 
 .card {
   background: var(--panel);
@@ -368,7 +440,7 @@ body.kiosk { height: 100vh; overflow: hidden; }
   height: clamp(120px, 22vw, 240px);
   border-radius: 18px;
   overflow: hidden;
-  background: #10131c;
+  background: var(--input-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -431,8 +503,8 @@ body.kiosk { height: 100vh; overflow: hidden; }
 .checkbox-list .checkbox-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .checkbox-list label { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; color: var(--text); }
 input[type="text"], input[type="password"], select {
-  background: #10131c;
-  border: 1px solid #2a2f42;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   color: var(--text);
   padding: 10px 12px;
   border-radius: 8px;
@@ -448,9 +520,9 @@ input[type="file"] { color: var(--text-dim); }
   font-weight: 600;
   cursor: pointer;
   background: var(--accent);
-  color: #201400;
+  color: var(--on-accent);
 }
-.btn.secondary { background: #2a2f42; color: var(--text); }
+.btn.secondary { background: var(--border); color: var(--text); }
 .btn.danger { background: var(--danger); color: #250000; }
 .btn.small { padding: 4px 10px; font-size: 0.82rem; border-radius: 6px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -460,15 +532,55 @@ a.btn { display: inline-block; text-decoration: none; }
 
 .doc-links { display: flex; flex-wrap: wrap; gap: 10px; }
 
+/* Theme picker (Einstellungen > Design) - each swatch renders a small live
+   preview using that theme's own bg/panel/accent/bar-radius, inlined as
+   style attributes from the server-side theme catalog (owlbox/themes.py),
+   not the page's *current* CSS variables. */
+.theme-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+.theme-swatch {
+  display: block;
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+}
+.theme-swatch.active { border-color: var(--accent); }
+.theme-swatch-preview {
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 10px;
+}
+.theme-swatch-bar { flex: 1; height: 8px; }
+.theme-swatch-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.theme-swatch-check { opacity: 0; }
+.theme-swatch.active .theme-swatch-check { opacity: 1; }
+.theme-swatch-desc { padding: 0 12px 10px; margin: 0; font-size: 0.78rem; color: var(--text-dim); }
+
 .story-row {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 12px 0;
-  border-bottom: 1px solid #2a2f42;
+  border-bottom: 1px solid var(--border);
 }
 .story-row img, .story-row .thumb-placeholder {
-  width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: #10131c;
+  width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--input-bg);
   display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
 }
 .story-meta { flex: 1; min-width: 0; }
@@ -520,7 +632,7 @@ a.btn { display: inline-block; text-decoration: none; }
 .progress-fill.good { background: var(--status-good); }
 .progress-fill.warn { background: var(--status-warn); }
 .progress-fill.critical { background: var(--status-critical); }
-.hint code { background: #10131c; padding: 1px 5px; border-radius: 4px; }
+.hint code { background: var(--input-bg); padding: 1px 5px; border-radius: 4px; }
 .error { color: var(--danger); font-size: 0.9rem; }
 
 .toast {
@@ -529,7 +641,7 @@ a.btn { display: inline-block; text-decoration: none; }
   left: 50%;
   transform: translateX(-50%);
   background: var(--accent);
-  color: #201400;
+  color: var(--on-accent);
   padding: 12px 22px;
   border-radius: 999px;
   font-weight: 600;
@@ -547,7 +659,7 @@ a.btn { display: inline-block; text-decoration: none; }
 .login-box { width: 320px; }
 
 .divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--text-dim); font-size: 0.85rem; }
-.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #2a2f42; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
 .assign-overlay {
   position: fixed;

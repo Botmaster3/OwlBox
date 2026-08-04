@@ -6,6 +6,7 @@
 
   <nav class="jump-nav">
     <a href="#section-konto">Konto</a>
+    <a href="#section-design">Design</a>
     <a href="#section-audio">Audio</a>
     <a href="#section-anzeige">Anzeige</a>
     <a href="#section-netzwerk">Netzwerk</a>
@@ -37,6 +38,29 @@
       {% if success %}<p class="hint">{{ success }}</p>{% endif %}
       <button class="btn" type="submit">Speichern</button>
     </form>
+  </div>
+
+  <h2 class="settings-section-heading" id="section-design">Design</h2>
+
+  <div class="card">
+    <h2>Design</h2>
+    <p class="hint">Gilt für die ganze Oberfläche - Kiosk-Anzeige genauso wie diese Einstellungsseite.</p>
+    <div class="theme-picker" id="theme-picker">
+      {% for id, t in theme_catalog.items() %}
+      <button type="button" class="theme-swatch{{ ' active' if theme == id else '' }}" data-theme-id="{{ id }}">
+        <div class="theme-swatch-preview" style="background: {{ t.swatch.bg }};">
+          <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }};"></div>
+          <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }}; opacity: 0.6;"></div>
+          <div class="theme-swatch-bar" style="background: {{ t.swatch.accent }}; border-radius: {{ t.bar_radius }}; opacity: 0.35;"></div>
+        </div>
+        <div class="theme-swatch-label" style="background: {{ t.swatch.panel }}; color: {{ t.swatch.text }};">
+          <span>{{ t.label }}</span>
+          <span class="theme-swatch-check">✓</span>
+        </div>
+        <p class="theme-swatch-desc">{{ t.description }}</p>
+      </button>
+      {% endfor %}
+    </div>
   </div>
 
   <h2 class="settings-section-heading" id="section-audio">Audio</h2>

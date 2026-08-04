@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import feedback, network, repository
+from . import feedback, network, repository, themes
 from .backlight import create_backlight
 from .controls import create_controls
 from .player import create_player
@@ -74,6 +74,8 @@ class Engine:
         self._chime_volume_percent = repository.get_int_setting(
             "chime_volume_percent", round(config.audio.chime_volume_ratio * 100)
         )
+        stored_theme = repository.get_setting("theme")
+        self._theme = stored_theme if themes.is_valid_theme(stored_theme) else themes.DEFAULT_THEME
         self._missing_reads = 0
         self._tag_present = False
         self._last_stat_time: Optional[float] = None
@@ -487,6 +489,18 @@ class Engine:
             self._chime_volume_percent = max(0, min(100, percent))
             repository.set_setting("chime_volume_percent", self._chime_volume_percent)
 
+    def get_theme(self) -> str:
+        with self._lock:
+            return self._theme
+
+    def set_theme(self, name: str) -> bool:
+        if not themes.is_valid_theme(name):
+            return False
+        with self._lock:
+            self._theme = name
+            repository.set_setting("theme", name)
+        return True
+
     def _play_chime(self, name: str) -> None:
         # No simulate-mode gate here on purpose - feedback.play_chime() already
         # degrades gracefully (no-op) if aplay/the audio device isn't available,
@@ -697,6 +711,7 @@ class Engine:
             volume_step = self._volume_step
             chime_enabled = dict(self._chime_enabled)
             chime_volume_percent = self._chime_volume_percent
+            theme = self._theme
             sleep_timer_end = self._sleep_timer_end
             sleep_timer_minutes = self._sleep_timer_minutes
             auto_sleep_minutes = self._auto_sleep_minutes
@@ -757,6 +772,7 @@ class Engine:
                 "auto_sleep_minutes": auto_sleep_minutes,
                 "chime_enabled": chime_enabled,
                 "chime_volume_percent": chime_volume_percent,
+                "theme": theme,
             },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,

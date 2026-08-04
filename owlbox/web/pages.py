@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, Response, current_app, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .. import network, qr, repository
+from .. import network, qr, repository, themes
 from ..engine import FUNCTION_ACTIONS
 from .auth import admin_required
 
@@ -94,6 +94,7 @@ def admin_settings_page():
         username=user.username if user else "",
         error=error,
         success=success,
+        theme_catalog=themes.THEMES,
     )
 
 

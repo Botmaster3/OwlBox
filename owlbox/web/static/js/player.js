@@ -134,6 +134,13 @@
     // Shown regardless of splash/parent-mode/tag state, like a phone's own
     // status bar - the brightness OSD change-detection needs it up here too.
     const settings = state.settings || {};
+    // Applied even before any tag is scanned (splash screen) and regardless
+    // of parent-mode/sleep-mode - the kiosk page loads once and stays open
+    // for days, so a theme changed from Einstellungen needs to reach it live
+    // rather than only on the next full page reload.
+    if (settings.theme && document.documentElement.dataset.theme !== settings.theme) {
+      document.documentElement.dataset.theme = settings.theme;
+    }
     if (typeof settings.brightness === "number") {
       if (lastBrightness !== null && settings.brightness !== lastBrightness) {
         showBrightnessOsd(settings.brightness, settings.min_brightness, settings.max_brightness);

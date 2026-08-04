@@ -16,6 +16,14 @@ def create_app(engine, config) -> Flask:
     app.register_blueprint(pages_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
 
+    @app.context_processor
+    def inject_theme():
+        # Rendered server-side into <html data-theme="..."> (base.html) so the
+        # right design is active on first paint - the kiosk page in particular
+        # can stay open for days, so waiting for a JS-driven poll to apply it
+        # would mean starting every fresh page load in the wrong theme.
+        return {"theme": engine.get_theme()}
+
     @app.route("/media/<int:story_id>/<path:filename>")
     def media(story_id: int, filename: str):
         directory = config.media_dir / str(story_id)

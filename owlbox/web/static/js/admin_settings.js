@@ -91,6 +91,33 @@
     }
   });
 
+  // -- design theme ---------------------------------------------------------
+
+  const themePicker = document.getElementById("theme-picker");
+  if (themePicker) {
+    themePicker.querySelectorAll("[data-theme-id]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.themeId;
+        // Apply immediately for instant feedback, persist in the background -
+        // a theme choice isn't destructive, so there's nothing to gain from
+        // waiting on the round-trip before showing the new look.
+        document.documentElement.dataset.theme = id;
+        themePicker.querySelectorAll("[data-theme-id]").forEach((other) => {
+          other.classList.toggle("active", other === btn);
+        });
+        try {
+          await api("/api/settings/theme", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ theme: id }),
+          });
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      });
+    });
+  }
+
   // -- acoustic feedback (scan chimes) -------------------------------------
 
   const chimeVolumePercentInput = document.getElementById("chime-volume-percent");

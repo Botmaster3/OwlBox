@@ -1,7 +1,7 @@
 import subprocess
 import time
 
-from owlbox import feedback, network, repository
+from owlbox import feedback, network, repository, themes
 from owlbox.engine import Engine
 
 
@@ -1128,3 +1128,33 @@ def test_hotspot_stops_if_wifi_explicitly_disabled(config):
         network.start_hotspot = original_start
         network.stop_hotspot = original_stop
         network.get_hotspot_ip = original_get_ip
+
+
+def test_theme_defaults_to_waldnacht(config):
+    engine = Engine(config)
+    assert engine.get_theme() == "waldnacht"
+    assert engine.get_state()["settings"]["theme"] == "waldnacht"
+
+
+def test_set_theme_is_persisted(config):
+    engine = Engine(config)
+    assert engine.set_theme("mondschein") is True
+    assert engine.get_theme() == "mondschein"
+    assert engine.get_state()["settings"]["theme"] == "mondschein"
+    assert repository.get_setting("theme") == "mondschein"
+
+    # A freshly constructed engine reads the persisted choice back on boot.
+    engine2 = Engine(config)
+    assert engine2.get_theme() == "mondschein"
+
+
+def test_set_theme_rejects_unknown_name(config):
+    engine = Engine(config)
+    assert engine.set_theme("not-a-real-theme") is False
+    assert engine.get_theme() == themes.DEFAULT_THEME
+
+
+def test_set_theme_falls_back_to_default_for_corrupted_setting(config):
+    repository.set_setting("theme", "not-a-real-theme")
+    engine = Engine(config)
+    assert engine.get_theme() == themes.DEFAULT_THEME
