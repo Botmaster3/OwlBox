@@ -17,11 +17,12 @@ are labelled after the calendar seasons they stand in for (id "waldnacht" is
 labelled "Frühling", "tageslicht" is labelled "Sommer", "herbstwald" is
 labelled "Herbst" - ids stay their original German-forest names since
 they're only ever used internally/in storage, never shown to a user). The
-fourth standard theme ("mondschein") is labelled "Winter" too, but - unlike
-the other three - isn't itself auto-selected; the Sonderedition "winter"
-theme (snowy, id "winter") already covers that window, so having a second
-plain "Winter" also fight for the same auto-selected slot would just be
-redundant. See `get_seasonal_theme`/`get_auto_theme` below - auto-selection
+fourth standard theme ("mondschein") is labelled "Winter", but - unlike the
+other three - isn't itself auto-selected; the Sonderedition theme (snowy,
+id "winter", labelled "Schnee" precisely to stay distinct from this one)
+already covers that window, so having a second theme also fighting for the
+same auto-selected slot would just be redundant. See
+`get_seasonal_theme`/`get_auto_theme` below - auto-selection
 is an Engine-level opt-in, individually toggleable per theme
 (`auto_theme_enabled` setting), not something this module enforces.
 """
@@ -87,7 +88,7 @@ THEMES = {
         "season_label": "9 Tage vor bis 1 Tag nach Ostern",
     },
     "winter": {
-        "label": "Winter",
+        "label": "Schnee",
         "description": "Dunkle Winternacht in Eisblau, mit sanft fallendem Schnee.",
         "swatch": {"bg": "#0d1822", "panel": "#16232f", "accent": "#5fb4e8", "text": "#e8f1f8"},
         "bar_radius": "999px",
