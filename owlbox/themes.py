@@ -12,11 +12,17 @@ user-supplied at runtime rather than baked into the stylesheet.
 applied, so a new seasonal design is just another dict entry here.
 
 Several themes can additionally be auto-selected by date - not just the
-Sonderedition ones anymore, but also three of the "standard" themes acting
-as stand-ins for the calendar seasons (Herbstwald=Herbst, Tageslicht=Sommer,
-Waldnacht=Frühling; Winter reuses the snowy Sonderedition theme rather than
-needing a fourth). See `get_seasonal_theme`/`get_auto_theme` below - auto-
-selection is an Engine-level opt-in, individually toggleable per theme
+Sonderedition ones anymore, but also three of the "standard" themes, which
+are labelled after the calendar seasons they stand in for (id "waldnacht" is
+labelled "Frühling", "tageslicht" is labelled "Sommer", "herbstwald" is
+labelled "Herbst" - ids stay their original German-forest names since
+they're only ever used internally/in storage, never shown to a user). The
+fourth standard theme ("mondschein") is labelled "Winter" too, but - unlike
+the other three - isn't itself auto-selected; the Sonderedition "winter"
+theme (snowy, id "winter") already covers that window, so having a second
+plain "Winter" also fight for the same auto-selected slot would just be
+redundant. See `get_seasonal_theme`/`get_auto_theme` below - auto-selection
+is an Engine-level opt-in, individually toggleable per theme
 (`auto_theme_enabled` setting), not something this module enforces.
 """
 from __future__ import annotations
@@ -29,35 +35,35 @@ CUSTOM_THEME_ID = "custom"
 
 THEMES = {
     "waldnacht": {
-        "label": "Waldnacht",
+        "label": "Frühling",
         "description": "Dunkle Nacht im Wald mit warmem Bernstein-Glühen - das Standarddesign.",
         "swatch": {"bg": "#12141c", "panel": "#1c2030", "accent": "#f2a93c", "text": "#f5f2ea"},
         "bar_radius": "4px",
         "category": "standard",
         "season_label": "20. März bis 20. Juni",
     },
-    "mondschein": {
-        "label": "Mondschein",
-        "description": "Kühle, sternenklare Nacht in Blautönen mit eisblauem Akzent.",
-        "swatch": {"bg": "#0d1420", "panel": "#182234", "accent": "#6fc3f7", "text": "#eef4fa"},
+    "tageslicht": {
+        "label": "Sommer",
+        "description": "Helles Design für den Tag, mit frischem Grün.",
+        "swatch": {"bg": "#eef1f6", "panel": "#ffffff", "accent": "#2f8f5b", "text": "#1c2230"},
         "bar_radius": "999px",
         "category": "standard",
+        "season_label": "21. Juni bis 22. September",
     },
     "herbstwald": {
-        "label": "Herbstwald",
+        "label": "Herbst",
         "description": "Warme Herbstfarben in Rot- und Orangetönen, gemütlich und erdig.",
         "swatch": {"bg": "#1a1410", "panel": "#241b14", "accent": "#e2703a", "text": "#f7ece0"},
         "bar_radius": "6px",
         "category": "standard",
         "season_label": "23. September bis 20. Dezember",
     },
-    "tageslicht": {
-        "label": "Tageslicht",
-        "description": "Helles Design für den Tag, mit frischem Grün.",
-        "swatch": {"bg": "#eef1f6", "panel": "#ffffff", "accent": "#2f8f5b", "text": "#1c2230"},
+    "mondschein": {
+        "label": "Winter",
+        "description": "Kühle, sternenklare Nacht in Blautönen mit eisblauem Akzent.",
+        "swatch": {"bg": "#0d1420", "panel": "#182234", "accent": "#6fc3f7", "text": "#eef4fa"},
         "bar_radius": "999px",
         "category": "standard",
-        "season_label": "21. Juni bis 22. September",
     },
     "weihnachten": {
         "label": "Weihnachten",
@@ -246,8 +252,9 @@ _AUTO_THEME_PRIORITY = (
 
 def auto_themeable_ids() -> tuple:
     """Every theme id that has a calendar window at all - what the per-theme
-    auto-toggle in Einstellungen needs to list. Mondschein and the custom
-    theme aren't tied to any date, so they're not included."""
+    auto-toggle in Einstellungen needs to list. "mondschein" (labelled
+    "Winter", see the module docstring for why) and the custom theme aren't
+    tied to any date, so they're not included."""
     return tuple(theme_id for theme_id, _ in _AUTO_THEME_PRIORITY)
 
 
