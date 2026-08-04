@@ -493,8 +493,19 @@ class Engine:
         # the same pattern as network.py/backlight.py elsewhere in this module.
         if not self._chime_enabled.get(name, False):
             return
+        self._play_chime_at(name, self._chime_volume_percent)
+
+    def test_chime(self, name: str, volume_percent: Optional[int] = None) -> None:
+        # Ignores the per-type enabled toggle on purpose - "test" should let you
+        # preview a chime even while deciding whether to keep it disabled.
+        if name not in feedback.CHIMES:
+            return
+        percent = self._chime_volume_percent if volume_percent is None else max(0, min(100, volume_percent))
+        self._play_chime_at(name, percent)
+
+    def _play_chime_at(self, name: str, percent: int) -> None:
         with self._lock:
-            chime_volume = round(self._max_volume * self._chime_volume_percent / 100)
+            chime_volume = round(self._max_volume * percent / 100)
             restore_to = self._volume
             # Chimes share the hardware mixer with the story (see feedback.py) -
             # drop it to a fixed, quiet level just for the chime, then restore

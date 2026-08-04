@@ -520,6 +520,25 @@ def update_chime():
     return jsonify(engine.get_state()["settings"])
 
 
+@api_bp.route("/settings/chime/test", methods=["POST"])
+@admin_required
+def test_chime():
+    from .. import feedback
+
+    data = request.get_json(silent=True) or {}
+    name = data.get("name", "known")
+    if name not in feedback.CHIMES:
+        return jsonify({"error": "unknown chime name"}), 400
+    volume_percent = data.get("chime_volume_percent")
+    if volume_percent is not None:
+        try:
+            volume_percent = int(volume_percent)
+        except (TypeError, ValueError):
+            return jsonify({"error": "chime_volume_percent must be an integer"}), 400
+    _engine().test_chime(name, volume_percent)
+    return jsonify({"ok": True})
+
+
 @api_bp.route("/sleep-timer", methods=["POST"])
 @admin_required
 def start_sleep_timer():

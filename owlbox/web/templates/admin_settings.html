@@ -62,16 +62,35 @@
     <h2>Akustisches Feedback</h2>
     <div class="field">
       <label for="chime-volume-percent">Lautstärke der Hinweistöne (% der maximalen Lautstärke)</label>
-      <input type="number" id="chime-volume-percent" min="0" max="100" value="15">
+      <div class="inline-field">
+        <input type="number" id="chime-volume-percent" min="0" max="100" value="15">
+        <button class="btn secondary" id="chime-test-btn" type="button">🔊 Testen</button>
+      </div>
+      <span id="chime-test-status" class="hint"></span>
     </div>
     <div class="field">
       <label>Welche Töne sollen abgespielt werden?</label>
       <div class="checkbox-list">
-        <label><input type="checkbox" id="chime-type-known" checked> Chip erkannt</label>
-        <label><input type="checkbox" id="chime-type-unknown" checked> Unbekannter Chip</label>
-        <label><input type="checkbox" id="chime-type-function" checked> Funktions-Chip</label>
-        <label><input type="checkbox" id="chime-type-startup" checked> Hochfahren</label>
-        <label><input type="checkbox" id="chime-type-shutdown" checked> Herunterfahren/Neustart</label>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="chime-type-known" checked> Chip erkannt</label>
+          <button class="btn secondary small" type="button" data-chime-test="known">▶ Testen</button>
+        </div>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="chime-type-unknown" checked> Unbekannter Chip</label>
+          <button class="btn secondary small" type="button" data-chime-test="unknown">▶ Testen</button>
+        </div>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="chime-type-function" checked> Funktions-Chip</label>
+          <button class="btn secondary small" type="button" data-chime-test="function">▶ Testen</button>
+        </div>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="chime-type-startup" checked> Hochfahren</label>
+          <button class="btn secondary small" type="button" data-chime-test="startup">▶ Testen</button>
+        </div>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="chime-type-shutdown" checked> Herunterfahren/Neustart</label>
+          <button class="btn secondary small" type="button" data-chime-test="shutdown">▶ Testen</button>
+        </div>
       </div>
     </div>
     <button class="btn" id="chime-save-btn" type="button">Speichern</button>
@@ -80,7 +99,8 @@
       braucht alsa-utils und funktioniert am zuverlässigsten mit ALSA-dmix (sonst ggf. stumm, falls das
       Audiogerät gerade exklusiv von mpv belegt ist). Spielt immer bei der oben eingestellten, festen
       Lautstärke, egal wie laut die Geschichte gerade läuft - danach wird automatisch wieder auf die
-      eigentliche Lautstärke zurückgestellt.
+      eigentliche Lautstärke zurückgestellt. "Testen" spielt sofort mit der aktuell eingetragenen
+      Lautstärke, auch ohne vorher zu speichern.
     </p>
   </div>
 

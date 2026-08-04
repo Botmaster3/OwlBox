@@ -165,6 +165,73 @@ def test_set_chime_volume_percent_is_persisted(config):
     assert repository.get_int_setting("chime_volume_percent", -1) == 42
 
 
+def test_test_chime_plays_even_when_type_disabled(config):
+    calls = []
+    original = feedback.play_chime
+    feedback.play_chime = lambda name, alsa_device: calls.append(name)
+
+    engine = Engine(config)
+    engine.set_chime_type_enabled("known", False)
+    try:
+        engine.test_chime("known")
+        assert calls == ["known"]
+    finally:
+        feedback.play_chime = original
+
+
+def test_test_chime_uses_override_percent_not_saved_setting(config):
+    engine = Engine(config)
+    engine.set_max_volume(80)
+    engine.set_chime_volume_percent(15)
+    engine.manual_set_volume(50)
+
+    observed_during_chime = []
+    original = feedback.play_chime
+
+    def fake_play_chime(name, alsa_device):
+        observed_during_chime.append(engine.get_state()["player"]["volume"])
+
+    feedback.play_chime = fake_play_chime
+    try:
+        engine.test_chime("known", volume_percent=25)
+        assert observed_during_chime == [20]  # round(80 * 0.25), not the saved 15%
+        assert engine.get_state()["player"]["volume"] == 50  # restored afterwards
+    finally:
+        feedback.play_chime = original
+
+
+def test_test_chime_falls_back_to_saved_percent_when_no_override(config):
+    engine = Engine(config)
+    engine.set_max_volume(80)
+    engine.set_chime_volume_percent(15)
+
+    observed_during_chime = []
+    original = feedback.play_chime
+
+    def fake_play_chime(name, alsa_device):
+        observed_during_chime.append(engine.get_state()["player"]["volume"])
+
+    feedback.play_chime = fake_play_chime
+    try:
+        engine.test_chime("known")
+        assert observed_during_chime == [12]  # round(80 * 0.15)
+    finally:
+        feedback.play_chime = original
+
+
+def test_test_chime_ignores_unknown_name(config):
+    calls = []
+    original = feedback.play_chime
+    feedback.play_chime = lambda name, alsa_device: calls.append(name)
+
+    engine = Engine(config)
+    try:
+        engine.test_chime("not-a-real-chime")
+        assert calls == []
+    finally:
+        feedback.play_chime = original
+
+
 def test_scan_unknown_tag_is_logged_and_not_playing(config):
     config.rfid.poll_interval = 0.01
 

@@ -127,6 +127,38 @@
     }
   });
 
+  const chimeTestStatus = document.getElementById("chime-test-status");
+
+  async function testChime(name, button) {
+    const originalText = button.textContent;
+    button.disabled = true;
+    chimeTestStatus.textContent = "Spielt…";
+    try {
+      await api("/api/settings/chime/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          chime_volume_percent: parseInt(chimeVolumePercentInput.value, 10),
+        }),
+      });
+      chimeTestStatus.textContent = "";
+    } catch (err) {
+      chimeTestStatus.textContent = err.message;
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+
+  document.getElementById("chime-test-btn").addEventListener("click", (e) => {
+    testChime("known", e.currentTarget);
+  });
+
+  document.querySelectorAll("[data-chime-test]").forEach((btn) => {
+    btn.addEventListener("click", () => testChime(btn.dataset.chimeTest, btn));
+  });
+
   // -- display brightness -------------------------------------------------
 
   const currentBrightnessInput = document.getElementById("current-brightness");
