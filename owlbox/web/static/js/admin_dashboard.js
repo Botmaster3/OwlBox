@@ -17,7 +17,8 @@
   const npBtnPrev = document.getElementById("np-btn-prev");
   const npBtnToggle = document.getElementById("np-btn-toggle");
   const npBtnNext = document.getElementById("np-btn-next");
-  const npBtnRepeat = document.getElementById("np-btn-repeat");
+  const npRepeatToggle = document.getElementById("np-repeat-toggle");
+  const npRepeatButtons = npRepeatToggle.querySelectorAll(".segmented-btn");
   const npVolumeInput = document.getElementById("np-volume");
   const npVolumeValue = document.getElementById("np-volume-value");
   const npBrightnessInput = document.getElementById("np-brightness");
@@ -35,14 +36,6 @@
   let vuTimer = null;
   let lastDuration = 0;
   let currentStory = null;
-
-  // Same "off" plays through once and stops; "folder" loops the whole story
-  // from the first track once the last one ends; "track" repeats whichever
-  // single track is currently playing - see admin_library.js, where this
-  // constant is duplicated rather than shared since none of this app's JS
-  // is split into shared modules.
-  const REPEAT_MODE_ORDER = ["off", "folder", "track"];
-  const REPEAT_MODE_LABELS = { off: "🔁 Aus", folder: "🔁 Ordner", track: "🔂 Track" };
 
   // Decorative "is audio playing" animation, not a real audio-level analysis -
   // mpv doesn't expose one over the IPC socket we already talk to it through.
@@ -80,11 +73,11 @@
     postJson(`/api/stories/${currentStory.id}/flags`, { shuffle: !currentStory.shuffle });
   });
 
-  npBtnRepeat.addEventListener("click", () => {
-    if (!currentStory) return;
-    const currentIndex = REPEAT_MODE_ORDER.indexOf(currentStory.repeat);
-    const nextMode = REPEAT_MODE_ORDER[(Math.max(currentIndex, 0) + 1) % REPEAT_MODE_ORDER.length];
-    postJson(`/api/stories/${currentStory.id}/flags`, { repeat: nextMode });
+  npRepeatButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!currentStory) return;
+      postJson(`/api/stories/${currentStory.id}/flags`, { repeat: btn.dataset.mode });
+    });
   });
 
   npProgressBar.addEventListener("click", (event) => {
@@ -197,10 +190,12 @@
     // loaded at all (there'd be no story id to send the change to).
     const shuffleRepeatUsable = !!(story && !story.is_stream);
     npBtnShuffle.disabled = !shuffleRepeatUsable;
-    npBtnRepeat.disabled = !shuffleRepeatUsable;
     npBtnShuffle.classList.toggle("active", shuffleRepeatUsable && story.shuffle);
-    npBtnRepeat.classList.toggle("active", shuffleRepeatUsable && story.repeat !== "off");
-    npBtnRepeat.textContent = REPEAT_MODE_LABELS[(shuffleRepeatUsable && story.repeat) || "off"];
+    const activeRepeatMode = shuffleRepeatUsable ? story.repeat : "off";
+    npRepeatButtons.forEach((btn) => {
+      btn.disabled = !shuffleRepeatUsable;
+      btn.classList.toggle("active", btn.dataset.mode === activeRepeatMode);
+    });
 
     if (story) {
       npTitle.textContent = story.title;

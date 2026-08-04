@@ -58,7 +58,11 @@
         <button class="btn secondary" id="np-btn-prev" type="button">⏮️ Zurück</button>
         <button class="btn" id="np-btn-toggle" type="button">▶️ Play</button>
         <button class="btn secondary" id="np-btn-next" type="button">⏭️ Weiter</button>
-        <button class="btn secondary" id="np-btn-repeat" type="button" title="Wiederholung: Aus -> Ordner -> Track">🔁 Aus</button>
+        <div class="segmented" id="np-repeat-toggle" title="Wiederholung">
+          <button type="button" class="segmented-btn active" data-mode="off">Aus</button>
+          <button type="button" class="segmented-btn" data-mode="folder">🔁 Ordner</button>
+          <button type="button" class="segmented-btn" data-mode="track">🔂 Track</button>
+        </div>
       </div>
       <div class="field">
         <label for="np-volume">Lautstärke (<span id="np-volume-value">–</span>%)</label>
