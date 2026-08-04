@@ -34,9 +34,14 @@ audio:
   mpv_binary: mpv
   mpv_ipc_socket: /tmp/owlbox-mpv.sock
   # Short confirmation chime on RFID scans (chip erkannt/unbekannt/Funktions-
-  # Chip), played via `aplay` alongside mpv so a running story is never
-  # interrupted. Needs alsa-utils installed. Toggle in Einstellungen too.
+  # Chip) plus Start/Stop, played via `aplay` alongside mpv so a running story
+  # is never interrupted. Needs alsa-utils installed. Toggle in Einstellungen too.
   chime_enabled: true
+  # Chimes share the hardware ALSA mixer with the story - this fraction of
+  # max_volume is what the mixer briefly gets set to for a chime's duration,
+  # then restored. Keeps chimes at a consistent, quiet level no matter how
+  # loud the story currently is.
+  chime_volume_ratio: 0.15
 
 rfid:
   reader: mfrc522   # mfrc522 | simulated

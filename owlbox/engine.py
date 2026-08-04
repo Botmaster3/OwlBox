@@ -480,8 +480,18 @@ class Engine:
         # No simulate-mode gate here on purpose - feedback.play_chime() already
         # degrades gracefully (no-op) if aplay/the audio device isn't available,
         # the same pattern as network.py/backlight.py elsewhere in this module.
-        if self._chime_enabled:
+        if not self._chime_enabled:
+            return
+        with self._lock:
+            chime_volume = round(self._max_volume * self._config.audio.chime_volume_ratio)
+            restore_to = self._volume
+            # Chimes share the hardware mixer with the story (see feedback.py) -
+            # drop it to a fixed, quiet level just for the chime, then restore
+            # the real volume. play_chime() blocks until the chime finishes so
+            # the restore below can't race a background loop tick.
+            self._player.set_volume(chime_volume)
             feedback.play_chime(name, self._config.audio.alsa_device)
+            self._player.set_volume(restore_to)
 
     # -- display brightness -----------------------------------------------------
 

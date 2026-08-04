@@ -24,7 +24,9 @@ den Pi geladen und einem Chip zugewiesen.
 - **Akustisches Feedback**: kurzer, unterschiedlicher Ton für Chip erkannt /
   unbekannter Chip / Funktions-Chip sowie beim Hochfahren und beim
   Herunterfahren/Neustart - läuft über `aplay` parallel zur laufenden
-  Geschichte, unterbricht sie also nicht. In Einstellungen abschaltbar.
+  Geschichte, unterbricht sie also nicht. Spielt immer bei einer festen,
+  leisen Lautstärke (Standard 15% der maximalen Lautstärke), egal wie laut
+  die Geschichte gerade eingestellt ist. In Einstellungen abschaltbar.
 - **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
   Kapitel-/Track-Titel, verbleibende Zeit im Track, Track-Liste der Geschichte mit
   hervorgehobenem aktuellen Titel, Lautstärke, WLAN-Empfang) - kein Touch, Bedienung

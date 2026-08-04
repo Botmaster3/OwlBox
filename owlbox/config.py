@@ -28,9 +28,16 @@ class AudioConfig:
     mpv_binary: str = "mpv"
     mpv_ipc_socket: str = "/tmp/owlbox-mpv.sock"
     # Short confirmation chime on RFID scans (chip erkannt/unbekannt/Funktions-
-    # Chip), played via `aplay` alongside mpv rather than through it - see
-    # feedback.py. Toggle in Einstellungen; needs `aplay` (alsa-utils).
+    # Chip) plus Start/Stop, played via `aplay` alongside mpv rather than
+    # through it - see feedback.py. Toggle in Einstellungen; needs `aplay`
+    # (alsa-utils).
     chime_enabled: bool = True
+    # Chimes share the hardware ALSA mixer with the story, so the engine
+    # briefly sets the mixer to this fraction of max_volume for the chime's
+    # duration and restores the real volume right after - keeps chimes at a
+    # consistent, quiet level regardless of how loud the story is currently
+    # playing.
+    chime_volume_ratio: float = 0.15
 
 
 @dataclass

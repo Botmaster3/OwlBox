@@ -70,7 +70,9 @@
     <p class="hint">
       Läuft über <span class="mono">aplay</span> parallel zur laufenden Geschichte, unterbricht sie also nicht -
       braucht alsa-utils und funktioniert am zuverlässigsten mit ALSA-dmix (sonst ggf. stumm, falls das
-      Audiogerät gerade exklusiv von mpv belegt ist).
+      Audiogerät gerade exklusiv von mpv belegt ist). Spielt immer bei einer festen, leisen Lautstärke
+      (Standard 15% der maximalen Lautstärke, s.o.), egal wie laut die Geschichte gerade läuft - danach
+      wird automatisch wieder auf die eigentliche Lautstärke zurückgestellt.
     </p>
   </div>
 

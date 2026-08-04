@@ -62,6 +62,29 @@ def test_chime_plays_on_known_unknown_and_function_tag_scans(config):
         feedback.play_chime = original
 
 
+def test_chime_plays_at_fixed_fraction_of_max_volume_then_restores(config):
+    config.audio.chime_volume_ratio = 0.15
+    _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.set_max_volume(80)
+    engine.manual_set_volume(50)
+
+    observed_during_chime = []
+    original = feedback.play_chime
+
+    def fake_play_chime(name, alsa_device):
+        observed_during_chime.append(engine.get_state()["player"]["volume"])
+
+    feedback.play_chime = fake_play_chime
+    try:
+        engine._play_chime("known")
+        assert observed_during_chime == [12]  # round(80 * 0.15)
+        assert engine.get_state()["player"]["volume"] == 50  # restored afterwards
+    finally:
+        feedback.play_chime = original
+
+
 def test_chime_plays_on_startup(config):
     calls = []
     original = feedback.play_chime
