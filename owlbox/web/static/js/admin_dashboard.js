@@ -211,6 +211,12 @@
     applyWifi(state.wifi);
     applyHotspotBanner(state.wifi);
     setVuPlaying(!!player.playing);
+    // Shows the action the button performs, not the current state - a
+    // pause icon while playing (clicking it pauses), a play icon
+    // otherwise. ⏯️ (the combined play/pause glyph the button used to
+    // show unconditionally) has spotty font support and doesn't say which
+    // way it's about to switch, unlike swapping between the two here.
+    npBtnToggle.textContent = player.playing ? "⏸️ Pause" : "▶️ Play";
 
     if (!volumeSliderBeingDragged) {
       npVolumeInput.value = player.volume || 0;
