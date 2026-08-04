@@ -65,7 +65,11 @@ den Pi geladen und einem Chip zugewiesen.
     Hörstatistik (Wiedergaben insgesamt, Gesamt-Hördauer, Meistgehört-Liste, pro Geschichte/Ordner/Livestream
     wie oft und wie lange gehört sowie zuletzt gespielt).
   - **Hinzufügen** - einzelne Dateien, einen ganzen Ordner oder eine Livestream-URL (Internetradio o.ä.)
-    hochladen/anlegen, Cover/Titel wird aus dem Ordner erkannt.
+    hochladen/anlegen, Cover/Titel wird aus dem Ordner erkannt. Vierte Option „Playlist aus
+    Bibliothek“: eine neue Geschichte aus bereits hochgeladenen Titeln anderer Geschichten
+    zusammenstellen (durchsuchbar, eigene Reihenfolge per ▲/▼) - ohne erneutes Hochladen und ohne
+    doppelten Speicherbedarf (Hardlinks auf dieselben Dateien), danach ganz normal wie jede andere
+    Geschichte einem Chip zuweisbar. Löschen der Quell-Geschichte lässt die Playlist unangetastet.
   - **RFID-Tags** - Eltern-Chips anlegen (z.B. "Vater"/"Mutter", dienen als Login-Chip),
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Design (4 Standard- plus 4 Sonderedition-Themes und ein

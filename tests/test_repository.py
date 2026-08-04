@@ -73,6 +73,39 @@ def test_tracks_ordering_and_reorder(config):
     assert [t.filename for t in tracks] == ["b.mp3", "a.mp3"]
 
 
+def test_get_track_returns_the_track_or_none(config):
+    story = repository.create_story(title="Story")
+    track = repository.add_track(story.id, 0, "a.mp3", "A", 10.0)
+
+    fetched = repository.get_track(track.id)
+    assert fetched is not None
+    assert fetched.filename == "a.mp3"
+    assert fetched.story_id == story.id
+
+    assert repository.get_track(track.id + 999) is None
+
+
+def test_list_all_tracks_includes_story_title_and_excludes_streams(config):
+    story_a = repository.create_story(title="Alpha")
+    repository.add_track(story_a.id, 0, "a1.mp3", "Erster Titel", 10.0)
+    repository.add_track(story_a.id, 1, "a2.mp3", None, 20.0)
+    story_b = repository.create_story(title="Beta")
+    repository.add_track(story_b.id, 0, "b1.mp3", "Beta-Titel", 5.0)
+    stream_story = repository.create_story(title="Radio", stream_url="http://example.com/stream")
+    repository.add_track(stream_story.id, 0, "should-not-appear.mp3", None, None)
+
+    tracks = repository.list_all_tracks()
+    titles = [t["title"] for t in tracks]
+    assert "Erster Titel" in titles
+    assert "a2.mp3" in titles  # falls back to filename when no title is stored
+    assert "Beta-Titel" in titles
+    assert "should-not-appear.mp3" not in titles
+
+    alpha_track = next(t for t in tracks if t["title"] == "Erster Titel")
+    assert alpha_track["story_title"] == "Alpha"
+    assert alpha_track["story_id"] == story_a.id
+
+
 def test_playback_state_roundtrip(config):
     assert repository.get_playback_state("XYZ") == (0, 0.0)
     repository.save_playback_state("XYZ", 2, 12.5)

@@ -182,6 +182,81 @@ def create_story():
     return jsonify(_story_to_dict(repository.get_story(story.id))), 201
 
 
+@api_bp.route("/tracks")
+@admin_required
+def list_all_tracks():
+    """Every track in the library (grouped by its story on the frontend) -
+    source list for building a playlist out of already-uploaded tracks."""
+    return jsonify(repository.list_all_tracks())
+
+
+@api_bp.route("/stories/from-tracks", methods=["POST"])
+@admin_required
+def create_story_from_tracks():
+    """Creates a new story ('playlist') out of tracks that already live
+    under other stories, instead of uploading new files. Each source file
+    is hard-linked (falling back to a copy across filesystems) into the
+    new story's own media directory - same on-disk layout create_story()
+    produces, so playback, shuffle/repeat, resume position, chip
+    assignment etc. all work identically without any further changes."""
+    data = request.get_json(silent=True) or {}
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"error": "title is required"}), 400
+
+    track_ids = data.get("track_ids")
+    if not isinstance(track_ids, list) or not track_ids:
+        return jsonify({"error": "at least one track_id is required"}), 400
+
+    source_tracks = []
+    for track_id in track_ids:
+        try:
+            track = repository.get_track(int(track_id))
+        except (TypeError, ValueError):
+            track = None
+        if track is None:
+            return jsonify({"error": f"track {track_id} not found"}), 400
+        source_tracks.append(track)
+
+    media_dir = _config().media_dir
+    story = repository.create_story(title=title)
+    story_dir = media_dir / str(story.id)
+    story_dir.mkdir(parents=True, exist_ok=True)
+
+    for position, track in enumerate(source_tracks):
+        src_path = media_dir / str(track.story_id) / track.filename
+        # Prefix with the position so same-named files from different
+        # source stories can't collide inside the new playlist's folder.
+        dest_filename = f"{position:03d}_{track.filename}"
+        dest_path = story_dir / dest_filename
+        try:
+            os.link(src_path, dest_path)
+        except OSError:
+            # Cross-device (e.g. media_dir spans two mounts) or the
+            # filesystem just doesn't support hardlinks - fall back to a
+            # real copy so the playlist still works either way.
+            shutil.copy2(src_path, dest_path)
+        repository.add_track(story.id, position, dest_filename, track.title, track.duration)
+
+    cover_story_id = data.get("cover_story_id")
+    if cover_story_id:
+        source_story = repository.get_story(int(cover_story_id))
+        if source_story and source_story.cover_path:
+            src_cover = media_dir / str(source_story.id) / source_story.cover_path
+            cover_filename = "cover" + Path(source_story.cover_path).suffix.lower()
+            try:
+                os.link(src_cover, story_dir / cover_filename)
+            except OSError:
+                shutil.copy2(src_cover, story_dir / cover_filename)
+            repository.set_cover_path(story.id, cover_filename)
+
+    uid = (data.get("uid") or "").strip()
+    if uid:
+        repository.assign_uid(story.id, uid)
+
+    return jsonify(_story_to_dict(repository.get_story(story.id))), 201
+
+
 @api_bp.route("/stories/<int:story_id>", methods=["DELETE"])
 @admin_required
 def delete_story(story_id):

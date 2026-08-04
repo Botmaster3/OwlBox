@@ -1154,6 +1154,20 @@ a.btn { display: inline-block; text-decoration: none; }
 .track-list li .track-order { display: flex; gap: 2px; }
 .track-list li button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; }
 
+/* Playlist-aus-Bibliothek picker (admin_add.js): the "available" side is a
+   bounded, scrollable list (could be hundreds of tracks); "selected" grows
+   with the playlist itself, so it isn't height-capped like the other one. */
+.playlist-track-list { margin-top: 10px; padding-left: 0; list-style: none; border: 1px solid var(--border); border-radius: 8px; }
+#playlist-available.playlist-track-list { max-height: 260px; overflow-y: auto; }
+.playlist-track-list:empty { display: none; }
+.playlist-track-row { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.playlist-track-row:last-child { border-bottom: none; }
+.playlist-track-row .playlist-track-info { flex: 1 1 auto; min-width: 0; }
+.playlist-track-row .playlist-track-title { color: var(--text); font-size: 0.9rem; }
+.playlist-track-row .playlist-track-story { color: var(--text-dim); font-size: 0.8rem; }
+.playlist-track-row .track-order { display: flex; gap: 2px; }
+.playlist-track-row .track-order button, .playlist-track-row button.icon-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; }
+
 .banner-info { background: var(--panel); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
 .hint { color: var(--text-dim); font-size: 0.85rem; }
 

@@ -13,10 +13,11 @@
         <button type="button" class="segmented-btn active" data-mode="files">Einzelne Dateien</button>
         <button type="button" class="segmented-btn" data-mode="folder">Ganzer Ordner</button>
         <button type="button" class="segmented-btn" data-mode="stream">Livestream-URL</button>
+        <button type="button" class="segmented-btn" data-mode="playlist">Playlist aus Bibliothek</button>
       </div>
       <p class="field-help">Bestimmt, welches Eingabefeld unten erscheint - einzelne Audiodateien,
-        ein kompletter Ordner oder eine Stream-Adresse. Nachträglich nicht mehr änderbar, ohne die
-        Geschichte neu anzulegen.</p>
+        ein kompletter Ordner, eine Stream-Adresse oder eine Auswahl bereits vorhandener Titel.
+        Nachträglich nicht mehr änderbar, ohne die Geschichte neu anzulegen.</p>
       <span class="hint" id="folder-hint" hidden>
         Ordner auswählen - alle enthaltenen Audiodateien werden (alphabetisch sortiert) übernommen,
         ein darin liegendes Cover-Bild (z.B. <code>cover.jpg</code>) wird automatisch erkannt.
@@ -25,6 +26,11 @@
         Direkte URL eines Audio-Livestreams (Internetradio o.ä.), beginnend mit <code>http://</code> oder
         <code>https://</code>. Der Chip verbindet beim Auflegen immer live - es gibt keine gespeicherte
         Position und kein Vor-/Zurückspulen.
+      </span>
+      <span class="hint" id="playlist-hint" hidden>
+        Stellt eine neue Geschichte aus Titeln zusammen, die schon in der Bibliothek liegen - ohne
+        erneutes Hochladen. Die Originaldateien bleiben unangetastet, die Playlist bekommt eigene
+        Verknüpfungen zu denselben Dateien (kein doppelter Speicherbedarf).
       </span>
     </div>
 
@@ -35,10 +41,10 @@
         <p class="field-help">Name der Geschichte, wie er später überall in der Verwaltung und auf
           dem Kiosk-Display erscheint.</p>
       </div>
-      <div class="field">
+      <div class="field" id="cover-field">
         <label for="cover">Cover-Bild (optional)</label>
         <input type="file" id="cover" name="cover" accept="image/*">
-        <span class="hint">Funktioniert in allen drei Modi, auch für eine Livestream-URL.</span>
+        <span class="hint">Funktioniert in den Modi Einzelne Dateien, Ganzer Ordner und Livestream-URL.</span>
         <span class="hint" id="cover-auto-hint" hidden></span>
         <p class="field-help">Ohne eigenes Cover übernimmt OwlBox im Modus „Ganzer Ordner“
           automatisch ein im Ordner liegendes Bild (z.B. cover.jpg), falls vorhanden.</p>
@@ -61,6 +67,22 @@
         <input type="url" id="stream_url" name="stream_url" placeholder="https://stream.example.com/radio.mp3">
         <p class="field-help">Ein zugehöriger Chip verbindet beim Auflegen immer live - es gibt
           weder eine gespeicherte Position noch Vor-/Zurückspulen noch Shuffle/Wiederholung.</p>
+      </div>
+      <div class="field" id="playlist-field" hidden>
+        <label for="playlist-search">Titel suchen</label>
+        <input type="text" id="playlist-search" placeholder="Titel oder Geschichte tippen…" autocomplete="off">
+        <p class="field-help">Zeigt Titel aus allen vorhandenen Geschichten (keine Livestreams).
+          „+ Hinzufügen“ übernimmt einen Titel in die Playlist unten.</p>
+        <div id="playlist-available" class="playlist-track-list">
+          <p class="hint">Lädt…</p>
+        </div>
+      </div>
+      <div class="field" id="playlist-selected-field" hidden>
+        <label>Playlist (<span id="playlist-selected-count">0</span> Titel, Reihenfolge = Abspielreihenfolge)</label>
+        <p class="field-help">▲/▼ ändern die Reihenfolge, „Entfernen“ nimmt einen Titel wieder aus der
+          Playlist heraus (löscht nichts aus der Bibliothek). Das Cover wird - falls vorhanden -
+          automatisch von der Geschichte des ersten Titels übernommen.</p>
+        <ol id="playlist-selected" class="playlist-track-list"></ol>
       </div>
       <button class="btn" type="submit">Anlegen</button>
       <span id="create-error" class="error"></span>

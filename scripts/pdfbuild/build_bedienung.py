@@ -245,14 +245,17 @@ ctrl("Track-Liste", "Liste mit ▲/▼-Buttons und einem Löschen-Symbol pro Tra
 
 # ============================================================ 8. Hinzufügen
 h1("8. Web-Verwaltung: Hinzufügen")
-p("Legt eine neue Geschichte, Musiksammlung oder einen Livestream-Chip an.")
-ctrl("Quelle", "Drei-Wege-Auswahl: „Einzelne Dateien“ / „Ganzer Ordner“ / „Livestream-URL“",
-     "Bestimmt, welches Eingabefeld darunter erscheint - siehe die drei folgenden Einträge.")
+p("Legt eine neue Geschichte, Musiksammlung, Playlist oder einen Livestream-Chip an.")
+ctrl("Quelle", "Vier-Wege-Auswahl: „Einzelne Dateien“ / „Ganzer Ordner“ / „Livestream-URL“ / "
+     "„Playlist aus Bibliothek“",
+     "Bestimmt, welches Eingabefeld darunter erscheint - siehe die folgenden Einträge.")
 ctrl("Titel", "Textfeld (Pflichtfeld)", "Name der Geschichte, wie er später überall in der Verwaltung "
      "und auf dem Kiosk-Display erscheint.")
-ctrl("Cover-Bild", "Datei-Upload (optional)", "Funktioniert in allen drei Quellen-Modi, auch für einen "
-     "Livestream. Wird kein Cover hochgeladen und ein Ordner ausgewählt, übernimmt OwlBox automatisch "
-     "ein im Ordner liegendes Bild (z.B. cover.jpg), falls vorhanden.")
+ctrl("Cover-Bild", "Datei-Upload (optional)", "Funktioniert in den Modi Einzelne Dateien, Ganzer "
+     "Ordner und Livestream-URL. Wird kein Cover hochgeladen und ein Ordner ausgewählt, übernimmt "
+     "OwlBox automatisch ein im Ordner liegendes Bild (z.B. cover.jpg), falls vorhanden. Im Modus "
+     "„Playlist aus Bibliothek“ gibt es kein eigenes Cover-Feld - dort wird automatisch das Cover "
+     "der Geschichte übernommen, aus der der erste ausgewählte Titel stammt (falls vorhanden).")
 ctrl("Audio-Dateien", "Mehrfach-Datei-Upload (Modus „Einzelne Dateien“)",
      "Die Auswahlreihenfolge im Dateidialog bestimmt die spätere Abspielreihenfolge - nachträglich "
      "änderbar über die ▲/▼-Buttons in der Bibliothek (Kapitel 7.2).")
@@ -262,8 +265,17 @@ ctrl("Livestream-URL", "Textfeld (Modus „Livestream-URL“)",
      "Direkte Adresse eines Audio-Streams (Internetradio o.ä.), beginnend mit http:// oder https://. "
      "Ein zugehöriger Chip verbindet beim Auflegen immer live - es gibt weder eine gespeicherte "
      "Position noch Vor-/Zurückspulen noch Shuffle/Wiederholung.")
-ctrl("„Anlegen“", "Button", "Lädt alles hoch und legt die Geschichte an. Optional lässt sich direkt im "
-     "Anschluss ein Chip zuweisen (Bibliothek, Kapitel 7.2).")
+ctrl("Titel suchen", "Suchfeld (Modus „Playlist aus Bibliothek“)",
+     "Filtert die Liste darunter live nach Titel- oder Geschichtenname. Livestream-Chips tauchen "
+     "hier nicht auf, da sie keine einzelnen Titel haben.")
+ctrl("Verfügbare Titel / Playlist", "Liste mit „+ Hinzufügen“ je Titel, darunter eine geordnete "
+     "Liste mit ▲/▼ und „Entfernen“ (Modus „Playlist aus Bibliothek“)",
+     "Baut eine neue Geschichte aus bereits hochgeladenen Titeln anderer Geschichten zusammen, ohne "
+     "erneutes Hochladen - die Reihenfolge in der unteren Liste ist die spätere Abspielreihenfolge. "
+     "Die Originaldateien bleiben unverändert und werden nicht dupliziert (Hardlink auf dieselbe "
+     "Datei); Löschen der Quell-Geschichte lässt die Playlist unangetastet.")
+ctrl("„Anlegen“", "Button", "Lädt alles hoch bzw. verknüpft die gewählten Titel und legt die "
+     "Geschichte/Playlist an. Ein Chip wird anschließend in der Bibliothek zugewiesen (Kapitel 7.2).")
 
 # ============================================================ 9. RFID-Tags
 h1("9. Web-Verwaltung: RFID-Tags")

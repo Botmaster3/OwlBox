@@ -214,6 +214,38 @@ def get_tracks(story_id: int) -> list[Track]:
     return [Track(**dict(r)) for r in rows]
 
 
+def get_track(track_id: int) -> Optional[Track]:
+    row = get_connection().execute("SELECT * FROM tracks WHERE id = ?", (track_id,)).fetchone()
+    return Track(**dict(row)) if row else None
+
+
+def list_all_tracks() -> list[dict]:
+    """Every track in the library with its parent story's title - source
+    list for building a playlist out of already-uploaded tracks instead of
+    uploading new files (see create_story_from_tracks in web/api.py)."""
+    rows = get_connection().execute(
+        """
+        SELECT tracks.id, tracks.story_id, tracks.filename, tracks.title, tracks.duration,
+               stories.title AS story_title
+        FROM tracks
+        JOIN stories ON stories.id = tracks.story_id
+        WHERE stories.stream_url IS NULL
+        ORDER BY stories.title COLLATE NOCASE, tracks.position ASC
+        """
+    ).fetchall()
+    return [
+        {
+            "id": r["id"],
+            "story_id": r["story_id"],
+            "story_title": r["story_title"],
+            "filename": r["filename"],
+            "title": r["title"] or r["filename"],
+            "duration": r["duration"],
+        }
+        for r in rows
+    ]
+
+
 def delete_story(story_id: int) -> None:
     with write_cursor() as cur:
         cur.execute("DELETE FROM stories WHERE id = ?", (story_id,))

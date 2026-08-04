@@ -5,22 +5,123 @@
   const createForm = document.getElementById("create-form");
   const createError = document.getElementById("create-error");
   const titleInput = document.getElementById("title");
+  const coverField = document.getElementById("cover-field");
   const coverInput = document.getElementById("cover");
   const coverAutoHint = document.getElementById("cover-auto-hint");
   const filesField = document.getElementById("files-field");
   const folderField = document.getElementById("folder-field");
   const streamField = document.getElementById("stream-field");
+  const playlistField = document.getElementById("playlist-field");
+  const playlistSelectedField = document.getElementById("playlist-selected-field");
   const audioFilesInput = document.getElementById("audio_files");
   const audioFolderInput = document.getElementById("audio_folder");
   const streamUrlInput = document.getElementById("stream_url");
   const folderSummary = document.getElementById("folder-summary");
   const folderHint = document.getElementById("folder-hint");
   const streamHint = document.getElementById("stream-hint");
+  const playlistHint = document.getElementById("playlist-hint");
+  const playlistSearch = document.getElementById("playlist-search");
+  const playlistAvailable = document.getElementById("playlist-available");
+  const playlistSelectedList = document.getElementById("playlist-selected");
+  const playlistSelectedCount = document.getElementById("playlist-selected-count");
   const toggleButtons = document.querySelectorAll("#source-toggle .segmented-btn");
 
   let mode = "files";
   let folderAudioFiles = [];
   let folderCoverFile = null;
+  let allTracks = null; // null = not fetched yet
+  let selectedTracks = [];
+
+  function formatDuration(seconds) {
+    if (!seconds) return "";
+    seconds = Math.floor(seconds);
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return ` (${m}:${String(s).padStart(2, "0")})`;
+  }
+
+  async function loadAllTracks() {
+    if (allTracks !== null) return;
+    playlistAvailable.innerHTML = '<p class="hint">Lädt…</p>';
+    try {
+      const res = await fetch("/api/tracks");
+      allTracks = res.ok ? await res.json() : [];
+    } catch (err) {
+      allTracks = [];
+    }
+    renderAvailableTracks();
+  }
+
+  function renderAvailableTracks() {
+    const query = playlistSearch.value.trim().toLowerCase();
+    const selectedIds = new Set(selectedTracks.map((t) => t.id));
+    const candidates = (allTracks || []).filter((t) => {
+      if (selectedIds.has(t.id)) return false;
+      if (!query) return true;
+      return t.title.toLowerCase().includes(query) || t.story_title.toLowerCase().includes(query);
+    });
+
+    playlistAvailable.innerHTML = "";
+    if (candidates.length === 0) {
+      playlistAvailable.innerHTML = `<p class="hint" style="padding:8px 12px;">${
+        allTracks && allTracks.length === 0 ? "Noch keine Titel in der Bibliothek." : "Keine Treffer."
+      }</p>`;
+      return;
+    }
+    for (const track of candidates) {
+      const row = document.createElement("div");
+      row.className = "playlist-track-row";
+      row.innerHTML = `
+        <div class="playlist-track-info">
+          <div class="playlist-track-title">${track.title}${formatDuration(track.duration)}</div>
+          <div class="playlist-track-story">${track.story_title}</div>
+        </div>
+        <button type="button" class="btn secondary small">+ Hinzufügen</button>
+      `;
+      row.querySelector("button").addEventListener("click", () => {
+        selectedTracks.push(track);
+        renderAvailableTracks();
+        renderSelectedTracks();
+      });
+      playlistAvailable.appendChild(row);
+    }
+  }
+
+  function renderSelectedTracks() {
+    playlistSelectedCount.textContent = selectedTracks.length;
+    playlistSelectedList.innerHTML = "";
+    selectedTracks.forEach((track, index) => {
+      const li = document.createElement("li");
+      li.className = "playlist-track-row";
+      li.innerHTML = `
+        <span class="track-order">
+          <button type="button" data-action="up" ${index === 0 ? "disabled" : ""}>▲</button>
+          <button type="button" data-action="down" ${index === selectedTracks.length - 1 ? "disabled" : ""}>▼</button>
+        </span>
+        <div class="playlist-track-info">
+          <div class="playlist-track-title">${index + 1}. ${track.title}${formatDuration(track.duration)}</div>
+          <div class="playlist-track-story">${track.story_title}</div>
+        </div>
+        <button type="button" class="btn secondary small" data-action="remove">Entfernen</button>
+      `;
+      li.querySelector('[data-action="up"]').addEventListener("click", () => {
+        [selectedTracks[index - 1], selectedTracks[index]] = [selectedTracks[index], selectedTracks[index - 1]];
+        renderSelectedTracks();
+      });
+      li.querySelector('[data-action="down"]').addEventListener("click", () => {
+        [selectedTracks[index + 1], selectedTracks[index]] = [selectedTracks[index], selectedTracks[index + 1]];
+        renderSelectedTracks();
+      });
+      li.querySelector('[data-action="remove"]').addEventListener("click", () => {
+        selectedTracks.splice(index, 1);
+        renderSelectedTracks();
+        renderAvailableTracks();
+      });
+      playlistSelectedList.appendChild(li);
+    });
+  }
+
+  playlistSearch.addEventListener("input", renderAvailableTracks);
 
   function showToast(message, isError) {
     let toast = document.getElementById("toast");
@@ -48,9 +149,14 @@
     filesField.hidden = mode !== "files";
     folderField.hidden = mode !== "folder";
     streamField.hidden = mode !== "stream";
+    playlistField.hidden = mode !== "playlist";
+    playlistSelectedField.hidden = mode !== "playlist";
+    coverField.hidden = mode === "playlist";
     folderHint.hidden = mode !== "folder";
     streamHint.hidden = mode !== "stream";
+    playlistHint.hidden = mode !== "playlist";
     audioFilesInput.required = mode === "files";
+    if (mode === "playlist") loadAllTracks();
   }
 
   toggleButtons.forEach((btn) => {
@@ -88,9 +194,47 @@
     }
   });
 
+  async function submitPlaylist() {
+    if (selectedTracks.length === 0) {
+      createError.textContent = "Bitte mindestens einen Titel zur Playlist hinzufügen.";
+      return false;
+    }
+    const submitBtn = createForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch("/api/stories/from-tracks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: titleInput.value,
+          track_ids: selectedTracks.map((t) => t.id),
+          cover_story_id: selectedTracks[0].story_id,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      showToast(`"${body.title}" wurde als Playlist angelegt.`);
+      setTimeout(() => {
+        window.location.href = "/admin/library";
+      }, 900);
+    } catch (err) {
+      createError.textContent = err.message;
+      showToast(err.message, true);
+      submitBtn.disabled = false;
+    }
+    return true;
+  }
+
   createForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     createError.textContent = "";
+
+    if (mode === "playlist") {
+      await submitPlaylist();
+      return;
+    }
 
     const manualCover = coverInput.files[0];
     const formData = new FormData();
