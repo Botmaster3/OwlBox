@@ -174,6 +174,13 @@ startet den `owlbox.service`. Was danach noch manuell zu tun ist (HiFiBerry-
 Overlay, Verkabelung, Kiosk-Autostart), steht am Ende der Skriptausgabe und
 ausführlich in [docs/hardware.md](docs/hardware.md).
 
+Komplett von einer leeren SD-Karte bis zur fertig eingerichteten Box (inkl.
+Raspberry Pi OS flashen, `raspi-config`, Verkabelungsreihenfolge, HiFiBerry/
+Display-Treiber, Kiosk-Autostart, erste Einrichtung im Browser) - siehe
+**OwlBox-Installation.pdf**, mitgeliefert unter
+`owlbox/web/static/docs/` bzw. herunterladbar über die Verwaltung
+(Info → Dokumentation), sobald einmal ein `owlbox`-Dienst läuft.
+
 ## Bedienkonzept
 
 | Aktion                          | Wirkung                                    |

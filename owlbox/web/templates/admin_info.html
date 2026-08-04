@@ -89,9 +89,11 @@
 
   <div class="card">
     <h2>Dokumentation</h2>
-    <p class="hint">Schnellstart für den ersten Start, die vollständige Bedienungsanleitung mit jedem
-      Regler im Detail, sowie die komplette Verkabelungs-Referenz für den Hardwareaufbau.</p>
+    <p class="hint">Installationsanleitung vom leeren Pi bis zur laufenden Box, Schnellstart für den
+      ersten Start, die vollständige Bedienungsanleitung mit jedem Regler im Detail, sowie die
+      komplette Verkabelungs-Referenz für den Hardwareaufbau.</p>
     <div class="doc-links">
+      <a class="btn secondary" href="{{ url_for('static', filename='docs/OwlBox-Installation.pdf') }}" download>🛠️ Installation (PDF)</a>
       <a class="btn secondary" href="{{ url_for('static', filename='docs/OwlBox-Schnellstart.pdf') }}" download>🚀 Schnellstart (PDF)</a>
       <a class="btn secondary" href="{{ url_for('static', filename='docs/OwlBox-Bedienungsanleitung.pdf') }}" download>📄 Bedienungsanleitung (PDF)</a>
       <a class="btn secondary" href="{{ url_for('static', filename='docs/OwlBox-Verkabelung.pdf') }}" download>🔌 Verkabelung (PDF)</a>

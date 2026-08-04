@@ -72,8 +72,10 @@ p(
 p(
     "Diese Anleitung beschreibt <b>jede</b> Bedienmöglichkeit im Detail: alle physischen "
     "Bedienelemente am Gerät, das Kiosk-Display und jede Seite der Web-Verwaltung mitsamt jedem "
-    "einzelnen Regler, Schalter und Button. Für den schnellen Einstieg siehe stattdessen "
-    "<i>OwlBox-Schnellstart.pdf</i>, für den Hardwareaufbau <i>OwlBox-Verkabelung.pdf</i>."
+    "einzelnen Regler, Schalter und Button. Sie setzt eine bereits installierte, laufende Box "
+    "voraus - für den kompletten Weg von der leeren SD-Karte bis hierhin siehe "
+    "<i>OwlBox-Installation.pdf</i>, für den schnellen Einstieg danach <i>OwlBox-Schnellstart.pdf</i>, "
+    "für den Hardwareaufbau <i>OwlBox-Verkabelung.pdf</i>."
 )
 h2("Grundprinzip")
 story.append(spec_table(

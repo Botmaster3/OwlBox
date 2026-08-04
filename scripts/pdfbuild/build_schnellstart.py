@@ -69,8 +69,11 @@ story.append(PageBreak())
 
 h1("Was du brauchst")
 p(
-    "Diese Anleitung bringt eine fertig verkabelte OwlBox (siehe "
-    "<i>OwlBox-Verkabelung.pdf</i> für den Hardwareaufbau) in wenigen Minuten zum Laufen."
+    "Diese Anleitung bringt eine fertig verkabelte, mit installierter Software laufende OwlBox "
+    "in wenigen Minuten zum Laufen. Steht noch keine SD-Karte mit Raspberry Pi OS bereit oder ist "
+    "die Software noch nicht installiert, siehe stattdessen zuerst <i>OwlBox-Installation.pdf</i> "
+    "(kompletter Weg von der leeren SD-Karte bis hierhin) bzw. <i>OwlBox-Verkabelung.pdf</i> für "
+    "den reinen Hardwareaufbau."
 )
 bullets([
     "Fertig verkabelte OwlBox (Raspberry Pi + Verstärker/Lautsprecher + RFID-Leser + Display), an Strom angeschlossen.",
