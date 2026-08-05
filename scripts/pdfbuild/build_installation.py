@@ -556,8 +556,11 @@ story.append(spec_table(
          "noch einmal ausführen, falls der Display-Treiber-Installer noch nicht "
          "durchgelaufen ist (Abschnitt „OwlBox-Software installieren“)."],
         ["Display zeigt nur einen Textcursor/Login, kein Chromium",
-         "sudo systemctl status owlbox-kiosk prüfen; sudo journalctl -u owlbox-kiosk -n 50 "
-         "für die Fehlermeldung von X/Chromium; Xwrapper.config wurde von scripts/install.sh "
+         "sudo systemctl status owlbox-kiosk prüfen; journalctl -u owlbox-kiosk zeigt bei einem "
+         "X-Absturz meist nur „status=1“ ohne echten Grund - die eigentliche Fehlermeldung steht "
+         "in sudo tail /var/log/Xorg.0.log. Häufigster Fall: „no screens found“/„open "
+         "/dev/dri/card0“ - fehlt xserver-xorg-video-fbdev bzw. die Xorg-Konfiguration dafür "
+         "(siehe OwlBox-Verkabelung.pdf, Kapitel 9); Xwrapper.config wurde von scripts/install.sh "
          "unter /etc/X11/Xwrapper.config angelegt - prüfen, ob die Datei noch existiert."],
         ["Verwaltung im Browser nicht erreichbar", "IP-Adresse erneut prüfen; auf dem "
          "Kiosk-Display nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Abschnitt „Erste "

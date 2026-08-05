@@ -409,10 +409,29 @@ p(
     "Login-Bildschirm - das spart gegenüber einer vollen Desktop-Umgebung spürbar Bootzeit."
 )
 code([
+    "sudo apt-get install -y xserver-xorg-video-fbdev",
+    "",
     "# X ohne Display-Manager erlauben:",
     "cat > /etc/X11/Xwrapper.config <<'EOF'",
     "allowed_users=anybody",
     "needs_root_rights=yes",
+    "EOF",
+    "",
+    "# Mit dem Legacy-GL-Treiber (kein /dev/dri/card0) scheitert X's",
+    "# automatisch gewaehlter modesetting-Treiber mit 'no screens found' -",
+    "# stattdessen ausdruecklich auf den Framebuffer zeichnen lassen:",
+    "mkdir -p /etc/X11/xorg.conf.d",
+    "cat > /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf <<'EOF'",
+    "Section \"Device\"",
+    "    Identifier \"OwlBoxFramebuffer\"",
+    "    Driver \"fbdev\"",
+    "    Option \"fbdev\" \"/dev/fb0\"",
+    "EndSection",
+    "",
+    "Section \"Screen\"",
+    "    Identifier \"OwlBoxScreen\"",
+    "    Device \"OwlBoxFramebuffer\"",
+    "EndSection",
     "EOF",
     "",
     "sudo cp /opt/owlbox/systemd/owlbox-kiosk.service /etc/systemd/system/",
@@ -423,6 +442,12 @@ story.append(note_box(
     "owlbox-kiosk.service bringt Conflicts=getty@tty1.service schon mit und übernimmt tty1 damit "
     "automatisch - sauberer läuft es trotzdem mit sudo systemctl disable getty@tty1.service, damit "
     "dort kein ungenutzter Login-Prompt mehr mitstartet."
+))
+story.append(note_box(
+    "An echter Hardware bestätigt: Ohne xserver-xorg-video-fbdev und die Xorg-Konfiguration oben "
+    "bricht owlbox-kiosk.service sofort mit „no screens found“ ab - sichtbar aber nicht in "
+    "journalctl -u owlbox-kiosk (nur „status=1“), sondern im eigentlichen X-Server-Log unter "
+    "/var/log/Xorg.0.log (dort: „open /dev/dri/card0: No such file or directory“)."
 ))
 p(
     "Läuft doch eine volle Desktop-Umgebung (z.B. die volle „Legacy“-Variante statt Lite geflasht): "

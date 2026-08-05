@@ -102,9 +102,15 @@ apt-get install -y libraspberrypi-dev || true
 # (no lightdm, no LXDE) on top of the "Legacy Lite" base image. xserver-xorg-legacy
 # provides the Xwrapper.config mechanism needed to start X without a display
 # manager; matchbox-window-manager is tiny but keeps things well-behaved if a
-# stray JS alert()/confirm() window ever pops up in Chromium.
+# stray JS alert()/confirm() window ever pops up in Chromium. xserver-xorg-video-fbdev
+# is required because of the Legacy GL driver this project needs for fbcp (see
+# below): with the modern KMS driver commented out of config.txt, there is no
+# /dev/dri/card0 for X's default "modesetting" driver to use at all, so X would
+# otherwise fail immediately with "no screens found" - it needs to be told to
+# draw straight to the framebuffer instead (see the Xorg config written further
+# down).
 apt-get install -y \
-  xserver-xorg xserver-xorg-legacy xinit x11-xserver-utils \
+  xserver-xorg xserver-xorg-legacy xserver-xorg-video-fbdev xinit x11-xserver-utils \
   matchbox-window-manager \
   || true
 
@@ -237,6 +243,24 @@ echo "==> Setting up kiosk autostart (minimal X, no desktop environment)"
 cat > /etc/X11/Xwrapper.config <<'EOF'
 allowed_users=anybody
 needs_root_rights=yes
+EOF
+
+# With the Legacy GL driver (no /dev/dri/card0, see above), X's default
+# auto-probed "modesetting" driver finds no usable device at all and fails
+# outright with "no screens found" - tell it explicitly to draw straight to
+# the framebuffer fbcp already mirrors the display onto instead.
+mkdir -p /etc/X11/xorg.conf.d
+cat > /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf <<'EOF'
+Section "Device"
+    Identifier "OwlBoxFramebuffer"
+    Driver "fbdev"
+    Option "fbdev" "/dev/fb0"
+EndSection
+
+Section "Screen"
+    Identifier "OwlBoxScreen"
+    Device "OwlBoxFramebuffer"
+EndSection
 EOF
 
 cp "$INSTALL_DIR/systemd/owlbox-kiosk.service" /etc/systemd/system/owlbox-kiosk.service

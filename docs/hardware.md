@@ -463,16 +463,44 @@ den virtuellen HDMI-Ausgang rendert.
 **Autostart einrichten:**
 
 ```
+sudo apt-get install -y xserver-xorg-video-fbdev
+
 # X ohne Display-Manager erlauben:
 cat > /etc/X11/Xwrapper.config <<'EOF'
 allowed_users=anybody
 needs_root_rights=yes
 EOF
 
+# Mit dem Legacy-GL-Treiber (kein /dev/dri/card0) findet X's automatisch
+# gewählter "modesetting"-Treiber kein Gerät und scheitert mit "no screens
+# found" - stattdessen ausdrücklich auf den Framebuffer zeichnen lassen,
+# genau den, den fbcp schon aufs Display spiegelt:
+mkdir -p /etc/X11/xorg.conf.d
+cat > /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf <<'EOF'
+Section "Device"
+    Identifier "OwlBoxFramebuffer"
+    Driver "fbdev"
+    Option "fbdev" "/dev/fb0"
+EndSection
+
+Section "Screen"
+    Identifier "OwlBoxScreen"
+    Device "OwlBoxFramebuffer"
+EndSection
+EOF
+
 sudo cp /opt/owlbox/systemd/owlbox-kiosk.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now owlbox-kiosk.service
 ```
+
+**An echter Hardware bestätigt:** Ohne `xserver-xorg-video-fbdev` und die
+obige Xorg-Konfiguration bricht `owlbox-kiosk.service` sofort mit "no
+screens found" ab (`/var/log/Xorg.0.log` zeigt `open /dev/dri/card0: No
+such file or directory`) - der Fehler taucht in `journalctl -u owlbox-kiosk`
+selbst **nicht** auf (nur "Main process exited, code=exited, status=1"),
+das eigentliche X-Server-Log unter `/var/log/Xorg.0.log` ist bei so einem
+Absturz die richtige Anlaufstelle.
 
 `owlbox-kiosk.service` bringt `Conflicts=getty@tty1.service` schon mit, muss
 also `getty@tty1.service` nicht extra deaktiviert bekommen - läuft aber
