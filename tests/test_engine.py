@@ -1617,3 +1617,110 @@ def test_get_state_exposes_advent_candle_count(config):
         assert engine.get_state()["settings"]["advent_candles"] == 3
     finally:
         themes.get_advent_candle_count = original
+
+
+# -- starting/stopping a story from the web UI ("play"/"stop" endpoints) ------
+
+
+def test_play_story_starts_playback_like_a_chip_scan(config):
+    story = _make_story_with_file(config, "AABBCC", title="Story")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        assert engine.play_story(story.id) is True
+        state = engine.get_state()
+        assert state["story"]["id"] == story.id
+        assert state["player"]["playing"] is True
+    finally:
+        engine.stop()
+
+
+def test_play_story_works_without_an_assigned_chip(config):
+    story = repository.create_story(title="No chip yet")
+    story_dir = config.media_dir / str(story.id)
+    story_dir.mkdir(parents=True, exist_ok=True)
+    (story_dir / "track1.mp3").write_bytes(b"fake audio")
+    repository.add_track(story.id, 0, "track1.mp3", None, None)
+    assert story.uid is None
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        assert engine.play_story(story.id) is True
+        state = engine.get_state()
+        assert state["story"]["id"] == story.id
+        assert state["player"]["playing"] is True
+    finally:
+        engine.stop()
+
+
+def test_play_story_returns_false_for_unknown_story_id(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        assert engine.play_story(999999) is False
+        assert engine.get_state()["story"] is None
+    finally:
+        engine.stop()
+
+
+def test_play_story_resumes_saved_position_for_a_story_without_a_chip(config):
+    story = repository.create_story(title="No chip yet")
+    story_dir = config.media_dir / str(story.id)
+    story_dir.mkdir(parents=True, exist_ok=True)
+    for i in range(3):
+        (story_dir / f"track{i}.mp3").write_bytes(b"fake audio")
+        repository.add_track(story.id, i, f"track{i}.mp3", None, None)
+    key = f"web:{story.id}"
+    repository.save_playback_state(key, 2, 42.0)
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.play_story(story.id)
+        state = engine.get_state()
+        assert state["player"]["playlist_pos"] == 2
+        assert state["player"]["time_pos"] == 42.0
+    finally:
+        engine.stop()
+
+
+def test_stop_playback_clears_current_story_and_pauses(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine.get_state()["story"]["id"] == story.id
+
+        engine.stop_playback()
+        state = engine.get_state()
+        assert state["story"] is None
+        assert state["uid"] is None
+        assert state["player"]["playing"] is False
+    finally:
+        engine.stop()
+
+
+def test_stop_playback_then_play_story_resumes_where_it_left_off(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        engine.manual_seek_to(17.0)
+
+        engine.stop_playback()
+        assert repository.get_playback_state("AABBCC")[1] == 17.0
+
+        engine.play_story(story.id)
+        assert engine.get_state()["player"]["time_pos"] == 17.0
+    finally:
+        engine.stop()

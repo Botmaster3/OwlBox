@@ -203,6 +203,47 @@ class Engine:
     def _media_path(self, story: repository.Story, track: repository.Track) -> Path:
         return self._config.media_dir / str(story.id) / track.filename
 
+    def _load_story_locked(self, story: repository.Story, persistence_key: str) -> None:
+        """Loads `story`'s playlist into the player and starts it, resuming from
+        the saved position for `persistence_key` (unless shuffled). Shared by a
+        physical chip scan (_handle_tag_present) and starting a story straight
+        from the web UI (play_story) - the two differ only in how they arrive
+        at a story plus a stable key to save/resume its position against.
+        Caller must already hold self._lock."""
+        repository.increment_play_count(story.id)
+        self._last_stat_time = time.monotonic()
+        self._play_chime("known")
+
+        if story.stream_url:
+            # A livestream has no tracks/position to resume - always join live,
+            # and it has no shuffle/repeat concept either.
+            self._loaded_story_id = None
+            self._player.load_playlist([story.stream_url])
+            self._player.set_volume(self._volume)
+            logger.info("streaming '%s' (%s) from %s", story.title, persistence_key, story.stream_url)
+            return
+
+        self._loaded_story_id = story.id
+        tracks = repository.get_tracks(story.id)
+        filepaths = [str(self._media_path(story, t)) for t in tracks]
+        if story.shuffle:
+            # A saved resume position was recorded against last time's track
+            # order - meaningless once shuffle puts a different track at that
+            # same index, so start fresh rather than resuming into whatever
+            # landed there.
+            track_pos, seek_seconds = 0, 0.0
+        else:
+            track_pos, seek_seconds = repository.get_playback_state(persistence_key)
+            if track_pos >= len(filepaths):
+                track_pos, seek_seconds = 0, 0.0
+        self._player.load_playlist(filepaths, start_index=track_pos, start_seconds=seek_seconds)
+        self._player.set_shuffle(story.shuffle)
+        self._player.set_repeat_mode(story.repeat)
+        self._player.set_volume(self._volume)
+        logger.info(
+            "playing '%s' (%s) from track %s @ %.1fs", story.title, persistence_key, track_pos, seek_seconds
+        )
+
     def _handle_tag_present(self, uid: str) -> None:
         with self._lock:
             if self._current_uid is not None:
@@ -216,37 +257,7 @@ class Engine:
 
             if story is not None:
                 self._current_story = story
-                repository.increment_play_count(story.id)
-                self._last_stat_time = time.monotonic()
-                self._play_chime("known")
-
-                if story.stream_url:
-                    # A livestream has no tracks/position to resume - always join live,
-                    # and it has no shuffle/repeat concept either.
-                    self._loaded_story_id = None
-                    self._player.load_playlist([story.stream_url])
-                    self._player.set_volume(self._volume)
-                    logger.info("streaming '%s' (uid=%s) from %s", story.title, uid, story.stream_url)
-                    return
-
-                self._loaded_story_id = story.id
-                tracks = repository.get_tracks(story.id)
-                filepaths = [str(self._media_path(story, t)) for t in tracks]
-                if story.shuffle:
-                    # A saved resume position was recorded against last
-                    # time's track order - meaningless once shuffle puts a
-                    # different track at that same index, so start fresh
-                    # rather than resuming into whatever landed there.
-                    track_pos, seek_seconds = 0, 0.0
-                else:
-                    track_pos, seek_seconds = repository.get_playback_state(uid)
-                    if track_pos >= len(filepaths):
-                        track_pos, seek_seconds = 0, 0.0
-                self._player.load_playlist(filepaths, start_index=track_pos, start_seconds=seek_seconds)
-                self._player.set_shuffle(story.shuffle)
-                self._player.set_repeat_mode(story.repeat)
-                self._player.set_volume(self._volume)
-                logger.info("playing '%s' (uid=%s) from track %s @ %.1fs", story.title, uid, track_pos, seek_seconds)
+                self._load_story_locked(story, uid)
                 return
 
             self._current_story = None
@@ -284,6 +295,53 @@ class Engine:
             self._current_function_action = None
             self._current_parent_label = None
             self._missing_reads = 0
+
+    # -- starting/stopping a story from the web UI --------------------------
+
+    def play_story(self, story_id: int) -> bool:
+        """Starts a specific story directly - the web UI's equivalent of
+        placing its chip on the reader, for a "▶ Play" button in the library.
+        Runs the exact same playlist-loading path as a physical scan
+        (_load_story_locked), just arrived at via story_id instead of a uid
+        lookup. Works whether or not the story has an assigned chip: one
+        without gets a stable "web:<id>" position-persistence key instead of
+        a real uid, so its resume position still survives across web-UI
+        plays (and keeps working if a chip gets assigned to it later - the
+        two just track resume position separately until then). Returns False
+        if the story doesn't exist."""
+        story = repository.get_story(story_id)
+        if story is None:
+            return False
+        key = story.uid if story.uid else f"web:{story.id}"
+        with self._lock:
+            if self._current_uid is not None:
+                self._persist_position_locked()
+            repository.log_scan(key)
+            self._current_uid = key
+            self._current_story = story
+            self._current_function_action = None
+            self._current_parent_label = None
+            self._load_story_locked(story, key)
+        self._wake_from_sleep_on_scan()
+        return True
+
+    def stop_playback(self) -> None:
+        """Pauses and fully clears the "now playing" state (story/uid/loaded
+        playlist) - the web UI's equivalent of lifting a chip that *doesn't*
+        keep playing afterward. Unlike manual_pause(), which just pauses
+        while leaving story/uid loaded, this also resets the dashboard back
+        to "kein Chip aufgelegt". The exact position is still saved first
+        (same persistence key as always), so the next play - chip or web UI -
+        resumes right where this one stopped, it just isn't shown as "current"
+        in the meantime."""
+        with self._lock:
+            self._persist_position_locked()
+            self._current_uid = None
+            self._current_story = None
+            self._current_function_action = None
+            self._current_parent_label = None
+            self._loaded_story_id = None
+        self._player.pause()
 
     def _execute_function_action(self, action: str) -> None:
         logger.info("executing RFID function tag action: %s", action)

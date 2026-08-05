@@ -17,6 +17,7 @@
   const npBtnPrev = document.getElementById("np-btn-prev");
   const npBtnToggle = document.getElementById("np-btn-toggle");
   const npBtnNext = document.getElementById("np-btn-next");
+  const npBtnStop = document.getElementById("np-btn-stop");
   const npRepeatToggle = document.getElementById("np-repeat-toggle");
   const npRepeatButtons = npRepeatToggle.querySelectorAll(".segmented-btn");
   const npVolumeInput = document.getElementById("np-volume");
@@ -67,6 +68,7 @@
   npBtnPrev.addEventListener("click", () => fetch("/api/control/prev", { method: "POST" }));
   npBtnToggle.addEventListener("click", () => fetch("/api/control/toggle", { method: "POST" }));
   npBtnNext.addEventListener("click", () => fetch("/api/control/next", { method: "POST" }));
+  npBtnStop.addEventListener("click", () => fetch("/api/control/stop", { method: "POST" }));
 
   npBtnShuffle.addEventListener("click", () => {
     if (!currentStory) return;
@@ -191,6 +193,8 @@
     // Shuffle/Repeat only make sense for a local track list, not a
     // livestream (no fixed playlist to shuffle or loop) or when nothing is
     // loaded at all (there'd be no story id to send the change to).
+    npBtnStop.disabled = !story;
+
     const shuffleRepeatUsable = !!(story && !story.is_stream);
     npBtnShuffle.disabled = !shuffleRepeatUsable;
     npBtnShuffle.classList.toggle("active", shuffleRepeatUsable && story.shuffle);

@@ -242,6 +242,7 @@
           <div class="story-sub">${statsLine}</div>
         </div>
         <div class="story-actions">
+          <button class="btn" data-action="play">▶️ Abspielen</button>
           <button class="btn secondary" data-action="assign">Chip zuweisen</button>
           ${story.uid ? '<button class="btn secondary" data-action="unassign">Chip entfernen</button>' : ""}
           ${
@@ -257,14 +258,23 @@
           <button class="btn danger" data-action="delete">Löschen</button>
         </div>
         <p class="field-help">
-          „Chip zuweisen“ verknüpft den nächsten aufgelegten Chip mit dieser Geschichte, „Chip
-          entfernen“ löst die Verknüpfung wieder (löscht die Geschichte nicht). Shuffle mischt die
-          Tracks zufällig. „Ordner“ wiederholt die ganze Geschichte endlos, „Track“ nur den
-          gerade laufenden Titel, „Aus“ beendet die Wiedergabe nach dem letzten Track - wirkt
-          sofort, falls diese Geschichte gerade läuft. „Löschen“ entfernt die Geschichte
-          inklusive aller Audiodateien unwiderruflich.
+          „Abspielen“ startet diese Geschichte sofort, genau wie das Auflegen ihres Chips - auch
+          ohne dass ihr überhaupt ein Chip zugewiesen ist. „Chip zuweisen“ verknüpft den nächsten
+          aufgelegten Chip mit dieser Geschichte, „Chip entfernen“ löst die Verknüpfung wieder
+          (löscht die Geschichte nicht). Shuffle mischt die Tracks zufällig. „Ordner“ wiederholt
+          die ganze Geschichte endlos, „Track“ nur den gerade laufenden Titel, „Aus“ beendet die
+          Wiedergabe nach dem letzten Track - wirkt sofort, falls diese Geschichte gerade läuft.
+          „Löschen“ entfernt die Geschichte inklusive aller Audiodateien unwiderruflich.
         </p>
       `;
+      header.querySelector('[data-action="play"]').addEventListener("click", async () => {
+        try {
+          await api(`/api/stories/${story.id}/play`, { method: "POST" });
+          showToast(`„${story.title}“ wird abgespielt.`);
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      });
       header.querySelector('[data-action="assign"]').addEventListener("click", () => startAssign(story));
       const unassignBtn = header.querySelector('[data-action="unassign"]');
       if (unassignBtn) {

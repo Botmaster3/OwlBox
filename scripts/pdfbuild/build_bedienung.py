@@ -208,6 +208,10 @@ ctrl("Play/Pause-Button", "Button, wechselt Symbol/Beschriftung automatisch",
      "Zeigt ein Pause-Symbol, solange gerade etwas läuft (Klick pausiert), sonst ein Play-Symbol (Klick "
      "spielt ab) - die Beschriftung zeigt also immer die Aktion, die der nächste Klick auslöst.")
 ctrl("„Weiter“", "Button", "Wie der physische Taster „Weiter“.")
+ctrl("„Stop“-Button", "Button, deaktiviert solange kein Chip aufliegt",
+     "Beendet die aktuelle Geschichte ganz, statt nur zu pausieren - die Anzeige geht zurück auf "
+     "„Kein Chip aufgelegt“. Die Position bleibt dabei gespeichert: der nächste Start (Chip "
+     "auflegen oder „Abspielen“ in der Bibliothek, Kapitel 7.2) setzt trotzdem genau dort fort.")
 ctrl("Wiederholung: „Aus“ / „Ordner“ / „Track“", "Drei-Wege-Auswahl (nur eine Option gleichzeitig aktiv)",
      "„Ordner“ wiederholt die ganze Geschichte in Dauerschleife, „Track“ wiederholt nur den gerade "
      "laufenden Titel endlos, „Aus“ deaktiviert beides - die Geschichte endet dann nach dem letzten Track.",
@@ -231,6 +235,9 @@ bullets([
 
 h2("7.2 Geschichten-Liste")
 p("Für jede angelegte Geschichte bzw. jeden Livestream steht eine Zeile mit folgenden Elementen zur Verfügung:")
+ctrl("„▶️ Abspielen“", "Button", "Startet diese Geschichte sofort, genau wie das Auflegen ihres Chips - "
+     "auch wenn ihr (noch) gar kein Chip zugewiesen ist. Setzt an der zuletzt gespeicherten Position "
+     "fort, egal ob diese über einen Chip-Scan oder einen früheren Klick auf „Abspielen“ zustande kam.")
 ctrl("„Chip zuweisen“", "Button", "Öffnet ein Overlay „Halte den gewünschten Chip jetzt an die Box…“ - "
      "der nächste erkannte Chip wird sofort mit dieser Geschichte verknüpft. „Abbrechen“ bricht ab, ohne etwas zu ändern.")
 ctrl("„Chip entfernen“", "Button (nur sichtbar, wenn ein Chip zugewiesen ist)",

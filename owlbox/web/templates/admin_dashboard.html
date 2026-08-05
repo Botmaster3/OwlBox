@@ -58,6 +58,7 @@
         <button class="btn secondary" id="np-btn-prev" type="button">⏮️ Zurück</button>
         <button class="btn" id="np-btn-toggle" type="button">▶️ Play</button>
         <button class="btn secondary" id="np-btn-next" type="button">⏭️ Weiter</button>
+        <button class="btn secondary" id="np-btn-stop" type="button" title="Beendet die aktuelle Geschichte komplett, statt nur zu pausieren">⏹️ Stop</button>
         <div class="segmented" id="np-repeat-toggle" title="Wiederholung">
           <button type="button" class="segmented-btn active" data-mode="off">Aus</button>
           <button type="button" class="segmented-btn" data-mode="folder">🔁 Ordner</button>
@@ -70,6 +71,10 @@
         Klick auslöst. „Ordner“ wiederholt die ganze Geschichte endlos, „Track“ nur den gerade
         laufenden Titel, „Aus“ beendet die Wiedergabe nach dem letzten Track. Alle vier sind
         deaktiviert, solange kein Chip mit lokalen Tracks aufliegt (z.B. bei einem Livestream).
+        „Stop“ beendet die aktuelle Geschichte ganz (statt nur zu pausieren) - die
+        Dashboard-Anzeige geht zurück auf „Kein Chip aufgelegt“. Die Position bleibt dabei
+        gespeichert, der nächste Start (Chip auflegen oder „Abspielen“ in der Bibliothek) setzt
+        also trotzdem genau dort fort.
       </p>
       <div class="field">
         <label for="np-volume">Lautstärke (<span id="np-volume-value">–</span>%)</label>

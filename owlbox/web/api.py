@@ -111,6 +111,12 @@ def control_seek():
     return jsonify({"ok": True})
 
 
+@api_bp.route("/control/stop", methods=["POST"])
+def control_stop():
+    _engine().stop_playback()
+    return jsonify({"ok": True})
+
+
 # -- library ------------------------------------------------------------
 
 
@@ -279,6 +285,14 @@ def delete_story(story_id):
         if track.story_id == story_id:
             continue  # already gone via rmtree above
         (media_dir / str(track.story_id) / track.filename).unlink(missing_ok=True)
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/stories/<int:story_id>/play", methods=["POST"])
+@admin_required
+def play_story(story_id):
+    if not _engine().play_story(story_id):
+        return jsonify({"error": "not found"}), 404
     return jsonify({"ok": True})
 
 
