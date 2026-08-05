@@ -768,9 +768,10 @@ def network_wifi_power():
 @api_bp.route("/system/info")
 @admin_required
 def system_info_route():
-    from .. import __version__
+    from ..update import get_version_info
 
     config = _config()
+    version_info = get_version_info()
     return jsonify(
         {
             "hardware_model": system_info.get_hardware_model(),
@@ -781,6 +782,10 @@ def system_info_route():
             "disk": system_info.get_disk_usage(config.media_dir),
             "library": repository.get_library_stats(),
             "weekly_review": repository.get_weekly_review(),
-            "app": {"version": __version__, "simulate": config.simulate},
+            "app": {
+                "version": version_info["version"],
+                "version_date": version_info["date"],
+                "simulate": config.simulate,
+            },
         }
     )

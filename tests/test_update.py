@@ -15,6 +15,20 @@ def _fake_run(responses):
     return run
 
 
+def test_get_version_info_reports_version_and_commit_date(monkeypatch):
+    from owlbox import __version__
+
+    monkeypatch.setattr(subprocess, "run", _fake_run({"git": (0, "05.08.2026")}))
+    result = update.get_version_info()
+    assert result == {"version": __version__, "date": "05.08.2026"}
+
+
+def test_get_version_info_falls_back_to_no_date_outside_git_checkout(monkeypatch):
+    monkeypatch.setattr(subprocess, "run", _fake_run({"git": (128, "not a git repository")}))
+    result = update.get_version_info()
+    assert result["date"] is None
+
+
 def test_check_update_reports_fetch_failure(monkeypatch):
     monkeypatch.setattr(subprocess, "run", _fake_run({"git": (1, "network unreachable")}))
     result = update.check_update()

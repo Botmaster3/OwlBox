@@ -31,6 +31,19 @@ def _run(args: list[str], cwd: Optional[Path] = None, timeout: float = 120) -> t
     return result.returncode == 0, output
 
 
+def get_version_info() -> dict:
+    """Best-effort: the running code's version number plus the date of the commit
+    it was built from, so the info page can show not just "0.1.0" but since when
+    that has been installed. Falls back to date=None if this isn't a git checkout
+    (e.g. a tarball install) instead of failing the whole /system/info request."""
+    from . import __version__
+
+    ok, date_output = _run(
+        ["git", "log", "-1", "--date=format:%d.%m.%Y", "--format=%cd"], cwd=REPO_ROOT
+    )
+    return {"version": __version__, "date": date_output.strip() if ok and date_output.strip() else None}
+
+
 def check_update() -> dict:
     """Read-only: fetches from the remote and reports whether new commits are
     available upstream, without touching the working tree, installing anything,

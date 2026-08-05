@@ -497,13 +497,16 @@ p("Drei Kacheln: Anzahl Geschichten, Anzahl Titel insgesamt, Anzahl mit einem Ch
 h2("11.4 Wochenrückblick")
 p("Kurze Zusammenfassung der Hörgewohnheiten der letzten sieben Tage inklusive der meistgehörten Titel.")
 h2("11.5 Software")
-p("Aktuelle OwlBox-Version und Betriebsmodus (Normalbetrieb oder Simulationsmodus ohne echte Hardware).")
+p("Aktuelle OwlBox-Version samt Datum des zugehörigen Software-Stands („Installiert am“) sowie "
+  "Betriebsmodus (Normalbetrieb oder Simulationsmodus ohne echte Hardware).")
 h2("11.6 Wartung")
 ctrl("„Backup herunterladen“", "Link/Download", "Lädt Datenbank plus alle Mediendateien als ZIP herunter - "
      "die einzige Möglichkeit, die Bibliothek wiederherzustellen, falls die SD-Karte einmal ausfällt.")
 ctrl("„Nach Updates suchen“", "Button", "Prüft per git fetch, ob eine neuere Version im Repository "
      "verfügbar ist - läuft automatisch beim Öffnen dieser Seite und lässt sich hier jederzeit "
-     "erneut anstoßen. Ändert nichts am installierten Stand, zeigt nur, ob es etwas Neues gibt.")
+     "erneut anstoßen. Ändert nichts am installierten Stand, zeigt nur, ob es etwas Neues gibt. Wird "
+     "keine neuere Version gefunden, meldet die Seite ausdrücklich, dass bereits die aktuellste "
+     "Version installiert ist (samt Versionsnummer und Datum).")
 ctrl("„Update installieren“", "Button (erscheint nur, wenn ein Update gefunden wurde)",
      "Holt den neuen Softwarestand per git pull, installiert bei Bedarf neue Abhängigkeiten und "
      "startet danach nur den OwlBox-Dienst neu (nicht den ganzen Pi). Erscheint erst nach einer "

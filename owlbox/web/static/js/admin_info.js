@@ -97,10 +97,14 @@
     document.getElementById("info-assigned-count").textContent = info.library.assigned_count;
 
     document.getElementById("info-version").textContent = info.app.version;
+    document.getElementById("info-version-date").textContent = info.app.version_date || "unbekannt";
     document.getElementById("info-mode").textContent = info.app.simulate ? "Simulation" : "Hardware";
+    appVersionText = info.app.version_date ? `${info.app.version} vom ${info.app.version_date}` : info.app.version;
   }
 
-  load();
+  // Set once load() has filled it in, so the "already up to date" message below
+  // can name the version instead of just saying "some current version".
+  let appVersionText = null;
 
   // Update flow is deliberately two steps: checkForUpdate() only ever looks
   // (git fetch, no working-tree changes), installUpdate() is the one thing
@@ -124,7 +128,9 @@
         updateStatus.textContent = `Update verfügbar (${n} neue${n === 1 ? "r" : ""} Commit${n === 1 ? "" : "s"}).`;
         installBtn.hidden = false;
       } else {
-        updateStatus.textContent = "OwlBox ist bereits auf dem neuesten Stand.";
+        updateStatus.textContent = appVersionText
+          ? `Du hast bereits die aktuellste Version installiert (${appVersionText}).`
+          : "Du hast bereits die aktuellste Version installiert.";
       }
     } catch (err) {
       updateStatus.textContent = `Prüfung fehlgeschlagen: ${err.message}`;
@@ -161,7 +167,11 @@
 
   checkBtn.addEventListener("click", checkForUpdate);
 
-  // Checked automatically once when the page loads - still just a look, never
-  // an install, so this is safe to run without the user asking for it.
-  checkForUpdate();
+  // load() first so appVersionText is set before the automatic check below
+  // names it in the "already current" message. Still just a look, never an
+  // install, so this is safe to run without the user asking for it.
+  (async () => {
+    await load();
+    checkForUpdate();
+  })();
 })();
