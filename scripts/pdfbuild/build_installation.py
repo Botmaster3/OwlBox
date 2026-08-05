@@ -16,7 +16,7 @@ from pdf_common import (
     S_H1, S_H2, S_H3, S_BODY, S_BODY_TIGHT, S_SMALL, S_BULLET, S_LABEL, S_MONO,
     spec_table, note_box, cover_page, draw_header_footer,
     make_toc, TocDocTemplate, style,
-    imager_window_mockup, imager_settings_mockup, terminal_mockup, browser_mockup,
+    imager_window_mockup, terminal_mockup, browser_mockup,
     screenshot,
 )
 
@@ -141,7 +141,7 @@ story.append(note_box(
 # alle drei Fassungen garantiert inhaltsgleich, nur die paar echten Unterschiede (Imager-Installation,
 # Terminal-App, Tastenkombination, SD-Karte auswerfen) wandern als Parameter durch.
 def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_open, eject_hint,
-                     terminal_title):
+                     app_name, os_key):
     h1(f"{n}. Installation unter {os_name}")
     p(
         f"Vollständige Schritt-für-Schritt-Anleitung für {os_name} - von der leeren SD-Karte bis "
@@ -224,13 +224,19 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "IP-Adresse verwenden (z.B. aus der Router-Oberfläche abgelesen). System danach einmal "
         "komplett aktualisieren und neu starten:"
     )
-    story.append(terminal_mockup(terminal_title, [
+    story.append(terminal_mockup(app_name, [
         (True, "ssh pi@owlbox.local"),
         (False, "pi@owlbox.local's password:"),
         (False, "Linux owlbox 6.12 ..."),
         (True, "sudo apt update && sudo apt full-upgrade -y"),
         (True, "sudo reboot"),
-    ]))
+    ], os_key=os_key))
+    p("Zum Abtippen bzw. Kopieren, Zeile für Zeile:")
+    code([
+        "ssh pi@owlbox.local",
+        "sudo apt update && sudo apt full-upgrade -y",
+        "sudo reboot",
+    ])
     story.append(note_box(
         "Falls owlbox.local nicht gefunden wird: manche Router/Netzwerke unterstützen mDNS "
         "(.local-Namen) nicht. Dann die IP-Adresse des Pi direkt verwenden - am Router "
@@ -238,8 +244,7 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         mono("hostname -I") + " ausführen."
     ))
     story.append(note_box(
-        f"Kein SSH-Client zur Hand? {terminal_name} bringt einen mit - siehe {n}.1 dieses "
-        "Kapitels bzw. die Hinweise oben, falls dort noch nicht behandelt."
+        f"Kein SSH-Client zur Hand? Empfohlen wird {terminal_name}."
     ))
 
     # -- X.4 Grundeinstellungen -------------------------------------------------
@@ -278,18 +283,25 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     # -- X.6 Software installieren ------------------------------------------------
     h2(f"{n}.6 OwlBox-Software installieren")
     h3(f"{n}.6.1 Code herunterladen")
-    story.append(terminal_mockup("Terminal - Code herunterladen", [
+    story.append(terminal_mockup(app_name, [
         (True, "git clone https://github.com/Botmaster3/owlbox.git"),
         (True, "cd owlbox"),
-    ]))
+    ], os_key=os_key))
+    p("Zum Abtippen bzw. Kopieren:")
+    code([
+        "git clone https://github.com/Botmaster3/owlbox.git",
+        "cd owlbox",
+    ])
     h3(f"{n}.6.2 Installationsskript ausführen (1. Durchlauf)")
-    story.append(terminal_mockup("Terminal - 1. Durchlauf", [
+    story.append(terminal_mockup(app_name, [
         (True, "sudo ./scripts/install.sh"),
         (False, "[*] Installiere Systempakete ..."),
         (False, "[*] Baue fbcp ..."),
         (False, "[*] Starte Display-Treiber-Installer ..."),
         (False, "[*] Neustart erforderlich - starte neu ..."),
-    ]))
+    ], os_key=os_key))
+    p("Zum Abtippen bzw. Kopieren:")
+    code(["sudo ./scripts/install.sh"])
     p(
         "Für die in Kapitel 1 gelistete Standardhardware (HiFiBerry Amp/Amp2, "
         "3,5″-SPI-Touchdisplay der tft35a/MHS-35-Familie) automatisiert das Skript "
@@ -326,13 +338,18 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     ))
     h3(f"{n}.6.3 Installationsskript erneut ausführen (2. Durchlauf, nach dem Neustart)")
     p("Nach dem Neustart erneut per SSH verbinden und das Skript noch einmal starten:")
-    story.append(terminal_mockup("Terminal - 2. Durchlauf", [
+    story.append(terminal_mockup(app_name, [
         (True, "cd owlbox"),
         (True, "sudo ./scripts/install.sh"),
         (False, "[*] Erkenne ALSA-Gerät ... hw:0,0"),
         (False, "[*] Richte Kiosk-Autostart ein ..."),
         (False, "[OK] Alles eingerichtet."),
-    ]))
+    ], os_key=os_key))
+    p("Zum Abtippen bzw. Kopieren:")
+    code([
+        "cd owlbox",
+        "sudo ./scripts/install.sh",
+    ])
     p("Jetzt ist die Hardware aktiv, deshalb erledigt das Skript in diesem Durchlauf "
       "zusätzlich:")
     bullets([
@@ -431,12 +448,15 @@ install_section(
         ("Starten", "Raspberry Pi Imager über das Startmenü öffnen."),
     ],
     shortcut="Strg+Umschalt+X",
-    terminal_name="Windows Terminal (seit Windows 10 Version 1809 mit eingebautem SSH-Client; "
-                   "auf Windows 11 vorinstalliert, für Windows 10 kostenlos im Microsoft Store; "
-                   "PuTTY ist bei älteren Windows-Versionen eine Alternative)",
-    terminal_open="Windows Terminal (oder PowerShell/Eingabeaufforderung)",
+    terminal_name="die Eingabeaufforderung (cmd) - seit Windows 10 Version 1809 mit eingebautem "
+                   "SSH-Client; alternativ PowerShell oder die neuere Windows-Terminal-App "
+                   "(Windows 11 vorinstalliert, für Windows 10 kostenlos im Microsoft Store); "
+                   "PuTTY ist bei älteren Windows-Versionen eine Alternative",
+    terminal_open="die Eingabeaufforderung (Startmenü öffnen, „cmd“ eingeben, Enter - "
+                   "alternativ PowerShell oder Windows Terminal)",
     eject_hint="im Explorer per Rechtsklick auf das Laufwerk → „Auswerfen“",
-    terminal_title="Windows Terminal - ssh pi@owlbox.local",
+    app_name="Eingabeaufforderung",
+    os_key="windows",
 )
 
 # ============================================================ 3. macOS
@@ -458,7 +478,8 @@ install_section(
     terminal_open="Terminal.app (Programme → Dienstprogramme → Terminal, oder per Spotlight - "
                    "⌘+Leertaste, „Terminal“ eingeben)",
     eject_hint="im Finder auf das Auswurfsymbol neben der SD-Karte klicken",
-    terminal_title="Terminal.app - ssh pi@owlbox.local",
+    app_name="Terminal.app",
+    os_key="macos",
 )
 
 # ============================================================ 4. Linux
@@ -473,12 +494,13 @@ install_section(
         ("Starten", "Über das Anwendungsmenü oder im Terminal mit " + mono("rpi-imager") + "."),
     ],
     shortcut="Strg+Umschalt+X",
-    terminal_name="ein beliebiges Terminalprogramm (z.B. GNOME Terminal oder Konsole, mit "
-                   "eingebautem SSH-Client)",
+    terminal_name="ein beliebiges Terminalprogramm mit Bash (z.B. GNOME Terminal oder Konsole, "
+                   "mit eingebautem SSH-Client)",
     terminal_open="ein Terminalprogramm (z.B. GNOME Terminal oder Konsole, über das "
-                   "Anwendungsmenü)",
+                   "Anwendungsmenü) - darin läuft standardmäßig Bash",
     eject_hint="im Dateimanager auswerfen, oder im Terminal mit udisksctl unmount / eject",
-    terminal_title="Terminal - ssh pi@owlbox.local",
+    app_name="Bash",
+    os_key="linux",
 )
 
 # ============================================================ 5. Fehlerbehebung

@@ -17,7 +17,7 @@ from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.lib.enums import TA_LEFT, TA_CENTER
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
@@ -139,38 +139,97 @@ def note_box(text, kind="note"):
 # Stylised illustrations (title bar + content), not literal screenshots of any
 # specific software version - used so a printed step-by-step guide has a
 # picture to go with each step even though this build has no real display/Pi
-# to photograph. Consistent "traffic light" window-chrome look throughout.
+# to photograph.
 S_WIN_TITLE = style("WinTitle", fontName="DejaVuSans-Bold", fontSize=8.5, textColor=colors.white,
                      leading=11, alignment=TA_CENTER)
+S_WIN_TITLE_LEFT = style("WinTitleLeft", fontName="DejaVuSans-Bold", fontSize=8.5,
+                          textColor=colors.white, leading=11, alignment=TA_LEFT)
 S_WIN_DOT = style("WinDot", fontSize=9, leading=11)
+S_WIN_CTRL = style("WinCtrl", fontName="DejaVuSans", fontSize=9, textColor=colors.white,
+                    leading=11, alignment=TA_RIGHT)
+S_WIN_HAMBURGER = style("WinHamburger", fontName="DejaVuSans", fontSize=9, textColor=colors.white,
+                         leading=11, alignment=TA_LEFT)
 S_MOCK_LABEL = style("MockLabel", fontName="DejaVuSans-Bold", fontSize=8.3, leading=15, textColor=MUTED)
 S_MOCK_VALUE = style("MockValue", fontName="DejaVuSansMono", fontSize=8.8, leading=15, textColor=TEXT)
 S_MOCK_BTN_LABEL = style("MockBtnLabel", fontName="DejaVuSans-Bold", fontSize=8.2, leading=11,
                           alignment=TA_CENTER)
 S_MOCK_BTN_VALUE = style("MockBtnValue", fontSize=7.6, leading=10, alignment=TA_CENTER)
-S_TERM_CMD = style("TermCmd", fontName="DejaVuSansMono", fontSize=8.6, leading=13.5,
-                    textColor=HexColor("#7fe08a"))
-S_TERM_OUT = style("TermOut", fontName="DejaVuSansMono", fontSize=8.6, leading=13.5,
-                    textColor=HexColor("#d7dce0"))
 S_BROWSER_URL = style("BrowserUrl", fontName="DejaVuSansMono", fontSize=8.3, leading=11,
                        textColor=HexColor("#2c3540"))
 
+# Real Raspberry Pi Imager screenshots (see screenshot()) show its own actual header -
+# plain and light, no coloured "traffic light" dots. The device/storage mock-ups below
+# depict the same real app (just without a live catalogue to show a populated dropdown),
+# so their title bar matches that real look instead of inventing a fake one.
+S_APP_TITLE = style("AppTitle", fontName="DejaVuSans-Bold", fontSize=9, textColor=TEXT,
+                     leading=12, alignment=TA_CENTER)
 
-def _window_bar(title, width):
-    dots = Paragraph(
-        '<font color="#ff5f57">⬤</font> <font color="#febc2e">⬤</font> '
-        '<font color="#28c840">⬤</font>',
-        S_WIN_DOT,
-    )
-    ttl = Paragraph(title, S_WIN_TITLE)
-    bar = Table([[dots, ttl, ""]], colWidths=[18 * mm, width - 36 * mm, 18 * mm])
+
+def _app_window_bar(title, width):
+    """Plain light title bar matching the real Raspberry Pi Imager's own header -
+    used only for the illustrative parts of that same app (not for terminals)."""
+    ttl = Paragraph(title, S_APP_TITLE)
+    bar = Table([[ttl]], colWidths=[width])
     bar.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), DARK2),
+        ("BACKGROUND", (0, 0), (-1, -1), HexColor("#f7f7f7")),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (0, 0), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("LINEBELOW", (0, 0), (-1, -1), 0.5, RULE),
+    ]))
+    return bar
+
+
+# Per-OS terminal "chrome" (title bar look + colour scheme) so the same command really
+# looks like it was typed on that operating system, not a generic/copy-pasted picture:
+#   macos   - Terminal.app: traffic-light dots, dark theme
+#   windows - Eingabeaufforderung (Command Prompt): classic navy-blue console, plain
+#             window with minimise/maximise/close glyphs, no coloured dots
+#   linux   - a GTK terminal (e.g. GNOME Terminal) running bash: hamburger menu, dark
+#             purple-ish theme, minimise/maximise/close glyphs
+TERMINAL_CHROME = {
+    "macos": dict(chrome="dots", bar_bg=DARK2, body_bg=DARK,
+                  cmd_color=HexColor("#7fe08a"), out_color=HexColor("#d7dce0")),
+    "windows": dict(chrome="win", bar_bg=HexColor("#1c1c1c"), body_bg=HexColor("#012456"),
+                     cmd_color=HexColor("#f2f2f2"), out_color=HexColor("#b6c6e3")),
+    "linux": dict(chrome="gtk", bar_bg=HexColor("#3a3a3a"), body_bg=HexColor("#300a24"),
+                  cmd_color=HexColor("#8ae234"), out_color=HexColor("#eeeeec")),
+}
+
+
+def _terminal_bar(title, width, chrome, bar_bg):
+    common = [
+        ("BACKGROUND", (0, 0), (-1, -1), bar_bg),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), 6),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]))
+    ]
+    if chrome == "dots":
+        dots = Paragraph(
+            '<font color="#ff5f57">⬤</font> <font color="#febc2e">⬤</font> '
+            '<font color="#28c840">⬤</font>',
+            S_WIN_DOT,
+        )
+        ttl = Paragraph(title, S_WIN_TITLE)
+        bar = Table([[dots, ttl, ""]], colWidths=[18 * mm, width - 36 * mm, 18 * mm])
+        bar.setStyle(TableStyle(common + [("LEFTPADDING", (0, 0), (0, 0), 8)]))
+    elif chrome == "win":
+        ttl = Paragraph(title, S_WIN_TITLE_LEFT)
+        ctrl = Paragraph("─&nbsp;&nbsp;&nbsp;□&nbsp;&nbsp;&nbsp;✕", S_WIN_CTRL)
+        bar = Table([[ttl, ctrl]], colWidths=[width - 24 * mm, 24 * mm])
+        bar.setStyle(TableStyle(common + [
+            ("LEFTPADDING", (0, 0), (0, 0), 8), ("RIGHTPADDING", (-1, -1), (-1, -1), 8),
+        ]))
+    elif chrome == "gtk":
+        ham = Paragraph("☰", S_WIN_HAMBURGER)
+        ttl = Paragraph(title, S_WIN_TITLE)
+        ctrl = Paragraph("─&nbsp;&nbsp;&nbsp;□&nbsp;&nbsp;&nbsp;✕", S_WIN_CTRL)
+        bar = Table([[ham, ttl, ctrl]], colWidths=[14 * mm, width - 38 * mm, 24 * mm])
+        bar.setStyle(TableStyle(common + [
+            ("LEFTPADDING", (0, 0), (0, 0), 8), ("RIGHTPADDING", (-1, -1), (-1, -1), 8),
+        ]))
+    else:
+        raise ValueError(f"unknown chrome kind: {chrome!r}")
     return bar
 
 
@@ -178,7 +237,7 @@ def imager_window_mockup(highlight):
     """Mock-up of the Raspberry Pi Imager main window's three choice buttons.
     highlight: 'device' | 'os' | 'storage' - which button is drawn as active."""
     width = PAGE_W - 2 * MARGIN
-    bar = _window_bar("Raspberry Pi Imager", width)
+    bar = _app_window_bar("Raspberry Pi Imager", width)
     btn_defs = [
         ("device", "CHOOSE DEVICE", "Raspberry Pi 3"),
         ("os", "CHOOSE OS", "Raspberry Pi OS (Legacy) Lite"),
@@ -230,7 +289,7 @@ def imager_window_mockup(highlight):
 def imager_settings_mockup(rows):
     """Mock-up of the Imager 'EDIT SETTINGS' dialog. rows: list of (label, value)."""
     width = PAGE_W - 2 * MARGIN
-    bar = _window_bar("OS-Anpassungen (EDIT SETTINGS)", width)
+    bar = _app_window_bar("OS-Anpassungen (EDIT SETTINGS)", width)
     data = [[Paragraph(lbl, S_MOCK_LABEL), Paragraph(val, S_MOCK_VALUE)] for lbl, val in rows]
     t = Table(data, colWidths=[42 * mm, width - 42 * mm])
     ts = [
@@ -245,17 +304,24 @@ def imager_settings_mockup(rows):
     return KeepTogether([bar, t, Spacer(1, 8)])
 
 
-def terminal_mockup(title, lines):
-    """Mock-up of a terminal window. lines: list of (is_command: bool, text: str)."""
+def terminal_mockup(title, lines, os_key="macos"):
+    """Mock-up of a terminal window, styled to actually look like that OS's terminal
+    (see TERMINAL_CHROME). lines: list of (is_command: bool, text: str).
+    os_key: 'macos' | 'windows' | 'linux'."""
+    cfg = TERMINAL_CHROME[os_key]
     width = PAGE_W - 2 * MARGIN
-    bar = _window_bar(title, width)
+    bar = _terminal_bar(title, width, cfg["chrome"], cfg["bar_bg"])
     paras = [
-        Paragraph(("$ " if is_cmd else "") + text, S_TERM_CMD if is_cmd else S_TERM_OUT)
+        Paragraph(
+            ("$ " if is_cmd else "") + text,
+            style("TermLine", fontName="DejaVuSansMono", fontSize=8.6, leading=13.5,
+                  textColor=cfg["cmd_color"] if is_cmd else cfg["out_color"]),
+        )
         for is_cmd, text in lines
     ]
     body = Table([[p] for p in paras], colWidths=[width])
     body.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), DARK),
+        ("BACKGROUND", (0, 0), (-1, -1), cfg["body_bg"]),
         ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
         ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
         ("TOPPADDING", (0, 0), (0, 0), 8), ("BOTTOMPADDING", (-1, -1), (-1, -1), 8),
@@ -264,27 +330,24 @@ def terminal_mockup(title, lines):
 
 
 def browser_mockup(url, heading, field_labels, button_text):
-    """Mock-up of a browser window showing a simple form page."""
+    """Mock-up of a browser window showing a simple form page. Deliberately
+    OS-/browser-neutral (no macOS-style dots etc.) since the same browser
+    (Chrome, Firefox, Edge, ...) can run on any of the three operating systems -
+    unlike the terminal, there is no single "the" look to imitate here."""
     width = PAGE_W - 2 * MARGIN
-    dots = Paragraph(
-        '<font color="#ff5f57">⬤</font> <font color="#febc2e">⬤</font> '
-        '<font color="#28c840">⬤</font>',
-        S_WIN_DOT,
-    )
-    addr = Table([[Paragraph(url, S_BROWSER_URL)]], colWidths=[width - 40 * mm])
+    addr = Table([[Paragraph(url, S_BROWSER_URL)]], colWidths=[width - 16 * mm])
     addr.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.white),
         ("BOX", (0, 0), (-1, -1), 0.5, RULE),
         ("LEFTPADDING", (0, 0), (-1, -1), 6), ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
-    bar = Table([[dots, addr]], colWidths=[18 * mm, width - 18 * mm])
+    bar = Table([[addr]], colWidths=[width - 8 * mm])
     bar.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), DARK2),
+        ("BACKGROUND", (0, 0), (-1, -1), HexColor("#e4e4e4")),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (0, 0), 8),
+        ("LEFTPADDING", (0, 0), (0, 0), 8), ("RIGHTPADDING", (-1, -1), (-1, -1), 8),
         ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (1, 0), (1, 0), 8),
     ]))
 
     head_p = Paragraph(heading, style("MockHeading", fontName="DejaVuSans-Bold", fontSize=12,
