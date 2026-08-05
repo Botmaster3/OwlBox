@@ -17,7 +17,7 @@ from pdf_common import (
     spec_table, note_box, cover_page, draw_header_footer,
     make_toc, TocDocTemplate, style,
     imager_window_mockup, terminal_mockup, browser_mockup,
-    screenshot,
+    screenshot_with_chrome,
 )
 
 OUT = str(REPO_ROOT / "owlbox/web/static/docs/OwlBox-Installation.pdf")
@@ -159,15 +159,17 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     h2(f"{n}.2 Raspberry Pi OS auf die SD-Karte flashen")
     p("Raspberry Pi Imager öffnen, SD-Karte in den PC stecken.")
     story.append(note_box(
-        "Die Screenshots in diesem Kapitel zeigen den echten Raspberry Pi Imager - die "
-        "Oberfläche ist auf allen drei Betriebssystemen identisch. Hostname, Benutzername, "
-        "Passwort und WLAN-Daten sind frei gewählte Beispielwerte zur Illustration - beim "
-        "eigenen Durchlauf hier die eigenen Werte eintragen."
+        "Die Screenshots in diesem Kapitel zeigen die echte Bedienoberfläche des Raspberry Pi "
+        "Imager - die ist auf allen drei Betriebssystemen identisch, nur der Fensterrahmen "
+        f"drumherum sieht unter {os_name} anders aus (hier entsprechend nachgebildet). "
+        "Hostname, Benutzername, Passwort und WLAN-Daten sind frei gewählte Beispielwerte zur "
+        "Illustration - beim eigenen Durchlauf hier die eigenen Werte eintragen."
     ))
-    story.append(screenshot(str(ASSETS / "imager-main-window.png"),
-                             "Der Raspberry Pi Imager nach dem Start."))
+    story.append(screenshot_with_chrome(str(ASSETS / "imager-main-window.png"), os_key,
+                                         "Der Raspberry Pi Imager nach dem Start.",
+                                         app_title="Raspberry Pi Imager"))
     step(1, "Gerät wählen", "„CHOOSE DEVICE“ → Raspberry Pi 3.")
-    story.append(imager_window_mockup("device"))
+    story.append(imager_window_mockup("device", os_key))
     step(2, "Betriebssystem wählen",
          "„CHOOSE OS“ → „Raspberry Pi OS (other)“ → <b>„Raspberry Pi OS (Legacy) Lite“</b>.",
          "Diese Variante basiert auf demselben aktuellen Debian Bookworm wie die Standard-Variante "
@@ -177,16 +179,20 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
          "Desktop-Umgebung (kein lightdm/LXDE) - „Lite“ bringt so eine Desktop-Umgebung gar "
          "nicht erst mit, die beim Boot nur unnötig Zeit kosten würde, ohne dass sie je zu sehen "
          "wäre.")
-    story.append(screenshot(str(ASSETS / "imager-os-list.png"),
-                             "„CHOOSE OS“ - die oberste Auswahlebene."))
-    story.append(screenshot(str(ASSETS / "imager-os-legacy.png"),
-                             "Nach Klick auf „Raspberry Pi OS (other)“ - hier „Raspberry Pi OS "
-                             "(Legacy) Lite“ auswählen (weiter unten in der Liste)."))
-    story.append(screenshot(str(ASSETS / "imager-os-lite-selected.png"),
-                             "„Raspberry Pi OS (Legacy) Lite“ ausgewählt."))
+    story.append(screenshot_with_chrome(str(ASSETS / "imager-os-list.png"), os_key,
+                                         "„CHOOSE OS“ - die oberste Auswahlebene.",
+                                         app_title="Operating System"))
+    story.append(screenshot_with_chrome(str(ASSETS / "imager-os-legacy.png"), os_key,
+                                         "Nach Klick auf „Raspberry Pi OS (other)“ - hier "
+                                         "„Raspberry Pi OS (Legacy) Lite“ auswählen (weiter "
+                                         "unten in der Liste).",
+                                         app_title="Operating System"))
+    story.append(screenshot_with_chrome(str(ASSETS / "imager-os-lite-selected.png"), os_key,
+                                         "„Raspberry Pi OS (Legacy) Lite“ ausgewählt.",
+                                         app_title="Raspberry Pi Imager"))
     step(3, "Speicherziel wählen", "„CHOOSE STORAGE“ → die eingelegte SD-Karte auswählen. "
          "Vorsicht: alles darauf wird überschrieben.")
-    story.append(imager_window_mockup("storage"))
+    story.append(imager_window_mockup("storage", os_key))
     step(4, "Anpassungen vornehmen",
          "Nach Klick auf „NEXT“ fragt der Imager „Would you like to apply OS customisation "
          "settings?“ - <b>„EDIT SETTINGS“</b> wählen (bei älteren Imager-Versionen stattdessen "
@@ -201,12 +207,14 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "<b>SSH aktivieren</b> (Passwort-Authentifizierung reicht für den Einstieg)",
         "Zeitzone und Tastaturlayout passend setzen",
     ])
-    story.append(screenshot(str(ASSETS / "imager-settings-general.png"),
-                             "Reiter „GENERAL“ - Hostname, Benutzer/Passwort und WLAN "
-                             "(Beispielwerte)."))
-    story.append(screenshot(str(ASSETS / "imager-settings-services.png"),
-                             "Reiter „SERVICES“ - SSH mit Passwort-Authentifizierung "
-                             "aktivieren."))
+    story.append(screenshot_with_chrome(str(ASSETS / "imager-settings-general.png"), os_key,
+                                         "Reiter „GENERAL“ - Hostname, Benutzer/Passwort und "
+                                         "WLAN (Beispielwerte).",
+                                         app_title="OS Customization"))
+    story.append(screenshot_with_chrome(str(ASSETS / "imager-settings-services.png"), os_key,
+                                         "Reiter „SERVICES“ - SSH mit "
+                                         "Passwort-Authentifizierung aktivieren.",
+                                         app_title="OS Customization"))
     step(5, "Schreiben", "„SAVE“, dann „YES“/„WRITE“ bestätigen. Der Vorgang dauert je nach "
          "Kartengröße/-geschwindigkeit einige Minuten (Schreiben + Verifizieren). Danach die "
          f"SD-Karte sicher auswerfen ({eject_hint}).")

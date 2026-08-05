@@ -157,36 +157,25 @@ S_MOCK_BTN_VALUE = style("MockBtnValue", fontSize=7.6, leading=10, alignment=TA_
 S_BROWSER_URL = style("BrowserUrl", fontName="DejaVuSansMono", fontSize=8.3, leading=11,
                        textColor=HexColor("#2c3540"))
 
-# Real Raspberry Pi Imager screenshots (see screenshot()) show its own actual header -
-# plain and light, no coloured "traffic light" dots. The device/storage mock-ups below
-# depict the same real app (just without a live catalogue to show a populated dropdown),
-# so their title bar matches that real look instead of inventing a fake one.
-S_APP_TITLE = style("AppTitle", fontName="DejaVuSans-Bold", fontSize=9, textColor=TEXT,
-                     leading=12, alignment=TA_CENTER)
-
-
-def _app_window_bar(title, width):
-    """Plain light title bar matching the real Raspberry Pi Imager's own header -
-    used only for the illustrative parts of that same app (not for terminals)."""
-    ttl = Paragraph(title, S_APP_TITLE)
-    bar = Table([[ttl]], colWidths=[width])
-    bar.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), HexColor("#f7f7f7")),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-        ("LINEBELOW", (0, 0), (-1, -1), 0.5, RULE),
-    ]))
-    return bar
-
-
-# Per-OS terminal "chrome" (title bar look + colour scheme) so the same command really
-# looks like it was typed on that operating system, not a generic/copy-pasted picture:
-#   macos   - Terminal.app: traffic-light dots, dark theme
-#   windows - Eingabeaufforderung (Command Prompt): classic navy-blue console, plain
-#             window with minimise/maximise/close glyphs, no coloured dots
-#   linux   - a GTK terminal (e.g. GNOME Terminal) running bash: hamburger menu, dark
-#             purple-ish theme, minimise/maximise/close glyphs
+# Real Raspberry Pi Imager screenshots (see screenshot_with_chrome()) were captured in a
+# headless sandbox with no window manager running, so they only ever show the app's own
+# internal content (its Raspberry-logo header, buttons, dialogs) - never the OS-native
+# window frame a real desktop draws around every app window. That frame genuinely differs
+# per OS (macOS traffic lights, Windows minimise/maximise/close, a GNOME/Linux header bar),
+# so screenshot_with_chrome() adds a representative one back on top of the real content,
+# per OS, instead of leaving the misleading impression that Raspberry Pi Imager looks
+# identical (or frameless) everywhere.
+#
+# The same per-OS "chrome" mechanism also drives terminal_mockup() below, just with a dark
+# terminal colour scheme instead of a light native-window one:
+#   macos   - traffic-light dots (top-left), centred title
+#   windows - plain title (top-left), minimise/maximise/close glyphs (top-right)
+#   linux   - hamburger menu (top-left), centred title, glyphs (top-right) - GNOME-style
+APP_CHROME = {
+    "macos": dict(chrome="dots", bar_bg=HexColor("#ececec"), fg=TEXT),
+    "windows": dict(chrome="win", bar_bg=HexColor("#f3f3f3"), fg=TEXT),
+    "linux": dict(chrome="gtk", bar_bg=HexColor("#e1e1e1"), fg=TEXT),
+}
 TERMINAL_CHROME = {
     "macos": dict(chrome="dots", bar_bg=DARK2, body_bg=DARK,
                   cmd_color=HexColor("#7fe08a"), out_color=HexColor("#d7dce0")),
@@ -197,7 +186,14 @@ TERMINAL_CHROME = {
 }
 
 
-def _terminal_bar(title, width, chrome, bar_bg):
+def _chrome_bar(title, width, chrome, bar_bg, fg=colors.white):
+    title_c = ParagraphStyle("chrome_title", fontName="DejaVuSans-Bold", fontSize=8.5,
+                              textColor=fg, leading=11, alignment=TA_CENTER)
+    title_l = ParagraphStyle("chrome_title_l", parent=title_c, alignment=TA_LEFT)
+    ctrl_s = ParagraphStyle("chrome_ctrl", fontName="DejaVuSans", fontSize=9, textColor=fg,
+                             leading=11, alignment=TA_RIGHT)
+    ham_s = ParagraphStyle("chrome_ham", fontName="DejaVuSans", fontSize=9, textColor=fg,
+                            leading=11, alignment=TA_LEFT)
     common = [
         ("BACKGROUND", (0, 0), (-1, -1), bar_bg),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -210,20 +206,20 @@ def _terminal_bar(title, width, chrome, bar_bg):
             '<font color="#28c840">⬤</font>',
             S_WIN_DOT,
         )
-        ttl = Paragraph(title, S_WIN_TITLE)
+        ttl = Paragraph(title, title_c)
         bar = Table([[dots, ttl, ""]], colWidths=[18 * mm, width - 36 * mm, 18 * mm])
         bar.setStyle(TableStyle(common + [("LEFTPADDING", (0, 0), (0, 0), 8)]))
     elif chrome == "win":
-        ttl = Paragraph(title, S_WIN_TITLE_LEFT)
-        ctrl = Paragraph("─&nbsp;&nbsp;&nbsp;□&nbsp;&nbsp;&nbsp;✕", S_WIN_CTRL)
+        ttl = Paragraph(title, title_l)
+        ctrl = Paragraph("─&nbsp;&nbsp;&nbsp;□&nbsp;&nbsp;&nbsp;✕", ctrl_s)
         bar = Table([[ttl, ctrl]], colWidths=[width - 24 * mm, 24 * mm])
         bar.setStyle(TableStyle(common + [
             ("LEFTPADDING", (0, 0), (0, 0), 8), ("RIGHTPADDING", (-1, -1), (-1, -1), 8),
         ]))
     elif chrome == "gtk":
-        ham = Paragraph("☰", S_WIN_HAMBURGER)
-        ttl = Paragraph(title, S_WIN_TITLE)
-        ctrl = Paragraph("─&nbsp;&nbsp;&nbsp;□&nbsp;&nbsp;&nbsp;✕", S_WIN_CTRL)
+        ham = Paragraph("☰", ham_s)
+        ttl = Paragraph(title, title_c)
+        ctrl = Paragraph("─&nbsp;&nbsp;&nbsp;□&nbsp;&nbsp;&nbsp;✕", ctrl_s)
         bar = Table([[ham, ttl, ctrl]], colWidths=[14 * mm, width - 38 * mm, 24 * mm])
         bar.setStyle(TableStyle(common + [
             ("LEFTPADDING", (0, 0), (0, 0), 8), ("RIGHTPADDING", (-1, -1), (-1, -1), 8),
@@ -233,11 +229,13 @@ def _terminal_bar(title, width, chrome, bar_bg):
     return bar
 
 
-def imager_window_mockup(highlight):
+def imager_window_mockup(highlight, os_key):
     """Mock-up of the Raspberry Pi Imager main window's three choice buttons.
-    highlight: 'device' | 'os' | 'storage' - which button is drawn as active."""
+    highlight: 'device' | 'os' | 'storage' - which button is drawn as active.
+    os_key: 'macos' | 'windows' | 'linux' - which native window chrome to draw."""
     width = PAGE_W - 2 * MARGIN
-    bar = _app_window_bar("Raspberry Pi Imager", width)
+    cfg = APP_CHROME[os_key]
+    bar = _chrome_bar("Raspberry Pi Imager", width, cfg["chrome"], cfg["bar_bg"], cfg["fg"])
     btn_defs = [
         ("device", "CHOOSE DEVICE", "Raspberry Pi 3"),
         ("os", "CHOOSE OS", "Raspberry Pi OS (Legacy) Lite"),
@@ -286,10 +284,12 @@ def imager_window_mockup(highlight):
     return KeepTogether([bar, body, Spacer(1, 8)])
 
 
-def imager_settings_mockup(rows):
+def imager_settings_mockup(rows, os_key="macos"):
     """Mock-up of the Imager 'EDIT SETTINGS' dialog. rows: list of (label, value)."""
     width = PAGE_W - 2 * MARGIN
-    bar = _app_window_bar("OS-Anpassungen (EDIT SETTINGS)", width)
+    cfg = APP_CHROME[os_key]
+    bar = _chrome_bar("OS-Anpassungen (EDIT SETTINGS)", width, cfg["chrome"], cfg["bar_bg"],
+                       cfg["fg"])
     data = [[Paragraph(lbl, S_MOCK_LABEL), Paragraph(val, S_MOCK_VALUE)] for lbl, val in rows]
     t = Table(data, colWidths=[42 * mm, width - 42 * mm])
     ts = [
@@ -310,7 +310,7 @@ def terminal_mockup(title, lines, os_key="macos"):
     os_key: 'macos' | 'windows' | 'linux'."""
     cfg = TERMINAL_CHROME[os_key]
     width = PAGE_W - 2 * MARGIN
-    bar = _terminal_bar(title, width, cfg["chrome"], cfg["bar_bg"])
+    bar = _chrome_bar(title, width, cfg["chrome"], cfg["bar_bg"])
     paras = [
         Paragraph(
             ("$ " if is_cmd else "") + text,
@@ -405,6 +405,34 @@ def screenshot(path, caption=None, max_width=None):
         ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
     ]))
     parts = [framed]
+    if caption:
+        parts.append(Paragraph(f"<i>{caption}</i>", S_SCREENSHOT_CAPTION))
+    parts.append(Spacer(1, 8))
+    return KeepTogether(parts)
+
+
+def screenshot_with_chrome(path, os_key, caption=None, app_title="Raspberry Pi Imager",
+                            max_width=None):
+    """Like screenshot(), but with an OS-native-looking window title bar drawn on top
+    (see APP_CHROME) - the screenshot itself was captured headless, without a window
+    manager, so it never had a real OS frame around it to begin with; this adds a
+    representative one back so the picture matches what you'd actually see on your
+    own desktop, not a frameless/generic one."""
+    width = max_width or (PAGE_W - 2 * MARGIN)
+    cfg = APP_CHROME[os_key]
+    bar = _chrome_bar(app_title, width, cfg["chrome"], cfg["bar_bg"], cfg["fg"])
+    with PILImage.open(path) as im:
+        iw, ih = im.size
+    scale = min(width / iw, 1.0)
+    w, h = iw * scale, ih * scale
+    img = RLImage(path, width=w, height=h, hAlign="CENTER")
+    framed = Table([[img]], colWidths=[width])
+    framed.setStyle(TableStyle([
+        ("BOX", (0, 0), (-1, -1), 0.6, RULE),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
+    parts = [bar, framed]
     if caption:
         parts.append(Paragraph(f"<i>{caption}</i>", S_SCREENSHOT_CAPTION))
     parts.append(Spacer(1, 8))
