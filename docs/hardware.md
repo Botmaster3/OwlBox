@@ -236,6 +236,19 @@ siehe `owlbox/rfid/mfrc522_reader.py` für Details. SPI selbst muss trotzdem
 aktiviert bleiben, weil das Display es braucht (macht `scripts/install.sh`
 bereits via `raspi-config nonint do_spi 0`).
 
+**Wichtig, an echter Hardware bestätigt:** Sowohl das Software-SPI als auch
+der RC522-Reset-Pin laufen über `lgpio` (`owlbox/rfid/lgpio_compat.py`),
+**nicht** über `RPi.GPIO` - obwohl die `mfrc522`-Bibliothek intern eigentlich
+fest auf `RPi.GPIO` setzt (wird per `unittest.mock.patch` umgeleitet). Grund:
+`RPi.GPIO` und die `lgpio`-Pin-Factory von `gpiozero` (die die Taster/Encoder
+brauchen, da `RPi.GPIO`s eigene Kantenerkennung auf aktuellen Kerneln mit
+„Failed to add edge detection" abbricht) können nicht im selben Prozess
+koexistieren - `RPi.GPIO` beansprucht beim ersten Aufruf GPIO-Leitungen
+projektweit, was `gpiozero`s separate `lgpio`-Anfragen dann mit
+`lgpio.error: 'GPIO busy'` scheitern lässt, selbst auf Pins, die der RC522
+nie anfasst (z.B. den Lautstärke-Encoder auf GPIO17). Deshalb läuft
+inzwischen die komplette GPIO-Ansteuerung dieses Projekts über `lgpio`.
+
 Wer den RC522 ohne dieses Display betreibt (dann ist SPI0 komplett frei),
 kann natürlich stattdessen ganz normal Hardware-SPI nutzen - dafür
 `owlbox/rfid/mfrc522_reader.py` entsprechend anpassen (dort direkt

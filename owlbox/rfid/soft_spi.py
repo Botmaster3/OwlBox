@@ -39,9 +39,11 @@ class SoftSpi:
 
     def _gpio_module(self):
         if self._gpio is None:
-            import RPi.GPIO as GPIO
+            # lgpio, not RPi.GPIO - see Mfrc522Reader for why the two can't
+            # coexist in the same process on current Raspberry Pi OS kernels.
+            from .lgpio_compat import LgpioCompat
 
-            self._gpio = GPIO
+            self._gpio = LgpioCompat()
         return self._gpio
 
     def open(self, bus: int, device: int) -> None:
