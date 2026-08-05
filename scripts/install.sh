@@ -93,7 +93,11 @@ apt-get install -y \
   mpv alsa-utils \
   git curl cmake \
   unclutter \
+  fonts-noto-color-emoji \
   || true
+# fonts-noto-color-emoji above: "Legacy Lite" has no emoji-capable font at all
+# out of the box, so every 🦉/😴/▶️/etc. in the kiosk UI renders as an empty
+# box ("tofu") instead - confirmed on real hardware.
 # Debian's chromium package name varies by release; try both.
 apt-get install -y chromium-browser || apt-get install -y chromium || true
 # Needed to build fbcp against the legacy VideoCore firmware interface.

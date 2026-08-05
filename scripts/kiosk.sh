@@ -41,4 +41,6 @@ exec "$CHROMIUM_BIN" \
   --disable-pinch \
   --overscroll-history-navigation=0 \
   --check-for-update-interval=31536000 \
+  --disable-features=Translate \
+  --lang=de \
   --app="$URL"
