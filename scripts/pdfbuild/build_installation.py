@@ -300,6 +300,15 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "git clone https://github.com/Botmaster3/owlbox.git",
         "cd owlbox",
     ])
+    story.append(note_box(
+        "Meldet der Pi <b>„git: command not found“</b>: Raspberry Pi OS (Legacy) Lite bringt "
+        "git nicht von Haus aus mit. Einmalig nachinstallieren, dann den Befehl oben erneut "
+        "ausführen:"
+    ))
+    code([
+        "sudo apt update",
+        "sudo apt install -y git",
+    ])
     h3(f"{n}.6.2 Installationsskript ausführen (1. Durchlauf)")
     story.append(terminal_mockup(app_name, [
         (True, "sudo ./scripts/install.sh"),
@@ -518,6 +527,11 @@ story.append(spec_table(
         ["Problem", "Lösungsansatz"],
         ["SD-Karte wird vom Imager nicht erkannt", "Anderen Kartenleser/USB-Anschluss "
          "probieren; Karte in einem anderen Gerät auf Schreibschutz/Defekt prüfen."],
+        ["„git: command not found“", "Prompt genau ansehen: Steht dort pi@owlbox (SSH-Sitzung "
+         "auf dem Pi), fehlt git auf dem frischen Raspberry Pi OS (Legacy) Lite - beheben mit "
+         "sudo apt update && sudo apt install -y git. Steht dort der eigene Rechnername (lokal "
+         "im Terminal, macOS), stattdessen xcode-select --install ausführen und den Dialog "
+         "bestätigen."],
         ["owlbox.local nicht erreichbar", "IP-Adresse stattdessen verwenden (Router-Oberfläche "
          "oder Bildschirm+Tastatur direkt am Pi mit hostname -I)."],
         ["SSH-Verbindung wird abgelehnt", "Prüfen, ob SSH beim Flashen (Schritt „Anpassungen "
