@@ -1,7 +1,11 @@
-"""Self-update from the web UI: `git pull` in the repo, reinstall dependencies
-if requirements.txt changed, then restart the owlbox systemd service (not the
-whole Pi) so the new code takes effect. Requires passwordless sudo for
-`systemctl restart owlbox` - see docs/hardware.md.
+"""Self-update from the web UI, in two explicit steps so installing an update is
+always the user's own decision rather than something a page load silently does:
+  1. check_update() - read-only `git fetch` + compares HEAD against the upstream
+     tracking branch, just reports whether anything is behind.
+  2. run_update() - `git pull` in the repo, reinstall dependencies if
+     requirements.txt changed, then restart the owlbox systemd service (not the
+     whole Pi) so the new code takes effect. Requires passwordless sudo for
+     `systemctl restart owlbox` - see docs/hardware.md.
 """
 from __future__ import annotations
 
@@ -25,6 +29,29 @@ def _run(args: list[str], cwd: Optional[Path] = None, timeout: float = 120) -> t
         return False, f"{' '.join(args)} fehlgeschlagen: {exc}"
     output = ((result.stdout or "") + (result.stderr or "")).strip()
     return result.returncode == 0, output
+
+
+def check_update() -> dict:
+    """Read-only: fetches from the remote and reports whether new commits are
+    available upstream, without touching the working tree, installing anything,
+    or restarting the service. Lets the UI show "update available" and leave the
+    actual install (run_update()) to an explicit follow-up action."""
+    ok, fetch_output = _run(["git", "fetch"], cwd=REPO_ROOT)
+    if not ok:
+        logger.warning("update check: git fetch failed: %s", fetch_output)
+        return {"ok": False, "step": "git fetch", "output": fetch_output}
+
+    ok, count_output = _run(["git", "rev-list", "--count", "HEAD..@{u}"], cwd=REPO_ROOT)
+    if not ok:
+        logger.warning("update check: git rev-list failed: %s", count_output)
+        return {"ok": False, "step": "git rev-list", "output": count_output}
+
+    try:
+        behind = int(count_output.strip() or "0")
+    except ValueError:
+        behind = 0
+
+    return {"ok": True, "update_available": behind > 0, "commits_behind": behind}
 
 
 def run_update() -> dict:

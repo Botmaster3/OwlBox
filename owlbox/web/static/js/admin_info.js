@@ -102,27 +102,66 @@
 
   load();
 
-  const updateBtn = document.getElementById("update-btn");
+  // Update flow is deliberately two steps: checkForUpdate() only ever looks
+  // (git fetch, no working-tree changes), installUpdate() is the one thing
+  // that actually pulls/restarts - and it only ever runs when the user clicks
+  // its button, never automatically.
+  const checkBtn = document.getElementById("update-check-btn");
+  const installBtn = document.getElementById("update-install-btn");
   const updateStatus = document.getElementById("update-status");
 
-  updateBtn.addEventListener("click", async () => {
-    if (!confirm("Jetzt nach Updates suchen und den OwlBox-Dienst bei Bedarf neu starten?")) return;
-    updateBtn.disabled = true;
-    updateStatus.textContent = "Suche nach Updates…";
+  async function checkForUpdate() {
+    checkBtn.disabled = true;
+    installBtn.hidden = true;
+    updateStatus.textContent = "Prüfe auf Updates…";
+    try {
+      const res = await fetch("/api/system/update/check");
+      const result = await res.json();
+      if (!res.ok) {
+        updateStatus.textContent = `Prüfung fehlgeschlagen (${result.step}): ${result.output || "unbekannter Fehler"}`;
+      } else if (result.update_available) {
+        const n = result.commits_behind;
+        updateStatus.textContent = `Update verfügbar (${n} neue${n === 1 ? "r" : ""} Commit${n === 1 ? "" : "s"}).`;
+        installBtn.hidden = false;
+      } else {
+        updateStatus.textContent = "OwlBox ist bereits auf dem neuesten Stand.";
+      }
+    } catch (err) {
+      updateStatus.textContent = `Prüfung fehlgeschlagen: ${err.message}`;
+    } finally {
+      checkBtn.disabled = false;
+    }
+  }
+
+  installBtn.addEventListener("click", async () => {
+    if (!confirm("Update jetzt installieren? Der OwlBox-Dienst wird dazu kurz neu gestartet.")) return;
+    checkBtn.disabled = true;
+    installBtn.disabled = true;
+    updateStatus.textContent = "Installiere Update…";
     try {
       const res = await fetch("/api/system/update", { method: "POST" });
       const result = await res.json();
       if (!res.ok) {
         updateStatus.textContent = `Fehlgeschlagen (${result.step}): ${result.output || "unbekannter Fehler"}`;
+        installBtn.disabled = false;
       } else if (result.restarted) {
         updateStatus.textContent = "Update installiert, Dienst startet neu - Seite gleich neu laden.";
+        installBtn.hidden = true;
       } else {
         updateStatus.textContent = "Bereits auf dem neuesten Stand.";
+        installBtn.hidden = true;
       }
     } catch (err) {
       updateStatus.textContent = `Fehlgeschlagen: ${err.message}`;
+      installBtn.disabled = false;
     } finally {
-      updateBtn.disabled = false;
+      checkBtn.disabled = false;
     }
   });
+
+  checkBtn.addEventListener("click", checkForUpdate);
+
+  // Checked automatically once when the page loads - still just a look, never
+  // an install, so this is safe to run without the user asking for it.
+  checkForUpdate();
 })();

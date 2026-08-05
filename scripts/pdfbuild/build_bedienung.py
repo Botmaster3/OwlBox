@@ -501,8 +501,13 @@ p("Aktuelle OwlBox-Version und Betriebsmodus (Normalbetrieb oder Simulationsmodu
 h2("11.6 Wartung")
 ctrl("„Backup herunterladen“", "Link/Download", "Lädt Datenbank plus alle Mediendateien als ZIP herunter - "
      "die einzige Möglichkeit, die Bibliothek wiederherzustellen, falls die SD-Karte einmal ausfällt.")
-ctrl("„Jetzt aktualisieren“", "Button", "Holt den neuesten Softwarestand per git pull, installiert bei "
-     "Bedarf neue Abhängigkeiten und startet danach nur den OwlBox-Dienst neu (nicht den ganzen Pi).")
+ctrl("„Nach Updates suchen“", "Button", "Prüft per git fetch, ob eine neuere Version im Repository "
+     "verfügbar ist - läuft automatisch beim Öffnen dieser Seite und lässt sich hier jederzeit "
+     "erneut anstoßen. Ändert nichts am installierten Stand, zeigt nur, ob es etwas Neues gibt.")
+ctrl("„Update installieren“", "Button (erscheint nur, wenn ein Update gefunden wurde)",
+     "Holt den neuen Softwarestand per git pull, installiert bei Bedarf neue Abhängigkeiten und "
+     "startet danach nur den OwlBox-Dienst neu (nicht den ganzen Pi). Erscheint erst nach einer "
+     "positiven Prüfung und wird nur auf ausdrücklichen Klick hin ausgeführt.")
 h2("11.7 Dokumentation")
 p("Direkter Download-Zugriff auf alle drei Dokumente, die auch dieser PDF-Datei beiliegen: "
   "Schnellstart, diese Bedienungsanleitung sowie die Verkabelungsreferenz.")

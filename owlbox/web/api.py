@@ -435,6 +435,15 @@ def system_backup():
     )
 
 
+@api_bp.route("/system/update/check", methods=["GET"])
+@admin_required
+def system_update_check():
+    from ..update import check_update
+
+    result = check_update()
+    return jsonify(result), (200 if result["ok"] else 500)
+
+
 @api_bp.route("/system/update", methods=["POST"])
 @admin_required
 def system_update():

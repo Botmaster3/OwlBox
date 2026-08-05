@@ -78,12 +78,15 @@
     </div>
     <div class="field">
       <label>Software-Update</label>
-      <p class="hint">Holt den neuesten Stand per <span class="mono">git pull</span>, installiert ggf. neue
-        Abhängigkeiten und startet den OwlBox-Dienst neu (nicht den ganzen Pi).</p>
-      <button class="btn secondary" id="update-btn" type="button">⬆️ Jetzt aktualisieren</button>
-      <span id="update-status" class="hint"></span>
-      <p class="field-help">Die Wiedergabe wird dabei kurz unterbrochen (Dienst-Neustart), die
-        gespeicherte Position bleibt erhalten.</p>
+      <p class="hint">Prüft beim Laden dieser Seite automatisch, ob eine neuere Version im Repository
+        verfügbar ist - gefunden wird nur geprüft, installiert wird ausschließlich nach deiner
+        Bestätigung.</p>
+      <button class="btn secondary" id="update-check-btn" type="button">🔍 Nach Updates suchen</button>
+      <button class="btn" id="update-install-btn" type="button" hidden>⬆️ Update installieren</button>
+      <span id="update-status" class="hint">Prüfe auf Updates…</span>
+      <p class="field-help">Die Installation holt den neuesten Stand per <span class="mono">git pull</span>,
+        installiert ggf. neue Abhängigkeiten und startet den OwlBox-Dienst neu (nicht den ganzen Pi) -
+        die Wiedergabe wird dabei kurz unterbrochen, die gespeicherte Position bleibt erhalten.</p>
     </div>
   </div>
 
