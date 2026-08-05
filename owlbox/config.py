@@ -60,7 +60,13 @@ class RfidConfig:
 class GpioConfig:
     button_next: int = 5
     button_prev: int = 6
-    encoder_clk: int = 17
+    # GPIO1, not the more obvious GPIO17: on real hardware, the display's touch
+    # controller (never physically wired, but its overlay is always active -
+    # see docs/hardware.md) claims GPIO17 as its "pendown" IRQ pin regardless,
+    # which blocks any other use of it. GPIO1 (conventionally reserved for a
+    # HAT ID EEPROM) is genuinely free here - this project already configures
+    # the HiFiBerry via a manual dtoverlay line rather than EEPROM auto-detect.
+    encoder_clk: int = 1
     encoder_dt: int = 27
     encoder_switch: int = 22
     bounce_time: float = 0.05

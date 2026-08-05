@@ -163,7 +163,7 @@ PDF-Referenz auch unter `owlbox/web/static/docs/OwlBox-Verkabelung.pdf`
 | RC522 RST                       | 26      | RC522 (`rfid.reset_pin`) |
 | Taster Weiter                   | 5       | Taster              |
 | Taster Zurück                   | 6       | Taster              |
-| Encoder CLK                     | 17      | Lautstärke-Encoder  |
+| Encoder CLK                     | 1       | Lautstärke-Encoder (NICHT 17, s.u.) |
 | Encoder DT                      | 27      | Lautstärke-Encoder  |
 | Encoder SW                      | 22      | Lautstärke-Encoder  |
 | Display-Backlight (dimmbar)     | 13      | Backlight-Dimmen (Treibertransistor, s.o.) |
@@ -240,14 +240,25 @@ bereits via `raspi-config nonint do_spi 0`).
 der RC522-Reset-Pin laufen über `lgpio` (`owlbox/rfid/lgpio_compat.py`),
 **nicht** über `RPi.GPIO` - obwohl die `mfrc522`-Bibliothek intern eigentlich
 fest auf `RPi.GPIO` setzt (wird per `unittest.mock.patch` umgeleitet). Grund:
-`RPi.GPIO` und die `lgpio`-Pin-Factory von `gpiozero` (die die Taster/Encoder
-brauchen, da `RPi.GPIO`s eigene Kantenerkennung auf aktuellen Kerneln mit
-„Failed to add edge detection" abbricht) können nicht im selben Prozess
-koexistieren - `RPi.GPIO` beansprucht beim ersten Aufruf GPIO-Leitungen
-projektweit, was `gpiozero`s separate `lgpio`-Anfragen dann mit
-`lgpio.error: 'GPIO busy'` scheitern lässt, selbst auf Pins, die der RC522
-nie anfasst (z.B. den Lautstärke-Encoder auf GPIO17). Deshalb läuft
-inzwischen die komplette GPIO-Ansteuerung dieses Projekts über `lgpio`.
+`gpiozero` (Taster/Encoder) braucht auf aktuellen Kerneln zwingend `lgpio`,
+weil `RPi.GPIO`s eigene Kantenerkennung dort mit „Failed to add edge
+detection" abbricht. `RPi.GPIO` zeigte in diesem Prozess außerdem selbst für
+Pins, die sonst nichts anfasst, sofort „already in use"-Warnungen - ein
+Zeichen, dass es auf diesem Kernel generell nicht sauber läuft. Deshalb
+läuft die komplette GPIO-Ansteuerung dieses Projekts konsistent über
+`lgpio`, nirgends mehr über `RPi.GPIO`.
+
+**Zweiter, unabhängiger Konflikt, ebenfalls an echter Hardware gefunden:**
+Der Display-Treiber beansprucht nicht nur SPI0 CE0/CE1, sondern zusätzlich
+**GPIO17 als Interrupt-Pin („pendown") für den (nie verdrahteten) Touch-
+Controller** - bestätigt per `gpioinfo gpiochip0` (Consumer-Name „pendown").
+Das kollidiert mit dem ursprünglich für den Lautstärke-Encoder vorgesehenen
+GPIO17. Da zwischen dem Display-Overlay und diesem Projekt inzwischen
+**jeder** GPIO von 2-27 belegt ist, gibt es dafür keinen regulär freien Pin
+mehr - der Lautstärke-Encoder-CLK liegt deshalb auf **GPIO1** (ID_SC,
+konventionell für ein HAT-ID-EEPROM reserviert, hier aber echt frei, da der
+HiFiBerry ohnehin per manueller `dtoverlay`-Zeile statt EEPROM-Erkennung
+konfiguriert wird - siehe unten).
 
 Wer den RC522 ohne dieses Display betreibt (dann ist SPI0 komplett frei),
 kann natürlich stattdessen ganz normal Hardware-SPI nutzen - dafür
@@ -284,7 +295,7 @@ kein Trackwechsel, solange gehalten wird.
 
 | Encoder Pin | Raspberry Pi |
 |-------------|--------------|
-| CLK         | GPIO17       |
+| CLK         | GPIO1 (nicht 17 - siehe „RC522 RFID-Leser" weiter oben) |
 | DT          | GPIO27       |
 | SW          | GPIO22       |
 | +           | 3.3V         |

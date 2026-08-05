@@ -61,10 +61,15 @@ rfid:
   missing_reads_to_remove: 5
 
 gpio:
-  # BCM pin numbers, chosen to avoid HiFiBerry's I2S pins (18/19/20/21) and I2C (2/3)
+  # BCM pin numbers, chosen to avoid HiFiBerry's I2S pins (18/19/20/21), I2C (2/3),
+  # and the display's own pins incl. its always-on (never wired) touch controller,
+  # which claims GPIO17 as an interrupt pin regardless - see docs/hardware.md.
   button_next: 5
   button_prev: 6
-  encoder_clk: 17
+  # GPIO1, not 17 (see above) - conventionally reserved for a HAT ID EEPROM, but
+  # genuinely free here since the HiFiBerry is configured via a manual dtoverlay
+  # line rather than EEPROM auto-detection.
+  encoder_clk: 1
   encoder_dt: 27
   encoder_switch: 22
   bounce_time: 0.05

@@ -154,7 +154,7 @@ story.append(spec_table(
         ["RC522 RST", "26", "RC522 (rfid.reset_pin)"],
         ["Taster Weiter", "5", "Taster"],
         ["Taster Zurück", "6", "Taster"],
-        ["Encoder CLK", "17", "Lautstärke-Encoder"],
+        ["Encoder CLK", "1", "Lautstärke-Encoder (NICHT 17, s. Kapitel 3)"],
         ["Encoder DT", "27", "Lautstärke-Encoder"],
         ["Encoder SW", "22", "Lautstärke-Encoder"],
         ["Display-Backlight (dimmbar)", "13", "Backlight-Dimmen (Treibertransistor)"],
@@ -228,6 +228,13 @@ p(
     "trotzdem aktiviert bleiben, weil das Display es braucht (macht scripts/install.sh bereits via "
     "raspi-config nonint do_spi 0, alternativ sudo raspi-config → Interface Options → SPI)."
 )
+story.append(note_box(
+    "An echter Hardware bestätigt: Der Display-Treiber beansprucht zusätzlich zu SPI0 auch noch "
+    "GPIO17 als Interrupt-Pin („pendown“) für den (nie verdrahteten) Touch-Controller - unabhängig "
+    "davon, ob Touch angeschlossen ist. Zwischen Display-Overlay und diesem Projekt ist dadurch "
+    "jeder GPIO von 2-27 belegt. Der Lautstärke-Encoder liegt deshalb auf GPIO1 statt dem "
+    "naheliegenderen GPIO17 - siehe Kapitel 5."
+))
 
 # ============================================================ 4. Taster
 h1("4. Taster (vor/zurück)")
@@ -257,8 +264,8 @@ p(
 # ============================================================ 5. Encoder
 h1("5. Dreh-Encoder mit Taster (KY-040)")
 story.append(spec_table(
-    [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO17"], ["DT", "GPIO27"], ["SW", "GPIO22"],
-     ["+", "3.3V"], ["GND", "GND"]],
+    [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO1 (nicht 17, siehe Kapitel 3)"], ["DT", "GPIO27"],
+     ["SW", "GPIO22"], ["+", "3.3V"], ["GND", "GND"]],
     col_widths=[100 * mm, 60 * mm],
 ))
 p(
