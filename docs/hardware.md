@@ -84,8 +84,15 @@ Kabeln verbinden wie durch direktes Aufstecken. Das hat zwei Vorteile:
    Kabel daneben.
 2. **Es müssen nur die tatsächlich gebrauchten Leitungen verbunden
    werden** - die Touch-Leitungen (CE1/PENIRQ) werden dabei einfach
-   **gar nicht erst angeschlossen**. Das deaktiviert Touch zusätzlich auf
-   Hardware-Ebene, nicht nur per Software/Overlay.
+   **gar nicht erst angeschlossen**, Touch bleibt also elektrisch inaktiv.
+   **Wichtig, falls RC522 und Display beide verbaut sind**: Der
+   Display-Treiber (`mhs35`/`tft35a`-Overlay) meldet dem Kernel trotzdem
+   einen Touch-Controller auf SPI0 CE1 an - fest im Overlay einprogrammiert,
+   ohne Parameter zum Abschalten, unabhängig davon, ob Touch physisch
+   angeschlossen ist. Beide SPI0-Chipselects (CE0 fürs Display, CE1 für
+   diesen Touch-Eintrag) sind damit softwareseitig belegt. Der RC522 kann
+   deshalb **nicht** auf SPI0 mitlaufen - siehe „RC522 RFID-Leser" unten für
+   die tatsächliche Verkabelung über Software-SPI auf freien GPIOs.
 
 Nur diese Leitungen vom Display-Header zum Pi verbinden:
 
@@ -93,9 +100,9 @@ Nur diese Leitungen vom Display-Header zum Pi verbinden:
 |---|---|---|
 | VCC        | 3.3V        | Versorgung |
 | GND        | GND         | Masse |
-| SCK        | GPIO11      | SPI-Takt (mit RC522 geteilt) |
-| MOSI (SDI) | GPIO10      | SPI (mit RC522 geteilt) |
-| MISO (SDO) | GPIO9       | SPI (mit RC522 geteilt) |
+| SCK        | GPIO11      | SPI0-Takt (nur Display - der RC522 hängt an eigenen GPIOs, s.u.) |
+| MOSI (SDI) | GPIO10      | SPI0 (nur Display) |
+| MISO (SDO) | GPIO9       | SPI0 (nur Display) |
 | CS/CE0     | GPIO8       | Display-Chipselect |
 | DC/RS      | GPIO24      | Data/Command (Standardwert des tft35a-Overlays) |
 | RST        | GPIO25      | Reset (Standardwert des tft35a-Overlays) |
@@ -144,11 +151,15 @@ PDF-Referenz auch unter `owlbox/web/static/docs/OwlBox-Verkabelung.pdf`
 | I2S DOUT                        | 21      | HiFiBerry           |
 | I2C SDA                         | 2       | HiFiBerry (Amp-Steuerung) |
 | I2C SCL                         | 3       | HiFiBerry (Amp-Steuerung) |
-| SPI0 SCLK/MOSI/MISO             | 11/10/9 | Display + RC522 (gemeinsamer Bus) |
+| SPI0 SCLK/MOSI/MISO             | 11/10/9 | Display (der RC522 hängt NICHT hier, s.u.) |
 | SPI0 CE0                        | 8       | Display (TFT-Chipselect) |
-| SPI0 CE1                        | 7       | RC522 (`rfid.spi_device: 1`) - frei, da Touch nicht verdrahtet |
+| SPI0 CE1                        | 7       | vom Display-Overlay softwareseitig für Touch reserviert - **unbenutzbar**, auch unverdrahtet |
 | Display DC                      | 24      | Display |
 | Display RST                     | 25      | Display |
+| RC522 SCK (Software-SPI)        | 4       | RC522 (`rfid.sck_pin`) |
+| RC522 MOSI (Software-SPI)       | 16      | RC522 (`rfid.mosi_pin`) |
+| RC522 MISO (Software-SPI)       | 15      | RC522 (`rfid.miso_pin`) |
+| RC522 SDA/CS (Software-SPI)     | 14      | RC522 (`rfid.cs_pin`) |
 | RC522 RST                       | 26      | RC522 (`rfid.reset_pin`) |
 | Taster Weiter                   | 5       | Taster              |
 | Taster Zurück                   | 6       | Taster              |
@@ -194,25 +205,41 @@ zwei 2-polige Federklemmen direkt auf der Platine (eine pro Kanal, jeweils
 - Am Lautsprecher selbst hängt der Anschluss vom jeweiligen Modell ab
   (blanker Draht, Flachsteckhülsen/Bananas oder Lötfahnen).
 
-## RC522 RFID-Leser (SPI, CE1)
+## RC522 RFID-Leser (Software-SPI auf freien GPIOs)
 
-| RC522 Pin | Raspberry Pi         |
-|-----------|----------------------|
-| VCC       | 3.3V (**nicht 5V!**) |
-| GND       | GND                  |
-| RST       | GPIO26 (`rfid.reset_pin`) |
-| SDA (CS)  | GPIO7 / CE1          |
-| SCK       | GPIO11 (mit Display geteilt) |
-| MOSI      | GPIO10 (mit Display geteilt) |
-| MISO      | GPIO9 (mit Display geteilt)  |
-| IRQ       | nicht verbunden      |
+**Wichtig, unterscheidet sich von den meisten RC522-Anleitungen im Netz:**
+Auf dieser Standardhardware hängt der RC522 **nicht** an einem der beiden
+Hardware-SPI-Busse des Pi, sondern an vier per Software angesteuerten
+GPIOs. Grund: beide Hardware-SPI-Busse sind hier bereits vergeben -
+SPI0 komplett vom Display-Treiber (CE0 fürs Display, CE1 fest für einen
+Touch-Controller reserviert, siehe oben), SPI1 liegt auf GPIO18-21, exakt
+den Pins, die der HiFiBerry für I2S-Ton braucht. Für den RC522 bleibt daher
+nur echtes Software-SPI (Bit-Banging) auf ansonsten freien GPIOs - der
+RC522 hat keine Mindesttaktrate, das funktioniert zuverlässig, nur eben
+etwas langsamer als Hardware-SPI (für einen Chip-Scan völlig ausreichend).
 
-Der RC522 liegt hier bewusst auf **CE1 (GPIO7)** statt CE0, weil das
-Display CE0 belegt. In `config.yaml`: `rfid.spi_device: 1`.
+| RC522 Pin | Raspberry Pi | Config-Feld |
+|-----------|--------------|-------------|
+| VCC       | 3.3V (**nicht 5V!**) | - |
+| GND       | GND          | - |
+| RST       | GPIO26       | `rfid.reset_pin` |
+| SDA (CS)  | GPIO14       | `rfid.cs_pin` |
+| SCK       | GPIO4        | `rfid.sck_pin` |
+| MOSI      | GPIO16       | `rfid.mosi_pin` |
+| MISO      | GPIO15       | `rfid.miso_pin` |
+| IRQ       | nicht verbunden | - |
 
-SPI muss aktiviert sein (macht `scripts/install.sh` bereits via
-`raspi-config nonint do_spi 0`, alternativ `sudo raspi-config` →
-Interface Options → SPI).
+Alle vier GPIOs (4/14/15/16) sind sonst von nichts in diesem Projekt belegt.
+Die eigentliche Bit-Bang-Logik steckt in `owlbox/rfid/soft_spi.py`, die
+`mfrc522`-Python-Bibliothek (Registerprotokoll) läuft unverändert darüber -
+siehe `owlbox/rfid/mfrc522_reader.py` für Details. SPI selbst muss trotzdem
+aktiviert bleiben, weil das Display es braucht (macht `scripts/install.sh`
+bereits via `raspi-config nonint do_spi 0`).
+
+Wer den RC522 ohne dieses Display betreibt (dann ist SPI0 komplett frei),
+kann natürlich stattdessen ganz normal Hardware-SPI nutzen - dafür
+`owlbox/rfid/mfrc522_reader.py` entsprechend anpassen (dort direkt
+`spidev`/`MFRC522(bus=0, device=...)` verwenden statt `SoftSpi`).
 
 ## Taster (vor/zurück)
 

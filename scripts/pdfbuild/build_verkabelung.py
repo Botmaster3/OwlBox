@@ -106,17 +106,23 @@ p(
     "<b>Lösung:</b> Das Display nicht aufstecken, sondern per Jumper-/Dupont-Kabeln verdrahten. Der "
     "HiFiBerry sitzt normal direkt auf dem Pi, das Display hängt per Kabel daneben - und es müssen "
     "nur die tatsächlich gebrauchten Leitungen verbunden werden. Die Touch-Leitungen (CE1/PENIRQ) "
-    "werden dabei einfach gar nicht erst angeschlossen, was Touch zusätzlich auf Hardware-Ebene "
-    "deaktiviert."
+    "werden dabei einfach gar nicht erst angeschlossen, Touch bleibt so elektrisch inaktiv."
 )
+story.append(note_box(
+    "Der Display-Treiber (mhs35/tft35a-Overlay) meldet dem Kernel trotzdem einen Touch-Controller "
+    "auf SPI0 CE1 an - fest im Overlay einprogrammiert, ohne Parameter zum Abschalten, unabhängig "
+    "davon, ob Touch physisch angeschlossen ist. Beide SPI0-Chipselects sind damit softwareseitig "
+    "belegt, der RC522 kann nicht mit auf SPI0 - siehe Kapitel 3 für die tatsächliche Verkabelung "
+    "über Software-SPI auf freien GPIOs."
+))
 story.append(spec_table(
     [
         ["Display-Pin (26-Pin-Header)", "Pi-Pin (BCM)", "Zweck"],
         ["VCC", "3.3V", "Versorgung"],
         ["GND", "GND", "Masse"],
-        ["SCK", "GPIO11", "SPI-Takt (mit RC522 geteilt)"],
-        ["MOSI (SDI)", "GPIO10", "SPI (mit RC522 geteilt)"],
-        ["MISO (SDO)", "GPIO9", "SPI (mit RC522 geteilt)"],
+        ["SCK", "GPIO11", "SPI0-Takt (nur Display, RC522 hängt an eigenen GPIOs, s. Kapitel 3)"],
+        ["MOSI (SDI)", "GPIO10", "SPI0 (nur Display)"],
+        ["MISO (SDO)", "GPIO9", "SPI0 (nur Display)"],
         ["CS/CE0", "GPIO8", "Display-Chipselect"],
         ["DC/RS", "GPIO24", "Data/Command (Standardwert des tft35a-Overlays)"],
         ["RST", "GPIO25", "Reset (Standardwert des tft35a-Overlays)"],
@@ -136,11 +142,15 @@ story.append(spec_table(
         ["I2S DOUT", "21", "HiFiBerry"],
         ["I2C SDA", "2", "HiFiBerry (Amp-Steuerung)"],
         ["I2C SCL", "3", "HiFiBerry (Amp-Steuerung)"],
-        ["SPI0 SCLK/MOSI/MISO", "11 / 10 / 9", "Display + RC522 (gemeinsamer Bus)"],
+        ["SPI0 SCLK/MOSI/MISO", "11 / 10 / 9", "Display (RC522 hängt NICHT hier, s. Kapitel 3)"],
         ["SPI0 CE0", "8", "Display (TFT-Chipselect)"],
-        ["SPI0 CE1", "7", "RC522 (rfid.spi_device: 1) - frei, da Touch nicht verdrahtet"],
+        ["SPI0 CE1", "7", "vom Display-Overlay softwareseitig für Touch reserviert - unbenutzbar"],
         ["Display DC", "24", "Display"],
         ["Display RST", "25", "Display"],
+        ["RC522 SCK (Software-SPI)", "4", "RC522 (rfid.sck_pin)"],
+        ["RC522 MOSI (Software-SPI)", "16", "RC522 (rfid.mosi_pin)"],
+        ["RC522 MISO (Software-SPI)", "15", "RC522 (rfid.miso_pin)"],
+        ["RC522 SDA/CS (Software-SPI)", "14", "RC522 (rfid.cs_pin)"],
         ["RC522 RST", "26", "RC522 (rfid.reset_pin)"],
         ["Taster Weiter", "5", "Taster"],
         ["Taster Zurück", "6", "Taster"],
@@ -189,24 +199,33 @@ bullets([
 ])
 
 # ============================================================ 3. RC522
-h1("3. RC522 RFID-Leser (SPI, CE1)")
+h1("3. RC522 RFID-Leser (Software-SPI auf freien GPIOs)")
+story.append(note_box(
+    "Anders als in den meisten RC522-Anleitungen im Netz hängt der RC522 hier NICHT an einem der "
+    "beiden Hardware-SPI-Busse des Pi, sondern an vier per Software angesteuerten GPIOs. Grund: "
+    "SPI0 ist komplett vom Display-Treiber belegt (CE0 fürs Display, CE1 fest für einen "
+    "Touch-Controller reserviert, siehe Kapitel 1), SPI1 liegt auf GPIO18-21 - exakt den Pins, die "
+    "der HiFiBerry für I2S-Ton braucht. Der RC522 hat keine Mindesttaktrate, Software-SPI "
+    "funktioniert daher zuverlässig, nur etwas langsamer als Hardware-SPI - für einen Chip-Scan "
+    "völlig ausreichend."
+))
 story.append(spec_table(
     [
-        ["RC522-Pin", "Raspberry Pi"],
-        ["VCC", "3.3V (nicht 5V!)"],
-        ["GND", "GND"],
-        ["RST", "GPIO26 (rfid.reset_pin)"],
-        ["SDA (CS)", "GPIO7 / CE1"],
-        ["SCK", "GPIO11 (mit Display geteilt)"],
-        ["MOSI", "GPIO10 (mit Display geteilt)"],
-        ["MISO", "GPIO9 (mit Display geteilt)"],
-        ["IRQ", "nicht verbunden"],
+        ["RC522-Pin", "Raspberry Pi", "Config-Feld"],
+        ["VCC", "3.3V (nicht 5V!)", "-"],
+        ["GND", "GND", "-"],
+        ["RST", "GPIO26", "rfid.reset_pin"],
+        ["SDA (CS)", "GPIO14", "rfid.cs_pin"],
+        ["SCK", "GPIO4", "rfid.sck_pin"],
+        ["MOSI", "GPIO16", "rfid.mosi_pin"],
+        ["MISO", "GPIO15", "rfid.miso_pin"],
+        ["IRQ", "nicht verbunden", "-"],
     ],
-    col_widths=[60 * mm, 100 * mm],
+    col_widths=[45 * mm, 55 * mm, 45 * mm],
 ))
 p(
-    "Der RC522 liegt hier bewusst auf CE1 (GPIO7) statt CE0, weil das Display CE0 belegt. In "
-    "config.yaml: rfid.spi_device: 1. SPI muss aktiviert sein (macht scripts/install.sh bereits via "
+    "Alle vier GPIOs (4/14/15/16) sind sonst von nichts in diesem Projekt belegt. SPI selbst muss "
+    "trotzdem aktiviert bleiben, weil das Display es braucht (macht scripts/install.sh bereits via "
     "raspi-config nonint do_spi 0, alternativ sudo raspi-config → Interface Options → SPI)."
 )
 
@@ -414,7 +433,7 @@ story.append(spec_table(
     [
         ["Abschnitt", "Wichtigste Werte"],
         ["audio:", "alsa_device, mixer_control, default_volume, volume_step, chime_enabled"],
-        ["rfid:", "reader, spi_bus, spi_device, reset_pin, poll_interval"],
+        ["rfid:", "reader, sck_pin, mosi_pin, miso_pin, cs_pin, reset_pin, poll_interval"],
         ["gpio:", "button_next/prev, encoder_clk/dt/switch, backlight_pin, "
          "brightness_encoder_clk/dt, shutdown_hold_seconds, seek_hold_seconds"],
         ["playback:", "restart_track_after_seconds, position_save_interval, auto_sleep_minutes, "

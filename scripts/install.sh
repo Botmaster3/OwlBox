@@ -3,8 +3,10 @@
 # Run as root (sudo ./scripts/install.sh) from inside a checkout of this repo.
 #
 # Targets the project's standard hardware (see docs/hardware.md): Pi 3B+, HiFiBerry
-# Amp/Amp2, 3.5" SPI display (tft35a/MHS-35 family), RC522 on CE1, buttons/encoders on
-# the documented default pins. On that combination this script alone gets you from a
+# Amp/Amp2, 3.5" SPI display (tft35a/MHS-35 family), RC522 on software SPI (GPIOs
+# 4/14/15/16 - both hardware SPI buses are already taken by the display+touch and by
+# the HiFiBerry's I2S audio), buttons/encoders on the documented default pins. On
+# that combination this script alone gets you from a
 # freshly-flashed SD card to a fully working box - no manual config.txt editing, no
 # manually running aplay/amixer and copying values by hand, no manually compiling fbcp
 # or wiring up systemd units. Two things stay manual on purpose:
@@ -268,8 +270,13 @@ if command -v aplay >/dev/null 2>&1 && aplay -l 2>/dev/null | grep -qi hifiberry
     AUDIO_CONFIGURED=1
   fi
 
-  # Second run and the display driver installer has already run before: its
-  # touch overlay line can now be safely removed (harmless to run repeatedly).
+  # Second run and the display driver installer has already run before: some
+  # LCD-show variants write a separate ads7846 touch overlay line that can
+  # now be safely removed (harmless to run repeatedly). Note: the mhs35
+  # overlay this project actually installs bundles its touch node directly
+  # inside "dtoverlay=mhs35:..." instead, with no parameter to disable it -
+  # this doesn't free up SPI0 CE1, which is why the RC522 runs on software
+  # SPI (see docs/hardware.md) rather than sharing SPI0 with the display.
   if [ -n "$CONFIG_TXT" ] && grep -q "^dtoverlay=ads7846" "$CONFIG_TXT" 2>/dev/null; then
     echo "==> Removing the touch overlay line (touch stays off on purpose)"
     sed -i '/^dtoverlay=ads7846/d' "$CONFIG_TXT"

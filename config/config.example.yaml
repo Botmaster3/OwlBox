@@ -45,11 +45,15 @@ audio:
 
 rfid:
   reader: mfrc522   # mfrc522 | simulated
-  # RC522 wired to SPI0, CE1 (not CE0) - the 3.5" SPI display normally sits on
-  # CE0, so the RFID reader shares the same SPI0 bus but uses the other
-  # chip-select line. See docs/hardware.md for the full pin conflict rundown.
-  spi_bus: 0
-  spi_device: 1
+  # Software (bit-banged) SPI on plain GPIOs, NOT the Pi's hardware SPI bus -
+  # both hardware SPI buses are already claimed on the standard hardware (the
+  # display + its always-on touch controller sit on SPI0's two chip-selects,
+  # the HiFiBerry's I2S audio sits on SPI1's GPIOs). See docs/hardware.md for
+  # the full pin conflict rundown and exact wiring.
+  sck_pin: 4
+  mosi_pin: 16
+  miso_pin: 15
+  cs_pin: 14
   reset_pin: 26      # BCM numbering - verify against your display's pinout, see docs/hardware.md
   poll_interval: 0.15
   # A tag must be missing for this many consecutive polls before it counts as "removed"

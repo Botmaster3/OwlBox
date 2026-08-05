@@ -43,8 +43,14 @@ class AudioConfig:
 @dataclass
 class RfidConfig:
     reader: str = "mfrc522"
-    spi_bus: int = 0
-    spi_device: int = 0
+    # Software (bit-banged) SPI on plain GPIOs - see Mfrc522Reader for why:
+    # both of the Pi's hardware SPI buses are already claimed by other parts
+    # of the standard hardware (the display and its touch controller, the
+    # HiFiBerry's I2S audio).
+    sck_pin: int = 4
+    mosi_pin: int = 16
+    miso_pin: int = 15
+    cs_pin: int = 14
     reset_pin: int = 25
     poll_interval: float = 0.15
     missing_reads_to_remove: int = 5
