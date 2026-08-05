@@ -8,3 +8,7 @@ gpiozero>=2.0
 mfrc522>=0.0.7
 spidev>=3.6
 RPi.GPIO>=0.7.1; platform_machine == "armv6l" or platform_machine == "armv7l" or platform_machine == "aarch64"
+# gpiozero's preferred pin factory on current Raspberry Pi OS kernels - without it,
+# gpiozero silently falls back to RPi.GPIO's sysfs-based edge detection, which
+# fails outright ("Failed to add edge detection") on recent (6.6+) kernels.
+lgpio>=0.2; platform_machine == "armv6l" or platform_machine == "armv7l" or platform_machine == "aarch64"
