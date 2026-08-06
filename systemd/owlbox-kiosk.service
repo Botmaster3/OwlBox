@@ -3,8 +3,13 @@ Description=OwlBox kiosk display (minimal X + Chromium fullscreen, no desktop en
 # Takes tty1 over directly instead of a login prompt - there is deliberately
 # no display manager/desktop session on this ("Legacy Lite") base image.
 Conflicts=getty@tty1.service
-After=owlbox.service systemd-user-sessions.service getty@tty1.service plymouth-quit.service
-Wants=owlbox.service
+# owlbox-fbcp explicitly included - confirmed on real hardware that without
+# this, boot ordering between the two is unspecified and X can start (and
+# get wedged hard enough to need SIGKILL, not just SIGTERM - see
+# owlbox-kiosk's own TimeoutStopSec below) before fbcp is mirroring the
+# framebuffer onto the physical SPI display at all.
+After=owlbox.service owlbox-fbcp.service systemd-user-sessions.service getty@tty1.service plymouth-quit.service
+Wants=owlbox.service owlbox-fbcp.service
 
 [Service]
 User=owlbox
@@ -19,6 +24,11 @@ Type=simple
 ExecStart=/usr/bin/startx /opt/owlbox/scripts/kiosk.sh -- :0 vt1 -nolisten tcp
 Restart=always
 RestartSec=2
+# X/Chromium can end up in a state that ignores SIGTERM outright (confirmed
+# on real hardware: systemd's default 90s TimeoutStopSec ran out and had to
+# SIGKILL) - shortened so a stuck kiosk gets force-killed and restarted
+# quickly instead of leaving the display dead for a minute and a half.
+TimeoutStopSec=15
 StandardInput=tty
 StandardOutput=journal
 StandardError=journal
