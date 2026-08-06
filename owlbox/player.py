@@ -198,6 +198,24 @@ class MpvPlayer:
         self._ipc = _MpvIpc(socket_path)
         self._ipc.connect()
         self.set_volume(self._config.default_volume)
+        self._disable_auto_mute()
+
+    def _disable_auto_mute(self) -> None:
+        # HiFiBerry Amp2/DAC+ (PCM512x) ships an "Auto Mute" mixer control
+        # that mutes the amp after a period of digital silence and ramps
+        # back up gradually once non-silent audio resumes - confirmed on
+        # real hardware as "gets quieter during pauses, needs an extended
+        # stretch of continuous audio to ramp back to full volume". A plain
+        # `amixer sset` only changes the live kernel state, which does NOT
+        # survive a reboot unless separately persisted via alsactl - rather
+        # than depend on that persisting correctly, just re-apply it on
+        # every player start. Swallows failures: some cards/boards (or the
+        # simulate-mode dev machine) won't have this control at all.
+        subprocess.run(
+            ["amixer", "-c", self._config.mixer_card, "sset", "Auto Mute", "off"],
+            capture_output=True,
+            check=False,
+        )
 
     def stop(self) -> None:
         if self._ipc is not None:

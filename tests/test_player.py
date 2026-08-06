@@ -1,4 +1,4 @@
-from owlbox.player import StubPlayer, create_player
+from owlbox.player import MpvPlayer, StubPlayer, create_player
 
 
 def test_stub_player_basic_playlist_flow(config):
@@ -67,3 +67,23 @@ def test_stub_player_records_the_requested_repeat_mode(config):
     assert player._repeat_mode == "folder"
     player.set_repeat_mode("track")
     assert player._repeat_mode == "track"
+
+
+def test_mpv_player_disables_auto_mute_on_the_configured_card(config, monkeypatch):
+    # HiFiBerry Amp2/DAC+ boards ship an "Auto Mute" mixer control that
+    # mutes after digital silence and ramps back up gradually - confirmed on
+    # real hardware to survive a plain `amixer sset ... off` only until the
+    # next reboot (that only changes live kernel state, not persisted
+    # state), so MpvPlayer re-applies it on every start. Just check it shells
+    # out to the right amixer invocation, without needing a real amixer/mpv.
+    config.audio.mixer_card = "2"
+    calls = []
+    monkeypatch.setattr(
+        "owlbox.player.subprocess.run",
+        lambda args, **kwargs: calls.append(args),
+    )
+
+    player = MpvPlayer(config)
+    player._disable_auto_mute()
+
+    assert calls == [["amixer", "-c", "2", "sset", "Auto Mute", "off"]]
