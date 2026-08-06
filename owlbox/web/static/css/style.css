@@ -691,11 +691,14 @@ html[data-theme="weihnachten"] .advent-wreath {
 }
 
 .track-title {
-  font-size: clamp(1rem, 2.2vw, 1.3rem);
+  font-size: clamp(0.85rem, 1.8vw, 1.05rem);
   color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Nudged left of the other .info rows on request - purely a visual
+     alignment tweak for the kiosk, this is the only place .track-title is used. */
+  margin-left: -8px;
 }
 
 .progress-row { display: flex; align-items: center; gap: 12px; }
@@ -993,7 +996,7 @@ html[data-theme="weihnachten"] .advent-wreath {
    (cutting off ascenders/descenders), and even with that fixed, 0.85rem
    turned out basically unreadable on the actual 3.5" panel - shows fewer
    lines at once now (still scrollable), but each one is actually legible. */
-.player .np-upcoming-label { font-size: 0.75rem; margin-bottom: 3px; }
+.player .np-upcoming-label { font-size: 0.9rem; margin-bottom: 3px; }
 .player .np-upcoming-list { font-size: 1.05rem; max-height: 6em; gap: 5px; line-height: 1.35; }
 
 @media (max-width: 640px) {
