@@ -238,7 +238,13 @@ if [ -n "$CONFIG_TXT" ]; then
   # edits config.txt itself and reboots at the end, and running it again on
   # top of an already-patched config.txt is the installer's problem to be
   # idempotent about, not guaranteed.
-  if ! grep -q "tft35a" "$CONFIG_TXT" 2>/dev/null; then
+  # NOTE: MHS35-show (the installer actually invoked below) writes
+  # "dtoverlay=mhs35:..." to config.txt, not "tft35a" - checking for the
+  # wrong string here meant this "already installed?" gate never matched,
+  # so the driver installer (which reboots the Pi on its own at the end)
+  # ran on *every* install.sh invocation, killing the script before it ever
+  # reached the later kiosk-autostart section - confirmed on real hardware.
+  if ! grep -q "dtoverlay=mhs35" "$CONFIG_TXT" 2>/dev/null; then
     echo "==> Installing the 3.5\" SPI display driver (goodtft/LCD-show)"
     if git clone --depth 1 https://github.com/goodtft/LCD-show.git /tmp/LCD-show; then
       chmod +x /tmp/LCD-show/MHS35-show
