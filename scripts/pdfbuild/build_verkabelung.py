@@ -176,11 +176,21 @@ p(
     "hifiberry-dacplus für ein reines DAC+. Nach der Änderung neu starten."
 )
 p(
-    "Danach mit <font face=\"DejaVuSansMono\" size=\"9\">aplay -L</font> und "
-    "<font face=\"DejaVuSansMono\" size=\"9\">amixer -c 0 scontrols</font> das ALSA-Device bzw. den "
-    "Mixer-Namen prüfen und in config.yaml unter audio.alsa_device / audio.mixer_control eintragen "
-    "(Amp/Amp2 nutzen meist „Digital“, manche Boards „PCM“ oder „Master“)."
+    "Danach mit <font face=\"DejaVuSansMono\" size=\"9\">aplay -l</font> die Kartennummer der "
+    "HiFiBerry ermitteln (z.B. „card 2: ...“) und mit "
+    "<font face=\"DejaVuSansMono\" size=\"9\">amixer -c &lt;Kartennummer&gt; scontrols</font> den "
+    "Mixer-Namen prüfen - beides in config.yaml eintragen: audio.alsa_device "
+    "(\"hw:&lt;Kartennummer&gt;,0\"), audio.mixer_control (Amp/Amp2 nutzen meist „Digital“, manche "
+    "Boards „PCM“ oder „Master“) <b>und audio.mixer_card</b> (nur die Kartennummer, ohne hw:/,0)."
 )
+story.append(note_box(
+    "Alle drei müssen zur selben Karte passen - install.sh trägt sie bei der automatischen "
+    "Erkennung mittlerweile alle drei ein, aber wer das von Hand einträgt, vergisst leicht "
+    "mixer_card: bleibt die auf ihrem Standardwert \"0\" stehen während die HiFiBerry tatsächlich "
+    "auf einer anderen Kartennummer läuft, zielt jede Lautstärkeabfrage/-änderung ins Leere - "
+    "äußert sich als „eingestellte Lautstärke wird nie gespeichert, zeigt immer 0“.",
+    kind="warn",
+))
 h2("Lautsprecher anschließen")
 p(
     "Der HiFiBerry Amp2 hat dafür keine Stecker (kein Cinch/Klinke), sondern zwei 2-polige "

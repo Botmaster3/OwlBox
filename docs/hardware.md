@@ -185,10 +185,17 @@ dtoverlay=hifiberry-amp
 (Für andere HiFiBerry-Varianten den passenden Overlay-Namen verwenden, z.B.
 `hifiberry-dacplus` für ein reines DAC+. Nach der Änderung neu starten.)
 
-Danach mit `aplay -L` und `amixer -c 0 scontrols` das ALSA-Device bzw. den
-Mixer-Namen prüfen und in `config.yaml` unter `audio.alsa_device` /
-`audio.mixer_control` eintragen (Amp/Amp2 nutzen meist `Digital`, manche
-Boards `PCM` oder `Master`).
+Danach mit `aplay -l` die Kartennummer der HiFiBerry ermitteln (z.B. `card 2:
+...`) und mit `amixer -c <Kartennummer> scontrols` den Mixer-Namen prüfen -
+beides in `config.yaml` eintragen: `audio.alsa_device` (`"hw:<Kartennummer>,0"`),
+`audio.mixer_control` (Amp/Amp2 nutzen meist `Digital`, manche Boards `PCM`
+oder `Master`) **und `audio.mixer_card`** (nur die Kartennummer, ohne
+`hw:`/`,0`). Alle drei müssen zur selben Karte passen - `install.sh` trägt sie
+bei der automatischen Erkennung mittlerweile alle drei ein, aber wer das von
+Hand einträgt, vergisst leicht `mixer_card`: bleibt die dann auf ihrem
+Standardwert `"0"` stehen während die HiFiBerry tatsächlich auf einer anderen
+Kartennummer läuft, zielt jede Lautstärkeabfrage/-änderung ins Leere - äußert
+sich als "eingestellte Lautstärke wird nie gespeichert, zeigt immer 0".
 
 ### Lautsprecher anschließen
 

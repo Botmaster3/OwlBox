@@ -335,12 +335,20 @@ if command -v aplay >/dev/null 2>&1 && aplay -l 2>/dev/null | grep -qi hifiberry
        && ! amixer -c "$CARD_NUM" scontrols 2>/dev/null | grep -qi "'Digital'"; then
       MIXER_CONTROL="PCM"
     fi
-    echo "==> HiFiBerry erkannt (Karte $CARD_NUM) - trage $ALSA_DEVICE / $MIXER_CONTROL in config.yaml ein"
+    echo "==> HiFiBerry erkannt (Karte $CARD_NUM) - trage $ALSA_DEVICE / $MIXER_CONTROL / Karte $CARD_NUM in config.yaml ein"
     # Targeted line-replace instead of a full YAML parse/dump round-trip -
     # config.yaml's inline comments (the whole point of the shipped example
     # file) would otherwise get silently dropped by a re-serialize.
     sed -i -E "s/^(\s*alsa_device:).*/\1 \"$ALSA_DEVICE\"/" "$INSTALL_DIR/config/config.yaml"
     sed -i -E "s/^(\s*mixer_control:).*/\1 \"$MIXER_CONTROL\"/" "$INSTALL_DIR/config/config.yaml"
+    # mixer_card used to be left at its config.example.yaml default ("0")
+    # here - harmless if the HiFiBerry really is card 0, but on any Pi where
+    # it isn't (confirmed on real hardware: alsa_device correctly ends up
+    # "hw:2,0", mixer_card silently stays "0"), every amixer volume get/set
+    # in player.py's AlsaMixer targets the wrong (or a non-existent) card.
+    # get_percent() then finds no matching mixer line and falls back to 0 -
+    # looks exactly like "the volume I set never sticks, always shows 0".
+    sed -i -E "s/^(\s*mixer_card:).*/\1 \"$CARD_NUM\"/" "$INSTALL_DIR/config/config.yaml"
     chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config/config.yaml"
     AUDIO_CONFIGURED=1
   fi
