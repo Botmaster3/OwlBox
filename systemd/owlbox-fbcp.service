@@ -1,6 +1,15 @@
 [Unit]
 Description=fbcp - mirrors the virtual HDMI framebuffer to the 3.5" SPI display
-After=multi-user.target
+# No After= here on purpose - it used to say "After=multi-user.target" while
+# also being WantedBy=multi-user.target below (same target on both sides),
+# an ordering cycle. Confirmed on real hardware: systemd breaks a cycle like
+# that by silently dropping one of the two edges at boot, and it was
+# consistently the one that mattered - the service just never got started
+# at all (not even "failed", plain "inactive (dead)"), while a manual
+# `systemctl start` worked fine every time since that bypasses the cycle
+# entirely. fbcp only needs the kernel/device-tree framebuffer devices,
+# which are ready long before multi-user.target anyway - no ordering
+# constraint needed here at all.
 
 [Service]
 ExecStart=/usr/local/bin/fbcp
