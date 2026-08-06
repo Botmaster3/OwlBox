@@ -5,7 +5,10 @@ always the user's own decision rather than something a page load silently does:
   2. run_update() - `git pull` in the repo, reinstall dependencies if
      requirements.txt changed, then restart the owlbox systemd service (not the
      whole Pi) so the new code takes effect. Requires passwordless sudo for
-     `systemctl restart owlbox` - see docs/hardware.md.
+     `systemctl restart --no-block owlbox` - see docs/hardware.md. The sudoers
+     rule must match this exact command line (including --no-block) or sudo
+     falls back to asking for a password, which fails outright since this
+     runs non-interactively from the web server process.
 """
 from __future__ import annotations
 

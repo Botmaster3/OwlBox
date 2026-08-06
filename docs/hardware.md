@@ -335,8 +335,14 @@ den ganzen Pi) ohne Passwortabfrage funktionieren, braucht der Service-User
 `owlbox` passwortloses sudo dafür, z.B. in `/etc/sudoers.d/owlbox`:
 
 ```
-owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart owlbox
+owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox
 ```
+
+**Wichtig:** Die Argumente müssen exakt so dastehen wie hier gezeigt (inklusive
+`--no-block`) - sudo vergleicht die komplette Befehlszeile, nicht nur den
+Programmnamen. Fehlt `--no-block` in der sudoers-Zeile, meldet der
+Update-Button auf der Info-Seite beim Neustart `sudo: a password is required`,
+weil der tatsächlich ausgeführte Befehl dann nicht mehr zur Regel passt.
 
 ## Fallback-Hotspot (WLAN-Recovery)
 

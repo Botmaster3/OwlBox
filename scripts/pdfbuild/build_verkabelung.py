@@ -296,7 +296,13 @@ story.append(note_box(
     "Update-Button auf der Info-Seite ohne Passwortabfrage funktionieren, braucht der Service-User "
     "owlbox passwortloses sudo dafür, z.B. in /etc/sudoers.d/owlbox:"
 ))
-code(["owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, \\", "  /usr/bin/systemctl restart owlbox"])
+code(["owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, \\", "  /usr/bin/systemctl restart --no-block owlbox"])
+story.append(note_box(
+    "Die Argumente müssen exakt wie oben dastehen (inklusive --no-block) - sudo "
+    "vergleicht die komplette Befehlszeile. Fehlt --no-block, meldet der Update-Button "
+    "auf der Info-Seite beim Neustart „sudo: a password is required“.",
+    kind="warn",
+))
 
 # ============================================================ 6. Backlight
 h1("6. Dimmbares Display-Backlight (Pflicht)")
