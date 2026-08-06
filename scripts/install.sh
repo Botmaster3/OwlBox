@@ -163,6 +163,31 @@ for grp in gpio spi audio video i2c; do
   usermod -aG "$grp" "$SERVICE_USER" || true
 done
 
+echo "==> Granting passwordless sudo for shutdown/WLAN/service-restart"
+# owlbox.service runs as this user with no terminal attached, so sudo can
+# never prompt for a password here. The Update-Button (Info-Seite), WLAN
+# Ein/Aus/Hotspot (Einstellungen), and "Pi neu starten"/"herunterfahren"
+# (Einstellungen bzw. Funktions-Chip) all shell out to sudo from inside
+# owlbox.service. sudo matches the *entire* command line it's given, not
+# just the program name - these three rules must stay in exact sync with
+# what owlbox/update.py, owlbox/network.py and owlbox/engine.py actually
+# invoke (confirmed on real hardware: a stray extra flag like --no-block
+# that isn't also in the sudoers rule makes sudo fall back to a password
+# prompt, which then just fails outright). Written to a temp file and
+# syntax-checked with visudo before being installed - a broken file in
+# sudoers.d can lock out sudo entirely, so it's never written to
+# /etc/sudoers.d directly.
+SUDOERS_TMP="$(mktemp)"
+cat > "$SUDOERS_TMP" <<EOF
+$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox
+EOF
+if visudo -c -f "$SUDOERS_TMP" >/dev/null 2>&1; then
+  install -m 0440 -o root -g root "$SUDOERS_TMP" /etc/sudoers.d/owlbox
+else
+  echo "WARNUNG: sudoers-Regel ungültig, wurde NICHT installiert - siehe docs/hardware.md." >&2
+fi
+rm -f "$SUDOERS_TMP"
+
 echo "==> Copying application to $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 rsync -a --exclude ".venv" --exclude "data" --exclude "__pycache__" "$REPO_DIR"/ "$INSTALL_DIR"/

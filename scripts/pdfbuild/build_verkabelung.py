@@ -294,7 +294,8 @@ p("Drehen ändert die Helligkeit (Schrittweite gpio.brightness_step, Standard 5%
 story.append(note_box(
     "Damit Shutdown/Neustart (auch über die Web-UI oder einen Funktions-Chip) sowie der "
     "Update-Button auf der Info-Seite ohne Passwortabfrage funktionieren, braucht der Service-User "
-    "owlbox passwortloses sudo dafür, z.B. in /etc/sudoers.d/owlbox:"
+    "owlbox passwortloses sudo dafür. install.sh richtet das automatisch ein "
+    "(/etc/sudoers.d/owlbox, syntaxgeprüft vor dem Einspielen) - hier nur zur Referenz:"
 ))
 code(["owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, \\", "  /usr/bin/systemctl restart --no-block owlbox"])
 story.append(note_box(

@@ -332,7 +332,10 @@ Damit Shutdown/Neustart (auch über die Web-UI unter Einstellungen bzw.
 über einen "Pi neu starten"/"WLAN aus"-Funktions-Chip, siehe unten) sowie der
 Update-Button auf der Info-Seite (startet nur den `owlbox`-Dienst neu, nicht
 den ganzen Pi) ohne Passwortabfrage funktionieren, braucht der Service-User
-`owlbox` passwortloses sudo dafür, z.B. in `/etc/sudoers.d/owlbox`:
+`owlbox` passwortloses sudo dafür. **`scripts/install.sh` richtet das
+automatisch ein** (`/etc/sudoers.d/owlbox`, syntaxgeprüft per `visudo -c`
+vor dem Einspielen) - hier nur zur Referenz bzw. zum manuellen Nachtragen auf
+einer Installation von vor dieser Automatisierung:
 
 ```
 owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox
@@ -342,7 +345,11 @@ owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl re
 `--no-block`) - sudo vergleicht die komplette Befehlszeile, nicht nur den
 Programmnamen. Fehlt `--no-block` in der sudoers-Zeile, meldet der
 Update-Button auf der Info-Seite beim Neustart `sudo: a password is required`,
-weil der tatsächlich ausgeführte Befehl dann nicht mehr zur Regel passt.
+weil der tatsächlich ausgeführte Befehl dann nicht mehr zur Regel passt. Ein
+einfaches `git pull` reicht auf einem Bestandssystem nicht, um eine bereits
+vorhandene `/etc/sudoers.d/owlbox` zu aktualisieren - dafür entweder
+`sudo ./scripts/install.sh` erneut laufen lassen oder die Zeile per
+`sudo visudo -f /etc/sudoers.d/owlbox` von Hand anpassen.
 
 ## Fallback-Hotspot (WLAN-Recovery)
 
