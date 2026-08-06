@@ -100,6 +100,22 @@ apt-get install -y \
 # box ("tofu") instead - confirmed on real hardware.
 # Debian's chromium package name varies by release; try both.
 apt-get install -y chromium-browser || apt-get install -y chromium || true
+
+# Belt-and-suspenders against the "German/English" translate bar Chromium
+# shows on first load: kiosk.sh's --disable-features=Translate command-line
+# flag alone did NOT actually suppress it on real hardware (confirmed) - this
+# managed policy is the mechanism Chromium itself documents for kiosk/
+# enterprise deployments, and covers both possible package/policy directory
+# names depending on which of the two chromium packages above got installed.
+mkdir -p /etc/chromium/policies/managed /etc/chromium-browser/policies/managed
+for policy_dir in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; do
+  cat > "$policy_dir/owlbox.json" <<'EOF'
+{
+  "TranslateEnabled": false
+}
+EOF
+done
+
 # Needed to build fbcp against the legacy VideoCore firmware interface.
 apt-get install -y libraspberrypi-dev || true
 # Minimal X stack for the kiosk display - deliberately no desktop environment

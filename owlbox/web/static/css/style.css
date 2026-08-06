@@ -963,9 +963,12 @@ html[data-theme="weihnachten"] .advent-wreath {
 .np-upcoming-list li.current { color: var(--accent); font-weight: 600; }
 
 /* Tighter than the admin Home version - the kiosk's info column has much less
-   room to spare (fixed small screen, several other rows already stacked). */
+   room to spare (fixed small screen, several other rows already stacked).
+   Still needs a real gap and line-height though: at gap:0 the lines sat close
+   enough to visually overlap on real hardware, cutting off ascenders/descenders
+   instead of just being tightly packed - confirmed on the actual kiosk display. */
 .player .np-upcoming-label { font-size: 0.7rem; margin-bottom: 2px; }
-.player .np-upcoming-list { font-size: 0.85rem; max-height: 4em; gap: 0; }
+.player .np-upcoming-list { font-size: 0.85rem; max-height: 4.5em; gap: 3px; line-height: 1.3; }
 
 @media (max-width: 640px) {
   .now-playing { flex-direction: column; text-align: center; }
