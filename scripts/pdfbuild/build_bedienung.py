@@ -150,7 +150,11 @@ p(
 story.append(spec_table(
     [
         ["Anzeige-Element", "Erscheint wann", "Zeigt"],
-        ["Splash-Screen", "Direkt nach dem Hochfahren, bis der erste Chip erkannt wird", "Eulen-Symbol + „OwlBox“"],
+        ["Start-Fortschrittsbalken", "Sobald der Bildschirm nach dem Hochfahren aktiv wird, bis der "
+         "OwlBox-Dienst selbst bereit ist", "Eulen-Symbol, „OwlBox“, Fortschrittsbalken - läuft "
+         "unabhängig vom Dienst, wechselt automatisch zur eigentlichen Anzeige, sobald diese "
+         "erreichbar ist"],
+        ["Splash-Screen", "Direkt danach, bis der erste Chip erkannt wird", "Eulen-Symbol + „OwlBox“"],
         ["WLAN-Balken (oben rechts)", "Immer", "4-stufige Signalstärke-Balken + Prozentwert bzw. „Aus“/„Getrennt“"],
         ["CPU-Temperatur (oben links)", "Immer", "Aktuelle Prozessortemperatur des Pi in °C - färbt sich gelb/rot, "
          "wenn er in Richtung der automatischen Drosselschwelle (ca. 80°C) läuft"],
