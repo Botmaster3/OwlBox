@@ -2,6 +2,7 @@
   const coverImg = document.getElementById("cover");
   const coverPlaceholder = document.getElementById("cover-placeholder");
   const storyTitleEl = document.getElementById("story-title");
+  const storyTitleTextEl = document.getElementById("story-title-text");
   const trackTitleEl = document.getElementById("track-title");
   const timePosEl = document.getElementById("time-pos");
   const timeRemainingEl = document.getElementById("time-remaining");
@@ -32,6 +33,7 @@
   const vuBars = document.querySelectorAll("#vu-meter .vu-bar");
 
   let lastCoverUrl = null;
+  let lastStoryTitle = null;
   let parentModeActive = false;
   let hasScannedTag = false;
   let lastBrightness = null;
@@ -121,6 +123,27 @@
     // The banner already covers WiFi state plus what to do about it - showing
     // both at once is redundant and there isn't room for both on a small screen.
     statusBarEl.hidden = true;
+  }
+
+  // Keeps the heading a single line: only re-measures/restarts the marquee
+  // animation when the title text itself actually changed (not on every
+  // 1s poll tick), otherwise a scrolling title would visibly jump back to
+  // its start every second instead of completing one smooth pass.
+  function setStoryTitle(text) {
+    if (text === lastStoryTitle) return;
+    lastStoryTitle = text;
+    storyTitleTextEl.textContent = text;
+    storyTitleEl.classList.remove("marquee");
+    storyTitleTextEl.style.animationDuration = "";
+    requestAnimationFrame(() => {
+      if (storyTitleTextEl.scrollWidth > storyTitleEl.clientWidth) {
+        // Roughly constant reading speed regardless of title length, with a
+        // floor so even a barely-overflowing title still scrolls at a sane pace.
+        const duration = Math.max(6, text.length * 0.18);
+        storyTitleTextEl.style.animationDuration = `${duration}s`;
+        storyTitleEl.classList.add("marquee");
+      }
+    });
   }
 
   function formatTime(seconds) {
@@ -230,11 +253,11 @@
     }
 
     if (story) {
-      storyTitleEl.textContent = story.title;
+      setStoryTitle(story.title);
     } else if (state.unknown_tag) {
-      storyTitleEl.textContent = "Unbekannter Chip";
+      setStoryTitle("Unbekannter Chip");
     } else {
-      storyTitleEl.textContent = "Kein Chip aufgelegt";
+      setStoryTitle("Kein Chip aufgelegt");
     }
 
     if (story && story.is_stream) {
@@ -267,14 +290,18 @@
     timeRemainingEl.textContent = `-${formatTime(duration - timePos)}`;
     progressFill.style.width = duration > 0 ? `${Math.min(100, (timePos / duration) * 100)}%` : "0%";
 
-    const trackList = (story && story.tracks) || [];
-    if (trackList.length === 0) {
+    // The kiosk's "Tracks" list is meant as a look-ahead, not a full
+    // tracklist - the currently playing track already has its own row
+    // (#track-title) above, so tracks at or before current_track_index would
+    // just be clutter/already-heard here. Filtered to strictly upcoming ones.
+    const allTracks = (story && story.tracks) || [];
+    const currentTrackIndex = story && typeof story.current_track_index === "number" ? story.current_track_index : -1;
+    const upcomingTracks = allTracks.filter((_, index) => index > currentTrackIndex);
+    if (upcomingTracks.length === 0) {
       upcomingEl.hidden = true;
     } else {
       upcomingEl.hidden = false;
-      upcomingListEl.innerHTML = trackList
-        .map((title, index) => `<li class="${index === story.current_track_index ? "current" : ""}">${title}</li>`)
-        .join("");
+      upcomingListEl.innerHTML = upcomingTracks.map((title) => `<li>${title}</li>`).join("");
     }
 
     volumeFill.style.width = `${relativePercent(player.volume || 0, 0, settings.max_volume || 100)}%`;
