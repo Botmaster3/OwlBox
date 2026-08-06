@@ -239,6 +239,9 @@ bullets([
 ])
 
 h2("7.2 Geschichten-Liste")
+ctrl("Suche", "Textfeld über der Liste", "Filtert die Liste live nach Titel (nur die Anzeige, "
+     "ändert nichts an den Geschichten selbst) - hilfreich, sobald die Bibliothek zu groß für einen "
+     "schnellen Überblick auf einen Blick wird.")
 p("Für jede angelegte Geschichte bzw. jeden Livestream steht eine Zeile mit folgenden Elementen zur Verfügung:")
 ctrl("„▶️ Abspielen“", "Button", "Startet diese Geschichte sofort, genau wie das Auflegen ihres Chips - "
      "auch wenn ihr (noch) gar kein Chip zugewiesen ist. Setzt an der zuletzt gespeicherten Position "
@@ -247,6 +250,10 @@ ctrl("„Chip zuweisen“", "Button", "Öffnet ein Overlay „Halte den gewünsc
      "der nächste erkannte Chip wird sofort mit dieser Geschichte verknüpft. „Abbrechen“ bricht ab, ohne etwas zu ändern.")
 ctrl("„Chip entfernen“", "Button (nur sichtbar, wenn ein Chip zugewiesen ist)",
      "Löst die Verknüpfung zwischen Chip und Geschichte, ohne die Geschichte selbst zu löschen.")
+ctrl("„+ Weitere Tracks“", "Button (nicht bei Livestreams)", "Öffnet den Dateidialog und hängt die "
+     "ausgewählten Audiodateien hinten an diese Geschichte an, statt eine neue anzulegen - praktisch "
+     "für ein Hörbuch auf mehreren CDs: jede CD einzeln über diesen Button nachladen, alle Titel "
+     "landen in derselben Geschichte, in der Reihenfolge des Hinzufügens weitergezählt.")
 ctrl("Shuffle-Button", "Umschalter", "Identisch zum Shuffle-Button auf der Home-Seite (Kapitel 6.2), hier "
      "pro Geschichte direkt in der Liste erreichbar. Bei einem Livestream nicht vorhanden.")
 ctrl("Wiederholung: „Aus“ / „Ordner“ / „Track“", "Drei-Wege-Auswahl", "Identisch zur Home-Seite - wirkt sich "
