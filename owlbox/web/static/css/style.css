@@ -779,6 +779,25 @@ html[data-theme="weihnachten"] .advent-wreath {
 }
 .sleep-timer-badge span { color: var(--accent); font-variant-numeric: tabular-nums; }
 
+/* Read-only echo of shuffle/repeat, whichever way they got turned on (Admin
+   Home's buttons or a Funktions-Chip on the reader - both just flip the same
+   story.shuffle/story.repeat fields, so this doesn't care which). Same pill
+   look as .sleep-timer-badge for a consistent "status chip" language; each
+   pill stays hidden individually, and the whole row collapses (no gap taken)
+   once neither is active. */
+.playback-flags { display: flex; flex-wrap: wrap; gap: 8px; }
+.playback-flag {
+  display: inline-flex;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .splash {
   height: 100vh;
   width: 100vw;

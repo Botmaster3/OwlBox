@@ -4,6 +4,9 @@
   const storyTitleEl = document.getElementById("story-title");
   const storyTitleTextEl = document.getElementById("story-title-text");
   const trackTitleEl = document.getElementById("track-title");
+  const playbackFlagsEl = document.getElementById("playback-flags");
+  const flagShuffleEl = document.getElementById("flag-shuffle");
+  const flagRepeatEl = document.getElementById("flag-repeat");
   const timePosEl = document.getElementById("time-pos");
   const timeRemainingEl = document.getElementById("time-remaining");
   const progressRow = document.getElementById("progress-row");
@@ -270,6 +273,25 @@
       trackTitleEl.hidden = true;
     }
     progressRow.hidden = !!(story && story.is_stream);
+
+    // Shuffle/Wiederholung don't apply to a livestream (no fixed playlist to
+    // shuffle or loop) - same exclusion the admin Home widget uses. Each pill
+    // hides individually and the whole row collapses once neither is active,
+    // so this stays invisible for the common case (both off).
+    const shuffleRepeatUsable = !!(story && !story.is_stream);
+    const shuffleActive = shuffleRepeatUsable && !!story.shuffle;
+    const repeatMode = shuffleRepeatUsable ? story.repeat : "off";
+    flagShuffleEl.hidden = !shuffleActive;
+    if (repeatMode === "folder") {
+      flagRepeatEl.textContent = "🔁 Ordner";
+      flagRepeatEl.hidden = false;
+    } else if (repeatMode === "track") {
+      flagRepeatEl.textContent = "🔂 Track";
+      flagRepeatEl.hidden = false;
+    } else {
+      flagRepeatEl.hidden = true;
+    }
+    playbackFlagsEl.hidden = !shuffleActive && repeatMode === "off";
 
     const coverUrl = story && story.cover_url ? story.cover_url : null;
     if (coverUrl !== lastCoverUrl) {

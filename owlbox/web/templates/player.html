@@ -47,6 +47,14 @@
     <div id="story-title" class="story-title"><span id="story-title-text" class="story-title-text">Kein Chip aufgelegt</span></div>
     <div id="track-title" class="track-title" hidden></div>
 
+    <!-- Shuffle/Wiederholung wirken egal ob per Funktions-Chip oder aus der
+         Web-UI umgeschaltet (beides schreibt dieselben Story-Felder) - hier
+         nur eine reine Anzeige, keine Bedienelemente wie im Admin-Bereich. -->
+    <div id="playback-flags" class="playback-flags" hidden>
+      <span id="flag-shuffle" class="playback-flag" hidden>🔀 Shuffle</span>
+      <span id="flag-repeat" class="playback-flag" hidden></span>
+    </div>
+
     <div class="vu-meter" id="vu-meter">
       <div class="vu-bar"></div>
       <div class="vu-bar"></div>

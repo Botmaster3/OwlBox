@@ -156,6 +156,9 @@ story.append(spec_table(
         ["Hotspot-Banner", "Solange der Notfall-Hotspot aktiv ist (siehe Kapitel 10.5)", "SSID, Passwort und die Verwaltungs-URL im Hotspot"],
         ["„Jetzt läuft“-Ansicht", "Sobald ein Story-Chip aufliegt bzw. weiterläuft", "Cover, Titel, aktueller Track, VU-Meter-Animation, "
          "Fortschritt, Lautstärkebalken, kommende Tracks"],
+        ["Shuffle-/Wiederholungs-Anzeige", "Solange Shuffle bzw. Ordner-/Track-Wiederholung für die laufende "
+         "Geschichte aktiv ist", "Kleine Markierungen unter dem Titel - egal ob per Funktions-Chip "
+         "(Kapitel 9.2) oder über die Web-Verwaltung (Kapitel 6.2) eingeschaltet"],
         ["Einschlaf-Timer-Badge", "Solange ein Timer läuft", "Verbleibende Zeit bis zum automatischen Ausblenden/Pausieren"],
         ["„Unbekannter Chip“-Banner", "Nach dem Auflegen eines nicht zugewiesenen Chips", "Hinweis, den Chip im Admin-Bereich zuzuweisen"],
         ["Schlafmodus-Anzeige", "Nach der eingestellten Pause-Dauer im automatischen Ruhemodus (Kapitel 10.3)", "Schlafende Eule + Hinweis, wie man sie weckt"],
