@@ -334,8 +334,9 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "Die Anwendung nach " + mono("/opt/owlbox") + " kopieren, eine "
         "Python-virtuelle-Umgebung anlegen und alle Abhängigkeiten installieren",
         mono("config/config.yaml") + " aus der Vorlage anlegen, falls noch nicht vorhanden",
-        "HiFiBerry-Overlay (" + mono("dtoverlay=hifiberry-amp") + ") und GL-Treiber (Legacy "
-        "statt KMS/Fake-KMS) in config.txt eintragen",
+        "HiFiBerry-Overlay (" + mono("dtoverlay=hifiberry-dacplus") + ", passend zum "
+        "TAS5756M-Chip des Amp2) und GL-Treiber (Legacy statt KMS/Fake-KMS) in config.txt "
+        "eintragen",
         mono("fbcp") + " aus dem Quellcode bauen und installieren",
         "Den Display-Treiber-Installer (goodtft/LCD-show) automatisch herunterladen und "
         "starten - dieser bootet den Pi am Ende meist selbst neu",
@@ -549,8 +550,15 @@ story.append(spec_table(
          "installieren“)."],
         ["Kein Ton", "aplay -l zeigt die HiFiBerry-Karte erst nach einem Neustart mit aktivem "
          "Overlay; danach scripts/install.sh erneut ausführen, das trägt ALSA-Gerät und Mixer "
-         "automatisch in config.yaml ein (Abschnitt „OwlBox-Software installieren“). Bleibt es "
-         "stumm, HiFiBerry-Overlay in config.txt und Verkabelung prüfen."],
+         "automatisch in config.yaml ein (Abschnitt „OwlBox-Software installieren“). Zeigt "
+         "aplay -l „no soundcards found“ dauerhaft: falsches Overlay für den Chip - der Amp2 "
+         "braucht dtoverlay=hifiberry-dacplus (TAS5756M-Chip), nicht hifiberry-amp (das ist für "
+         "den älteren Amp/Amp+ mit TAS5713); mit i2cdetect -y 1 prüfen, ob Adresse 0x4d "
+         "(TAS5756M/Amp2) oder 0x1b (TAS5713/Amp) antwortet."],
+        ["Eingestellte Lautstärke wird nie gespeichert, zeigt immer 0", "audio.mixer_card in "
+         "config.yaml prüfen - muss zur tatsächlichen, mit aplay -l ermittelten Kartennummer "
+         "passen (nicht nur audio.alsa_device). scripts/install.sh erneut ausführen, trägt alle "
+         "drei Audio-Werte automatisch neu ein."],
         ["Display bleibt schwarz", "sudo systemctl status owlbox-fbcp prüfen; GL-Driver "
          "wirklich auf „Legacy“ (Abschnitt „Grundeinstellungen prüfen“); scripts/install.sh "
          "noch einmal ausführen, falls der Display-Treiber-Installer noch nicht "

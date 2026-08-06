@@ -3,7 +3,9 @@
 # Run as root (sudo ./scripts/install.sh) from inside a checkout of this repo.
 #
 # Targets the project's standard hardware (see docs/hardware.md): Pi 3B+, HiFiBerry
-# Amp/Amp2, 3.5" SPI display (tft35a/MHS-35 family), RC522 on software SPI (GPIOs
+# Amp2 (TAS5756M chip - the PCM512x family, same codec as the DAC+ Pro; NOT the
+# older Amp/Amp+'s TAS5713, a different chip needing a different overlay), 3.5"
+# SPI display (tft35a/MHS-35 family), RC522 on software SPI (GPIOs
 # 4/14/15/16 - both hardware SPI buses are already taken by the display+touch and by
 # the HiFiBerry's I2S audio), buttons/encoders on the documented default pins. On
 # that combination this script alone gets you from a
@@ -215,16 +217,31 @@ if [ -n "$CONFIG_TXT" ]; then
   echo "==> Configuring audio (HiFiBerry Amp2) and display in $CONFIG_TXT"
   BEFORE_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
 
-  # Onboard audio off in favour of the HiFiBerry.
-  sed -i 's/^dtparam=audio=on/dtparam=audio=off/' "$CONFIG_TXT"
+  # Onboard audio off in favour of the HiFiBerry: no separate sed pass needed
+  # for a pre-existing "dtparam=audio=on" line - the managed block below
+  # already appends its own "dtparam=audio=off" at the *end* of the file, and
+  # the Pi's config.txt parser takes the last occurrence of a given dtparam
+  # as authoritative, so it wins regardless of what an earlier line said.
+  # (A previous version of this script also sed'd the original line in place
+  # AND relied on the managed block, so a stock image's "dtparam=audio=on"
+  # line ended up converted to "off" twice - harmless duplication, but
+  # confusing to find in config.txt; fixed by just not doing that redundant
+  # pass anymore.)
 
   # "Legacy" GL driver: fbcp needs /dev/fb0, which the modern KMS/Fake-KMS
   # driver doesn't expose in a usable form - comment out whichever is active.
   sed -i -E 's/^(dtoverlay=vc4-f?kms-v3d.*)/#\1/' "$CONFIG_TXT"
 
+  # HiFiBerry Amp2's TAS5756M chip is PCM512x-family (same codec as the DAC+
+  # Pro) - confirmed on real hardware via a failed I2C probe on the
+  # TAS5713-specific "hifiberry-amp" overlay (wrong chip entirely) followed
+  # by an i2cdetect scan showing a live device at 0x4d, the PCM512x family's
+  # address. "hifiberry-amp" is for the older Amp/Amp+'s TAS5713 instead -
+  # different chip, different overlay, even though the products are easy to
+  # confuse by name.
   write_config_block "$CONFIG_TXT" \
     "dtparam=audio=off" \
-    "dtoverlay=hifiberry-amp" \
+    "dtoverlay=hifiberry-dacplus" \
     "disable_splash=1" \
     "boot_delay=0"
 

@@ -13,7 +13,7 @@ von Hand nachgeholt werden muss.
 Zielhardware:
 
 - Raspberry Pi 3B+
-- HiFiBerry Amp (I2S-Verstärker-HAT)
+- HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip)
 - RC522 RFID-Modul (SPI, 13.56 MHz)
 - 3.5" SPI-Touchscreen, 480×320, mit Stylus, 26-Pin-Header -
   **sehr wahrscheinlich ein "MHS-35"/"tft35a"-Klon** (ILI9486 + XPT2046,
@@ -170,20 +170,31 @@ PDF-Referenz auch unter `owlbox/web/static/docs/OwlBox-Verkabelung.pdf`
 | Helligkeits-Encoder CLK         | 23      | Helligkeits-Encoder |
 | Helligkeits-Encoder DT          | 12      | Helligkeits-Encoder |
 
-## HiFiBerry Amp
+## HiFiBerry Amp2
 
-Der HiFiBerry belegt die I2S-Pins (BCM 18/19/20/21) sowie ggf. I2C
-(BCM 2/3) zur Verstärkersteuerung.
+Der HiFiBerry belegt die I2S-Pins (BCM 18/19/20/21) sowie I2C (BCM 2/3)
+zur Verstärkersteuerung.
 
 In `/boot/firmware/config.txt` (bzw. `/boot/config.txt` auf älteren Images):
 
 ```
 dtparam=audio=off
-dtoverlay=hifiberry-amp
+dtoverlay=hifiberry-dacplus
 ```
 
-(Für andere HiFiBerry-Varianten den passenden Overlay-Namen verwenden, z.B.
-`hifiberry-dacplus` für ein reines DAC+. Nach der Änderung neu starten.)
+**An echter Hardware bestätigt:** Der Amp2 hat einen TAS5756M-Chip - das ist
+dieselbe PCM512x-Chipfamilie wie bei der DAC+ Pro, ein komplett anderer Chip
+als der TAS5713 des älteren Amp/Amp+. `dtoverlay=hifiberry-amp` ist speziell
+für den TAS5713 und funktioniert mit dem Amp2 **nicht**: der Kernel versucht
+dann, den TAS5756M unter der TAS5713-I2C-Adresse anzusprechen, bekommt keine
+Antwort (`ASoC: error at snd_soc_component_probe ...: -5`), und `aplay -l`
+zeigt „no soundcards found“ - äußert sich am Gerät als Lautstärke, die sich
+nie ändert (bleibt bei 0). Zum Nachprüfen, welcher Chip tatsächlich verbaut
+ist: `i2cdetect -y 1` - antwortet Adresse `0x4d`, ist es der TAS5756M/Amp2
+(`hifiberry-dacplus`); antwortet stattdessen `0x1b`, ist es der TAS5713 vom
+Amp/Amp+ (`hifiberry-amp`). Nach einer Overlay-Änderung neu starten -
+dabei verschiebt sich meist auch die von `aplay -l` gemeldete Kartennummer,
+siehe unten.
 
 Danach mit `aplay -l` die Kartennummer der HiFiBerry ermitteln (z.B. `card 2:
 ...`) und mit `amixer -c <Kartennummer> scontrols` den Mixer-Namen prüfen -

@@ -77,7 +77,7 @@ story.append(toc)
 h1("1. Zielhardware")
 bullets([
     "Raspberry Pi 3B+",
-    "HiFiBerry Amp (I2S-Verstärker-HAT)",
+    "HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip)",
     "RC522 RFID-Modul (SPI, 13,56 MHz)",
     "3,5″ SPI-Touchscreen, 480×320, 26-Pin-Header - sehr wahrscheinlich ein „MHS-35“/„tft35a“-Klon "
     "(ILI9486 + XPT2046, unter vielen Markennamen identisch verkauft). Touch bleibt bewusst deaktiviert.",
@@ -165,16 +165,22 @@ story.append(spec_table(
 ))
 
 # ============================================================ 2. HiFiBerry
-h1("2. HiFiBerry Amp")
+h1("2. HiFiBerry Amp2")
 p(
-    "Der HiFiBerry belegt die I2S-Pins (BCM 18/19/20/21) sowie ggf. I2C (BCM 2/3) zur "
+    "Der HiFiBerry belegt die I2S-Pins (BCM 18/19/20/21) sowie I2C (BCM 2/3) zur "
     "Verstärkersteuerung. In /boot/firmware/config.txt (bzw. /boot/config.txt auf älteren Images):"
 )
-code(["dtparam=audio=off", "dtoverlay=hifiberry-amp"])
-p(
-    "Für andere HiFiBerry-Varianten den passenden Overlay-Namen verwenden, z.B. "
-    "hifiberry-dacplus für ein reines DAC+. Nach der Änderung neu starten."
-)
+code(["dtparam=audio=off", "dtoverlay=hifiberry-dacplus"])
+story.append(note_box(
+    "An echter Hardware bestätigt: Der Amp2 hat einen TAS5756M-Chip - dieselbe PCM512x-Chipfamilie "
+    "wie die DAC+ Pro, ein komplett anderer Chip als der TAS5713 des älteren Amp/Amp+. "
+    "dtoverlay=hifiberry-amp ist speziell für den TAS5713 und funktioniert mit dem Amp2 nicht: der "
+    "Kernel spricht dann die falsche I2C-Adresse an, aplay -l zeigt „no soundcards found“ - äußert "
+    "sich als Lautstärke, die sich nie ändert (bleibt bei 0). Zum Nachprüfen, welcher Chip verbaut "
+    "ist: i2cdetect -y 1 - Adresse 0x4d antwortet beim TAS5756M/Amp2 (hifiberry-dacplus), Adresse "
+    "0x1b beim TAS5713 vom Amp/Amp+ (hifiberry-amp).",
+))
+p("Nach einer Overlay-Änderung neu starten - dabei verschiebt sich meist auch die Kartennummer.")
 p(
     "Danach mit <font face=\"DejaVuSansMono\" size=\"9\">aplay -l</font> die Kartennummer der "
     "HiFiBerry ermitteln (z.B. „card 2: ...“) und mit "

@@ -169,7 +169,7 @@ mit dem alten Grafiktreiber (Pflicht für `fbcp`), aber bewusst *ohne*
 Desktop-Umgebung, da der Kiosk-Autostart X nur für Chromium selbst startet
 (kein lightdm/LXDE, das beim Boot nur unnötig Zeit kosten würde).
 
-Für die Standardhardware (Pi 3B+, HiFiBerry Amp/Amp2, 3.5" SPI-Display der
+Für die Standardhardware (Pi 3B+, HiFiBerry Amp2, 3.5" SPI-Display der
 tft35a/MHS-35-Familie, RC522, Taster/Encoder auf den Standard-Pins - siehe
 [docs/hardware.md](docs/hardware.md)) genügt es, das Skript **zweimal mit
 einem Neustart dazwischen** laufen zu lassen:
