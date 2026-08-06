@@ -1,7 +1,7 @@
 import subprocess
 import time
 
-from owlbox import feedback, network, repository, themes
+from owlbox import feedback, network, repository, system_info, themes
 from owlbox.engine import Engine
 
 
@@ -1617,6 +1617,29 @@ def test_get_state_exposes_advent_candle_count(config):
         assert engine.get_state()["settings"]["advent_candles"] == 3
     finally:
         themes.get_advent_candle_count = original
+
+
+def test_get_state_exposes_cpu_temperature(config):
+    original = system_info.get_cpu_temperature_celsius
+    system_info.get_cpu_temperature_celsius = lambda: 54.2
+    try:
+        engine = Engine(config)
+        assert engine.get_state()["system"]["cpu_temp_celsius"] == 54.2
+    finally:
+        system_info.get_cpu_temperature_celsius = original
+
+
+def test_get_state_cpu_temperature_none_when_unavailable(config):
+    # Best-effort like everywhere else system_info is used (e.g. no
+    # /sys/class/thermal/thermal_zone0/temp on non-Pi hardware) - the kiosk
+    # badge just shows "-" rather than the request failing outright.
+    original = system_info.get_cpu_temperature_celsius
+    system_info.get_cpu_temperature_celsius = lambda: None
+    try:
+        engine = Engine(config)
+        assert engine.get_state()["system"]["cpu_temp_celsius"] is None
+    finally:
+        system_info.get_cpu_temperature_celsius = original
 
 
 # -- starting/stopping a story from the web UI ("play"/"stop" endpoints) ------

@@ -592,6 +592,26 @@ body.kiosk { height: 100vh; overflow: hidden; }
   z-index: 90;
 }
 
+/* Same "always on" corner-readout treatment as .status-bar, mirrored to the
+   opposite (top-left) corner. Neutral by default, only colored once it's
+   actually worth a glance - the Pi 3B+ starts soft-throttling around 80°C
+   (confirmed via vcgencmd get_throttled on real hardware), so that's the
+   "critical" cutoff; a bit of headroom below it is "warn". */
+.cpu-temp-badge {
+  position: fixed;
+  top: 2.5vh;
+  left: 3vw;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.cpu-temp-badge.warn { color: var(--status-warn); }
+.cpu-temp-badge.critical { color: var(--status-critical); }
+
 /* Recovery-hotspot notice - shown across splash/parent-mode/now-playing alike
    whenever no real WiFi has been reachable for a while (see docs/hardware.md),
    so the credentials to join it are never hidden behind whatever else the

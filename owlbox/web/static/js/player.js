@@ -29,6 +29,8 @@
   const wifiBars = document.querySelectorAll("#wifi-bars .wifi-bar");
   const wifiLabel = document.getElementById("wifi-label");
   const statusBarEl = document.getElementById("status-bar");
+  const cpuTempBadge = document.getElementById("cpu-temp-badge");
+  const cpuTempValueEl = document.getElementById("cpu-temp-value");
   const hotspotBanner = document.getElementById("hotspot-banner");
   const hotspotSsidEl = document.getElementById("hotspot-ssid");
   const hotspotPasswordEl = document.getElementById("hotspot-password");
@@ -108,6 +110,25 @@
       wifiLabel.textContent = "Getrennt";
     } else {
       wifiLabel.textContent = `${wifi.signal}%`;
+    }
+  }
+
+  // Same soft-throttle cutoff the Pi 3B+ itself uses (~80°C, confirmed via
+  // vcgencmd get_throttled on real hardware) - "warn" a bit below that so
+  // a climbing temperature is visible before it actually starts throttling.
+  function applyCpuTemp(system) {
+    system = system || {};
+    const temp = system.cpu_temp_celsius;
+    cpuTempBadge.classList.remove("warn", "critical");
+    if (typeof temp !== "number") {
+      cpuTempValueEl.textContent = "–";
+      return;
+    }
+    cpuTempValueEl.textContent = Math.round(temp);
+    if (temp >= 80) {
+      cpuTempBadge.classList.add("critical");
+    } else if (temp >= 70) {
+      cpuTempBadge.classList.add("warn");
     }
   }
 
@@ -214,6 +235,7 @@
     }
     applyWifi(state.wifi);
     applyHotspotBanner(state.wifi);
+    applyCpuTemp(state.system);
 
     const story = state.story;
     const player = state.player || {};
@@ -321,10 +343,13 @@
     // The kiosk's "Tracks" list is meant as a look-ahead, not a full
     // tracklist - the currently playing track already has its own row
     // (#track-title) above, so tracks at or before current_track_index would
-    // just be clutter/already-heard here. Filtered to strictly upcoming ones.
+    // just be clutter/already-heard here. Filtered to strictly upcoming ones,
+    // and capped to the next 3 - the point is a quick glance at what's next,
+    // not the whole rest of the story (that's what the admin Home widget's
+    // full, scrollable tracklist is for).
     const allTracks = (story && story.tracks) || [];
     const currentTrackIndex = story && typeof story.current_track_index === "number" ? story.current_track_index : -1;
-    const upcomingTracks = allTracks.filter((_, index) => index > currentTrackIndex);
+    const upcomingTracks = allTracks.filter((_, index) => index > currentTrackIndex).slice(0, 3);
     if (upcomingTracks.length === 0) {
       upcomingEl.hidden = true;
     } else {

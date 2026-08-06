@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Dict, Optional
 
-from . import feedback, network, repository, themes
+from . import feedback, network, repository, system_info, themes
 from .backlight import create_backlight
 from .controls import create_controls
 from .player import create_player
@@ -1035,4 +1035,9 @@ class Engine:
                 "hotspot_ip": hotspot_ip if hotspot_active else None,
             },
             "parent_mode": {"active": parent_label is not None, "label": parent_label},
+            # A plain sysfs read (see system_info.get_cpu_temperature_celsius),
+            # not a subprocess call like the WiFi signal above - cheap enough
+            # to do inline on every poll instead of needing the same
+            # background-loop caching treatment.
+            "system": {"cpu_temp_celsius": system_info.get_cpu_temperature_celsius()},
         }
