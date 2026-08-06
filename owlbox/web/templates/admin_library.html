@@ -36,6 +36,12 @@
 
   <div class="card">
     <h2>Bibliothek</h2>
+    <div class="field">
+      <label for="library-search">Suche</label>
+      <input type="text" id="library-search" placeholder="Titel durchsuchen…" autocomplete="off">
+      <p class="field-help">Filtert die Liste unten live nach Titel, der Rest bleibt unverändert
+        (Zuweisung, Reihenfolge etc.) - nur eine Anzeigefilterung, keine Auswahl.</p>
+    </div>
     <div id="story-list"></div>
   </div>
 </div>
@@ -46,6 +52,10 @@
     <button class="btn secondary" id="assign-cancel" type="button">Abbrechen</button>
   </div>
 </div>
+
+<!-- Shared across every story row's "+ Weitere Tracks" button (see admin_library.js) instead
+     of one file input per row - the button just sets which story to target, then clicks this. -->
+<input type="file" id="add-tracks-input" accept="audio/*" multiple hidden>
 
 <script src="{{ url_for('static', filename='js/admin_library.js') }}"></script>
 {% endblock %}

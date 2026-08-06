@@ -1,11 +1,22 @@
 (function () {
   const storyList = document.getElementById("story-list");
+  const librarySearch = document.getElementById("library-search");
+  const addTracksInput = document.getElementById("add-tracks-input");
   const assignOverlay = document.getElementById("assign-overlay");
   const assignStatus = document.getElementById("assign-status");
   const assignCancel = document.getElementById("assign-cancel");
   const simulate = document.getElementById("app").dataset.simulate === "true";
 
   let assignPoll = null;
+  // Full list from the last /api/stories fetch, kept around so the search
+  // box can filter/re-render instantly without a round-trip on every
+  // keystroke - loadStories() (a full refetch) still runs after anything
+  // that actually changes data (add/delete/reorder/etc.).
+  let allStories = [];
+  // The story a "+ Weitere Tracks" click targets - set right before the
+  // shared #add-tracks-input's file dialog opens, read back once a
+  // selection comes in (see addTracksInput's "change" handler below).
+  let addTracksTargetId = null;
   // Cross-story track selection for "aus Bibliothek zur Playlist
   // hinzufügen" (mirrors the picker on Hinzufügen, but starting from
   // tracks already visible here instead of a separate search). Array, not
@@ -68,6 +79,7 @@
 
   async function loadStories() {
     const stories = await api("/api/stories");
+    allStories = stories;
     // A track can have vanished since the last render (its story or the
     // track itself got deleted, possibly cascaded away as part of some
     // other playlist) - drop it from the pending selection too, otherwise
@@ -76,8 +88,18 @@
     const prevCount = selectedTracks.length;
     selectedTracks = selectedTracks.filter((t) => liveTrackIds.has(t.id));
     if (selectedTracks.length !== prevCount) updateSelectionBar();
-    renderStories(stories);
+    renderFilteredStories();
   }
+
+  // Client-side only - allStories is already the full, current list (kept
+  // in sync by loadStories()), so filtering by the search box never needs
+  // its own round-trip, just a re-render of what's already in memory.
+  function renderFilteredStories() {
+    const query = librarySearch.value.trim().toLowerCase();
+    const filtered = query ? allStories.filter((s) => s.title.toLowerCase().includes(query)) : allStories;
+    renderStories(filtered, allStories.length > 0);
+  }
+  librarySearch.addEventListener("input", renderFilteredStories);
 
   const statsTotalPlays = document.getElementById("stats-total-plays");
   const statsTotalTime = document.getElementById("stats-total-time");
@@ -210,10 +232,12 @@
     loadStories();
   }
 
-  function renderStories(stories) {
+  function renderStories(stories, libraryHasAnyStories) {
     storyList.innerHTML = "";
     if (stories.length === 0) {
-      storyList.innerHTML = '<p class="hint">Noch keine Geschichten angelegt. <a href="/admin/add">Jetzt hinzufügen</a>.</p>';
+      storyList.innerHTML = libraryHasAnyStories
+        ? '<p class="hint">Keine Geschichte passt zur Suche.</p>'
+        : '<p class="hint">Noch keine Geschichten angelegt. <a href="/admin/add">Jetzt hinzufügen</a>.</p>';
       return;
     }
     for (const story of stories) {
@@ -248,7 +272,8 @@
           ${
             story.stream_url
               ? ""
-              : `<button class="btn secondary" data-action="shuffle">${story.shuffle ? "🔀 an" : "🔀 aus"}</button>
+              : `<button class="btn secondary" data-action="add-tracks">+ Weitere Tracks</button>
+          <button class="btn secondary" data-action="shuffle">${story.shuffle ? "🔀 an" : "🔀 aus"}</button>
           <div class="segmented" data-action="repeat-group" title="Wiederholung">
             <button type="button" class="segmented-btn${story.repeat === "off" ? " active" : ""}" data-mode="off">Aus</button>
             <button type="button" class="segmented-btn${story.repeat === "folder" ? " active" : ""}" data-mode="folder">🔁 Ordner</button>
@@ -261,12 +286,23 @@
           „Abspielen“ startet diese Geschichte sofort, genau wie das Auflegen ihres Chips - auch
           ohne dass ihr überhaupt ein Chip zugewiesen ist. „Chip zuweisen“ verknüpft den nächsten
           aufgelegten Chip mit dieser Geschichte, „Chip entfernen“ löst die Verknüpfung wieder
-          (löscht die Geschichte nicht). Shuffle mischt die Tracks zufällig. „Ordner“ wiederholt
+          (löscht die Geschichte nicht). „+ Weitere Tracks“ hängt zusätzliche Audiodateien hinten an
+          diese Geschichte an, statt eine neue anzulegen - praktisch für ein Hörbuch auf mehreren
+          CDs: jede CD einzeln über diesen Button nachladen, alle landen in derselben Geschichte, in
+          der Reihenfolge des Hinzufügens. Shuffle mischt die Tracks zufällig. „Ordner“ wiederholt
           die ganze Geschichte endlos, „Track“ nur den gerade laufenden Titel, „Aus“ beendet die
           Wiedergabe nach dem letzten Track - wirkt sofort, falls diese Geschichte gerade läuft.
           „Löschen“ entfernt die Geschichte inklusive aller Audiodateien unwiderruflich.
         </p>
       `;
+      const addTracksBtn = header.querySelector('[data-action="add-tracks"]');
+      if (addTracksBtn) {
+        addTracksBtn.addEventListener("click", () => {
+          addTracksTargetId = story.id;
+          addTracksInput.value = ""; // otherwise re-selecting the exact same file(s) wouldn't fire "change"
+          addTracksInput.click();
+        });
+      }
       header.querySelector('[data-action="play"]').addEventListener("click", async () => {
         try {
           await api(`/api/stories/${story.id}/play`, { method: "POST" });
@@ -380,6 +416,21 @@
   }
 
   assignCancel.addEventListener("click", stopAssign);
+
+  addTracksInput.addEventListener("change", async () => {
+    const files = Array.from(addTracksInput.files || []);
+    const storyId = addTracksTargetId;
+    if (!storyId || files.length === 0) return;
+    const formData = new FormData();
+    files.forEach((f) => formData.append("audio_files", f));
+    try {
+      await api(`/api/stories/${storyId}/tracks`, { method: "POST", body: formData });
+      showToast(`${files.length} Track(s) hinzugefügt.`);
+      loadStories();
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
 
   if (simulate) {
     document.getElementById("sim-scan-btn").addEventListener("click", () => {
