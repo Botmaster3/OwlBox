@@ -61,7 +61,7 @@ THEMES = {
     },
     "mondschein": {
         "label": "Winter",
-        "description": "Kühle, sternenklare Nacht in Blautönen mit eisblauem Akzent.",
+        "description": "Kühle, sternenklare Nacht in Blautönen mit eisblauem Akzent und vereinzelten Schneeflocken.",
         "swatch": {"bg": "#0d1420", "panel": "#182234", "accent": "#6fc3f7", "text": "#eef4fa"},
         "bar_radius": "999px",
         "category": "standard",
@@ -89,7 +89,7 @@ THEMES = {
     },
     "winter": {
         "label": "Schnee",
-        "description": "Dunkle Winternacht in Eisblau, mit sanft fallendem Schnee.",
+        "description": "Dunkle Winternacht in Eisblau.",
         "swatch": {"bg": "#0d1822", "panel": "#16232f", "accent": "#5fb4e8", "text": "#e8f1f8"},
         "bar_radius": "999px",
         "category": "sonderedition",
@@ -299,3 +299,11 @@ def get_advent_candle_count(today: Optional[datetime.date] = None) -> int:
         if today >= advent_sunday:
             return candles_lit
     return 0
+
+
+def is_christmas_eve(today: Optional[datetime.date] = None) -> bool:
+    """Whether today is the 24th of December - drives a small static "Geschenke"
+    (presents) decoration on the Weihnachten theme (see .christmas-gifts in
+    style.css), on top of the Adventskranz that already runs Dec 1-26."""
+    today = today or datetime.date.today()
+    return today.month == 12 and today.day == 24

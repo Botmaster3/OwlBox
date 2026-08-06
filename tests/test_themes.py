@@ -180,3 +180,10 @@ def test_get_advent_candle_count_2024_reference_sundays():
     assert themes.get_advent_candle_count(datetime.date(2024, 12, 8)) == 2
     assert themes.get_advent_candle_count(datetime.date(2024, 12, 15)) == 3
     assert themes.get_advent_candle_count(datetime.date(2024, 12, 22)) == 4
+
+
+def test_is_christmas_eve():
+    assert themes.is_christmas_eve(datetime.date(2025, 12, 24)) is True
+    assert themes.is_christmas_eve(datetime.date(2025, 12, 23)) is False
+    assert themes.is_christmas_eve(datetime.date(2025, 12, 25)) is False
+    assert themes.is_christmas_eve(datetime.date(2024, 12, 24)) is True

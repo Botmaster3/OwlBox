@@ -200,6 +200,12 @@
       // waiting for its next unrelated style change.
       void document.documentElement.offsetHeight;
     }
+    // Same idea as advent_candles just above, for the one-day "Geschenke"
+    // decoration (see .christmas-gifts in style.css) - a kiosk already open
+    // when the 24th begins should still pick it up without a page reload.
+    if (typeof settings.christmas_eve === "boolean") {
+      document.documentElement.dataset.christmasEve = String(settings.christmas_eve);
+    }
     if (typeof settings.brightness === "number") {
       if (lastBrightness !== null && settings.brightness !== lastBrightness) {
         showBrightnessOsd(settings.brightness, settings.min_brightness, settings.max_brightness);

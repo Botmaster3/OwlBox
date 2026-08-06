@@ -79,9 +79,11 @@ den Pi geladen und einem Chip zugewiesen.
     Funktions-Chips anlegen, Übersicht aller Story-Chips.
   - **Einstellungen** - Zugangsdaten ändern; Design (4 Standard- plus 4 Sonderedition-Themes und ein
     frei einstellbares eigenes Design - Weihnachten mit einem Adventskranz, dessen Kerzen automatisch
-    je nach aktuellem Advent nacheinander angezündet werden, Ostern mit einem Osterkörbchen samt Gras
-    und Eiern, Winter mit sanft fallendem Schnee auf dunklem Grund, Silvester mit Feuerwerk am Himmel -
-    für Kiosk-Anzeige und Web-UI, inkl. unterschiedlicher Balken-Optik; drei der Standard-Themes
+    je nach aktuellem Advent nacheinander angezündet werden (plus Geschenke am 24.12.), Ostern mit
+    einem Osterkörbchen samt Gras und Eiern, Winter (Sonderedition) mit dunklem Eisblau, Silvester mit
+    einem Feuerwerk am Himmel - alles als Standbild statt laufender Animation, um den Pi 3B+ nicht
+    unnötig zu belasten; das Standard-Thema "Winter" bekommt dafür ein statisches Schneeflocken-Muster.
+    Für Kiosk-Anzeige und Web-UI, inkl. unterschiedlicher Balken-Optik; drei der Standard-Themes
     stehen zusätzlich für die kalendarischen Jahreszeiten (Frühling/Sommer/Herbst), sodass zusammen
     mit den Sonderedition-Fenstern (1.-26.12. Weihnachten, 31.12.-1.1. Silvester, 27.12.-19.3. Winter,
     9 Tage vor bis 1 Tag nach Ostern) das ganze Jahr automatisch abgedeckt ist - jedes einzelne Theme

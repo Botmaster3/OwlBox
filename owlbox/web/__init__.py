@@ -43,6 +43,7 @@ def create_app(engine, config) -> Flask:
         return {
             "theme": theme,
             "advent_candles": themes.get_advent_candle_count(),
+            "christmas_eve": themes.is_christmas_eve(),
             "custom_theme_style": custom_theme_style,
         }
 

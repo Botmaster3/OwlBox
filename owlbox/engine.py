@@ -1015,6 +1015,7 @@ class Engine:
                 "seasonal_theme_active": seasonal_theme_active,
                 "custom_theme_colors": custom_theme_colors,
                 "advent_candles": themes.get_advent_candle_count(),
+                "christmas_eve": themes.is_christmas_eve(),
             },
             "sleep_timer": {
                 "active": sleep_timer_end is not None,
