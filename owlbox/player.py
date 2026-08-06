@@ -184,6 +184,15 @@ class MpvPlayer:
             f"--audio-device=alsa/{self._config.alsa_device}",
             "--volume=100",
             "--volume-max=100",
+            # Confirmed on real hardware: the kiosk's fully software-rendered
+            # Chromium (no GPU access at all, see docs/hardware.md) can
+            # briefly starve this process of CPU time, and mpv's default
+            # audio buffer is thin enough that even a short stall shows up
+            # as audible crackling/dropouts. A full second of buffer gives
+            # much more slack to absorb that without it ever reaching the
+            # speaker - the tradeoff (up to ~1s extra latency on
+            # play/pause/seek) is irrelevant for an audiobook/story player.
+            "--audio-buffer=1.0",
         ]
         self._process = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self._ipc = _MpvIpc(socket_path)

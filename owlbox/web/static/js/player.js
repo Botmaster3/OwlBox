@@ -47,6 +47,13 @@
 
   // Decorative "is audio playing" animation, not a real audio-level analysis -
   // mpv doesn't expose one over the IPC socket we already talk to it through.
+  // 450ms rather than the original 130ms - confirmed on real hardware that
+  // repainting 5 bars ~7-8x/second adds up on this Pi's fully software-
+  // rendered Chromium (no GPU access at all, see docs/hardware.md - the
+  // "Legacy" GL driver fbcp needs leaves nothing but swrast), stealing CPU
+  // time from mpv's audio thread during exactly the moments (playback)
+  // where that causes audible crackling/dropouts. Still reads as "alive"
+  // at this rate, just noticeably less twitchy.
   function setVuPlaying(playing) {
     if (playing) {
       if (vuTimer) return;
@@ -54,7 +61,7 @@
         vuBars.forEach((bar) => {
           bar.style.height = `${12 + Math.random() * 85}%`;
         });
-      }, 130);
+      }, 450);
     } else if (vuTimer) {
       clearInterval(vuTimer);
       vuTimer = null;
