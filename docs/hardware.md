@@ -2,23 +2,23 @@
 
 **Für genau die unten stehende Standardhardware macht `scripts/install.sh`
 inzwischen alle Software-Schritte auf dieser Seite automatisch** (HiFiBerry-
-und Display-Overlay in `config.txt`, GL-Treiber, `fbcp` bauen, Display-Treiber
-installieren, ALSA-Gerät/Mixer erkennen, Kiosk-Autostart ohne Desktop-Umgebung,
-ein paar Boot-Zeit-Trimms) - einfach zweimal mit einem Neustart dazwischen
-laufen lassen, siehe README. Diese Seite bleibt trotzdem die vollständige
-Referenz: für abweichende Hardware, zum Nachvollziehen, was das Skript
-eigentlich tut, oder falls ein automatischer Schritt einmal fehlschlägt und
-von Hand nachgeholt werden muss.
+Overlay in `config.txt`, ALSA-Gerät/Mixer erkennen, Kiosk-Autostart ohne
+Desktop-Umgebung, ein paar Boot-Zeit-Trimms) - einfach zweimal mit einem
+Neustart dazwischen laufen lassen, siehe README. Diese Seite bleibt trotzdem
+die vollständige Referenz: für abweichende Hardware, zum Nachvollziehen, was
+das Skript eigentlich tut, oder falls ein automatischer Schritt einmal
+fehlschlägt und von Hand nachgeholt werden muss.
 
 Zielhardware:
 
 - Raspberry Pi 3B+
 - HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip)
 - RC522 RFID-Modul (SPI, 13.56 MHz)
-- 3.5" SPI-Touchscreen, 480×320, mit Stylus, 26-Pin-Header -
-  **sehr wahrscheinlich ein "MHS-35"/"tft35a"-Klon** (ILI9486 + XPT2046,
-  wird unter vielen Markennamen identisch verkauft). **Touch bleibt
-  deaktiviert**, siehe unten.
+- **Offizielles Raspberry Pi 7" Touch Display** (erste Generation - DSI-
+  Flachbandkabel für Bild und Touch, plus 4 Jumperkabel für Strom/I2C, siehe
+  unten). Ersetzt das früher hier dokumentierte 3,5"-SPI-Display
+  (tft35a/MHS-35-Klon) - dessen Anleitung ist noch in der Git-Historie
+  dieser Datei zu finden, falls je wieder gebraucht.
 - 2 Taster (vor/zurück)
 - 1 Dreh-Encoder mit Druckschalter (Lautstärke / Pause)
 - 1 weiterer Dreh-Encoder ohne Taster (Helligkeit, s.u.)
@@ -52,110 +52,70 @@ kompletten Schaltplan inkl. 40-Pin-Belegung und Steckverbinder-Pinouts pro
 Modul - Kabel-Konzept wie oben, kein Stapelaufbau der Adapter-Platine selbst.
 Die Pin-Zuordnung dort ist identisch mit den Tabellen unten.
 
-## Woran die Identifikation hängt
+## Anschluss: offizielles 7" Touch Display (DSI)
 
-480×320px, Stylus im Lieferumfang, 26-Pin-Anschluss und der (leicht
-falsch übersetzte) Hinweis "sonst wird die Touch-Funktion ausgebrannt"
-sind das exakte Wortmuster, das auf praktisch jedem Amazon-Listing für
-diese Referenzplatine steht - verkauft unter vielen Namen (Kuman, OSOYOO,
-Elegoo, SunFounder, "MPI3508", generische "3.5 Zoll Display"-Listings),
-aber elektrisch identisch: **ILI9486-Controller fürs Display, XPT2046
-für Touch**, Treiber über das `goodtft/LCD-show`-Installationsskript
-(`MHS35-show` bzw. `tft35a`-Overlay). Falls der beiliegende Download-Link
-der Anleitung einen anderen Treibernamen nennt, bitte kurz Bescheid geben -
-dann passe ich das unten an.
+Anders als das frühere 3,5"-SPI-Display sitzt dieses Display **nicht** auf
+dem 40-Pin-Header - Bild und Touch laufen komplett über das mitgelieferte
+DSI-Flachbandkabel (eigener Steckplatz auf dem Pi, neben den HDMI-Buchsen).
+**Damit entfällt die frühere Steckplatz-Kollision mit dem HiFiBerry
+komplett** - der HiFiBerry sitzt normal direkt auf dem 40-Pin-Header, das
+Display hängt separat am DSI-Steckplatz.
 
-## Wichtiger Hinweis: physische Steckplatz-Kollision mit dem HiFiBerry
+Die kleine Adapter-/Power-Platine auf der Rückseite des Displays braucht
+trotzdem 4 Jumper-/Dupont-Kabel zum Pi, weil DSI selbst weder Strom noch die
+I2C-Leitung fürs Touch mitführt:
 
-Das Display wird laut Beschreibung direkt auf den 26/40-Pin-GPIO-Header
-gesteckt ("mit einem 26-poligen SPI-Anschluss ... bitte über den ersten
-Anschluss anschließen"). Der HiFiBerry Amp braucht aber **ebenfalls**
-einen direkten Sitz auf demselben Header (I2S ist empfindlich gegenüber
-langen/zusätzlichen Steckverbindern). **Beide gleichzeitig aufstecken
-geht nicht**, sofern keins der beiden Boards einen sauberen Pass-Through-
-Header mitbringt (bei diesem günstigen Display-Typ i.d.R. nicht der Fall).
-
-**Lösung: Das Display nicht aufstecken, sondern per Jumper-/Dupont-Kabeln
-verdrahten.** Der 26-Pin-Header auf der Display-Platine ist ein normaler
-2.54mm-Pfostenverbinder - er lässt sich genauso gut mit einzelnen
-Kabeln verbinden wie durch direktes Aufstecken. Das hat zwei Vorteile:
-
-1. Der HiFiBerry sitzt normal direkt auf dem Pi, das Display hängt per
-   Kabel daneben.
-2. **Es müssen nur die tatsächlich gebrauchten Leitungen verbunden
-   werden** - die Touch-Leitungen (CE1/PENIRQ) werden dabei einfach
-   **gar nicht erst angeschlossen**, Touch bleibt also elektrisch inaktiv.
-   **Wichtig, falls RC522 und Display beide verbaut sind**: Der
-   Display-Treiber (`mhs35`/`tft35a`-Overlay) meldet dem Kernel trotzdem
-   einen Touch-Controller auf SPI0 CE1 an - fest im Overlay einprogrammiert,
-   ohne Parameter zum Abschalten, unabhängig davon, ob Touch physisch
-   angeschlossen ist. Beide SPI0-Chipselects (CE0 fürs Display, CE1 für
-   diesen Touch-Eintrag) sind damit softwareseitig belegt. Der RC522 kann
-   deshalb **nicht** auf SPI0 mitlaufen - siehe „RC522 RFID-Leser" unten für
-   die tatsächliche Verkabelung über Software-SPI auf freien GPIOs.
-
-Nur diese Leitungen vom Display-Header zum Pi verbinden:
-
-| Display-Pin (26-Pin-Header) | Pi-Pin (BCM) | Zweck |
+| Display-Adapterplatine | Pi-Pin (BCM) | Zweck |
 |---|---|---|
-| VCC        | 3.3V        | Versorgung |
-| GND        | GND         | Masse |
-| SCK        | GPIO11      | SPI0-Takt (nur Display - der RC522 hängt an eigenen GPIOs, s.u.) |
-| MOSI (SDI) | GPIO10      | SPI0 (nur Display) |
-| MISO (SDO) | GPIO9       | SPI0 (nur Display) |
-| CS/CE0     | GPIO8       | Display-Chipselect |
-| DC/RS      | GPIO24      | Data/Command (Standardwert des tft35a-Overlays) |
-| RST        | GPIO25      | Reset (Standardwert des tft35a-Overlays) |
-| LED/Backlight | **GPIO13, über Treibertransistor** (dimmbar, Standard) | siehe unten |
-| T_CLK, T_CS, T_DIN, T_DO, T_IRQ (Touch) | **nicht anschließen** | Touch bleibt so auch elektrisch inaktiv |
+| 5V  | Pin 2 oder Pin 4 | Stromversorgung |
+| GND | Pin 6 (oder jeder andere GND-Pin) | Masse |
+| SDA | Pin 3 (GPIO2) | I2C-Datenleitung (Touch-Controller) |
+| SCL | Pin 5 (GPIO3) | I2C-Taktleitung (Touch-Controller) |
 
-**Zur Hintergrundbeleuchtung**: Je nach Fertigungscharge ist die LED-Leitung
-bei diesem Board-Typ ab Werk entweder fest verdrahtet oder auf einen GPIO
-gelegt (öfter berichtet: GPIO18 - genau der Pin, den der HiFiBerry für die
-I2S-Bit-Clock braucht, hier also nicht verwendbar). Bei OwlBox ist das
-Backlight-Dimmen **Pflicht, kein optionales Extra** - der Helligkeitsregler
-unter Einstellungen (und der zweite Dreh-Encoder) sind zentrale
-Bedienelemente, keine Kür:
+**Kein Konflikt mit dem HiFiBerry, obwohl GPIO2/3 dieselben Pins sind, die
+er für seine eigene I2C-Steuerung nutzt**: I2C ist ein echter
+Mehrgeräte-Bus, mehrere Chips teilen sich Takt-/Datenleitung problemlos,
+solange sie unterschiedliche Adressen haben - der Touch-Controller des
+Displays und der HiFiBerry-Chip (Adresse `0x4d`, per `i2cdetect -y 1`
+bestätigt) sitzen auf unterschiedlichen Adressen.
 
-1. Die LED-Leitung nicht an 3.3V, sondern an einen freien GPIO anschließen -
-   **GPIO13** (physischer Pin 33, einer der Hardware-PWM-fähigen Pins neben
-   12/18/19, von denen 18/19 dem HiFiBerry gehören).
-2. Da ein Pi-GPIO nicht genug Strom für die Hintergrundbeleuchtung liefern
-   kann, einen kleinen NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET
-   als Schalter dazwischenschalten: GPIO13 → Basis/Gate (über ~1kΩ
-   Vorwiderstand bei einem BJT), Kollektor/Drain → LED-Kathode, Emitter/
-   Source → GND. Die LED-Anode bleibt wie gehabt an 3.3V bzw. an der vom
-   Board vorgesehenen Versorgung.
-3. In `config.yaml`: `gpio.backlight_pin: 13` setzen (Default in
-   `config.example.yaml`). Nur auf `null` setzen, wenn das Backlight
-   abweichend vom Standardaufbau doch fest an 3.3V hängt - dann hat der
-   Regler in den Einstellungen keine Wirkung.
-4. Den zweiten KY-040-Dreh-Encoder (ohne Taster) für die Helligkeit
-   verdrahten, siehe Tabelle unten - Drehen ändert die Helligkeit sofort um
-   `gpio.brightness_step` (Standard 5%) pro Rastung. Es gibt bewusst **kein**
-   automatisches Dimmen (weder nach Inaktivität noch beim Einschlaf-Timer) -
-   die Helligkeit bleibt, wie sie zuletzt eingestellt wurde.
+**Falls der HiFiBerry bereits vollflächig auf dem 40-Pin-Header aufgesteckt
+ist** und die Pins dadurch von oben nicht mehr mit Dupont-Kabeln erreichbar
+sind: ein GPIO-Stacking-Header (Extra-Höhe, mit durchgeführten Pins) zwischen
+Pi und HiFiBerry löst das, ohne den HiFiBerry selbst umverkabeln zu müssen.
 
-Beide Erweiterungen (Backlight-Dimmen, Helligkeits-Encoder) sind in
-`docs/hat-wiring.html` eingezeichnet - dieselben Inhalte liegen als
-PDF-Referenz auch unter `owlbox/web/static/docs/OwlBox-Verkabelung.pdf`
-(Download über die Info-Seite in der Verwaltung).
+**Kein Overlay, kein Treiber-Setup nötig**: Das Display wird von der
+Pi-Firmware automatisch über das DSI-Kabel erkannt, keine `dtoverlay=`-Zeile
+in `config.txt` nötig (im Gegensatz zum alten SPI-Display). Es läuft
+außerdem mit dem **modernen KMS-Grafiktreiber** (`vc4-kms-v3d`, Standard seit
+Bookworm) - der musste beim alten Display extra deaktiviert werden (siehe
+weiter unten im Kiosk-Abschnitt), hier bleibt er einfach aktiv, Chromium
+bekommt dadurch echte GPU-Beschleunigung statt reinem Software-Rendering.
+
+**Zur Hintergrundbeleuchtung - wichtiger Unterschied zum alten Display:**
+Dieses Display hat **keine** per GPIO/PWM ansteuerbare LED-Leitung wie das
+alte SPI-Display - die Helligkeit wird stattdessen intern über eine
+Linux-Backlight-Sysfs-Schnittstelle geregelt (`/sys/class/backlight/.../brightness`),
+angesteuert vom Power-Chip auf der Display-Adapterplatine selbst. Die
+GPIO13-Transistor-Schaltung und `gpio.backlight_pin` aus der alten
+Verkabelung entfallen damit ersatzlos - **das Backlight-Dimmen über den
+zweiten Dreh-Encoder ist auf dieser Hardware aktuell nicht angeschlossen**,
+das müsste in `owlbox/controls/gpio_controls.py` erst auf die
+Sysfs-Schnittstelle umgestellt werden. Sag Bescheid, falls das als
+nächstes drankommen soll - der zweite Encoder selbst kann so lange
+unverdrahtet bleiben.
 
 ## GPIO-Belegung im Überblick
 
 | Funktion                        | BCM Pin | Genutzt von         |
 |----------------------------------|---------|---------------------|
-| I2S BCLK                        | 18      | HiFiBerry (Display-Backlight bewusst NICHT hierauf gelegt, s.o.) |
+| I2S BCLK                        | 18      | HiFiBerry           |
 | I2S LRCLK                       | 19      | HiFiBerry           |
 | I2S DIN                         | 20      | HiFiBerry           |
 | I2S DOUT                        | 21      | HiFiBerry           |
-| I2C SDA                         | 2       | HiFiBerry (Amp-Steuerung) |
-| I2C SCL                         | 3       | HiFiBerry (Amp-Steuerung) |
-| SPI0 SCLK/MOSI/MISO             | 11/10/9 | Display (der RC522 hängt NICHT hier, s.u.) |
-| SPI0 CE0                        | 8       | Display (TFT-Chipselect) |
-| SPI0 CE1                        | 7       | vom Display-Overlay softwareseitig für Touch reserviert - **unbenutzbar**, auch unverdrahtet |
-| Display DC                      | 24      | Display |
-| Display RST                     | 25      | Display |
+| I2C SDA                         | 2       | HiFiBerry (Amp-Steuerung) **und** Display-Touch-Controller - gemeinsam am selben I2C-Bus, kein Konflikt (unterschiedliche Adressen), s.o. |
+| I2C SCL                         | 3       | HiFiBerry (Amp-Steuerung) **und** Display-Touch-Controller, s.o. |
+| SPI0 SCLK/MOSI/MISO/CE0/CE1     | 11/10/9/8/7 | **frei** (das DSI-Display braucht kein SPI0 mehr; RC522 bleibt trotzdem auf Software-SPI, s.u.) |
 | RC522 SCK (Software-SPI)        | 4       | RC522 (`rfid.sck_pin`) |
 | RC522 MOSI (Software-SPI)       | 16      | RC522 (`rfid.mosi_pin`) |
 | RC522 MISO (Software-SPI)       | 15      | RC522 (`rfid.miso_pin`) |
@@ -163,12 +123,12 @@ PDF-Referenz auch unter `owlbox/web/static/docs/OwlBox-Verkabelung.pdf`
 | RC522 RST                       | 26      | RC522 (`rfid.reset_pin`) |
 | Taster Weiter                   | 5       | Taster              |
 | Taster Zurück                   | 6       | Taster              |
-| Encoder CLK                     | 1       | Lautstärke-Encoder (NICHT 17, s.u.) |
+| Encoder CLK                     | 1       | Lautstärke-Encoder (17 wäre jetzt auch wieder frei, s.o.) |
 | Encoder DT                      | 27      | Lautstärke-Encoder  |
 | Encoder SW                      | 22      | Lautstärke-Encoder  |
-| Display-Backlight (dimmbar)     | 13      | Backlight-Dimmen (Treibertransistor, s.o.) |
-| Helligkeits-Encoder CLK         | 23      | Helligkeits-Encoder |
-| Helligkeits-Encoder DT          | 12      | Helligkeits-Encoder |
+| Display-Backlight               | -       | läuft über Sysfs, kein GPIO mehr - Backlight-Dimmen aktuell nicht angeschlossen, s.o. |
+| Helligkeits-Encoder CLK         | 23      | Helligkeits-Encoder (aktuell ohne Wirkung, s.o.) |
+| Helligkeits-Encoder DT          | 12      | Helligkeits-Encoder (aktuell ohne Wirkung, s.o.) |
 
 ## HiFiBerry Amp2
 
@@ -228,13 +188,13 @@ zwei 2-polige Federklemmen direkt auf der Platine (eine pro Kanal, jeweils
 **Wichtig, unterscheidet sich von den meisten RC522-Anleitungen im Netz:**
 Auf dieser Standardhardware hängt der RC522 **nicht** an einem der beiden
 Hardware-SPI-Busse des Pi, sondern an vier per Software angesteuerten
-GPIOs. Grund: beide Hardware-SPI-Busse sind hier bereits vergeben -
-SPI0 komplett vom Display-Treiber (CE0 fürs Display, CE1 fest für einen
-Touch-Controller reserviert, siehe oben), SPI1 liegt auf GPIO18-21, exakt
-den Pins, die der HiFiBerry für I2S-Ton braucht. Für den RC522 bleibt daher
-nur echtes Software-SPI (Bit-Banging) auf ansonsten freien GPIOs - der
-RC522 hat keine Mindesttaktrate, das funktioniert zuverlässig, nur eben
-etwas langsamer als Hardware-SPI (für einen Chip-Scan völlig ausreichend).
+GPIOs. Grund: SPI1 liegt auf GPIO18-21, exakt den Pins, die der HiFiBerry
+für I2S-Ton braucht - SPI0 ist inzwischen zwar frei (das offizielle 7"-
+DSI-Touch-Display beansprucht es anders als das frühere SPI-Display nicht
+mehr), die RC522-Verdrahtung bleibt hier aber trotzdem auf Software-SPI, um
+nicht mehr als nötig gleichzeitig umzustellen. Der RC522 hat keine
+Mindesttaktrate, Software-SPI funktioniert zuverlässig, nur eben etwas
+langsamer als Hardware-SPI (für einen Chip-Scan völlig ausreichend).
 
 | RC522 Pin | Raspberry Pi | Config-Feld |
 |-----------|--------------|-------------|
@@ -266,22 +226,22 @@ Zeichen, dass es auf diesem Kernel generell nicht sauber läuft. Deshalb
 läuft die komplette GPIO-Ansteuerung dieses Projekts konsistent über
 `lgpio`, nirgends mehr über `RPi.GPIO`.
 
-**Zweiter, unabhängiger Konflikt, ebenfalls an echter Hardware gefunden:**
-Der Display-Treiber beansprucht nicht nur SPI0 CE0/CE1, sondern zusätzlich
+**Historischer Hintergrund zum Lautstärke-Encoder auf GPIO1 statt GPIO17:**
+Das frühere SPI-Display beanspruchte zusätzlich zu SPI0 CE0/CE1 auch
 **GPIO17 als Interrupt-Pin („pendown") für den (nie verdrahteten) Touch-
-Controller** - bestätigt per `gpioinfo gpiochip0` (Consumer-Name „pendown").
-Das kollidiert mit dem ursprünglich für den Lautstärke-Encoder vorgesehenen
-GPIO17. Da zwischen dem Display-Overlay und diesem Projekt inzwischen
-**jeder** GPIO von 2-27 belegt ist, gibt es dafür keinen regulär freien Pin
-mehr - der Lautstärke-Encoder-CLK liegt deshalb auf **GPIO1** (ID_SC,
-konventionell für ein HAT-ID-EEPROM reserviert, hier aber echt frei, da der
-HiFiBerry ohnehin per manueller `dtoverlay`-Zeile statt EEPROM-Erkennung
-konfiguriert wird - siehe unten).
+Controller** - fest im damaligen Overlay einprogrammiert, unabhängig davon,
+ob Touch physisch angeschlossen war. Deshalb liegt der Lautstärke-Encoder-CLK
+auf **GPIO1** (ID_SC, konventionell für ein HAT-ID-EEPROM reserviert, hier
+aber echt frei, da der HiFiBerry ohnehin per manueller `dtoverlay`-Zeile
+statt EEPROM-Erkennung konfiguriert wird). Mit dem neuen DSI-Display ist
+GPIO17 jetzt wieder frei - die Verkabelung bleibt hier trotzdem auf GPIO1,
+um nicht ohne Grund vom dokumentierten Standard abzuweichen; wer umverkabeln
+will, kann `gpio.encoder_clk` in `config.yaml` frei auf GPIO17 umstellen.
 
-Wer den RC522 ohne dieses Display betreibt (dann ist SPI0 komplett frei),
-kann natürlich stattdessen ganz normal Hardware-SPI nutzen - dafür
-`owlbox/rfid/mfrc522_reader.py` entsprechend anpassen (dort direkt
-`spidev`/`MFRC522(bus=0, device=...)` verwenden statt `SoftSpi`).
+Wer den RC522 stattdessen an echtem Hardware-SPI betreiben will (jetzt, wo
+SPI0 frei ist), kann `owlbox/rfid/mfrc522_reader.py` entsprechend anpassen
+(dort direkt `spidev`/`MFRC522(bus=0, device=...)` verwenden statt
+`SoftSpi`) - im Standardaufbau bleibt es aber bei Software-SPI, siehe oben.
 
 ## Taster (vor/zurück)
 
@@ -400,124 +360,47 @@ Repo und ist damit öffentlich bekannt - für den Einsatz in einer Umgebung,
 in der Fremde in Funkreichweite kommen könnten, unbedingt in
 `config.yaml` ein eigenes Passwort setzen.
 
-## 3.5" SPI-Display: Treiber (ohne Touch)
+## 7" Touch Display: kein Treiber-Setup nötig
 
-Diese Board-Familie (tft35a/MHS-35) funktioniert **nicht** über einen
-direkten KMS-Grafikausgang, sondern über einen Trick: der Pi bekommt per
-`config.txt` einen "unsichtbaren" virtuellen HDMI-Ausgang in der
-Auflösung des Displays vorgegaukelt, X11/Chromium rendern ganz normal
-dorthin, und ein kleines Hilfsprogramm (`fbcp`) kopiert das Bild laufend
-per SPI aufs eigentliche TFT. Für den Rest des Systems (inkl. unserem
-`scripts/kiosk.sh`) sieht das aus wie ein ganz normaler Bildschirm.
-
-**Empfohlener Weg**: statt `config.txt` von Hand zu editieren, den
-Treiber-Installer benutzen, den der Verkäufer laut Artikelbeschreibung
-verlinkt ("kostenlose Treiberinstallation und Tutorials sind verfügbar"),
-oder alternativ das quelloffene `goodtft/LCD-show`-Skript (auf GitHub,
-Skriptname i.d.R. `MHS35-show` oder `LCD35-show`) - der Installer setzt
-automatisch die passenden `config.txt`-Werte für genau dieses Board,
-kompiliert/installiert `fbcp` und richtet den Autostart ein. Passenden
-Namen/Link ggf. auf dem beiliegenden Handzettel oder in der
-Amazon-Produktbeschreibung ("siehe Bild unten für Details") nachsehen.
-
-**Danach nur einen Schritt selbst nachziehen**: in `/boot/firmware/config.txt`
-die vom Installer eingetragene Touch-Zeile wieder entfernen/auskommentieren -
-sie beginnt mit `dtoverlay=ads7846,...`. Ohne diese Zeile lädt der Kernel
-den XPT2046-Touch-Treiber gar nicht erst, Touch ist damit auch
-softwareseitig aus (zusätzlich zur ohnehin nicht verdrahteten Touch-Leitung
-von oben). Die restlichen vom Installer gesetzten Zeilen (virtueller HDMI-
-Modus, `dtoverlay=tft35a:rotate=...` o.ä., SPI aktivieren) unverändert
-lassen.
-
-Zur Referenz, wie diese Zeilen ungefähr aussehen (der Installer setzt sie
-automatisch, exakte Werte können je nach Skriptversion leicht abweichen):
-
-```
-hdmi_force_hotplug=1
-hdmi_group=2
-hdmi_mode=87
-hdmi_cvt=480 320 60 6 0 0 0
-hdmi_drive=2
-dtparam=spi=on
-dtoverlay=tft35a:rotate=90
-```
-
-Und als systemd-Service für `fbcp`, falls der Installer keinen eigenen
-Autostart einrichtet (Vorlage liegt in `systemd/owlbox-fbcp.service`,
-Pfad ggf. anpassen falls der Installer `fbcp` woanders ablegt):
-
-```
-sudo cp systemd/owlbox-fbcp.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now owlbox-fbcp.service
-```
-
-### Wichtig: legacy Grafiktreiber statt Wayland/labwc
-
-`fbcp` liest von `/dev/fb0` - das gibt es unter dem modernen
-KMS-Grafiktreiber (`vc4-kms-v3d`, Standard seit Raspberry Pi OS Bullseye/
-Bookworm mit Wayland/labwc) meist nicht mehr in nutzbarer Form. Für dieses
-Display-Familie also in `/boot/firmware/config.txt` den KMS-Treiber
-deaktivieren bzw. auskommentieren:
-
-```
-#dtoverlay=vc4-kms-v3d
-```
-
-Empfohlenes Basis-Image ist deshalb **Raspberry Pi OS (Legacy) Lite, 64-bit**
-(Bookworm, alter Grafiktreiber, aber *ohne* Desktop-Umgebung) - nicht die
-volle "Legacy"-Variante mit Desktop. Der Kiosk startet X selbst nur für
-Chromium (siehe "Kiosk-Autostart" unten), eine mitinstallierte
-Desktop-Umgebung (lightdm, LXDE) würde beim Boot nur unnötig Zeit kosten,
-ohne dass sie je zu sehen wäre. (Alternative für alle, die KMS/Wayland
-behalten wollen: der Fork `fbcp-ili9341`, der über DRM statt `/dev/fb0`
-liest - aufwändiger einzurichten, hier nicht weiter dokumentiert.)
+Im Gegensatz zum früheren 3,5"-SPI-Display (das einen virtuellen-HDMI-Trick,
+`fbcp` und den alten Legacy-Grafiktreiber brauchte, um überhaupt ein Bild zu
+zeigen) ist das offizielle 7"-Display an einem normalen Raspberry Pi OS
+Bookworm-Image **komplett plug-and-play**: Firmware erkennt es automatisch
+über das DSI-Kabel, keine `dtoverlay=`-Zeile, kein Treiber-Installer, kein
+extra Paket. Empfohlenes Basis-Image bleibt trotzdem **Raspberry Pi OS Lite,
+64-bit** (ohne Desktop-Umgebung) - der Kiosk startet X selbst nur für
+Chromium (siehe unten), eine mitinstallierte Desktop-Umgebung (lightdm,
+LXDE) würde beim Boot nur unnötig Zeit kosten, ohne dass sie je zu sehen
+wäre. Wichtig ist nur: der moderne KMS-Grafiktreiber (`vc4-kms-v3d`) bleibt
+**aktiv** (Bookworm-Standard) - er wurde beim alten Display extra
+deaktiviert, das ist mit diesem Display nicht mehr nötig und würde die GPU-
+Beschleunigung sogar wieder kosten.
 
 ### Falls es doch ein anderes Board ist
 
-Sollte die Anleitung/Download-Karte, die dem Display beilag, einen
-anderen Overlay-/Treibernamen nennen als oben: gerne den genauen Namen
-schicken, dann passe ich `config.txt` und die Pin-Tabelle entsprechend an.
+Sollte es sich um die neuere "Touch Display 2"-Generation oder ein anderes
+DSI-Board handeln: gerne kurz Bescheid geben, falls sich an der Verkabelung
+oder Konfiguration etwas unterscheidet - dann passe ich diese Seite an.
 
 ## Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)
 
-Da die Basis "Legacy Lite" **keine** Desktop-Umgebung mitbringt, gibt es
-auch kein lightdm/LXDE, in das sich der Kiosk einhängen könnte. Stattdessen
-startet ein eigener systemd-Dienst (`owlbox-kiosk.service`) X direkt selbst
-(per `startx`), übernimmt dafür `tty1` und lässt `scripts/kiosk.sh` (das
-Chromium im Kiosk-Modus gegen `http://localhost:5000/` startet) als
-einzigen "Client" laufen - keine Fensterleiste, kein Dateimanager-Desktop,
-kein Panel. Das funktioniert, sobald `fbcp` läuft und der legacy
-Grafiktreiber (nicht Wayland) aktiv ist, weil Chromium dann ganz normal auf
-den virtuellen HDMI-Ausgang rendert.
+Da die Basis "Lite" **keine** Desktop-Umgebung mitbringt, gibt es auch kein
+lightdm/LXDE, in das sich der Kiosk einhängen könnte. Stattdessen startet
+ein eigener systemd-Dienst (`owlbox-kiosk.service`) X direkt selbst (per
+`startx`), übernimmt dafür `tty1` und lässt `scripts/kiosk.sh` (das Chromium
+im Kiosk-Modus startet) als einzigen "Client" laufen - keine Fensterleiste,
+kein Dateimanager-Desktop, kein Panel. Mit aktivem KMS-Treiber findet X's
+eigener, automatisch gewählter "modesetting"-Treiber `/dev/dri/card0` von
+selbst - keine eigene Xorg-Konfiguration nötig (anders als beim alten
+Display, das X explizit auf einen Framebuffer-Treiber zwingen musste).
 
 **Autostart einrichten:**
 
 ```
-sudo apt-get install -y xserver-xorg-video-fbdev
-
 # X ohne Display-Manager erlauben:
 cat > /etc/X11/Xwrapper.config <<'EOF'
 allowed_users=anybody
 needs_root_rights=yes
-EOF
-
-# Mit dem Legacy-GL-Treiber (kein /dev/dri/card0) findet X's automatisch
-# gewählter "modesetting"-Treiber kein Gerät und scheitert mit "no screens
-# found" - stattdessen ausdrücklich auf den Framebuffer zeichnen lassen,
-# genau den, den fbcp schon aufs Display spiegelt:
-mkdir -p /etc/X11/xorg.conf.d
-cat > /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf <<'EOF'
-Section "Device"
-    Identifier "OwlBoxFramebuffer"
-    Driver "fbdev"
-    Option "fbdev" "/dev/fb0"
-EndSection
-
-Section "Screen"
-    Identifier "OwlBoxScreen"
-    Device "OwlBoxFramebuffer"
-EndSection
 EOF
 
 sudo cp /opt/owlbox/systemd/owlbox-kiosk.service /etc/systemd/system/
@@ -525,21 +408,12 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now owlbox-kiosk.service
 ```
 
-**An echter Hardware bestätigt:** Ohne `xserver-xorg-video-fbdev` und die
-obige Xorg-Konfiguration bricht `owlbox-kiosk.service` sofort mit "no
-screens found" ab (`/var/log/Xorg.0.log` zeigt `open /dev/dri/card0: No
-such file or directory`) - der Fehler taucht in `journalctl -u owlbox-kiosk`
-selbst **nicht** auf (nur "Main process exited, code=exited, status=1"),
-das eigentliche X-Server-Log unter `/var/log/Xorg.0.log` ist bei so einem
-Absturz die richtige Anlaufstelle.
-
 `owlbox-kiosk.service` bringt `Conflicts=getty@tty1.service` schon mit, muss
 also `getty@tty1.service` nicht extra deaktiviert bekommen - läuft aber
 sauberer, wenn man es trotzdem tut (`sudo systemctl disable getty@tty1.service`),
 damit dort kein ungenutzter Login-Prompt mehr mitstartet.
 
-Läuft doch eine volle Desktop-Umgebung (z.B. weil bewusst die volle
-"Legacy"-Variante statt Lite geflasht wurde), lässt sich der Kiosk
-alternativ ganz klassisch über deren Autostart-Datei einhängen:
-`~/.config/lxsession/LXDE-pi/autostart` um die Zeile
-`@/opt/owlbox/scripts/kiosk.sh` ergänzen.
+Läuft doch eine volle Desktop-Umgebung (z.B. weil bewusst die volle Variante
+statt Lite geflasht wurde), lässt sich der Kiosk alternativ ganz klassisch
+über deren Autostart-Datei einhängen: `~/.config/lxsession/LXDE-pi/autostart`
+um die Zeile `@/opt/owlbox/scripts/kiosk.sh` ergänzen.

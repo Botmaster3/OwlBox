@@ -30,14 +30,18 @@ den Pi geladen und einem Chip zugewiesen.
   Geschichte, unterbricht sie also nicht. Spielt immer bei einer festen,
   leisen Lautstärke (Standard 15% der maximalen Lautstärke), egal wie laut
   die Geschichte gerade eingestellt ist. In Einstellungen abschaltbar.
-- **3.5" SPI-Display**: reine Anzeige (Cover, Geschichte, aktueller
-  Kapitel-/Track-Titel, verbleibende Zeit im Track, Track-Liste der Geschichte mit
-  hervorgehobenem aktuellen Titel, Lautstärke, WLAN-Empfang) - kein Touch, Bedienung
-  läuft ausschließlich über Taster/Encoder/Funktions-Chips (siehe docs/hardware.md).
-  Helligkeit ausschließlich manuell regelbar (Regler unter Einstellungen/Home
-  oder ein zweiter Dreh-Encoder am Gerät) - kein automatisches Dimmen; jede
-  Änderung blendet den neuen Wert kurz auf dem Display ein. Braucht dafür die
-  Backlight-Verkabelung per Software-PWM statt fest an 3.3V (siehe docs/hardware.md).
+- **7" Touch Display** (offizielles Raspberry-Pi-Display, DSI): Cover,
+  Geschichte, aktueller Kapitel-/Track-Titel, verbleibende Zeit im Track,
+  Track-Liste der Geschichte mit hervorgehobenem aktuellen Titel, Lautstärke,
+  WLAN-Empfang - Bedienung läuft primär über Taster/Encoder/Funktions-Chips
+  (siehe docs/hardware.md); die Touch-Hardware ist zwar vorhanden, wird von
+  der Oberfläche aktuell aber nicht ausgewertet (geplant: nur im künftigen
+  Spielmodus aktiv). Helligkeit ausschließlich manuell regelbar (Regler unter
+  Einstellungen/Home oder ein zweiter Dreh-Encoder am Gerät) - kein
+  automatisches Dimmen; jede Änderung blendet den neuen Wert kurz auf dem
+  Display ein, **die eigentliche Backlight-Steuerung ist auf dieser Hardware
+  aber noch nicht angeschlossen** (das Display regelt seine Helligkeit über
+  eine Linux-Sysfs-Schnittstelle statt über GPIO/PWM, siehe docs/hardware.md).
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,
@@ -135,12 +139,12 @@ Ein einziger Python-Prozess (`owlbox.main`) vereint:
   Polling aktualisiert), `/admin` (Bibliotheksverwaltung), `/api/*` (REST).
 
 Das Now-Playing-Display läuft als ganz normale Webseite, die im Kiosk-Modus
-in Chromium auf dem 3.5"-SPI-Display angezeigt wird (`scripts/kiosk.sh`) -
+in Chromium auf dem 7"-Touch-Display angezeigt wird (`scripts/kiosk.sh`) -
 kein separates GUI-Toolkit nötig, funktioniert offline und ist auf einem
 Pi 3B+ mit 1 GB RAM deutlich genügsamer als z.B. Kivy oder Qt. Das Display
-selbst braucht dafür den passenden Kernel-Treiber/Overlay (siehe
-docs/hardware.md) - Touch ist am Board zwar vorhanden, wird aber bewusst
-nicht aktiviert.
+wird von der Pi-Firmware automatisch über DSI erkannt, kein Kernel-Overlay
+nötig (siehe docs/hardware.md) - Touch ist am Board vorhanden, wird von der
+Oberfläche aktuell aber noch nicht ausgewertet.
 
 ## Schnellstart (Entwicklung, ohne Pi-Hardware)
 
@@ -164,13 +168,15 @@ Im Simulationsmodus wird RFID/GPIO/mpv durch Software-Stubs ersetzt, siehe
 
 ## Installation auf dem Raspberry Pi
 
-Empfohlenes Basis-Image: **Raspberry Pi OS (Legacy) Lite, 64-bit** - Bookworm
-mit dem alten Grafiktreiber (Pflicht für `fbcp`), aber bewusst *ohne*
-Desktop-Umgebung, da der Kiosk-Autostart X nur für Chromium selbst startet
-(kein lightdm/LXDE, das beim Boot nur unnötig Zeit kosten würde).
+Empfohlenes Basis-Image: **Raspberry Pi OS Lite, 64-bit** - Bookworm mit dem
+modernen KMS-Grafiktreiber (Standard, bleibt aktiv - anders als bei dem
+früher hier verbauten 3.5"-SPI-Display, das den alten Grafiktreiber
+brauchte), aber bewusst *ohne* Desktop-Umgebung, da der Kiosk-Autostart X
+nur für Chromium selbst startet (kein lightdm/LXDE, das beim Boot nur
+unnötig Zeit kosten würde).
 
-Für die Standardhardware (Pi 3B+, HiFiBerry Amp2, 3.5" SPI-Display der
-tft35a/MHS-35-Familie, RC522, Taster/Encoder auf den Standard-Pins - siehe
+Für die Standardhardware (Pi 3B+, HiFiBerry Amp2, offizielles 7"-Touch-
+Display (DSI), RC522, Taster/Encoder auf den Standard-Pins - siehe
 [docs/hardware.md](docs/hardware.md)) genügt es, das Skript **zweimal mit
 einem Neustart dazwischen** laufen zu lassen:
 
@@ -181,26 +187,27 @@ sudo ./scripts/install.sh
 ```
 
 **1. Durchlauf:** installiert Systempakete (mpv, ALSA, Chromium, minimaler
-X-Stack, …), aktiviert SPI, deaktiviert ungenutzte Dienste und
-Boot-Wartezeiten (Bluetooth, Netzwerk-Wartezeit, Boot-Splash - siehe
+X-Stack, …), aktiviert SPI (für den RC522), deaktiviert ungenutzte Dienste
+und Boot-Wartezeiten (Bluetooth, Netzwerk-Wartezeit, Boot-Splash - siehe
 docs/hardware.md), legt einen `owlbox`-Systembenutzer an, richtet ein
-Python-venv ein, trägt den HiFiBerry- und Display-Overlay automatisch in
-`config.txt` ein, baut und installiert `fbcp`, lädt und startet den
-Display-Treiber (`goodtft/LCD-show`) - der Pi startet am Ende von selbst neu.
+Python-venv ein, trägt den HiFiBerry-Overlay automatisch in `config.txt` ein
+- der Pi startet am Ende von selbst neu. Das Display selbst braucht keinen
+Treiber/Overlay, es wird automatisch über DSI erkannt.
 
 **Danach das Skript einmal erneut ausführen** (`sudo ./scripts/install.sh`):
 jetzt ist die HiFiBerry-Soundkarte aktiv, das Skript erkennt automatisch das
 richtige ALSA-Gerät/den Mixer und trägt es in `config/config.yaml` ein,
-entfernt die vom Display-Treiber gesetzte Touch-Overlay-Zeile wieder (Touch
-bleibt bewusst aus), richtet den Kiosk-Autostart ein (eigener systemd-Dienst,
-startet X direkt ohne Desktop-Umgebung) und startet `owlbox.service`.
+richtet den Kiosk-Autostart ein (eigener systemd-Dienst, startet X direkt
+ohne Desktop-Umgebung) und startet `owlbox.service`.
 
 Das Skript ist beliebig oft wiederholbar (idempotent) - jeder Schritt prüft
 zuerst, ob er schon erledigt ist. Danach bleiben nur zwei Dinge wirklich
 manuell, weil kein Skript sie übernehmen kann:
 
-1. RC522-RFID-Leser (an CE1, nicht CE0), Taster und Dreh-Encoder verkabeln -
-   siehe [docs/hardware.md](docs/hardware.md) bzw. **OwlBox-Verkabelung.pdf**.
+1. RC522-RFID-Leser (Software-SPI auf freien GPIOs, siehe docs/hardware.md),
+   Taster, Dreh-Encoder und die 4 Jumperkabel des Displays (Strom + I2C für
+   Touch) verkabeln - siehe [docs/hardware.md](docs/hardware.md) bzw.
+   **OwlBox-Verkabelung.pdf**.
 2. `http://<pi-ip>:5000/admin` öffnen und die Ersteinrichtung (Benutzername/
    Passwort) durchlaufen - aus Sicherheitsgründen bewusst ohne automatisch
    gesetztes Standardpasswort.

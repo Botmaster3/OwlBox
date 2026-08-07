@@ -4,14 +4,15 @@
 #
 # Targets the project's standard hardware (see docs/hardware.md): Pi 3B+, HiFiBerry
 # Amp2 (TAS5756M chip - the PCM512x family, same codec as the DAC+ Pro; NOT the
-# older Amp/Amp+'s TAS5713, a different chip needing a different overlay), 3.5"
-# SPI display (tft35a/MHS-35 family), RC522 on software SPI (GPIOs
-# 4/14/15/16 - both hardware SPI buses are already taken by the display+touch and by
-# the HiFiBerry's I2S audio), buttons/encoders on the documented default pins. On
-# that combination this script alone gets you from a
-# freshly-flashed SD card to a fully working box - no manual config.txt editing, no
-# manually running aplay/amixer and copying values by hand, no manually compiling fbcp
-# or wiring up systemd units. Two things stay manual on purpose:
+# older Amp/Amp+'s TAS5713, a different chip needing a different overlay), the
+# official 7" Raspberry Pi Touch Display (DSI ribbon cable + 4 jumper wires for
+# power/I2C touch - see docs/hardware.md), RC522 on software SPI (GPIOs
+# 4/14/15/16 - SPI0 is free since the display no longer uses it, but the RC522
+# stays on software SPI regardless, see docs/hardware.md for why), buttons/
+# encoders on the documented default pins. On that combination this script
+# alone gets you from a freshly-flashed SD card to a fully working box - no
+# manual config.txt editing, no manually running aplay/amixer and copying
+# values by hand, no wiring up systemd units. Two things stay manual on purpose:
 #   - physically wiring the RC522/buttons/encoders/display (this is hardware, not software)
 #   - the one-time admin login setup in the browser (no auto-generated default password)
 #
@@ -25,12 +26,11 @@
 # section below): unneeded services disabled, network-wait-at-boot off, splash off.
 #
 # Idempotent and meant to be run TWICE with a reboot in between:
-#   1st run: installs everything, edits config.txt (HiFiBerry + display + GL driver +
-#            boot-speed tweaks), builds fbcp, installs the display's own driver/overlay
-#            files, then reboots.
-#   2nd run (after the reboot): the HiFiBerry sound card and display overlay are now
-#            live, so this run auto-detects the ALSA device/mixer, writes them into
-#            config.yaml, strips the display driver's touch overlay back out, and
+#   1st run: installs everything, edits config.txt (HiFiBerry + boot-speed tweaks -
+#            the DSI display itself needs no config.txt entry at all, it's
+#            auto-detected), then reboots.
+#   2nd run (after the reboot): the HiFiBerry sound card is now live, so this run
+#            auto-detects the ALSA device/mixer, writes it into config.yaml, and
 #            finally starts owlbox.service and the kiosk display.
 # Every step below checks what's already in place first, so running it more than
 # twice (or after manually tweaking something) is always safe.
@@ -93,7 +93,6 @@ apt-get update
 apt-get install -y \
   python3-venv python3-pip python3-dev build-essential \
   mpv alsa-utils \
-  git curl cmake \
   unclutter \
   fonts-noto-color-emoji \
   || true
@@ -118,25 +117,23 @@ for policy_dir in /etc/chromium/policies/managed /etc/chromium-browser/policies/
 EOF
 done
 
-# Needed to build fbcp against the legacy VideoCore firmware interface.
-apt-get install -y libraspberrypi-dev || true
 # Minimal X stack for the kiosk display - deliberately no desktop environment
 # (no lightdm, no LXDE) on top of the "Legacy Lite" base image. xserver-xorg-legacy
 # provides the Xwrapper.config mechanism needed to start X without a display
 # manager; matchbox-window-manager is tiny but keeps things well-behaved if a
-# stray JS alert()/confirm() window ever pops up in Chromium. xserver-xorg-video-fbdev
-# is required because of the Legacy GL driver this project needs for fbcp (see
-# below): with the modern KMS driver commented out of config.txt, there is no
-# /dev/dri/card0 for X's default "modesetting" driver to use at all, so X would
-# otherwise fail immediately with "no screens found" - it needs to be told to
-# draw straight to the framebuffer instead (see the Xorg config written further
-# down).
+# stray JS alert()/confirm() window ever pops up in Chromium. No fbdev/legacy GL
+# driver package needed here: the official DSI touch display works with the
+# modern KMS driver (vc4-kms-v3d, the Bookworm default) active, so X's own
+# default "modesetting" driver finds /dev/dri/card0 and just works - unlike the
+# old 3.5" SPI display, which needed the Legacy GL driver + a hand-written
+# fbdev Xorg config because fbcp (mirroring onto that display) needed /dev/fb0,
+# which the modern KMS driver doesn't expose in a usable form.
 apt-get install -y \
-  xserver-xorg xserver-xorg-legacy xserver-xorg-video-fbdev xinit x11-xserver-utils \
+  xserver-xorg xserver-xorg-legacy xinit x11-xserver-utils \
   matchbox-window-manager \
   || true
 
-echo "==> Enabling SPI (needed for the RC522 RFID reader and the display)"
+echo "==> Enabling SPI (needed for the RC522 RFID reader)"
 if command -v raspi-config >/dev/null 2>&1; then
   raspi-config nonint do_spi 0 || true
 else
@@ -208,13 +205,19 @@ mkdir -p "$INSTALL_DIR/media" "$INSTALL_DIR/data"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 chmod +x "$INSTALL_DIR/scripts/kiosk.sh"
 
-# -- HiFiBerry Amp2 + display + GL driver (config.txt) ---------------------
+# -- HiFiBerry Amp2 (config.txt) --------------------------------------------
+# The official 7" DSI Touch Display needs NO config.txt entry at all - it's
+# auto-detected over the DSI ribbon cable by the Pi's own firmware, and it
+# works fine with the modern KMS driver (vc4-kms-v3d, the Bookworm default)
+# active - unlike the old 3.5" SPI display this project used to target, which
+# needed the Legacy GL driver plus fbcp plus a whole separate driver-installer
+# repo (see git history / docs/hardware.md's older revisions for that if ever
+# needed again). All that's left to manage here is the audio overlay.
 
 NEEDS_REBOOT=0
-DISPLAY_DRIVER_INSTALLED=0
 
 if [ -n "$CONFIG_TXT" ]; then
-  echo "==> Configuring audio (HiFiBerry Amp2) and display in $CONFIG_TXT"
+  echo "==> Configuring audio (HiFiBerry Amp2) in $CONFIG_TXT"
   BEFORE_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
 
   # Onboard audio off in favour of the HiFiBerry: no separate sed pass needed
@@ -228,9 +231,18 @@ if [ -n "$CONFIG_TXT" ]; then
   # confusing to find in config.txt; fixed by just not doing that redundant
   # pass anymore.)
 
-  # "Legacy" GL driver: fbcp needs /dev/fb0, which the modern KMS/Fake-KMS
-  # driver doesn't expose in a usable form - comment out whichever is active.
-  sed -i -E 's/^(dtoverlay=vc4-f?kms-v3d.*)/#\1/' "$CONFIG_TXT"
+  # Undo the old 3.5" SPI display's KMS-disabling line if it's still present
+  # from a previous install - the DSI display needs KMS *active* (that's the
+  # whole point: real GPU-accelerated Chromium rendering instead of the old
+  # display's forced software rendering).
+  sed -i -E 's/^#(dtoverlay=vc4-f?kms-v3d.*)/\1/' "$CONFIG_TXT"
+
+  # Clean up leftover config.txt lines from a previous install targeting the
+  # old 3.5" SPI display (tft35a/MHS-35 overlay, its forced virtual-HDMI mode,
+  # its ads7846 touch line) - harmless to run on a config.txt that never had
+  # them, but leaving them in place on an upgrade would make the kernel keep
+  # trying to init display hardware that's no longer physically connected.
+  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d' "$CONFIG_TXT"
 
   # HiFiBerry Amp2's TAS5756M chip is PCM512x-family (same codec as the DAC+
   # Pro) - confirmed on real hardware via a failed I2C probe on the
@@ -247,59 +259,18 @@ if [ -n "$CONFIG_TXT" ]; then
 
   AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
   [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1
-
-  # 3.5" SPI display driver (tft35a/MHS-35 family, see docs/hardware.md) - this
-  # is the one piece delegated to the display's own installer rather than
-  # reimplemented here, because it ships a device-tree overlay *binary* this
-  # script has no reliable way to reproduce on its own. Only run it once: it
-  # edits config.txt itself and reboots at the end, and running it again on
-  # top of an already-patched config.txt is the installer's problem to be
-  # idempotent about, not guaranteed.
-  # NOTE: MHS35-show (the installer actually invoked below) writes
-  # "dtoverlay=mhs35:..." to config.txt, not "tft35a" - checking for the
-  # wrong string here meant this "already installed?" gate never matched,
-  # so the driver installer (which reboots the Pi on its own at the end)
-  # ran on *every* install.sh invocation, killing the script before it ever
-  # reached the later kiosk-autostart section - confirmed on real hardware.
-  if ! grep -q "dtoverlay=mhs35" "$CONFIG_TXT" 2>/dev/null; then
-    echo "==> Installing the 3.5\" SPI display driver (goodtft/LCD-show)"
-    if git clone --depth 1 https://github.com/goodtft/LCD-show.git /tmp/LCD-show; then
-      chmod +x /tmp/LCD-show/MHS35-show
-      # The installer reboots on its own once done; NEEDS_REBOOT is moot after
-      # this point but kept accurate in case the clone/install fails instead.
-      DISPLAY_DRIVER_INSTALLED=1
-    else
-      echo "WARNUNG: Display-Treiber-Repo konnte nicht geladen werden (kein Internet?)." >&2
-      echo "         Manuell nachholen, siehe OwlBox-Verkabelung.pdf Kapitel 8." >&2
-    fi
-  fi
 else
   echo "WARNUNG: config.txt nicht gefunden (weder /boot/firmware/config.txt noch /boot/config.txt)." >&2
-  echo "         HiFiBerry-/Display-Overlays konnten nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
+  echo "         HiFiBerry-Overlay konnte nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
 fi
 
-# -- fbcp (mirrors the framebuffer onto the SPI display) --------------------
-
-if ! command -v fbcp >/dev/null 2>&1; then
-  echo "==> Building fbcp"
-  if [ -d /tmp/rpi-fbcp ]; then rm -rf /tmp/rpi-fbcp; fi
-  if git clone --depth 1 https://github.com/tasanakorn/rpi-fbcp.git /tmp/rpi-fbcp; then
-    mkdir -p /tmp/rpi-fbcp/build
-    (cd /tmp/rpi-fbcp/build && cmake .. && make)
-    install -m 0755 /tmp/rpi-fbcp/build/fbcp /usr/local/bin/fbcp
-    rm -rf /tmp/rpi-fbcp
-  else
-    echo "WARNUNG: fbcp konnte nicht gebaut werden (kein Internet? fehlende Build-Header?)." >&2
-    echo "         Manuell nachholen, siehe OwlBox-Verkabelung.pdf Kapitel 8." >&2
-  fi
-fi
-if command -v fbcp >/dev/null 2>&1; then
-  cp "$INSTALL_DIR/systemd/owlbox-fbcp.service" /etc/systemd/system/owlbox-fbcp.service
-  systemctl daemon-reload
-  systemctl enable owlbox-fbcp.service
-  # Not started yet on a first run - the display overlay only becomes active
-  # after the reboot triggered below/by the display installer.
-fi
+# Remove any leftover fbcp service/binary from a previous install targeting
+# the old 3.5" SPI display - it's not needed at all for the DSI display and
+# would otherwise keep running, uselessly mirroring a framebuffer nothing
+# reads from anymore.
+systemctl disable --now owlbox-fbcp.service >/dev/null 2>&1 || true
+rm -f /etc/systemd/system/owlbox-fbcp.service /usr/local/bin/fbcp
+rm -f /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf
 
 # -- kiosk autostart (minimal X + Chromium, no desktop environment) --------
 # Runs as its own system-level systemd service (owlbox-kiosk.service), which
@@ -313,32 +284,21 @@ allowed_users=anybody
 needs_root_rights=yes
 EOF
 
-# With the Legacy GL driver (no /dev/dri/card0, see above), X's default
-# auto-probed "modesetting" driver finds no usable device at all and fails
-# outright with "no screens found" - tell it explicitly to draw straight to
-# the framebuffer fbcp already mirrors the display onto instead.
-mkdir -p /etc/X11/xorg.conf.d
-cat > /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf <<'EOF'
-Section "Device"
-    Identifier "OwlBoxFramebuffer"
-    Driver "fbdev"
-    Option "fbdev" "/dev/fb0"
-EndSection
-
-Section "Screen"
-    Identifier "OwlBoxScreen"
-    Device "OwlBoxFramebuffer"
-EndSection
-EOF
+# No custom Xorg driver config needed: with KMS active (see above), X's
+# default "modesetting" driver finds /dev/dri/card0 on its own - unlike the
+# old 3.5" SPI display, which needed to be told to draw straight to a
+# framebuffer instead (that config file is actively removed above if present
+# from a previous install; leaving it in place here would fight the KMS
+# driver we now want active).
 
 cp "$INSTALL_DIR/systemd/owlbox-kiosk.service" /etc/systemd/system/owlbox-kiosk.service
 systemctl daemon-reload
 systemctl enable owlbox-kiosk.service
-# Not started with --now here: the display overlay/GL driver only become
-# live after the reboot this script asks for below, so a first-run start
-# attempt would just fail against a framebuffer that isn't ready yet. It's
-# started (best-effort) at the very end once that reboot has happened - see
-# the owlbox-fbcp.service start line further down for the same pattern.
+# Not started with --now here: the KMS driver only becomes live after the
+# reboot this script asks for below (if the audio overlay changed anything),
+# so a first-run start attempt could fail against a driver that isn't loaded
+# yet. It's started (best-effort) at the very end once that reboot has
+# happened - see the owlbox.service start line further down.
 
 # -- audio auto-detection (only meaningful once the HiFiBerry is live) ------
 
@@ -369,26 +329,12 @@ if command -v aplay >/dev/null 2>&1 && aplay -l 2>/dev/null | grep -qi hifiberry
     chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config/config.yaml"
     AUDIO_CONFIGURED=1
   fi
-
-  # Second run and the display driver installer has already run before: some
-  # LCD-show variants write a separate ads7846 touch overlay line that can
-  # now be safely removed (harmless to run repeatedly). Note: the mhs35
-  # overlay this project actually installs bundles its touch node directly
-  # inside "dtoverlay=mhs35:..." instead, with no parameter to disable it -
-  # this doesn't free up SPI0 CE1, which is why the RC522 runs on software
-  # SPI (see docs/hardware.md) rather than sharing SPI0 with the display.
-  if [ -n "$CONFIG_TXT" ] && grep -q "^dtoverlay=ads7846" "$CONFIG_TXT" 2>/dev/null; then
-    echo "==> Removing the touch overlay line (touch stays off on purpose)"
-    sed -i '/^dtoverlay=ads7846/d' "$CONFIG_TXT"
-  fi
 fi
 
 echo "==> Installing systemd service"
 cp "$INSTALL_DIR/systemd/owlbox.service" /etc/systemd/system/owlbox.service
 systemctl daemon-reload
 systemctl enable --now owlbox.service
-[ "$(systemctl is-active owlbox-fbcp.service 2>/dev/null || true)" != "active" ] \
-  && systemctl start owlbox-fbcp.service 2>/dev/null || true
 [ "$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)" != "active" ] \
   && systemctl start owlbox-kiosk.service 2>/dev/null || true
 
@@ -399,27 +345,7 @@ cat <<EOF
 ==> owlbox.service installiert und gestartet (systemctl status owlbox).
 EOF
 
-if [ "$DISPLAY_DRIVER_INSTALLED" -eq 1 ]; then
-  cat <<'EOF'
-
-==> Installiere Display-Treiber (Ausgabe des Installers folgt) ...
-EOF
-  # Not `exec`'d on purpose: goodtft/LCD-show usually reboots on its own once
-  # done, but if it doesn't (or only prompts instead), falling straight
-  # through to our own explicit "please reboot" message below still gets you
-  # there instead of silently stopping short.
-  ( cd /tmp/LCD-show && ./MHS35-show ) || true
-  cat <<EOF
-
-==> Display-Treiber-Installation abgeschlossen. Falls der Pi sich nicht schon
-    von selbst neu gestartet hat, jetzt bitte manuell:
-      sudo reboot
-    Nach dem Neustart dieses Skript per SSH einmal erneut ausführen
-    (sudo ./scripts/install.sh) - dann werden ALSA-Gerät/Mixer automatisch
-    erkannt und eingetragen, die Touch-Overlay-Zeile wieder entfernt, und der
-    Kiosk-Autostart aktiviert.
-EOF
-elif [ "$NEEDS_REBOOT" -eq 1 ] || [ "$AUDIO_CONFIGURED" -eq 0 ]; then
+if [ "$NEEDS_REBOOT" -eq 1 ] || [ "$AUDIO_CONFIGURED" -eq 0 ]; then
   cat <<EOF
 
 ==> config.txt wurde geändert - bitte jetzt neu starten:

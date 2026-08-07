@@ -3,13 +3,12 @@ Description=OwlBox kiosk display (minimal X + Chromium fullscreen, no desktop en
 # Takes tty1 over directly instead of a login prompt - there is deliberately
 # no display manager/desktop session on this ("Legacy Lite") base image.
 Conflicts=getty@tty1.service
-# owlbox-fbcp explicitly included - confirmed on real hardware that without
-# this, boot ordering between the two is unspecified and X can start (and
-# get wedged hard enough to need SIGKILL, not just SIGTERM - see
-# owlbox-kiosk's own TimeoutStopSec below) before fbcp is mirroring the
-# framebuffer onto the physical SPI display at all.
-After=owlbox.service owlbox-fbcp.service systemd-user-sessions.service getty@tty1.service plymouth-quit.service
-Wants=owlbox.service owlbox-fbcp.service
+# No owlbox-fbcp dependency here anymore: the official 7" DSI Touch Display
+# is a native KMS output (auto-detected by the firmware over the DSI ribbon
+# cable), not something a separate process has to mirror a framebuffer onto -
+# that whole ordering concern was specific to the old 3.5" SPI display.
+After=owlbox.service systemd-user-sessions.service getty@tty1.service plymouth-quit.service
+Wants=owlbox.service
 
 [Service]
 User=owlbox
