@@ -84,13 +84,26 @@ ist** und die Pins dadurch von oben nicht mehr mit Dupont-Kabeln erreichbar
 sind: ein GPIO-Stacking-Header (Extra-Höhe, mit durchgeführten Pins) zwischen
 Pi und HiFiBerry löst das, ohne den HiFiBerry selbst umverkabeln zu müssen.
 
-**Kein Overlay, kein Treiber-Setup nötig**: Das Display wird von der
-Pi-Firmware automatisch über das DSI-Kabel erkannt, keine `dtoverlay=`-Zeile
-in `config.txt` nötig (im Gegensatz zum alten SPI-Display). Es läuft
-außerdem mit dem **modernen KMS-Grafiktreiber** (`vc4-kms-v3d`, Standard seit
-Bookworm) - der musste beim alten Display extra deaktiviert werden (siehe
-weiter unten im Kiosk-Abschnitt), hier bleibt er einfach aktiv, Chromium
-bekommt dadurch echte GPU-Beschleunigung statt reinem Software-Rendering.
+**Kein Treiber-Installer nötig**: Das Display wird von der Pi-Firmware
+automatisch über das DSI-Kabel erkannt (im Gegensatz zum alten SPI-Display,
+das einen separaten Treiber-Installer brauchte). Es läuft mit dem
+**modernen KMS-Grafiktreiber** (`vc4-kms-v3d`, Standard seit Bookworm) - der
+musste beim alten Display extra deaktiviert werden (siehe weiter unten im
+Kiosk-Abschnitt), hier bleibt er einfach aktiv, Chromium bekommt dadurch
+echte GPU-Beschleunigung statt reinem Software-Rendering.
+
+**Ausnahme, bei der doch eine `config.txt`-Zeile nötig ist:** Sitzt das
+Display physisch verbaut auf dem Kopf, dreht `display_lcd_rotate=2`
+(`install.sh` trägt das automatisch ein) das Bild um 180° - **wichtig: das
+muss über diesen Firmware-Parameter passieren, nicht über `xrandr`**. An
+echter Hardware bestätigt: `xrandr --output DSI-1 --rotate inverted` wird
+zwar anstandslos angenommen (`xrandr --query` zeigt danach "inverted"), das
+Panel zeichnet aber nie tatsächlich neu - selbst nach einem erzwungenen
+`--off`/`--auto`-Modeset bleibt das Bild unverändert auf dem Kopf. Das ältere
+Äquivalent `lcd_rotate` ist ebenfalls wirkungslos, sobald der KMS-Treiber
+aktiv ist. Passend dazu setzt `install.sh` auch gleich
+`dtoverlay=rpi-ft5406,touchscreen-inverted-x=1,touchscreen-inverted-y=1`, damit
+Touch-Koordinaten (falls später genutzt) zum gedrehten Bild passen.
 
 **Zur Hintergrundbeleuchtung - wichtiger Unterschied zum alten Display:**
 Dieses Display hat **keine** per GPIO/PWM ansteuerbare LED-Leitung wie das

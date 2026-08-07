@@ -26,9 +26,10 @@
 # section below): unneeded services disabled, network-wait-at-boot off, splash off.
 #
 # Idempotent and meant to be run TWICE with a reboot in between:
-#   1st run: installs everything, edits config.txt (HiFiBerry + boot-speed tweaks -
-#            the DSI display itself needs no config.txt entry at all, it's
-#            auto-detected), then reboots.
+#   1st run: installs everything, edits config.txt (HiFiBerry + boot-speed tweaks +
+#            display_lcd_rotate for the physically upside-down display - the
+#            DSI display itself is otherwise auto-detected, no overlay needed
+#            for that part), then reboots.
 #   2nd run (after the reboot): the HiFiBerry sound card is now live, so this run
 #            auto-detects the ALSA device/mixer, writes it into config.yaml, and
 #            finally starts owlbox.service and the kiosk display.
@@ -251,11 +252,21 @@ if [ -n "$CONFIG_TXT" ]; then
   # address. "hifiberry-amp" is for the older Amp/Amp+'s TAS5713 instead -
   # different chip, different overlay, even though the products are easy to
   # confuse by name.
+  # display_lcd_rotate=2: the 7" Touch Display sits physically upside-down in
+  # this build. This has to be the firmware-level rotation, not xrandr -
+  # confirmed on real hardware that xrandr's --rotate is accepted (shows up
+  # in `xrandr --query`) but never actually changes what's on screen with
+  # the KMS driver active; "lcd_rotate" (the older equivalent) is documented
+  # to do nothing under KMS too. The matching touchscreen-inverted-x/y
+  # overlay params keep touch input aligned with the rotated picture, in
+  # case it's ever wired up.
   write_config_block "$CONFIG_TXT" \
     "dtparam=audio=off" \
     "dtoverlay=hifiberry-dacplus" \
     "disable_splash=1" \
-    "boot_delay=0"
+    "boot_delay=0" \
+    "display_lcd_rotate=2" \
+    "dtoverlay=rpi-ft5406,touchscreen-inverted-x=1,touchscreen-inverted-y=1"
 
   AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
   [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1
