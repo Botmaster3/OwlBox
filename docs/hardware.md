@@ -84,26 +84,33 @@ ist** und die Pins dadurch von oben nicht mehr mit Dupont-Kabeln erreichbar
 sind: ein GPIO-Stacking-Header (Extra-Höhe, mit durchgeführten Pins) zwischen
 Pi und HiFiBerry löst das, ohne den HiFiBerry selbst umverkabeln zu müssen.
 
-**Kein Treiber-Installer nötig**: Das Display wird von der Pi-Firmware
-automatisch über das DSI-Kabel erkannt (im Gegensatz zum alten SPI-Display,
-das einen separaten Treiber-Installer brauchte). Es läuft mit dem
-**modernen KMS-Grafiktreiber** (`vc4-kms-v3d`, Standard seit Bookworm) - der
-musste beim alten Display extra deaktiviert werden (siehe weiter unten im
-Kiosk-Abschnitt), hier bleibt er einfach aktiv, Chromium bekommt dadurch
-echte GPU-Beschleunigung statt reinem Software-Rendering.
+**Kein Treiber-Installer nötig, aber ein eigener Overlay ist Pflicht**: Anders
+als zuerst angenommen reicht `dtoverlay=vc4-kms-v3d` (Standard seit Bookworm)
+allein **nicht** - das aktiviert nur den generellen KMS-Grafiktreiber, kennt
+aber die Timings/das Panel dieses konkreten Displays nicht. An echter
+Hardware bestätigt: ohne einen zusätzlichen, displayspezifischen Overlay
+bindet der Treiber gar kein Panel (`dmesg` zeigt `[drm] Cannot find any crtc
+or sizes`, Bildschirm bleibt komplett schwarz, kein Fehler sonst irgendwo
+sichtbar). Der nötige Overlay: **`dtoverlay=vc4-kms-dsi-7inch`**
+([Raspberry-Pi-Doku](https://www.raspberrypi.com/documentation/accessories/display.html),
+[Overlay-Quelltext](https://github.com/raspberrypi/linux/blob/rpi-6.12.y/arch/arm/boot/dts/overlays/vc4-kms-dsi-7inch-overlay.dts)) -
+`install.sh` trägt ihn automatisch mit ein. Kein separater Treiber-Installer
+nötig (im Gegensatz zum alten SPI-Display) - nur genau diese eine Zeile.
 
-**Ausnahme, bei der doch eine `config.txt`-Zeile nötig ist:** Sitzt das
-Display physisch verbaut auf dem Kopf, dreht `display_lcd_rotate=2`
-(`install.sh` trägt das automatisch ein) das Bild um 180° - **wichtig: das
-muss über diesen Firmware-Parameter passieren, nicht über `xrandr`**. An
-echter Hardware bestätigt: `xrandr --output DSI-1 --rotate inverted` wird
-zwar anstandslos angenommen (`xrandr --query` zeigt danach "inverted"), das
-Panel zeichnet aber nie tatsächlich neu - selbst nach einem erzwungenen
-`--off`/`--auto`-Modeset bleibt das Bild unverändert auf dem Kopf. Das ältere
-Äquivalent `lcd_rotate` ist ebenfalls wirkungslos, sobald der KMS-Treiber
-aktiv ist. Passend dazu setzt `install.sh` auch gleich
-`dtoverlay=rpi-ft5406,touchscreen-inverted-x=1,touchscreen-inverted-y=1`, damit
-Touch-Koordinaten (falls später genutzt) zum gedrehten Bild passen.
+**Drehung um 180° (falls das Display auf dem Kopf verbaut ist)**: über die
+eingebauten Parameter dieses Overlays, `invx` und `invy` zusammen (beide
+Achsen invertiert = 180°-Drehung) - `dtoverlay=vc4-kms-dsi-7inch,invx,invy`,
+ebenfalls automatisch von `install.sh` gesetzt. **Wichtig: nicht über
+`xrandr` oder `display_lcd_rotate` versuchen** - an echter Hardware
+bestätigt: `xrandr --output DSI-1 --rotate inverted` wird zwar anstandslos
+angenommen (`xrandr --query` zeigt danach "inverted"), das Panel zeichnet
+aber nie tatsächlich neu, selbst nach einem erzwungenen `--off`/`--auto`-
+Modeset. Der ältere Parameter `display_lcd_rotate`/`lcd_rotate` ist unter
+KMS ebenfalls wirkungslos. `invx`+`invy` ist der einzige Weg, der auf diesem
+Display tatsächlich funktioniert - und deckt gleich mit ab, dass Touch
+(falls später genutzt) zum gedrehten Bild passt, ganz ohne einen separaten
+`rpi-ft5406`-Overlay-Eintrag (der Touch-Controller ist Teil desselben
+`vc4-kms-dsi-7inch`-Overlays).
 
 **Zur Hintergrundbeleuchtung - wichtiger Unterschied zum alten Display:**
 Dieses Display hat **keine** per GPIO/PWM ansteuerbare LED-Leitung wie das

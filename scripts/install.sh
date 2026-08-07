@@ -246,14 +246,19 @@ if [ -n "$CONFIG_TXT" ]; then
   # address. "hifiberry-amp" is for the older Amp/Amp+'s TAS5713 instead -
   # different chip, different overlay, even though the products are easy to
   # confuse by name.
-  # display_lcd_rotate=2: the 7" Touch Display sits physically upside-down in
-  # this build. This has to be the firmware-level rotation, not xrandr -
-  # confirmed on real hardware that xrandr's --rotate is accepted (shows up
-  # in `xrandr --query`) but never actually changes what's on screen with
-  # the KMS driver active; "lcd_rotate" (the older equivalent) is documented
-  # to do nothing under KMS too. The matching touchscreen-inverted-x/y
-  # overlay params keep touch input aligned with the rotated picture, in
-  # case it's ever wired up.
+  # dtoverlay=vc4-kms-dsi-7inch,invx,invy: THE actual, official overlay for
+  # this display under KMS - confirmed on real hardware that without it, the
+  # DSI panel node/bridge never gets instantiated at all ("[drm] Cannot find
+  # any crtc or sizes" in dmesg, screen stays black) - vc4-kms-v3d alone only
+  # enables the base KMS driver, it doesn't know this specific panel's
+  # timings on its own. invx+invy together = both axes inverted = the 180°
+  # flip this display needs (it sits physically upside-down in this build) -
+  # this overlay's own rotation handling, not xrandr or display_lcd_rotate:
+  # confirmed on real hardware that xrandr's --rotate is silently accepted
+  # (shows up in `xrandr --query`) but never changes what's on screen, and
+  # the older display_lcd_rotate/lcd_rotate params are documented to do
+  # nothing under KMS. This overlay also covers the touch controller
+  # (ft5406-family) itself, no separate rpi-ft5406 overlay line needed.
   # dtoverlay=vc4-kms-v3d / dtparam=spi=on / dtparam=i2c_arm=on: set explicitly
   # here rather than relying on them already being present elsewhere in
   # config.txt (a previous version of this script only ever *uncommented* a
@@ -274,8 +279,7 @@ if [ -n "$CONFIG_TXT" ]; then
     "dtoverlay=vc4-kms-v3d" \
     "dtparam=spi=on" \
     "dtparam=i2c_arm=on" \
-    "display_lcd_rotate=2" \
-    "dtoverlay=rpi-ft5406,touchscreen-inverted-x=1,touchscreen-inverted-y=1"
+    "dtoverlay=vc4-kms-dsi-7inch,invx,invy"
 
   AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
   [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1
