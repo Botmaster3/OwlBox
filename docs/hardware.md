@@ -97,20 +97,26 @@ sichtbar). Der nötige Overlay: **`dtoverlay=vc4-kms-dsi-7inch`**
 `install.sh` trägt ihn automatisch mit ein. Kein separater Treiber-Installer
 nötig (im Gegensatz zum alten SPI-Display) - nur genau diese eine Zeile.
 
-**Drehung um 180° (falls das Display auf dem Kopf verbaut ist)**: über die
-eingebauten Parameter dieses Overlays, `invx` und `invy` zusammen (beide
-Achsen invertiert = 180°-Drehung) - `dtoverlay=vc4-kms-dsi-7inch,invx,invy`,
-ebenfalls automatisch von `install.sh` gesetzt. **Wichtig: nicht über
-`xrandr` oder `display_lcd_rotate` versuchen** - an echter Hardware
-bestätigt: `xrandr --output DSI-1 --rotate inverted` wird zwar anstandslos
-angenommen (`xrandr --query` zeigt danach "inverted"), das Panel zeichnet
-aber nie tatsächlich neu, selbst nach einem erzwungenen `--off`/`--auto`-
-Modeset. Der ältere Parameter `display_lcd_rotate`/`lcd_rotate` ist unter
-KMS ebenfalls wirkungslos. `invx`+`invy` ist der einzige Weg, der auf diesem
-Display tatsächlich funktioniert - und deckt gleich mit ab, dass Touch
-(falls später genutzt) zum gedrehten Bild passt, ganz ohne einen separaten
-`rpi-ft5406`-Overlay-Eintrag (der Touch-Controller ist Teil desselben
-`vc4-kms-dsi-7inch`-Overlays).
+**Drehung um 180° (falls das Display auf dem Kopf verbaut ist)**: über den
+eigenen `rotate=`-Parameter dieses Overlays -
+`dtoverlay=vc4-kms-dsi-7inch,rotate=180`, automatisch von `install.sh`
+gesetzt (0=normal, 90/180/270 entsprechend im Uhrzeigersinn). **Wichtig:
+nicht über `xrandr` oder `display_lcd_rotate` versuchen** - an echter
+Hardware bestätigt: `xrandr --output DSI-1 --rotate inverted` wird zwar
+anstandslos angenommen (`xrandr --query` zeigt danach "inverted"), das Panel
+zeichnet aber nie tatsächlich neu, selbst nach einem erzwungenen
+`--off`/`--auto`-Modeset. Der ältere Parameter
+`display_lcd_rotate`/`lcd_rotate` ist unter KMS ebenfalls wirkungslos.
+
+**Stolperfalle, an echter Hardware bestätigt**: Die ebenfalls von diesem
+Overlay angebotenen Parameter `invx`/`invy` klingen nach Bild-Rotation,
+drehen aber tatsächlich **nur die Touch-Koordinaten**, nicht das Bild selbst
+- `dtoverlay=vc4-kms-dsi-7inch,invx,invy` allein lässt das Bild unverändert
+auf dem Kopf stehen. Für ein korrekt gedrehtes Bild **und** dazu passenden
+Touch (falls später genutzt) beides zusammen setzen:
+`dtoverlay=vc4-kms-dsi-7inch,rotate=180,invx,invy` - genau das trägt
+`install.sh` ein. Kein separater `rpi-ft5406`-Overlay-Eintrag nötig, der
+Touch-Controller ist Teil desselben Overlays.
 
 **Zur Hintergrundbeleuchtung - wichtiger Unterschied zum alten Display:**
 Dieses Display hat **keine** per GPIO/PWM ansteuerbare LED-Leitung wie das
