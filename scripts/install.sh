@@ -232,12 +232,6 @@ if [ -n "$CONFIG_TXT" ]; then
   # confusing to find in config.txt; fixed by just not doing that redundant
   # pass anymore.)
 
-  # Undo the old 3.5" SPI display's KMS-disabling line if it's still present
-  # from a previous install - the DSI display needs KMS *active* (that's the
-  # whole point: real GPU-accelerated Chromium rendering instead of the old
-  # display's forced software rendering).
-  sed -i -E 's/^#(dtoverlay=vc4-f?kms-v3d.*)/\1/' "$CONFIG_TXT"
-
   # Clean up leftover config.txt lines from a previous install targeting the
   # old 3.5" SPI display (tft35a/MHS-35 overlay, its forced virtual-HDMI mode,
   # its ads7846 touch line) - harmless to run on a config.txt that never had
@@ -260,11 +254,26 @@ if [ -n "$CONFIG_TXT" ]; then
   # to do nothing under KMS too. The matching touchscreen-inverted-x/y
   # overlay params keep touch input aligned with the rotated picture, in
   # case it's ever wired up.
+  # dtoverlay=vc4-kms-v3d / dtparam=spi=on / dtparam=i2c_arm=on: set explicitly
+  # here rather than relying on them already being present elsewhere in
+  # config.txt (a previous version of this script only ever *uncommented* a
+  # pre-existing vc4-kms-v3d line via sed, assuming the base image's default
+  # content would still be there) - confirmed on real hardware that
+  # config.txt can end up missing all of its non-OwlBox-managed content
+  # (seen after what looked like an unclean shutdown - /boot/firmware is
+  # FAT32, which tolerates that far worse than ext4), silently leaving the
+  # KMS driver never enabled and the screen black with no obvious error.
+  # Safe to always (re-)assert these here regardless of what else is/isn't
+  # in the file: dtoverlay lines for different overlays are additive, not
+  # exclusive, so this can't conflict with anything else in config.txt.
   write_config_block "$CONFIG_TXT" \
     "dtparam=audio=off" \
     "dtoverlay=hifiberry-dacplus" \
     "disable_splash=1" \
     "boot_delay=0" \
+    "dtoverlay=vc4-kms-v3d" \
+    "dtparam=spi=on" \
+    "dtparam=i2c_arm=on" \
     "display_lcd_rotate=2" \
     "dtoverlay=rpi-ft5406,touchscreen-inverted-x=1,touchscreen-inverted-y=1"
 
