@@ -157,7 +157,7 @@ echo "==> Creating service user '$SERVICE_USER'"
 if ! id "$SERVICE_USER" >/dev/null 2>&1; then
   useradd --system --create-home --home-dir "$INSTALL_DIR" --shell /usr/sbin/nologin "$SERVICE_USER"
 fi
-for grp in gpio spi audio video i2c; do
+for grp in gpio spi audio video i2c render; do
   groupadd -f "$grp"
   usermod -aG "$grp" "$SERVICE_USER" || true
 done
@@ -358,8 +358,9 @@ else
   cat <<EOF
 
 ==> Alles eingerichtet. Noch zu erledigen (kein Skript kann das für dich tun):
-  1. RC522-RFID-Leser (an CE1, nicht CE0), beide Taster und beide Dreh-Encoder
-     verkabeln - siehe OwlBox-Verkabelung.pdf.
+  1. RC522-RFID-Leser (Software-SPI), beide Taster, beide Dreh-Encoder und die
+     4 Jumperkabel des Displays (Strom + I2C für Touch) verkabeln - siehe
+     OwlBox-Verkabelung.pdf.
   2. http://<pi-ip>:5000/admin öffnen, Ersteinrichtung (Benutzername/Passwort)
      durchlaufen, erste Geschichte hochladen und einem Chip zuweisen.
 EOF

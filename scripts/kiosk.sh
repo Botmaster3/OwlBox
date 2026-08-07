@@ -49,4 +49,5 @@ exec "$CHROMIUM_BIN" \
   --check-for-update-interval=31536000 \
   --disable-features=Translate \
   --lang=de \
+  --use-gl=egl \
   --app="$START_URL"
