@@ -18,6 +18,16 @@ URL="http://localhost:5000/"
 # the display is meant to always show the now-playing screen.
 command -v xset >/dev/null 2>&1 && { xset s off; xset s noblank; xset -dpms; } || true
 
+# The official 7" Touch Display sits physically upside-down in this build -
+# flip the whole X11 output 180° before anything renders to it. Picks
+# whichever output is currently connected instead of hardcoding a name
+# (e.g. "DSI-1") since that can vary by kernel/driver version - there's only
+# ever one display connected on this hardware.
+if command -v xrandr >/dev/null 2>&1; then
+  KIOSK_OUTPUT="$(xrandr --query 2>/dev/null | awk '/ connected/ {print $1; exit}')"
+  [ -n "$KIOSK_OUTPUT" ] && xrandr --output "$KIOSK_OUTPUT" --rotate inverted || true
+fi
+
 # Minimal window manager: not strictly required for a single fullscreen kiosk
 # window, but negligible overhead and keeps things well-behaved if a stray JS
 # alert()/confirm() (or similar transient window) ever pops up in Chromium.
