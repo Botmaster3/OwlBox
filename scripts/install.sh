@@ -257,21 +257,25 @@ if [ -n "$CONFIG_TXT" ]; then
   # crtc or sizes" in dmesg, screen stays black) - vc4-kms-v3d alone only
   # enables the base KMS driver, it doesn't know this specific panel's
   # timings on its own.
-  # ,invx,invy: this overlay's own params for inverting TOUCH coordinates
-  # (confirmed on real hardware: there is no "rotate=" param for this
-  # overlay at all - /boot/firmware/overlays/README lists only sizex/sizey/
-  # invx/invy/swapxy/disable_touch/dsi0 - an earlier attempt with
-  # "rotate=180" tacked on was silently ignored, no error, no effect). This
-  # overlay also covers the touch controller (ft5406-family) itself, no
-  # separate rpi-ft5406 overlay line needed.
+  # No touch params (invx/invy/swapxy) added on top: confirmed on real
+  # hardware that once the video itself is rotated 180° via the cmdline.txt
+  # kernel parameter below, touch input already tracks correctly on its
+  # own (X11/libinput applies its own coordinate transform to match the
+  # rotated output) - adding invx+invy here on top double-corrected it,
+  # showing up as touch mirrored on both axes relative to the now-correct
+  # picture. (There's no "rotate=" param for this overlay at all, for the
+  # record - /boot/firmware/overlays/README lists only sizex/sizey/invx/
+  # invy/swapxy/disable_touch/dsi0 - an earlier attempt with "rotate=180"
+  # tacked on here was silently ignored, no error, no effect, which is why
+  # the actual video flip has to be the cmdline.txt kernel parameter below
+  # instead.) This overlay also covers the touch controller (ft5406-family)
+  # itself, no separate rpi-ft5406 overlay line needed.
   #
-  # The actual 180° *video* flip (this display sits physically upside-down
-  # in this build) has to come from a kernel command-line parameter instead
-  # - see the cmdline.txt handling below. NOT via xrandr or
-  # display_lcd_rotate either: confirmed on real hardware that xrandr's
-  # --rotate is silently accepted (shows up in `xrandr --query`) but never
-  # changes what's on screen, and the older display_lcd_rotate/lcd_rotate
-  # params are documented to do nothing under KMS.
+  # NOT via xrandr or display_lcd_rotate either for the video flip itself:
+  # confirmed on real hardware that xrandr's --rotate is silently accepted
+  # (shows up in `xrandr --query`) but never changes what's on screen, and
+  # the older display_lcd_rotate/lcd_rotate params are documented to do
+  # nothing under KMS.
   # dtoverlay=vc4-kms-v3d / dtparam=spi=on / dtparam=i2c_arm=on: set explicitly
   # here rather than relying on them already being present elsewhere in
   # config.txt (a previous version of this script only ever *uncommented* a
@@ -292,7 +296,7 @@ if [ -n "$CONFIG_TXT" ]; then
     "dtoverlay=vc4-kms-v3d" \
     "dtparam=spi=on" \
     "dtparam=i2c_arm=on" \
-    "dtoverlay=vc4-kms-dsi-7inch,invx,invy"
+    "dtoverlay=vc4-kms-dsi-7inch"
 
   AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
   [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1

@@ -119,14 +119,15 @@ mühsam herausgefunden:**
   `--off`/`--auto`-Modeset. Der ältere Parameter
   `display_lcd_rotate`/`lcd_rotate` ist unter KMS ebenfalls wirkungslos.
 
-- **Touch-Koordinaten** (falls später genutzt, damit sie zum gedrehten Bild
-  passen): `invx`/`invy` am `vc4-kms-dsi-7inch`-Overlay selbst -
-  `dtoverlay=vc4-kms-dsi-7inch,invx,invy`, ebenfalls von `install.sh`
-  gesetzt. Kein separater `rpi-ft5406`-Overlay-Eintrag nötig, der
-  Touch-Controller ist Teil desselben Overlays.
-
-Beide Änderungen zusammen (nicht nur eine davon) sind nötig, damit Bild
-**und** Touch übereinstimmend gedreht sind.
+- **Touch-Koordinaten**: **keine** zusätzlichen `invx`/`invy`-Parameter am
+  Overlay setzen. An echter Hardware bestätigt: Sobald das Bild selbst über
+  den `cmdline.txt`-Parameter gedreht ist, korrigiert X11/libinput die
+  Touch-Koordinaten am gedrehten Ausgang bereits von sich aus passend mit -
+  zusätzlich gesetztes `invx,invy` dreht dann **nochmal drüber** und zeigt
+  sich als auf beiden Achsen spiegelverkehrter Touch relativ zum (korrekt
+  gedrehten) Bild. Einfach `dtoverlay=vc4-kms-dsi-7inch` ohne weitere
+  Parameter reicht, der Touch-Controller ist ohnehin Teil desselben
+  Overlays, kein separater `rpi-ft5406`-Eintrag nötig.
 
 **Zur Hintergrundbeleuchtung - wichtiger Unterschied zum alten Display:**
 Dieses Display hat **keine** per GPIO/PWM ansteuerbare LED-Leitung wie das
