@@ -28,6 +28,17 @@ def test_stub_player_does_not_step_past_playlist_bounds(config):
     assert player.get_status()["playlist_pos"] == 0
 
 
+def test_stub_player_clamps_a_negative_saved_start_index_to_zero(config):
+    # Confirmed on real hardware: a poisoned saved resume position of -1
+    # (mpv's own idle-state playlist-pos reading, saved as-is by an earlier
+    # bug in save_playback_state) must not leave playback stuck at a
+    # negative index - it should just start from track 0 like "never
+    # played before" does.
+    player = StubPlayer(config)
+    player.load_playlist(["a.mp3", "b.mp3"], start_index=-1)
+    assert player.get_status()["playlist_pos"] == 0
+
+
 def test_create_player_uses_stub_when_simulating(config):
     assert isinstance(create_player(config), StubPlayer)
 

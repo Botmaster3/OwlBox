@@ -343,6 +343,13 @@ def update_story_flags(story_id: int, shuffle: Optional[bool] = None, repeat: Op
 
 
 def save_playback_state(uid: str, track_position: int, seek_seconds: float) -> None:
+    # Never persist a negative position - mpv reports playlist-pos as -1
+    # when queried while genuinely idle/nothing loaded (e.g. a transient
+    # moment during startup or between tracks), and saving that as-is
+    # poisons the next resume: load_playlist(start_index=-1) breaks
+    # playback before it starts (confirmed on real hardware - see
+    # player.py). 0 is always a safe fallback, same as "never played before".
+    track_position = max(track_position, 0)
     with write_cursor() as cur:
         cur.execute(
             """

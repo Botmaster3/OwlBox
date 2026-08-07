@@ -233,7 +233,19 @@ class MpvPlayer:
         self._ipc.command("loadfile", filepaths[0], "replace")
         for f in filepaths[1:]:
             self._ipc.command("loadfile", f, "append")
-        if start_index:
+        # start_index > 0, not just truthy: confirmed on real hardware that a
+        # saved resume position of -1 (mpv's own "playlist-pos" reading when
+        # nothing is loaded, e.g. queried during a transient idle moment and
+        # persisted as-is by save_playback_state) is truthy in Python, so a
+        # plain `if start_index:` sent mpv "set_property playlist-pos -1" -
+        # an invalid position that broke the load before the final
+        # pause=False below ever ran, leaving the story stuck at 0:00 with
+        # no progress and no sound, indefinitely (every future play of that
+        # story re-loads the same poisoned -1). 0 is the correct default
+        # anyway (mpv already starts a freshly loaded playlist at position 0
+        # on its own), so this only needs to act on genuinely positive
+        # indices.
+        if start_index > 0:
             self._ipc.command("set_property", "playlist-pos", start_index)
         if start_seconds:
             self._ipc.command("seek", start_seconds, "absolute")
@@ -342,7 +354,10 @@ class StubPlayer:
 
     def load_playlist(self, filepaths: list[str], start_index: int = 0, start_seconds: float = 0.0) -> None:
         self._playlist = list(filepaths)
-        self._index = min(start_index, max(len(filepaths) - 1, 0))
+        # Clamp to >= 0 first - a poisoned/negative saved start_index (see
+        # MpvPlayer.load_playlist for how that can happen) would otherwise
+        # leave self._index negative too instead of falling back to track 0.
+        self._index = min(max(start_index, 0), max(len(filepaths) - 1, 0))
         self._position = start_seconds
         self._paused = False
 

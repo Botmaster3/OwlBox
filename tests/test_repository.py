@@ -188,6 +188,16 @@ def test_playback_state_roundtrip(config):
     assert repository.get_playback_state("XYZ") == (3, 1.0)
 
 
+def test_playback_state_never_persists_a_negative_track_position(config):
+    # Confirmed on real hardware: mpv reports playlist-pos as -1 when
+    # queried while genuinely idle (nothing loaded), and saving that as-is
+    # poisons the next resume - MpvPlayer.load_playlist(start_index=-1)
+    # broke playback before it started. 0 is the safe "never played
+    # before" fallback, same as a row that doesn't exist yet.
+    repository.save_playback_state("NEG", -1, 5.0)
+    assert repository.get_playback_state("NEG") == (0, 5.0)
+
+
 def test_scan_log_and_last_unknown(config):
     repository.log_scan("NEW1")
     assert repository.get_last_scan()["uid"] == "NEW1"
