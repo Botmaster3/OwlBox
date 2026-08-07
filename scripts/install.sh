@@ -55,6 +55,11 @@ for candidate in /boot/firmware/config.txt /boot/config.txt; do
   [ -f "$candidate" ] && { CONFIG_TXT="$candidate"; break; }
 done
 
+CMDLINE_TXT=""
+for candidate in /boot/firmware/cmdline.txt /boot/cmdline.txt; do
+  [ -f "$candidate" ] && { CMDLINE_TXT="$candidate"; break; }
+done
+
 # -- helpers --------------------------------------------------------------
 
 # Replaces the whole OwlBox-managed block (deleting any previous one first) so
@@ -252,18 +257,21 @@ if [ -n "$CONFIG_TXT" ]; then
   # crtc or sizes" in dmesg, screen stays black) - vc4-kms-v3d alone only
   # enables the base KMS driver, it doesn't know this specific panel's
   # timings on its own.
-  # ,rotate=180: the actual 180° video flip this display needs (it sits
-  # physically upside-down in this build) - NOT via xrandr or
-  # display_lcd_rotate: confirmed on real hardware that xrandr's --rotate is
-  # silently accepted (shows up in `xrandr --query`) but never changes
-  # what's on screen, and the older display_lcd_rotate/lcd_rotate params are
-  # documented to do nothing under KMS.
-  # ,invx,invy: confirmed on real hardware that this overlay's own invx/invy
-  # params only rotate TOUCH coordinates, not the picture - kept alongside
-  # rotate=180 so touch (if ever wired up) still lines up with the rotated
-  # picture instead of being upside-down/mirrored relative to it. This
+  # ,invx,invy: this overlay's own params for inverting TOUCH coordinates
+  # (confirmed on real hardware: there is no "rotate=" param for this
+  # overlay at all - /boot/firmware/overlays/README lists only sizex/sizey/
+  # invx/invy/swapxy/disable_touch/dsi0 - an earlier attempt with
+  # "rotate=180" tacked on was silently ignored, no error, no effect). This
   # overlay also covers the touch controller (ft5406-family) itself, no
   # separate rpi-ft5406 overlay line needed.
+  #
+  # The actual 180° *video* flip (this display sits physically upside-down
+  # in this build) has to come from a kernel command-line parameter instead
+  # - see the cmdline.txt handling below. NOT via xrandr or
+  # display_lcd_rotate either: confirmed on real hardware that xrandr's
+  # --rotate is silently accepted (shows up in `xrandr --query`) but never
+  # changes what's on screen, and the older display_lcd_rotate/lcd_rotate
+  # params are documented to do nothing under KMS.
   # dtoverlay=vc4-kms-v3d / dtparam=spi=on / dtparam=i2c_arm=on: set explicitly
   # here rather than relying on them already being present elsewhere in
   # config.txt (a previous version of this script only ever *uncommented* a
@@ -284,13 +292,33 @@ if [ -n "$CONFIG_TXT" ]; then
     "dtoverlay=vc4-kms-v3d" \
     "dtparam=spi=on" \
     "dtparam=i2c_arm=on" \
-    "dtoverlay=vc4-kms-dsi-7inch,rotate=180,invx,invy"
+    "dtoverlay=vc4-kms-dsi-7inch,invx,invy"
 
   AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
   [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1
 else
   echo "WARNUNG: config.txt nicht gefunden (weder /boot/firmware/config.txt noch /boot/config.txt)." >&2
   echo "         HiFiBerry-Overlay konnte nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
+fi
+
+# The 180° *video* flip for the physically upside-down 7" Touch Display has
+# to be a kernel command-line parameter, not anything in config.txt - the
+# vc4-kms-dsi-7inch overlay has no "rotate=" param at all (confirmed against
+# /boot/firmware/overlays/README: only sizex/sizey/invx/invy/swapxy/
+# disable_touch/dsi0 exist), and xrandr/display_lcd_rotate are both
+# confirmed ineffective under KMS (see above). cmdline.txt is a single line,
+# space-separated - appended in place rather than via write_config_block's
+# marker-based approach, which assumes a multi-line file.
+if [ -n "$CMDLINE_TXT" ]; then
+  if ! grep -q "video=DSI-1" "$CMDLINE_TXT"; then
+    echo "==> Adding 180° video rotation to $CMDLINE_TXT"
+    CMDLINE_BEFORE="$(cat "$CMDLINE_TXT")"
+    printf '%s %s\n' "$CMDLINE_BEFORE" "video=DSI-1:800x480@60,rotate=180" > "$CMDLINE_TXT"
+    NEEDS_REBOOT=1
+  fi
+else
+  echo "WARNUNG: cmdline.txt nicht gefunden (weder /boot/firmware/cmdline.txt noch /boot/cmdline.txt)." >&2
+  echo "         Bild-Rotation konnte nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
 fi
 
 # Remove any leftover fbcp service/binary from a previous install targeting
