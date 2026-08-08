@@ -181,6 +181,7 @@ Display (DSI), RC522, Taster/Encoder auf den Standard-Pins - siehe
 einem Neustart dazwischen** laufen zu lassen:
 
 ```bash
+sudo apt update && sudo apt install -y git   # frisches Raspberry Pi OS Lite hat kein git vorinstalliert
 git clone <dieses-repo> owlbox
 cd owlbox
 sudo ./scripts/install.sh
