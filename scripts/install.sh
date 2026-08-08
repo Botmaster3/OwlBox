@@ -406,13 +406,29 @@ cat <<EOF
 ==> owlbox.service installiert und gestartet (systemctl status owlbox).
 EOF
 
-if [ "$NEEDS_REBOOT" -eq 1 ] || [ "$AUDIO_CONFIGURED" -eq 0 ]; then
+if [ "$NEEDS_REBOOT" -eq 1 ]; then
   cat <<EOF
 
-==> config.txt wurde geändert - bitte jetzt neu starten:
+==> config.txt wurde geändert - starte in 10 Sekunden neu (Strg+C zum Abbrechen).
+    Nach dem Neustart dieses Skript einmal erneut ausführen, um die
+    Audio-Erkennung und den Kiosk-Autostart abzuschließen:
+      sudo ./scripts/install.sh
+EOF
+  # Confirmed on real hardware: leaving this as a printed instruction rather
+  # than actually rebooting meant the "der Pi startet am Ende von selbst
+  # neu" documented elsewhere (README/hardware.md/this script's own header
+  # comment) just wasn't true - the script never called reboot itself,
+  # only told the user to. Actually doing it now instead, with a short
+  # window to Ctrl+C out in case something above needs a look first.
+  sleep 10
+  reboot
+elif [ "$AUDIO_CONFIGURED" -eq 0 ]; then
+  cat <<EOF
+
+==> HiFiBerry wurde noch nicht erkannt (config.txt unverändert seit dem
+    letzten Neustart?) - bitte einmal manuell neu starten und dieses Skript
+    danach erneut ausführen:
       sudo reboot
-    Danach dieses Skript einmal erneut ausführen, um die Audio-Erkennung und
-    den Kiosk-Autostart abzuschließen:
       sudo ./scripts/install.sh
 EOF
 else
