@@ -320,7 +320,17 @@ if [ -n "$CONFIG_TXT" ]; then
   # further/duplicate bare copy the in-place substitutions didn't already
   # catch (e.g. a second stock occurrence) - these two patterns only match
   # what's still unfixed, so they never touch the lines just corrected above.
-  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d; /^dtoverlay=vc4-kms-v3d$/d; /^dtparam=audio=on$/d' "$CONFIG_TXT"
+  #
+  # Also strips a bare stock "dtparam=spi=on" here - confirmed on real
+  # hardware that `raspi-config nonint do_spi 0` (below) uncomments the
+  # image's own stock copy of this line (outside any managed block),
+  # producing an active duplicate once write_config_block's own
+  # "dtparam=spi=on" is appended further down. Harmless in effect (unlike
+  # audio=on vs audio=off, "on" twice doesn't fight itself), but the whole
+  # point of a managed block is to be the one place that owns these
+  # settings - deleting the stray stock copy here keeps it that way instead
+  # of accumulating a second copy on every fresh install.
+  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d; /^dtoverlay=vc4-kms-v3d$/d; /^dtparam=audio=on$/d; /^dtparam=spi=on$/d' "$CONFIG_TXT"
 
   # Fallback for a config.txt that never had a stock "dtoverlay=vc4-kms-v3d"
   # line to begin with (non-standard/minimal image, or one already stripped
