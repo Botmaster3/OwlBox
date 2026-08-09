@@ -85,6 +85,33 @@ def test_chime_plays_at_fixed_fraction_of_max_volume_then_restores(config):
         feedback.play_chime = original
 
 
+def test_chime_volume_restores_even_if_playback_raises(config):
+    # Confirmed on real hardware: the hardware ALSA mixer was found stuck at
+    # the quiet chime level after a staged bring-up's rapid-fire systemctl
+    # restart/stop cycles - a SIGTERM arriving while _play_chime_at() was
+    # still blocked inside feedback.play_chime() skipped the restore that
+    # used to be a bare statement after it. This simulates the same "the
+    # chime call never returns normally" shape with an exception (can't
+    # send a real SIGTERM to this test process safely) and checks the
+    # try/finally actually restores the volume anyway - the reason this
+    # test would have failed before the fix.
+    _make_story_with_file(config, "AABBCC")
+    engine = Engine(config)
+    engine.set_max_volume(80)
+    engine.manual_set_volume(50)
+
+    original = feedback.play_chime
+    feedback.play_chime = lambda name, alsa_device: (_ for _ in ()).throw(RuntimeError("boom"))
+    try:
+        try:
+            engine._play_chime("known")
+        except RuntimeError:
+            pass
+        assert engine.get_state()["player"]["volume"] == 50  # restored despite the exception
+    finally:
+        feedback.play_chime = original
+
+
 def test_chime_plays_on_startup(config):
     calls = []
     original = feedback.play_chime

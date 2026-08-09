@@ -792,8 +792,25 @@ class Engine:
             # the real volume. play_chime() blocks until the chime finishes so
             # the restore below can't race a background loop tick.
             self._apply_volume(chime_volume)
-            feedback.play_chime(name, self._config.audio.alsa_device)
-            self._apply_volume(restore_to)
+            # try/finally matters here, not just style: real hardware showed
+            # the hardware ALSA mixer stuck at the quiet chime_volume level
+            # (e.g. 14% - almost exactly chime_volume_ratio's default 15%)
+            # after a staged bring-up's rapid-fire `systemctl restart`/`stop`
+            # cycles - a SIGTERM arriving while this call is still blocked in
+            # feedback.play_chime()'s subprocess.run (up to its 3s timeout,
+            # more likely to actually take that long if aplay is fighting
+            # mpv for the same ALSA device - see feedback.py) turns into a
+            # SystemExit unwinding straight through this frame, skipping the
+            # restore below entirely - and nothing on the next start
+            # re-applies it either, since Engine.start()'s own
+            # _apply_volume(self._volume) call already happens fine before
+            # this exact same race can repeat. A bare "restore after" line
+            # only works when nothing ever interrupts it; finally runs
+            # regardless.
+            try:
+                feedback.play_chime(name, self._config.audio.alsa_device)
+            finally:
+                self._apply_volume(restore_to)
 
     # -- display brightness -----------------------------------------------------
 
