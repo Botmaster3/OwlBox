@@ -58,6 +58,14 @@ class RfidConfig:
 
 @dataclass
 class GpioConfig:
+    # Master switch for the physical buttons/rotary encoders only. Exists so a
+    # staged bring-up can turn the GPIO controls off *without* also switching
+    # the whole app into simulate mode (which swaps in StubPlayer and kills
+    # real audio, making it useless for isolating an audio problem). The
+    # backlight has its own off switch (backlight_pin: null) and the RFID
+    # reader has one too (rfid.reader: simulated), so with this each hardware
+    # component can be enabled one at a time - see docs/audio-troubleshooting.md.
+    enabled: bool = True
     button_next: int = 5
     button_prev: int = 6
     # GPIO1, not the more obvious GPIO17: on real hardware, the display's touch

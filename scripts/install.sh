@@ -257,7 +257,11 @@ fi
 
 mkdir -p "$INSTALL_DIR/media" "$INSTALL_DIR/data"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
-chmod +x "$INSTALL_DIR/scripts/kiosk.sh"
+chmod +x "$INSTALL_DIR/scripts/kiosk.sh" "$INSTALL_DIR/scripts/audio-stage.sh"
+# Staged bring-up helper for isolating audio problems. Safe as a plain symlink
+# (unlike owlbox-install above): this script only edits config.yaml and
+# restarts services, it never derives a source directory from its own path.
+ln -sf "$INSTALL_DIR/scripts/audio-stage.sh" /usr/local/bin/owlbox-audio-stage
 
 # -- HiFiBerry Amp2 (config.txt) --------------------------------------------
 # The official 7" DSI Touch Display needs NO config.txt entry at all - it's

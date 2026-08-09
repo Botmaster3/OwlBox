@@ -61,6 +61,11 @@ rfid:
   missing_reads_to_remove: 5
 
 gpio:
+  # Master switch for the physical buttons/rotary encoders only. Turning this
+  # off (unlike the global `simulate` above) keeps real audio playback working,
+  # which is what makes a staged bring-up possible when hunting an audio
+  # problem - see docs/audio-troubleshooting.md and `sudo owlbox-audio-stage`.
+  enabled: true
   # BCM pin numbers, chosen to avoid HiFiBerry's I2S pins (18/19/20/21), I2C (2/3),
   # and the display's own pins incl. its always-on (never wired) touch controller,
   # which claims GPIO17 as an interrupt pin regardless - see docs/hardware.md.

@@ -13,7 +13,10 @@ def create_controls(
     on_brightness_delta,
     on_shutdown=None,
 ):
-    if config.simulate:
+    # gpio.enabled is the per-component switch (see GpioConfig.enabled):
+    # simulate turns off everything at once, this turns off only the physical
+    # buttons/encoders while real audio keeps working.
+    if config.simulate or not config.gpio.enabled:
         return NullControls()
     from .gpio_controls import GpioControls
 
