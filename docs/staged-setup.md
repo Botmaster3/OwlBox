@@ -14,6 +14,25 @@ kommt als Ursache infrage, und ein Fehler in einer kann durch eine andere
 verdeckt oder verstärkt werden. Getrennt nacheinander in Betrieb genommen,
 benennt die erste Stufe, bei der etwas nicht passt, die Ursache direkt.
 
+## Zwei Werkzeuge pro Stufe
+
+Jede der vier Stufen hat zwei getrennte Schritte:
+
+1. **`sudo ./scripts/install.sh <stufe>`** (bzw. später `sudo owlbox-install
+   <stufe>`) - installiert nur die Pakete/`config.txt`-Zeilen, die genau
+   diese eine Stufe braucht. Komplett unabhängig von den anderen Stufen:
+   lässt sich **in jeder Reihenfolge, beliebig oft, jederzeit erneut**
+   ausführen, ohne dass eine schon installierte Stufe dadurch verändert oder
+   zurückgesetzt wird. Ändert `config.txt`/`cmdline.txt`, startet aber
+   **nie** einen Dienst.
+2. **`sudo owlbox-stage <stufe>`** - schaltet die Hardware in `config.yaml`
+   scharf, startet/testet sie. Das ist der Teil aus dem vorherigen Abschnitt
+   dieser Datei.
+
+Ohne Stufenangabe (`sudo ./scripts/install.sh` bzw. `sudo owlbox-install`)
+laufen alle vier OS-Vorbereitungen auf einmal durch - die klassische
+Ein-Kommando-Installation, für alle, die nicht schrittweise vorgehen wollen.
+
 ## Ablauf
 
 **1. Nur der HiFiBerry Amp2 ist angeschlossen** (noch kein Display, kein
@@ -24,21 +43,21 @@ aufspielen, dann:
 sudo apt update && sudo apt install -y git
 git clone https://github.com/Botmaster3/OwlBox owlbox
 cd owlbox
-sudo ./scripts/install.sh
+sudo ./scripts/install.sh sound
 ```
 
-Das Skript passt `config.txt` an und startet danach automatisch neu.
+Ändert `config.txt`, startet danach automatisch neu (Basis-Systempakete,
+Systembenutzer, Python-venv, App-Code laufen dabei immer mit, unabhängig von
+der angegebenen Stufe - das ist die gemeinsame Grundlage aller vier Stufen).
 
-**Nach dem Neustart** das Skript einmal erneut ausführen:
+**Nach dem Neustart** denselben Befehl einmal erneut ausführen:
 
 ```bash
-sudo owlbox-install
+sudo owlbox-install sound
 ```
 
-Bei einer echten Erstinstallation erkennt es das automatisch: `config.yaml`
-wird auf "nur Sound" gestellt (RFID/Taster-Encoder/Backlight aus),
-`owlbox.service` wird **bewusst noch nicht gestartet** - stattdessen zeigt
-die Ausgabe direkt den nächsten Befehl:
+Jetzt ist die HiFiBerry-Soundkarte aktiv. `owlbox.service` wird dabei
+**bewusst nicht gestartet** - das übernimmt erst der zweite Schritt:
 
 ```bash
 sudo owlbox-stage sound
@@ -52,31 +71,36 @@ hören.
 [docs/hardware.md](hardware.md)), dann:
 
 ```bash
-sudo owlbox-stage display
+sudo owlbox-install display   # Pakete + config.txt/cmdline.txt fuer das Display
+sudo owlbox-stage display     # scharf schalten + testen
 ```
 
-Der Bildschirm sollte die Now-Playing-Anzeige zeigen. Helligkeit einmal
-verstellen (Regler in den Einstellungen im Web-UI) - ändert sich der Ton
-dabei, ist die Backlight-PWM die Ursache. Danach nochmal kurz hören
-(Testbefehl wird wieder angezeigt).
+`owlbox-install display` ändert wieder `config.txt`/`cmdline.txt` (löst also
+noch einen Neustart aus) - danach beide Befehle wie oben, erst `install`,
+nach dem Neustart nochmal `install`, dann `stage`. Der Bildschirm sollte die
+Now-Playing-Anzeige zeigen. Helligkeit einmal verstellen (Regler in den
+Einstellungen im Web-UI) - ändert sich der Ton dabei, ist die Backlight-PWM
+die Ursache. Danach nochmal kurz hören (Testbefehl wird wieder angezeigt).
 
 **3. RC522-RFID-Leser anschließen** (Software-SPI auf freien GPIOs, siehe
 [docs/hardware.md](hardware.md)), dann:
 
 ```bash
-sudo owlbox-stage rfid
+sudo owlbox-install rfid   # aktiviert SPI, kein Neustart noetig
+sudo owlbox-stage rfid     # startet ein eigenstaendiges Scan-Testwerkzeug
 ```
 
-Das stoppt kurz `owlbox.service` (damit App und Testwerkzeug sich nicht um
-dieselben GPIOs streiten) und startet ein eigenständiges Scan-Werkzeug -
-kein Browser nötig, jeder erkannte Chip erscheint direkt im Terminal.
-Strg+C zum Beenden, danach läuft alles automatisch wieder normal.
+`owlbox-stage rfid` stoppt kurz `owlbox.service` (damit App und Testwerkzeug
+sich nicht um dieselben GPIOs streiten) und startet das Scan-Werkzeug - kein
+Browser nötig, jeder erkannte Chip erscheint direkt im Terminal. Strg+C zum
+Beenden, danach läuft alles automatisch wieder normal.
 
 **4. Taster und beide Dreh-Encoder anschließen** (siehe
 [docs/hardware.md](hardware.md)), dann:
 
 ```bash
-sudo owlbox-stage controls
+sudo owlbox-install controls   # nichts zu installieren, gpiozero ist schon Teil der Basis
+sudo owlbox-stage controls     # startet ein eigenstaendiges Tasten-Testwerkzeug
 ```
 
 Genauso wie bei RFID: ein Testwerkzeug zeigt jeden Tastendruck/jede
@@ -87,6 +111,18 @@ Neustart automatisch).
 
 `sudo owlbox-stage status` zeigt jederzeit den aktuellen Stand, ohne etwas
 zu verändern.
+
+## Egal wie oft, egal wann, egal in welcher Reihenfolge
+
+`sudo ./scripts/install.sh <stufe>` schreibt jede Stufe in einen eigenen,
+klar markierten Abschnitt von `config.txt` (`# --- OwlBox:<stufe> begin/end
+---`) und lässt jeden anderen Abschnitt unangetastet. Erneutes Ausführen
+ersetzt nur den eigenen Abschnitt an derselben Stelle in der Datei - egal ob
+das die erste oder die zehnte Ausführung ist, egal ob andere Stufen davor,
+danach oder nie liefen. Getestet: alle vier Stufen zehnmal in wechselnder
+Reihenfolge durchlaufen lassen konvergiert auf eine feste, duplikatfreie
+`config.txt` - kein Wildwuchs an doppelten Zeilen oder Leerzeilen, egal wie
+oft oder in welcher Kombination man es laufen lässt.
 
 ## Wenn eine Stufe nicht sauber ist
 

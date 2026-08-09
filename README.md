@@ -177,50 +177,58 @@ unnötig Zeit kosten würde).
 
 Für die Standardhardware (Pi 3B+, HiFiBerry Amp2, offizielles 7"-Touch-
 Display (DSI), RC522, Taster/Encoder auf den Standard-Pins - siehe
-[docs/hardware.md](docs/hardware.md)) läuft die Einrichtung **gestaffelt**:
-erst nur der Sound, dann Display, RFID und Taster/Encoder einzeln dazu - jede
-Stufe für sich mit eigenem Testwerkzeug verifizierbar, statt alles auf einmal
-anzuschließen und danach zu raten, woran ein Problem liegt. Vollständig
-beschrieben in [docs/staged-setup.md](docs/staged-setup.md); kurz zusammengefasst:
+[docs/hardware.md](docs/hardware.md)) läuft die Einrichtung **gestaffelt**,
+und zwar nicht nur beim erstmaligen Testen, sondern als das Installations-
+Skript selbst: `scripts/install.sh` kennt vier unabhängige Stufen (`sound`,
+`display`, `rfid`, `controls`), die jede für sich nur die Pakete/
+`config.txt`-Zeilen installieren, die genau diese eine Hardware braucht -
+**beliebig oft, in beliebiger Reihenfolge und jederzeit erneut ausführbar**,
+ohne dass eine schon eingerichtete Stufe dabei angetastet wird. Erst
+Sound anschließen und einrichten, dann Display, dann RFID, dann Taster/
+Encoder - jede Stufe sofort mit einem eigenen Testwerkzeug überprüfbar,
+statt alles auf einmal anzuschließen und danach zu raten, woran ein Problem
+liegt. Vollständig beschrieben in
+[docs/staged-setup.md](docs/staged-setup.md); kurz zusammengefasst:
 
 ```bash
 sudo apt update && sudo apt install -y git   # frisches Raspberry Pi OS Lite hat kein git vorinstalliert
 git clone https://github.com/Botmaster3/OwlBox owlbox
 cd owlbox
-sudo ./scripts/install.sh
+sudo ./scripts/install.sh sound
 ```
 
-**1. Durchlauf:** installiert Systempakete (mpv, ALSA, Chromium, minimaler
-X-Stack, …), aktiviert SPI (für den RC522), deaktiviert ungenutzte Dienste
-und Boot-Wartezeiten (Bluetooth, Netzwerk-Wartezeit, Boot-Splash - siehe
-docs/hardware.md), legt einen `owlbox`-Systembenutzer an, richtet ein
-Python-venv ein, trägt den HiFiBerry-Overlay automatisch in `config.txt` ein
-- der Pi startet am Ende von selbst neu. Das Display selbst braucht keinen
-Treiber/Overlay, es wird automatisch über DSI erkannt.
+Installiert Systempakete (mpv, ALSA), aktiviert die HiFiBerry-Amp2-Overlays
+in `config.txt` sowie ein paar Stufen-unabhängige Grundlagen, die jede Stufe
+gemeinsam braucht (Systembenutzer, Python-venv, App-Code, deaktivierte
+ungenutzte Dienste/Boot-Wartezeiten - siehe docs/hardware.md) - der Pi
+startet am Ende von selbst neu (jede Stufe, die `config.txt`/`cmdline.txt`
+ändert, tut das; `sound` und `display` tun es, `rfid` und `controls` nicht).
 
-**Danach das Skript einmal erneut ausführen** (`sudo owlbox-install` - ein
-stabiler Befehl, den der erste Durchlauf selbst anlegt, funktioniert ab da
-von jedem Verzeichnis aus statt `cd owlbox && sudo ./scripts/install.sh`,
-was leicht danebengeht, siehe Kasten unten): jetzt ist die HiFiBerry-
-Soundkarte aktiv, das Skript erkennt automatisch das richtige ALSA-Gerät/den
-Mixer und trägt es in `config/config.yaml` ein - erkennt dabei auch, dass es
-sich um eine echte Erstinstallation handelt, und stellt `config.yaml` auf
-"nur Sound" (`owlbox.service` wird bewusst noch **nicht** gestartet). Die
-Ausgabe zeigt direkt den nächsten Befehl:
+**Nach dem Neustart denselben Befehl erneut ausführen** (`sudo owlbox-install
+sound` - ein stabiler Befehl, den der erste Durchlauf selbst anlegt,
+funktioniert ab da von jedem Verzeichnis aus statt `cd owlbox && sudo
+./scripts/install.sh`, was leicht danebengeht, siehe Kasten unten). Jetzt ist
+die HiFiBerry-Soundkarte aktiv - `owlbox.service` wird dabei bewusst **nicht**
+gestartet, das ist Aufgabe des zweiten, davon komplett getrennten Werkzeugs:
 
 ```bash
 sudo owlbox-stage sound
 ```
 
-Ab hier Stück für Stück: `sudo owlbox-stage sound` prüft automatisch
-Soundkarte/Mixer und zeigt Testbefehle; ist das sauber, Display anschließen
-und `sudo owlbox-stage display`; dann RC522 anschließen und
-`sudo owlbox-stage rfid` (startet dafür ein eigenständiges Scan-Testwerkzeug,
-kein Browser nötig); zuletzt Taster/Encoder anschließen und
-`sudo owlbox-stage controls` (eigenes Tastendruck-Testwerkzeug) - das ist
-gleichzeitig die letzte Stufe und aktiviert `owlbox.service` dauerhaft.
-Komplette Anleitung inkl. was bei jeder Stufe schiefgehen kann:
+Prüft Soundkarte/Mixer automatisch und zeigt Testbefehle. Ist das sauber:
+Display anschließen, `sudo owlbox-install display` (+ erneut nach dem
+automatischen Neustart), dann `sudo owlbox-stage display`. Danach RC522
+anschließen, `sudo owlbox-install rfid`, `sudo owlbox-stage rfid` (startet
+ein eigenständiges Scan-Testwerkzeug, kein Browser nötig). Zuletzt Taster/
+Encoder anschließen, `sudo owlbox-install controls`, `sudo owlbox-stage
+controls` (eigenes Tastendruck-Testwerkzeug) - das ist gleichzeitig die
+letzte Stufe und aktiviert `owlbox.service` dauerhaft. Komplette Anleitung
+inkl. was bei jeder Stufe schiefgehen kann:
 [docs/staged-setup.md](docs/staged-setup.md).
+
+Wer nicht stufenweise vorgehen will: `sudo ./scripts/install.sh` bzw. `sudo
+owlbox-install` ganz ohne Stufenname macht alle vier auf einmal - die
+klassische Ein-Kommando-Installation.
 
 > **Hinweis:** `cd owlbox` von *innerhalb* eines bereits ausgecheckten Repos
 > landet nicht wieder im Repo-Root, sondern eine Ebene zu tief im
@@ -229,13 +237,17 @@ Komplette Anleitung inkl. was bei jeder Stufe schiefgehen kann:
 > `sudo owlbox-install` vermeidet das komplett, da es unabhängig vom
 > aktuellen Verzeichnis funktioniert.
 
-Das Skript ist beliebig oft wiederholbar (idempotent) - jeder Schritt prüft
-zuerst, ob er schon erledigt ist; eine bereits abgeschlossene Konfiguration
-(RFID/Taster-Encoder/Backlight) lässt ein erneuter Lauf unangetastet. Nach
-der gestaffelten Einrichtung bleibt nur noch eins wirklich manuell, weil kein
-Skript es übernehmen kann: `http://<pi-ip>:5000/admin` öffnen und die
-Ersteinrichtung (Benutzername/Passwort) durchlaufen - aus Sicherheitsgründen
-bewusst ohne automatisch gesetztes Standardpasswort.
+Jede Stufe ist für sich beliebig oft wiederholbar (idempotent) - jeder
+Schritt prüft zuerst, ob er schon erledigt ist, und jede Stufe schreibt nur
+in ihren eigenen, klar markierten Abschnitt von `config.txt` (siehe
+docs/staged-setup.md), ohne andere Stufen oder deren Reihenfolge
+vorauszusetzen. `owlbox-stage` lässt eine bereits abgeschlossene
+Hardware-Konfiguration (RFID/Taster-Encoder/Backlight) bei einem erneuten
+`owlbox-install`-Lauf unangetastet. Nach der gestaffelten Einrichtung bleibt
+nur noch eins wirklich manuell, weil kein Skript es übernehmen kann:
+`http://<pi-ip>:5000/admin` öffnen und die Ersteinrichtung (Benutzername/
+Passwort) durchlaufen - aus Sicherheitsgründen bewusst ohne automatisch
+gesetztes Standardpasswort.
 
 Abweichende Hardware (andere HiFiBerry-Variante, anderes Display) lässt sich
 weiterhin ganz nach [docs/hardware.md](docs/hardware.md) von Hand einrichten -

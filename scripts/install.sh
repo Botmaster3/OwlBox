@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs OwlBox onto a Raspberry Pi (tested against Raspberry Pi OS Bookworm/Legacy Lite).
-# Run as root (sudo ./scripts/install.sh) from inside a checkout of this repo.
+# Run as root (sudo ./scripts/install.sh [stage]) from inside a checkout of this repo.
 #
 # Targets the project's standard hardware (see docs/hardware.md): Pi 3B+, HiFiBerry
 # Amp2 (TAS5756M chip - the PCM512x family, same codec as the DAC+ Pro; NOT the
@@ -9,38 +9,56 @@
 # power/I2C touch - see docs/hardware.md), RC522 on software SPI (GPIOs
 # 4/14/15/16 - SPI0 is free since the display no longer uses it, but the RC522
 # stays on software SPI regardless, see docs/hardware.md for why), buttons/
-# encoders on the documented default pins. On that combination this script
-# alone gets you from a freshly-flashed SD card to a fully working box - no
-# manual config.txt editing, no manually running aplay/amixer and copying
-# values by hand, no wiring up systemd units. Two things stay manual on purpose:
-#   - physically wiring the RC522/buttons/encoders/display (this is hardware, not software)
-#   - the one-time admin login setup in the browser (no auto-generated default password)
+# encoders on the documented default pins.
 #
-# Deliberately targets "Legacy Lite" (no desktop environment at all) rather than the
-# full "Legacy" desktop image: Chromium is the only thing that ever needs to appear on
-# screen, so this script brings up just enough X (no display manager, no window manager
-# desktop, no panel/file manager/screensaver a full desktop would otherwise start) via
-# its own systemd service instead of lightdm+LXDE - that alone skips several seconds of
-# boot time that would otherwise go into starting a desktop nothing ever looks at. A few
-# more small, safe boot-time trims are applied for the same reason (see the "boot speed"
-# section below): unneeded services disabled, network-wait-at-boot off, splash off.
+# STAGED INSTALL - the real point of this script's structure. Four independent
+# stages, each installing only the OS packages/config.txt lines that ONE piece
+# of hardware needs, so it can be wired up and tested (via `sudo owlbox-stage
+# <name>`, see docs/staged-setup.md) before moving on to the next:
 #
-# Idempotent and meant to be run TWICE with a reboot in between:
-#   1st run: installs everything, edits config.txt (HiFiBerry + boot-speed tweaks +
-#            display_lcd_rotate for the physically upside-down display - the
-#            DSI display itself is otherwise auto-detected, no overlay needed
-#            for that part), then reboots.
-#   2nd run (after the reboot): the HiFiBerry sound card is now live, so this run
-#            auto-detects the ALSA device/mixer, writes it into config.yaml, and
-#            finally starts owlbox.service and the kiosk display.
-# Every step below checks what's already in place first, so running it more than
-# twice (or after manually tweaking something) is always safe.
+#   sudo ./scripts/install.sh sound      # nur HiFiBerry Amp2
+#   sudo ./scripts/install.sh display    # + 7"-Touch-Display (DSI)
+#   sudo ./scripts/install.sh rfid       # + RC522-Leser
+#   sudo ./scripts/install.sh controls   # + Taster/Encoder
+#   sudo ./scripts/install.sh            # alle vier zusammen (Kurzform: "all")
+#
+# Every stage always applies the same small BASE step first (system user,
+# Python venv, app code, systemd unit files, sudoers, boot-speed trims) -
+# cheap and fully idempotent, so it's safe as a shared prerequisite no matter
+# which stage runs first. Each stage's own OS-level work (packages, config.txt/
+# cmdline.txt lines) touches ONLY that stage's own lines - never another
+# stage's - so stages can be run any number of times, in any order, at any
+# time, independent of whether earlier stages already ran. This script never
+# starts owlbox.service/owlbox-kiosk.service itself; that's `owlbox-stage`'s
+# job (config.yaml feature toggles + starting/testing/enabling), kept
+# completely separate from "is the OS ready for this hardware" here.
+#
+# config.txt/cmdline.txt changes need a reboot to take effect (the overlay/KMS
+# driver only reloads at boot) - if any stage run here changed either file,
+# the script reboots itself at the end; re-run the same command afterward.
 set -euo pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
-  echo "Please run as root: sudo ./scripts/install.sh" >&2
+  echo "Please run as root: sudo ./scripts/install.sh [sound|display|rfid|controls]" >&2
   exit 1
 fi
+
+STAGE="${1:-all}"
+case "$STAGE" in
+  all|sound|display|rfid|controls) ;;
+  *)
+    echo "Unbekannte Stufe: $STAGE (erlaubt: sound display rfid controls, oder ohne Argument = alle)" >&2
+    exit 1
+    ;;
+esac
+DO_SOUND=0; DO_DISPLAY=0; DO_RFID=0; DO_CONTROLS=0
+case "$STAGE" in
+  all)      DO_SOUND=1; DO_DISPLAY=1; DO_RFID=1; DO_CONTROLS=1 ;;
+  sound)    DO_SOUND=1 ;;
+  display)  DO_DISPLAY=1 ;;
+  rfid)     DO_RFID=1 ;;
+  controls) DO_CONTROLS=1 ;;
+esac
 
 # readlink -f matters here: this script can be reached through the
 # /usr/local/bin/owlbox-install symlink created further down. Without
@@ -50,10 +68,6 @@ fi
 REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 INSTALL_DIR="/opt/owlbox"
 SERVICE_USER="owlbox"
-
-MARKER_BEGIN="# --- OwlBox: begin (managed by scripts/install.sh - re-running the script"
-MARKER_BEGIN="$MARKER_BEGIN replaces everything between these two markers) ---"
-MARKER_END="# --- OwlBox: end ---"
 
 CONFIG_TXT=""
 for candidate in /boot/firmware/config.txt /boot/config.txt; do
@@ -65,106 +79,86 @@ for candidate in /boot/firmware/cmdline.txt /boot/cmdline.txt; do
   [ -f "$candidate" ] && { CMDLINE_TXT="$candidate"; break; }
 done
 
-# -- helpers --------------------------------------------------------------
+NEEDS_REBOOT=0
+[ -n "$CONFIG_TXT" ] && BEFORE_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)" || BEFORE_HASH=""
 
-# Replaces the whole OwlBox-managed block (deleting any previous one first) so
-# re-running the script always converges to exactly this set of lines, instead
-# of accumulating duplicates or fighting a hand-edited version of an old block.
-write_config_block() {
-  local file="$1"; shift
-  local tmp
-  tmp="$(mktemp)"
-  awk -v b="$MARKER_BEGIN" -v e="$MARKER_END" '
-    $0==b {skip=1}
-    !skip {print}
-    $0==e {skip=0}
-  ' "$file" | awk '
-    # Trims trailing blank lines left over from the previous blocks
-    # separator - without this a re-run would grow one more blank line
-    # before the block every time instead of converging to a fixed point.
-    {lines[NR]=$0}
-    END {
-      n=NR
-      while (n>0 && lines[n]=="") n--
-      for (i=1;i<=n;i++) print lines[i]
-    }
-  ' > "$tmp"
-  {
-    cat "$tmp"
-    echo ""
-    echo "$MARKER_BEGIN"
-    printf '%s\n' "$@"
-    echo "$MARKER_END"
-  } > "$file"
-  rm -f "$tmp"
+# -- helpers ------------------------------------------------------------
+
+# write_stage_block <file> <stage-tag> <line>...
+# Each stage owns its own marker-delimited block (tagged by name), so
+# re-running one stage never touches another stage's lines - the whole point
+# of being safely re-runnable independently and in any order. If the block
+# already exists, its content is replaced IN PLACE (same position in the
+# file); a brand new block is appended at the end. Replacing in place matters
+# for repeated, mixed-order re-runs: an earlier version always relocated the
+# (re)written block to the end of the file, which - since a stage's block is
+# essentially never at the true end once other stages have their own blocks
+# too - left the blank line that used to separate it from its neighbours
+# behind every single time, growing config.txt by one stray blank line per
+# re-run of any given stage (confirmed by running all four stages, in mixed
+# order, repeatedly). Python (already used the same way in scripts/stage.sh)
+# rather than awk/sed here - simpler and more obviously correct for
+# find-a-block-and-splice-it-back-in than the equivalent awk would be.
+write_stage_block() {
+  local file="$1" tag="$2"; shift 2
+  python3 - "$file" "$tag" "$@" <<'PY'
+import sys
+path, tag = sys.argv[1], sys.argv[2]
+new_lines = sys.argv[3:]
+begin = f"# --- OwlBox:{tag} begin (managed by scripts/install.sh {tag} - re-running replaces this block) ---"
+end = f"# --- OwlBox:{tag} end ---"
+lines = open(path).read().splitlines()
+try:
+    start = lines.index(begin)
+    stop = lines.index(end, start)
+    lines[start:stop + 1] = [begin, *new_lines, end]
+except ValueError:
+    # No existing block for this tag yet - append at the end. Trim any
+    # trailing blank lines first so repeated first-time appends (e.g. across
+    # different stages on a fresh config.txt) converge to a fixed point
+    # instead of growing an extra blank line before each new block.
+    while lines and lines[-1] == "":
+        lines.pop()
+    lines += ["", begin, *new_lines, end]
+open(path, "w").write("\n".join(lines) + "\n")
+PY
 }
 
-echo "==> Installing system packages"
+# ============================================================ BASE (always)
+# Everything here is hardware-independent - the shared prerequisite every
+# stage needs (a working Python venv, the app code in place, the systemd unit
+# files present so `owlbox-stage` can start/restart them) - so it always
+# runs, regardless of which stage(s) were requested. Cheap and idempotent:
+# running it again (e.g. as part of a later, different stage) changes nothing
+# that's already correct.
+
+echo "==> [Basis] Installing system packages"
 apt-get update
-apt-get install -y \
-  python3-venv python3-pip python3-dev build-essential \
-  mpv alsa-utils \
-  unclutter \
-  fonts-noto-color-emoji \
-  || true
-# fonts-noto-color-emoji above: "Legacy Lite" has no emoji-capable font at all
-# out of the box, so every 🦉/😴/▶️/etc. in the kiosk UI renders as an empty
-# box ("tofu") instead - confirmed on real hardware.
-# Debian's chromium package name varies by release; try both.
-apt-get install -y chromium-browser || apt-get install -y chromium || true
+apt-get install -y python3-venv python3-pip python3-dev build-essential || true
 
-# Belt-and-suspenders against the "German/English" translate bar Chromium
-# shows on first load: kiosk.sh's --disable-features=Translate command-line
-# flag alone did NOT actually suppress it on real hardware (confirmed) - this
-# managed policy is the mechanism Chromium itself documents for kiosk/
-# enterprise deployments, and covers both possible package/policy directory
-# names depending on which of the two chromium packages above got installed.
-mkdir -p /etc/chromium/policies/managed /etc/chromium-browser/policies/managed
-for policy_dir in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; do
-  cat > "$policy_dir/owlbox.json" <<'EOF'
-{
-  "TranslateEnabled": false
-}
-EOF
-done
-
-# Minimal X stack for the kiosk display - deliberately no desktop environment
-# (no lightdm, no LXDE) on top of the "Legacy Lite" base image. xserver-xorg-legacy
-# provides the Xwrapper.config mechanism needed to start X without a display
-# manager; matchbox-window-manager is tiny but keeps things well-behaved if a
-# stray JS alert()/confirm() window ever pops up in Chromium. No fbdev/legacy GL
-# driver package needed here: the official DSI touch display works with the
-# modern KMS driver (vc4-kms-v3d, the Bookworm default) active, so X's own
-# default "modesetting" driver finds /dev/dri/card0 and just works - unlike the
-# old 3.5" SPI display, which needed the Legacy GL driver + a hand-written
-# fbdev Xorg config because fbcp (mirroring onto that display) needed /dev/fb0,
-# which the modern KMS driver doesn't expose in a usable form.
-apt-get install -y \
-  xserver-xorg xserver-xorg-legacy xinit x11-xserver-utils \
-  matchbox-window-manager \
-  || true
-
-echo "==> Enabling SPI (needed for the RC522 RFID reader)"
-if command -v raspi-config >/dev/null 2>&1; then
-  raspi-config nonint do_spi 0 || true
-else
-  echo "raspi-config not found, enable SPI manually: add 'dtparam=spi=on' to $CONFIG_TXT" >&2
-fi
-
-echo "==> Boot-speed trims (disabling services this box never uses)"
+echo "==> [Basis] Boot-speed trims (disabling services this box never uses)"
 for svc in bluetooth hciuart triggerhappy ModemManager dphys-swapfile; do
   systemctl disable --now "$svc" >/dev/null 2>&1 || true
 done
-# The kiosk takes over tty1 directly (see the "kiosk autostart" section below),
-# so the text-login getty on it would just be wasted work/RAM, never actually usable.
-systemctl disable getty@tty1.service >/dev/null 2>&1 || true
 if command -v raspi-config >/dev/null 2>&1; then
   # Don't block the rest of boot waiting for the network to come up - OwlBox
   # and the kiosk start independently of whether WLAN has associated yet.
   raspi-config nonint do_boot_wait 1 || true
 fi
+if [ -n "$CONFIG_TXT" ]; then
+  # Clean up leftover config.txt lines from a previous install targeting the
+  # old 3.5" SPI display (tft35a/MHS-35 overlay, its forced virtual-HDMI mode,
+  # its ads7846 touch line) - harmless to run on a config.txt that never had
+  # them, but leaving them in place on an upgrade would make the kernel keep
+  # trying to init display hardware that's no longer physically connected.
+  # General hygiene, not tied to any one stage, so it lives here in BASE.
+  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d' "$CONFIG_TXT"
+  write_stage_block "$CONFIG_TXT" base "disable_splash=1" "boot_delay=0"
+fi
+systemctl disable --now owlbox-fbcp.service >/dev/null 2>&1 || true
+rm -f /etc/systemd/system/owlbox-fbcp.service /usr/local/bin/fbcp /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf
 
-echo "==> Creating service user '$SERVICE_USER'"
+echo "==> [Basis] Creating service user '$SERVICE_USER'"
 if ! id "$SERVICE_USER" >/dev/null 2>&1; then
   useradd --system --create-home --home-dir "$INSTALL_DIR" --shell /usr/sbin/nologin "$SERVICE_USER"
 fi
@@ -173,7 +167,7 @@ for grp in gpio spi audio video i2c render; do
   usermod -aG "$grp" "$SERVICE_USER" || true
 done
 
-echo "==> Granting passwordless sudo for shutdown/WLAN/service-restart"
+echo "==> [Basis] Granting passwordless sudo for shutdown/WLAN/service-restart"
 # owlbox.service runs as this user with no terminal attached, so sudo can
 # never prompt for a password here. The Update-Button (Info-Seite), WLAN
 # Ein/Aus/Hotspot (Einstellungen), and "Pi neu starten"/"herunterfahren"
@@ -198,7 +192,7 @@ else
 fi
 rm -f "$SUDOERS_TMP"
 
-echo "==> Copying application to $INSTALL_DIR"
+echo "==> [Basis] Copying application to $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 rsync -a --exclude ".venv" --exclude "data" --exclude "__pycache__" "$REPO_DIR"/ "$INSTALL_DIR"/
 
@@ -215,8 +209,9 @@ rsync -a --exclude ".venv" --exclude "data" --exclude "__pycache__" "$REPO_DIR"/
 # could never pick up new commits - it would rsync /opt/owlbox onto itself
 # and silently "succeed" while changing nothing. Instead a tiny generated
 # wrapper remembers the checkout this was first installed from, pulls there,
-# and hands over to that checkout's install.sh. One command, from any cwd,
-# that genuinely delivers new code.
+# and hands over to that checkout's install.sh (forwarding any stage
+# argument), so "sudo owlbox-install [stage]" works the same as running the
+# checkout's own script directly, from any cwd.
 if [ "$REPO_DIR" != "$INSTALL_DIR" ]; then
   cat > /usr/local/bin/owlbox-install <<WRAPPER
 #!/usr/bin/env bash
@@ -242,330 +237,288 @@ fi
 exec "\$CHECKOUT/scripts/install.sh" "\$@"
 WRAPPER
   chmod +x /usr/local/bin/owlbox-install
-  echo "==> Updates from now on: sudo owlbox-install (pulls + reinstalls, from any directory)"
+  echo "==> Updates from now on: sudo owlbox-install [stage] (pulls + reinstalls, from any directory)"
 fi
 
-echo "==> Creating Python virtualenv"
+echo "==> [Basis] Creating Python virtualenv"
 python3 -m venv "$INSTALL_DIR/.venv"
 "$INSTALL_DIR/.venv/bin/pip" install --upgrade pip
+# One requirements.txt covers every stage's Python dependencies (gpiozero,
+# mfrc522, spidev, lgpio included) - installed in full here regardless of
+# which stage was requested, so e.g. `install.sh rfid` alone still has
+# everything `owlbox-stage rfid`'s standalone test tool needs.
 "$INSTALL_DIR/.venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
 
-# FRESH_CONFIG marks a genuine first-time install (no config.yaml existed
-# yet) - used below to start in "sound only" state instead of jumping
-# straight to full normal operation with hardware that likely isn't even
-# wired up yet (RC522/buttons/encoders/backlight transistor), see
-# docs/staged-setup.md. A re-run against an already-configured box must NOT
-# touch these settings again - that would silently undo a stage the user
+# A genuinely first-time install (no config.yaml yet) starts with every
+# hardware toggle off - RFID/buttons/encoders/backlight - regardless of which
+# stage was requested first. Starting owlbox.service (which only
+# `owlbox-stage` ever does, never this script) against hardware that isn't
+# wired yet would try to open the RC522/buttons/encoders/backlight
+# transistor before any of it exists - exactly the "guess what's wrong"
+# situation the staged flow (docs/staged-setup.md) replaces. A re-run must
+# NOT touch these settings again - that would silently undo a stage the user
 # has already progressed past (or is deliberately testing at right now).
-FRESH_CONFIG=0
 if [ ! -f "$INSTALL_DIR/config/config.yaml" ]; then
   cp "$INSTALL_DIR/config/config.example.yaml" "$INSTALL_DIR/config/config.yaml"
-  echo "==> Wrote default config/config.yaml"
-  FRESH_CONFIG=1
+  sed -i -E 's/^(\s*reader:).*/\1 simulated   # mfrc522 | simulated/' "$INSTALL_DIR/config/config.yaml"
+  sed -i -E 's/^(\s*enabled:).*/\1 false/' "$INSTALL_DIR/config/config.yaml"
+  sed -i -E 's/^(\s*backlight_pin:).*/\1 null/' "$INSTALL_DIR/config/config.yaml"
+  echo "==> [Basis] Wrote default config/config.yaml (alle Hardware-Stufen erstmal aus)"
 fi
 
 mkdir -p "$INSTALL_DIR/media" "$INSTALL_DIR/data"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 chmod +x "$INSTALL_DIR/scripts/kiosk.sh" "$INSTALL_DIR/scripts/stage.sh" \
   "$INSTALL_DIR/scripts/test_rfid.py" "$INSTALL_DIR/scripts/test_controls.py"
-# Guided staged bring-up (sound -> display -> rfid -> controls), see
+# Guided staged bring-up (sound -> display -> rfid -> controls): starts/stops/
+# tests each stage's hardware and owns config.yaml's feature toggles - see
 # docs/staged-setup.md. Safe as a plain symlink (unlike owlbox-install
 # above): this script only edits config.yaml and restarts services, it never
 # derives a source directory from its own path.
 ln -sf "$INSTALL_DIR/scripts/stage.sh" /usr/local/bin/owlbox-stage
 
-# -- HiFiBerry Amp2 (config.txt) --------------------------------------------
-# The official 7" DSI Touch Display needs NO config.txt entry at all - it's
-# auto-detected over the DSI ribbon cable by the Pi's own firmware, and it
-# works fine with the modern KMS driver (vc4-kms-v3d, the Bookworm default)
-# active - unlike the old 3.5" SPI display this project used to target, which
-# needed the Legacy GL driver plus fbcp plus a whole separate driver-installer
-# repo (see git history / docs/hardware.md's older revisions for that if ever
-# needed again). All that's left to manage here is the audio overlay.
-
-NEEDS_REBOOT=0
-
-if [ -n "$CONFIG_TXT" ]; then
-  echo "==> Configuring audio (HiFiBerry Amp2) in $CONFIG_TXT"
-  BEFORE_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
-
-  # THE actual root cause of the day-long "digital path is fine but playback
-  # is crackling/fragmented" saga, confirmed on real hardware: stock
-  # Raspberry Pi OS Bookworm images already ship their own, active,
-  # uncommented "dtoverlay=vc4-kms-v3d" (no ",noaudio") and
-  # "dtparam=audio=on" lines, both outside this script's own managed block.
-  # An earlier version of this script left those two alone and just appended
-  # its own corrected lines elsewhere, on the assumption that a later
-  # dtoverlay/dtparam line always wins over an earlier one - that assumption
-  # does NOT reliably hold in practice for either directive: `aplay -l` kept
-  # showing both the "vc4hdmi" HDMI-audio card (from the stock, non-,noaudio
-  # overlay application - dtoverlay lines are independent actions, not
-  # key/value overrides, so a second corrected line doesn't retroactively
-  # undo what the first one already registered) and the onboard
-  # "bcm2835 Headphones" card (from the stock dtparam=audio=on) even with
-  # this script's own corrected lines present and last in the file.
-  # Editing the two stock lines directly, in place, instead of leaving them
-  # untouched and fighting them with something appended elsewhere, is what
-  # actually fixed it on real hardware - and keeps the diff to config.txt
-  # minimal instead of growing an ever-larger managed block at the end.
-  sed -i -E 's/^dtoverlay=vc4-kms-v3d$/dtoverlay=vc4-kms-v3d,noaudio/' "$CONFIG_TXT"
-  sed -i -E 's/^dtparam=audio=on$/#dtparam=audio=on/' "$CONFIG_TXT"
-
-  # Clean up leftover config.txt lines from a previous install targeting the
-  # old 3.5" SPI display (tft35a/MHS-35 overlay, its forced virtual-HDMI mode,
-  # its ads7846 touch line) - harmless to run on a config.txt that never had
-  # them, but leaving them in place on an upgrade would make the kernel keep
-  # trying to init display hardware that's no longer physically connected.
-  # Also a safety net for the two lines just edited above: delete any
-  # further/duplicate bare copy the in-place substitutions didn't already
-  # catch (e.g. a second stock occurrence) - these two patterns only match
-  # what's still unfixed, so they never touch the lines just corrected above.
-  #
-  # Also strips a bare stock "dtparam=spi=on" here - confirmed on real
-  # hardware that `raspi-config nonint do_spi 0` (below) uncomments the
-  # image's own stock copy of this line (outside any managed block),
-  # producing an active duplicate once write_config_block's own
-  # "dtparam=spi=on" is appended further down. Harmless in effect (unlike
-  # audio=on vs audio=off, "on" twice doesn't fight itself), but the whole
-  # point of a managed block is to be the one place that owns these
-  # settings - deleting the stray stock copy here keeps it that way instead
-  # of accumulating a second copy on every fresh install.
-  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d; /^dtoverlay=vc4-kms-v3d$/d; /^dtparam=audio=on$/d; /^dtparam=spi=on$/d' "$CONFIG_TXT"
-
-  # Fallback for a config.txt that never had a stock "dtoverlay=vc4-kms-v3d"
-  # line to begin with (non-standard/minimal image, or one already stripped
-  # by hand) - the in-place edit above had nothing to upgrade in that case,
-  # so assert the line directly instead of silently ending up without it.
-  grep -q -E '^dtoverlay=vc4-kms-v3d(,.*)?$' "$CONFIG_TXT" \
-    || echo "dtoverlay=vc4-kms-v3d,noaudio" >> "$CONFIG_TXT"
-
-  # HiFiBerry Amp2's TAS5756M chip is PCM512x-family (same codec as the DAC+
-  # Pro) - confirmed on real hardware via a failed I2C probe on the
-  # TAS5713-specific "hifiberry-amp" overlay (wrong chip entirely) followed
-  # by an i2cdetect scan showing a live device at 0x4d, the PCM512x family's
-  # address. "hifiberry-amp" is for the older Amp/Amp+'s TAS5713 instead -
-  # different chip, different overlay, even though the products are easy to
-  # confuse by name.
-  # dtoverlay=vc4-kms-dsi-7inch: THE actual, official overlay for this
-  # display under KMS - confirmed on real hardware that without it, the DSI
-  # panel node/bridge never gets instantiated at all ("[drm] Cannot find any
-  # crtc or sizes" in dmesg, screen stays black) - vc4-kms-v3d alone only
-  # enables the base KMS driver, it doesn't know this specific panel's
-  # timings on its own.
-  # No touch params (invx/invy/swapxy) added on top: confirmed on real
-  # hardware that once the video itself is rotated 180° via the cmdline.txt
-  # kernel parameter below, touch input already tracks correctly on its
-  # own (X11/libinput applies its own coordinate transform to match the
-  # rotated output) - adding invx+invy here on top double-corrected it,
-  # showing up as touch mirrored on both axes relative to the now-correct
-  # picture. (There's no "rotate=" param for this overlay at all, for the
-  # record - /boot/firmware/overlays/README lists only sizex/sizey/invx/
-  # invy/swapxy/disable_touch/dsi0 - an earlier attempt with "rotate=180"
-  # tacked on here was silently ignored, no error, no effect, which is why
-  # the actual video flip has to be the cmdline.txt kernel parameter below
-  # instead.) This overlay also covers the touch controller (ft5406-family)
-  # itself, no separate rpi-ft5406 overlay line needed.
-  #
-  # NOT via xrandr or display_lcd_rotate either for the video flip itself:
-  # confirmed on real hardware that xrandr's --rotate is silently accepted
-  # (shows up in `xrandr --query`) but never changes what's on screen, and
-  # the older display_lcd_rotate/lcd_rotate params are documented to do
-  # nothing under KMS.
-  # dtparam=spi=on / dtparam=i2c_arm=on: set explicitly here rather than
-  # relying on them already being present elsewhere in config.txt - confirmed
-  # on real hardware that config.txt can end up missing all of its
-  # non-OwlBox-managed content (seen after what looked like an unclean
-  # shutdown - /boot/firmware is FAT32, which tolerates that far worse than
-  # ext4), silently leaving SPI/I2C disabled with no obvious error. Safe to
-  # always (re-)assert these here regardless of what else is/isn't in the
-  # file. (dtoverlay=vc4-kms-v3d,noaudio and the dtparam=audio=off it needs
-  # are handled above, in place on the stock lines where they already exist
-  # - not here, to avoid ending up with two active copies of either.)
-  write_config_block "$CONFIG_TXT" \
-    "dtparam=audio=off" \
-    "dtoverlay=hifiberry-dacplus" \
-    "disable_splash=1" \
-    "boot_delay=0" \
-    "dtparam=spi=on" \
-    "dtparam=i2c_arm=on" \
-    "dtoverlay=vc4-kms-dsi-7inch"
-
-  AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
-  [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1
-else
-  echo "WARNUNG: config.txt nicht gefunden (weder /boot/firmware/config.txt noch /boot/config.txt)." >&2
-  echo "         HiFiBerry-Overlay konnte nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
-fi
-
-# The 180° *video* flip for the physically upside-down 7" Touch Display has
-# to be a kernel command-line parameter, not anything in config.txt - the
-# vc4-kms-dsi-7inch overlay has no "rotate=" param at all (confirmed against
-# /boot/firmware/overlays/README: only sizex/sizey/invx/invy/swapxy/
-# disable_touch/dsi0 exist), and xrandr/display_lcd_rotate are both
-# confirmed ineffective under KMS (see above). cmdline.txt is a single line,
-# space-separated - appended in place rather than via write_config_block's
-# marker-based approach, which assumes a multi-line file.
-if [ -n "$CMDLINE_TXT" ]; then
-  if ! grep -q "video=DSI-1" "$CMDLINE_TXT"; then
-    echo "==> Adding 180° video rotation to $CMDLINE_TXT"
-    CMDLINE_BEFORE="$(cat "$CMDLINE_TXT")"
-    printf '%s %s\n' "$CMDLINE_BEFORE" "video=DSI-1:800x480@60,rotate=180" > "$CMDLINE_TXT"
-    NEEDS_REBOOT=1
-  fi
-else
-  echo "WARNUNG: cmdline.txt nicht gefunden (weder /boot/firmware/cmdline.txt noch /boot/cmdline.txt)." >&2
-  echo "         Bild-Rotation konnte nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
-fi
-
-# Remove any leftover fbcp service/binary from a previous install targeting
-# the old 3.5" SPI display - it's not needed at all for the DSI display and
-# would otherwise keep running, uselessly mirroring a framebuffer nothing
-# reads from anymore.
-systemctl disable --now owlbox-fbcp.service >/dev/null 2>&1 || true
-rm -f /etc/systemd/system/owlbox-fbcp.service /usr/local/bin/fbcp
-rm -f /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf
-
-# -- kiosk autostart (minimal X + Chromium, no desktop environment) --------
-# Runs as its own system-level systemd service (owlbox-kiosk.service), which
-# takes tty1 over directly (PAMName=login/TTYPath) and starts X itself via
-# `startx` - there is no display manager and no desktop session to hook into
-# on this deliberately minimal "Legacy Lite" base image.
-
-echo "==> Setting up kiosk autostart (minimal X, no desktop environment)"
-cat > /etc/X11/Xwrapper.config <<'EOF'
-allowed_users=anybody
-needs_root_rights=yes
-EOF
-
-# No custom Xorg driver config needed: with KMS active (see above), X's
-# default "modesetting" driver finds /dev/dri/card0 on its own - unlike the
-# old 3.5" SPI display, which needed to be told to draw straight to a
-# framebuffer instead (that config file is actively removed above if present
-# from a previous install; leaving it in place here would fight the KMS
-# driver we now want active).
-
-cp "$INSTALL_DIR/systemd/owlbox-kiosk.service" /etc/systemd/system/owlbox-kiosk.service
-systemctl daemon-reload
-systemctl enable owlbox-kiosk.service
-# Not started with --now here: the KMS driver only becomes live after the
-# reboot this script asks for below (if the audio overlay changed anything),
-# so a first-run start attempt could fail against a driver that isn't loaded
-# yet. It's started (best-effort) at the very end once that reboot has
-# happened - see the owlbox.service start line further down.
-#
-# daemon-reload alone does NOT re-apply unit properties like Nice=/
-# IOSchedulingClass= to an already-running instance of this service - those
-# only take effect for a process at the moment systemd forks it. On an
-# existing installation being re-run (no config.txt change this time, so no
-# reboot below) that would silently leave a kiosk process already running
-# at the old (default) priority even though the unit file on disk now says
-# otherwise - restart explicitly whenever it's already active so the new
-# priority actually takes hold without requiring a full reboot.
-if [ "$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)" = "active" ]; then
-  echo "==> Restarting owlbox-kiosk.service to apply updated CPU/IO priority"
-  systemctl restart owlbox-kiosk.service
-fi
-
-# -- audio auto-detection (only meaningful once the HiFiBerry is live) ------
-
-AUDIO_CONFIGURED=0
-if command -v aplay >/dev/null 2>&1 && aplay -l 2>/dev/null | grep -qi hifiberry; then
-  CARD_NUM="$(aplay -l | grep -i hifiberry | head -n1 | sed -n 's/^card \([0-9]*\).*/\1/p')"
-  if [ -n "$CARD_NUM" ]; then
-    ALSA_DEVICE="hw:$CARD_NUM,0"
-    MIXER_CONTROL="Digital"
-    if amixer -c "$CARD_NUM" scontrols 2>/dev/null | grep -qi "'PCM'" \
-       && ! amixer -c "$CARD_NUM" scontrols 2>/dev/null | grep -qi "'Digital'"; then
-      MIXER_CONTROL="PCM"
-    fi
-    echo "==> HiFiBerry erkannt (Karte $CARD_NUM) - trage $ALSA_DEVICE / $MIXER_CONTROL / Karte $CARD_NUM in config.yaml ein"
-    # Targeted line-replace instead of a full YAML parse/dump round-trip -
-    # config.yaml's inline comments (the whole point of the shipped example
-    # file) would otherwise get silently dropped by a re-serialize.
-    sed -i -E "s/^(\s*alsa_device:).*/\1 \"$ALSA_DEVICE\"/" "$INSTALL_DIR/config/config.yaml"
-    sed -i -E "s/^(\s*mixer_control:).*/\1 \"$MIXER_CONTROL\"/" "$INSTALL_DIR/config/config.yaml"
-    # mixer_card used to be left at its config.example.yaml default ("0")
-    # here - harmless if the HiFiBerry really is card 0, but on any Pi where
-    # it isn't (confirmed on real hardware: alsa_device correctly ends up
-    # "hw:2,0", mixer_card silently stays "0"), every amixer volume get/set
-    # in player.py's AlsaMixer targets the wrong (or a non-existent) card.
-    # get_percent() then finds no matching mixer line and falls back to 0 -
-    # looks exactly like "the volume I set never sticks, always shows 0".
-    sed -i -E "s/^(\s*mixer_card:).*/\1 \"$CARD_NUM\"/" "$INSTALL_DIR/config/config.yaml"
-    chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config/config.yaml"
-    AUDIO_CONFIGURED=1
-  fi
-fi
-
-echo "==> Installing systemd service"
 cp "$INSTALL_DIR/systemd/owlbox.service" /etc/systemd/system/owlbox.service
 systemctl daemon-reload
 
-# STAGED_MARKER survives across the reboot between the 1st and 2nd run (a
-# plain shell variable wouldn't - each run is a separate process) - its mere
-# presence means "this box has never finished the guided sound -> display ->
-# rfid -> controls bring-up yet". `owlbox-stage controls` removes it once
-# that bring-up actually completes; until then, this script must never
-# auto-start owlbox.service itself; that would try to open the
-# RC522/buttons/encoders/backlight transistor before any of it is even
-# wired, which is exactly the "everything at once, then guess what's wrong"
-# situation the staged flow (docs/staged-setup.md) replaces.
-STAGED_MARKER="$INSTALL_DIR/config/.staged_setup"
-if [ "$FRESH_CONFIG" = "1" ]; then
-  sed -i -E 's/^(\s*reader:).*/\1 simulated   # mfrc522 | simulated/' "$INSTALL_DIR/config/config.yaml"
-  sed -i -E 's/^(\s*enabled:).*/\1 false/' "$INSTALL_DIR/config/config.yaml"
-  sed -i -E 's/^(\s*backlight_pin:).*/\1 null/' "$INSTALL_DIR/config/config.yaml"
-  chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config/config.yaml"
-  touch "$STAGED_MARKER"
-  chown "$SERVICE_USER:$SERVICE_USER" "$STAGED_MARKER"
+# ============================================================ SOUND
+# The official 7" DSI Touch Display needs NO config.txt entry at all - it's
+# auto-detected over the DSI ribbon cable by the Pi's own firmware (handled
+# under DISPLAY below regardless). All that's needed here is the audio path.
+if [ "$DO_SOUND" -eq 1 ]; then
+  echo "==> [Sound] Installing packages (mpv, ALSA)"
+  apt-get install -y mpv alsa-utils || true
+
+  if [ -n "$CONFIG_TXT" ]; then
+    echo "==> [Sound] Configuring HiFiBerry Amp2 in $CONFIG_TXT"
+
+    # THE actual root cause of a day-long "digital path is fine but playback
+    # is crackling/fragmented" saga, confirmed on real hardware: stock
+    # Raspberry Pi OS Bookworm images already ship their own, active,
+    # uncommented "dtoverlay=vc4-kms-v3d" (no ",noaudio") and
+    # "dtparam=audio=on" lines. An earlier version of this script left those
+    # two alone and just appended its own corrected lines elsewhere, on the
+    # assumption that a later dtoverlay/dtparam line always wins over an
+    # earlier one - that assumption does NOT reliably hold in practice for
+    # either directive: `aplay -l` kept showing both the "vc4hdmi" HDMI-audio
+    # card (from the stock, non-,noaudio overlay application - dtoverlay
+    # lines are independent actions, not key/value overrides, so a second
+    # corrected line doesn't retroactively undo what the first one already
+    # registered) and the onboard "bcm2835 Headphones" card (from the stock
+    # dtparam=audio=on) even with this script's own corrected lines present
+    # and last in the file. Editing the two stock lines directly, in place,
+    # instead of leaving them untouched and fighting them with something
+    # appended elsewhere, is what actually fixed it on real hardware.
+    sed -i -E 's/^dtoverlay=vc4-kms-v3d$/dtoverlay=vc4-kms-v3d,noaudio/' "$CONFIG_TXT"
+    sed -i -E 's/^dtparam=audio=on$/#dtparam=audio=on/' "$CONFIG_TXT"
+    # Safety net for the two lines just edited: delete any further/duplicate
+    # bare copy the in-place substitutions didn't already catch (e.g. a
+    # second stock occurrence) - these patterns only match what's still
+    # unfixed, so they never touch the lines just corrected above.
+    sed -i -E '/^dtoverlay=vc4-kms-v3d$/d; /^dtparam=audio=on$/d' "$CONFIG_TXT"
+    # Fallback for a config.txt that never had a stock "dtoverlay=vc4-kms-v3d"
+    # line to begin with (non-standard/minimal image, or one already
+    # stripped by hand) - the in-place edit above had nothing to upgrade in
+    # that case, so assert the line directly instead of silently ending up
+    # without it.
+    grep -q -E '^dtoverlay=vc4-kms-v3d(,.*)?$' "$CONFIG_TXT" \
+      || echo "dtoverlay=vc4-kms-v3d,noaudio" >> "$CONFIG_TXT"
+
+    # HiFiBerry Amp2's TAS5756M chip is PCM512x-family (same codec as the
+    # DAC+ Pro) - confirmed on real hardware via a failed I2C probe on the
+    # TAS5713-specific "hifiberry-amp" overlay (wrong chip entirely) followed
+    # by an i2cdetect scan showing a live device at 0x4d, the PCM512x
+    # family's address. "hifiberry-amp" is for the older Amp/Amp+'s TAS5713
+    # instead - different chip, different overlay, even though the products
+    # are easy to confuse by name.
+    write_stage_block "$CONFIG_TXT" sound \
+      "dtparam=audio=off" \
+      "dtoverlay=hifiberry-dacplus"
+  else
+    echo "WARNUNG: config.txt nicht gefunden (weder /boot/firmware/config.txt noch /boot/config.txt)." >&2
+    echo "         HiFiBerry-Overlay konnte nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
+  fi
+fi
+
+# ============================================================ DISPLAY
+if [ "$DO_DISPLAY" -eq 1 ]; then
+  echo "==> [Display] Installing packages (Chromium, minimal X stack)"
+  # fonts-noto-color-emoji: "Legacy Lite" has no emoji-capable font at all out
+  # of the box, so every 🦉/😴/▶️/etc. in the kiosk UI renders as an empty box
+  # ("tofu") instead - confirmed on real hardware.
+  apt-get install -y unclutter fonts-noto-color-emoji || true
+  # Debian's chromium package name varies by release; try both.
+  apt-get install -y chromium-browser || apt-get install -y chromium || true
+  # Minimal X stack for the kiosk display - deliberately no desktop
+  # environment (no lightdm, no LXDE) on top of the "Legacy Lite" base image.
+  # xserver-xorg-legacy provides the Xwrapper.config mechanism needed to
+  # start X without a display manager; matchbox-window-manager is tiny but
+  # keeps things well-behaved if a stray JS alert()/confirm() window ever
+  # pops up in Chromium. No fbdev/legacy GL driver package needed here: the
+  # official DSI touch display works with the modern KMS driver
+  # (vc4-kms-v3d, the Bookworm default) active, so X's own default
+  # "modesetting" driver finds /dev/dri/card0 and just works.
+  apt-get install -y xserver-xorg xserver-xorg-legacy xinit x11-xserver-utils matchbox-window-manager || true
+
+  # Belt-and-suspenders against the "German/English" translate bar Chromium
+  # shows on first load: kiosk.sh's --disable-features=Translate command-line
+  # flag alone did NOT actually suppress it on real hardware (confirmed) -
+  # this managed policy is the mechanism Chromium itself documents for
+  # kiosk/enterprise deployments, and covers both possible package/policy
+  # directory names depending on which of the two chromium packages above
+  # got installed.
+  mkdir -p /etc/chromium/policies/managed /etc/chromium-browser/policies/managed
+  for policy_dir in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; do
+    cat > "$policy_dir/owlbox.json" <<'EOF'
+{
+  "TranslateEnabled": false
+}
+EOF
+  done
+
+  if [ -n "$CONFIG_TXT" ]; then
+    echo "==> [Display] Configuring 7\" DSI Touch Display in $CONFIG_TXT"
+    # dtoverlay=vc4-kms-dsi-7inch: THE actual, official overlay for this
+    # display under KMS - confirmed on real hardware that without it, the
+    # DSI panel node/bridge never gets instantiated at all ("[drm] Cannot
+    # find any crtc or sizes" in dmesg, screen stays black) - vc4-kms-v3d
+    # alone (see SOUND above) only enables the base KMS driver, it doesn't
+    # know this specific panel's timings on its own. Also covers the touch
+    # controller (ft5406-family) itself, no separate rpi-ft5406 overlay line
+    # needed. dtparam=i2c_arm=on: the display's touch controller needs I2C.
+    write_stage_block "$CONFIG_TXT" display \
+      "dtparam=i2c_arm=on" \
+      "dtoverlay=vc4-kms-dsi-7inch"
+  else
+    echo "WARNUNG: config.txt nicht gefunden - Display-Overlay konnte nicht automatisch gesetzt werden." >&2
+  fi
+
+  # The 180° *video* flip for the physically upside-down 7" Touch Display has
+  # to be a kernel command-line parameter, not anything in config.txt - the
+  # vc4-kms-dsi-7inch overlay has no "rotate=" param at all (confirmed
+  # against /boot/firmware/overlays/README: only sizex/sizey/invx/invy/
+  # swapxy/disable_touch/dsi0 exist), and xrandr/display_lcd_rotate are both
+  # confirmed ineffective under KMS. No touch params (invx/invy/swapxy) added
+  # on top: confirmed on real hardware that once the video itself is rotated
+  # via this cmdline.txt parameter, touch input already tracks correctly on
+  # its own (X11/libinput applies its own coordinate transform to match the
+  # rotated output) - adding invx+invy here on top double-corrected it.
+  if [ -n "$CMDLINE_TXT" ]; then
+    if ! grep -q "video=DSI-1" "$CMDLINE_TXT"; then
+      echo "==> [Display] Adding 180° video rotation to $CMDLINE_TXT"
+      CMDLINE_BEFORE="$(cat "$CMDLINE_TXT")"
+      printf '%s %s\n' "$CMDLINE_BEFORE" "video=DSI-1:800x480@60,rotate=180" > "$CMDLINE_TXT"
+      CMDLINE_ADDED=1
+    fi
+  else
+    echo "WARNUNG: cmdline.txt nicht gefunden - Bild-Rotation konnte nicht automatisch gesetzt werden." >&2
+  fi
+
+  echo "==> [Display] Setting up kiosk autostart (minimal X, no desktop environment)"
+  cat > /etc/X11/Xwrapper.config <<'EOF'
+allowed_users=anybody
+needs_root_rights=yes
+EOF
+  # No custom Xorg driver config needed: with KMS active, X's default
+  # "modesetting" driver finds /dev/dri/card0 on its own.
+  cp "$INSTALL_DIR/systemd/owlbox-kiosk.service" /etc/systemd/system/owlbox-kiosk.service
+  systemctl daemon-reload
+  # Not enabled/started here - `owlbox-stage display` (and later stages) own
+  # starting it, same reasoning as owlbox.service above: this script's job
+  # ends at "the OS is ready", not "hardware nothing has confirmed is wired
+  # yet is now running".
+fi
+
+# ============================================================ RFID
+if [ "$DO_RFID" -eq 1 ]; then
+  echo "==> [RFID] Enabling SPI"
+  # Not strictly required by the RC522 itself - it runs on software
+  # (bit-banged) SPI over plain GPIOs (see owlbox/rfid/soft_spi.py), not the
+  # Pi's hardware SPI bus - but enabling it costs nothing and keeps the door
+  # open for whoever rewires to real hardware SPI later (see
+  # docs/hardware.md).
+  if command -v raspi-config >/dev/null 2>&1; then
+    raspi-config nonint do_spi 0 || true
+  elif [ -n "$CONFIG_TXT" ]; then
+    write_stage_block "$CONFIG_TXT" rfid "dtparam=spi=on"
+  fi
+  # `raspi-config nonint do_spi 0` uncomments the image's own stock
+  # "#dtparam=spi=on" line in place, outside any managed block - confirmed on
+  # real hardware this can duplicate a copy from an earlier install() that
+  # went the write_stage_block route instead. Converge to a single active
+  # copy regardless of which path set it.
+  if [ -n "$CONFIG_TXT" ] && grep -q '^dtparam=spi=on$' "$CONFIG_TXT"; then
+    OCCURRENCES="$(grep -c '^dtparam=spi=on$' "$CONFIG_TXT")"
+    if [ "$OCCURRENCES" -gt 1 ]; then
+      # Delete every bare copy, then re-add exactly one via the stage block
+      # (so it's still tracked/removable the same way as everything else
+      # this script manages).
+      sed -i -E '/^dtparam=spi=on$/d' "$CONFIG_TXT"
+      write_stage_block "$CONFIG_TXT" rfid "dtparam=spi=on"
+    fi
+  fi
+fi
+
+# ============================================================ CONTROLS
+if [ "$DO_CONTROLS" -eq 1 ]; then
+  # No packages or config.txt lines of its own: buttons/rotary encoders are
+  # plain GPIO via gpiozero, already installed as part of BASE's venv, and
+  # need no overlay/dtparam at all. This stage exists mainly so the four
+  # stages form a complete, symmetric set matching docs/staged-setup.md and
+  # `owlbox-stage` - `sudo owlbox-stage controls` is where the actual
+  # wiring gets tested and where owlbox.service becomes permanently enabled.
+  echo "==> [Taster/Encoder] Nichts zu installieren (gpiozero ist Teil der Basis) - direkt testen mit: sudo owlbox-stage controls"
 fi
 
 # -- summary -----------------------------------------------------------------
 
+if [ -n "$CONFIG_TXT" ]; then
+  AFTER_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
+  [ "$BEFORE_HASH" != "$AFTER_HASH" ] && NEEDS_REBOOT=1
+fi
+# cmdline.txt's own rotation line is a one-time addition (guarded by the
+# "grep -q video=DSI-1" check above) - CMDLINE_ADDED is set right where that
+# happens, since cmdline.txt has no natural "hash before/after" comparison
+# point as clean as CONFIG_TXT's (it's rewritten unconditionally above, not
+# edited in place).
+[ "${CMDLINE_ADDED:-0}" -eq 1 ] && NEEDS_REBOOT=1
+
 if [ "$NEEDS_REBOOT" -eq 1 ]; then
   cat <<EOF
 
-==> config.txt wurde geändert - starte in 10 Sekunden neu (Strg+C zum Abbrechen).
-    Nach dem Neustart dieses Skript einmal erneut ausführen:
-      sudo owlbox-install
+==> config.txt/cmdline.txt geändert - starte in 10 Sekunden neu (Strg+C zum Abbrechen).
+    Nach dem Neustart denselben Befehl einmal erneut ausführen:
+      sudo owlbox-install $STAGE
 EOF
   # Confirmed on real hardware: leaving this as a printed instruction rather
-  # than actually rebooting meant the "der Pi startet am Ende von selbst
-  # neu" documented elsewhere (README/hardware.md/this script's own header
-  # comment) just wasn't true - the script never called reboot itself,
-  # only told the user to. Actually doing it now instead, with a short
-  # window to Ctrl+C out in case something above needs a look first.
+  # than actually rebooting meant the "startet am Ende von selbst neu"
+  # documented elsewhere just wasn't true. Actually doing it now instead,
+  # with a short window to Ctrl+C out in case something above needs a look
+  # first.
   sleep 10
   reboot
-elif [ "$AUDIO_CONFIGURED" -eq 0 ]; then
+else
   cat <<EOF
 
-==> HiFiBerry wurde noch nicht erkannt (config.txt unverändert seit dem
-    letzten Neustart?) - bitte einmal manuell neu starten und dieses Skript
-    danach erneut ausführen:
-      sudo reboot
-      sudo owlbox-install
+==> OS-Vorbereitung für Stufe "$STAGE" abgeschlossen.
 EOF
-elif [ -f "$STAGED_MARKER" ]; then
-  cat <<EOF
-
-==> Basissystem fertig, owlbox.service ABSICHTLICH noch nicht gestartet.
+  case "$STAGE" in
+    sound)    echo "    Jetzt testen: sudo owlbox-stage sound" ;;
+    display)  echo "    Jetzt testen: sudo owlbox-stage display" ;;
+    rfid)     echo "    Jetzt testen: sudo owlbox-stage rfid" ;;
+    controls) echo "    Jetzt testen: sudo owlbox-stage controls" ;;
+    all)      cat <<'EOF'
     Jetzt Stück für Stück in Betrieb nehmen (jede Stufe einzeln testbar,
     siehe docs/staged-setup.md):
-
         sudo owlbox-stage sound
-
-    (nur der HiFiBerry Amp2 muss dafür bereits angeschlossen sein - Display,
-    RC522 und Taster/Encoder kommen erst in den späteren Stufen dazu)
+        sudo owlbox-stage display
+        sudo owlbox-stage rfid
+        sudo owlbox-stage controls
 EOF
-else
-  systemctl enable --now owlbox.service
-  [ "$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)" != "active" ] \
-    && systemctl start owlbox-kiosk.service 2>/dev/null || true
+      ;;
+  esac
   cat <<EOF
 
-==> owlbox.service installiert und gestartet (systemctl status owlbox).
-    Alles eingerichtet: http://<pi-ip>:5000/admin öffnen, Ersteinrichtung
+    Danach noch manuell: http://<pi-ip>:5000/admin öffnen, Ersteinrichtung
     (Benutzername/Passwort) durchlaufen, erste Geschichte hochladen und
     einem Chip zuweisen.
 EOF
