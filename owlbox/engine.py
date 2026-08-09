@@ -78,6 +78,14 @@ class Engine:
         self._max_volume = repository.get_int_setting("max_volume", 100)
         self._volume_step = repository.get_int_setting("volume_step", config.audio.volume_step)
         self._volume = min(config.audio.default_volume, self._max_volume)
+        # Mirrors whatever volume was last actually handed to the player -
+        # normally equal to self._volume, but briefly diverges from it during
+        # a chime (see _play_chime_at, which drops the player to a quiet
+        # level and back without touching self._volume, the real target) or
+        # a sleep-timer fade (_check_sleep_timer). get_state() reports this
+        # instead of querying the player/hardware mixer live - see
+        # _apply_volume for why.
+        self._last_applied_volume = self._volume
         self._chime_enabled = {
             name: bool(repository.get_int_setting(f"chime_enabled_{name}", 1 if config.audio.chime_enabled else 0))
             for name in feedback.CHIMES
@@ -135,7 +143,7 @@ class Engine:
 
     def start(self) -> None:
         self._player.start()
-        self._player.set_volume(self._volume)
+        self._apply_volume(self._volume)
         self._backlight.set_brightness(self._brightness)
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
@@ -219,7 +227,7 @@ class Engine:
             # and it has no shuffle/repeat concept either.
             self._loaded_story_id = None
             self._player.load_playlist([story.stream_url])
-            self._player.set_volume(self._volume)
+            self._apply_volume(self._volume)
             logger.info("streaming '%s' (%s) from %s", story.title, persistence_key, story.stream_url)
             return
 
@@ -239,7 +247,7 @@ class Engine:
         self._player.load_playlist(filepaths, start_index=track_pos, start_seconds=seek_seconds)
         self._player.set_shuffle(story.shuffle)
         self._player.set_repeat_mode(story.repeat)
-        self._player.set_volume(self._volume)
+        self._apply_volume(self._volume)
         logger.info(
             "playing '%s' (%s) from track %s @ %.1fs", story.title, persistence_key, track_pos, seek_seconds
         )
@@ -593,10 +601,21 @@ class Engine:
         with self._lock:
             self._set_volume_locked(self._volume + direction * self._volume_step)
 
+    def _apply_volume(self, percent: int) -> None:
+        # The one place that's allowed to call self._player.set_volume()
+        # directly - keeps self._last_applied_volume in sync with whatever
+        # the player was actually just told, so get_state() can report it
+        # without querying the player/hardware mixer live (see its comment
+        # for why that matters). Called either under self._lock, or (from
+        # start(), before the background thread exists) with nothing else
+        # able to race it yet.
+        self._last_applied_volume = percent
+        self._player.set_volume(percent)
+
     def _set_volume_locked(self, percent: int) -> None:
         previous = self._volume
         self._volume = max(0, min(self._max_volume, percent))
-        self._player.set_volume(self._volume)
+        self._apply_volume(self._volume)
         # Turning all the way down to 0 pauses, turning back up resumes - mirrors
         # a real volume knob/mute button instead of just playing silently at 0.
         # Raising the volume also wakes the box from the auto-sleep screen, even
@@ -613,7 +632,7 @@ class Engine:
             repository.set_setting("max_volume", self._max_volume)
             if self._volume > self._max_volume:
                 self._volume = self._max_volume
-                self._player.set_volume(self._volume)
+                self._apply_volume(self._volume)
 
     def set_volume_step(self, percent: int) -> None:
         with self._lock:
@@ -756,9 +775,9 @@ class Engine:
             # drop it to a fixed, quiet level just for the chime, then restore
             # the real volume. play_chime() blocks until the chime finishes so
             # the restore below can't race a background loop tick.
-            self._player.set_volume(chime_volume)
+            self._apply_volume(chime_volume)
             feedback.play_chime(name, self._config.audio.alsa_device)
-            self._player.set_volume(restore_to)
+            self._apply_volume(restore_to)
 
     # -- display brightness -----------------------------------------------------
 
@@ -827,7 +846,7 @@ class Engine:
         # anywhere the timer might stop before reaching zero.
         if self._sleep_timer_fading:
             self._sleep_timer_fading = False
-            self._player.set_volume(self._volume)
+            self._apply_volume(self._volume)
 
     def _check_sleep_timer(self, now: float) -> None:
         with self._lock:
@@ -844,12 +863,12 @@ class Engine:
                 # Restore the real volume so the next play/resume isn't silent -
                 # the fade only ever touches the player's instantaneous output,
                 # never the configured target volume (self._volume).
-                self._player.set_volume(self._volume)
+                self._apply_volume(self._volume)
                 return
             if self._sleep_fade_seconds > 0 and remaining <= self._sleep_fade_seconds:
                 self._sleep_timer_fading = True
                 faded = round(self._volume * (remaining / self._sleep_fade_seconds))
-                self._player.set_volume(faded)
+                self._apply_volume(faded)
             else:
                 self._restore_volume_after_fade_locked()
 
@@ -938,6 +957,7 @@ class Engine:
             function_action = self._current_function_action
             parent_label = self._current_parent_label
             last_unknown = self._last_unknown_uid
+            volume = self._last_applied_volume
             max_volume = self._max_volume
             volume_step = self._volume_step
             chime_enabled = dict(self._chime_enabled)
@@ -960,6 +980,30 @@ class Engine:
             hotspot_active = self._hotspot_active
             hotspot_ip = self._hotspot_ip
         status = self._player.get_status()
+        # Overrides player.get_status()'s own placeholder "volume" (see its
+        # comment - MpvPlayer used to fill this via a live `amixer sget`
+        # read, a subprocess spawn on every single call) with
+        # self._last_applied_volume, captured above under the lock. THE
+        # actual root cause of a real-hardware "continuous crackling during
+        # playback" complaint that turned out to have nothing to do with
+        # config.txt/kernel overlays at all: /api/state is polled every
+        # second from every open page (kiosk + any open admin tab, see the
+        # __init__ comment on _wifi_enabled above for the same lesson learned
+        # about nmcli) - each poll was forking an amixer subprocess just to
+        # report a value the Engine already knows precisely, because
+        # _apply_volume() is the only thing that ever changes it (there's no
+        # separate hardware volume pot on this project's amp to read back
+        # independently). That steady drip of process spawns was enough
+        # added CPU contention on a Pi 3B+ - already tight on cycles because
+        # the kiosk's Chromium runs fully software-rendered, see
+        # docs/hardware.md - to starve mpv's audio thread often enough to be
+        # audible, even with the generous --audio-buffer=1.0 already in
+        # place for exactly this class of problem. Deliberately
+        # self._last_applied_volume and not self._volume: the two briefly
+        # diverge during a chime or sleep-timer fade (see _apply_volume's
+        # comment) - self._volume alone would have silently hidden that
+        # dip from anything polling state, changing user-visible behaviour.
+        status["volume"] = volume
 
         sleep_timer_remaining = None
         if sleep_timer_end is not None:

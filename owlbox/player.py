@@ -329,7 +329,20 @@ class MpvPlayer:
             "duration": prop("duration", 0.0) or 0.0,
             "playlist_pos": prop("playlist-pos", 0) or 0,
             "playlist_count": prop("playlist-count", 0) or 0,
-            "volume": self.get_volume(),
+            # NOT self.get_volume() here on purpose - confirmed on real
+            # hardware as the actual cause of a "continuous crackling during
+            # playback" complaint that had nothing to do with config.txt/
+            # kernel overlays: get_status() is on a hot path (every engine
+            # loop tick via _check_auto_sleep, every position-autosave tick,
+            # and every /api/state poll - which fires every second from
+            # every open page, kiosk included) and get_volume() forks an
+            # `amixer` subprocess. None of get_status()'s callers actually
+            # need "volume" except Engine.get_state(), which already
+            # overrides this key with its own tracked value right after
+            # calling here (see the comment there) - so this key is a
+            # placeholder purely to keep the dict shape self-documenting;
+            # its value is never read.
+            "volume": 0,
             "eof": bool(prop("eof-reached", False)),
         }
 
