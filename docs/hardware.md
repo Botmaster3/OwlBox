@@ -29,28 +29,23 @@ Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 `config/config.example.yaml`. Wer andere Pins verdrahtet, passt einfach die
 `gpio:`/`rfid:` Sektion in `config/config.yaml` an.
 
-**Verkabelungsplan als Grafik**: `docs/owlbox-wiring-diagram.svg` zeigt den
-kompletten, fertig verkabelten Gesamtaufbau auf einen Blick - Pi + HiFiBerry
-direkt gestapelt (inkl. Lautsprecher L/R an dessen Federklemmen), per Kabel
-verbunden mit der Adapter-Platine, die wiederum RC522, Taster, beide Encoder,
-Display und Backlight-Dimmen verkabelt.
-
 **GPIO-Pinbelegung als Grafik**: `docs/owlbox-gpio-pinout.svg` zeigt den
 kompletten 40-Pin-Header (physische Nummerierung wie auf der Pi-Platine) mit
-Zielgerät pro Pin - gedacht als Bauvorlage für eine per Kabel angeschlossene
-Adapter-Platine (Pi + HiFiBerry bleiben gestapelt, alle übrigen Komponenten
-hängen an der Adapter-Platine).
+Zielgerät pro Pin - aktuell (Hardware-SPI0 für den RC522, 7"-DSI-Display),
+direkte Verkabelung per Jumperkabel wie in diesem Dokument beschrieben.
 
-**Layout-Vorschlag für die Adapter-Platine**: `docs/owlbox-adapter-layout.svg`
-zeigt, wie die Steckverbinder auf der Platine selbst angeordnet werden können -
-IDC-Buchsenleiste an einer Kante (Richtung Pi/HiFiBerry), die übrigen sechs
-Anschlüsse jeweils zur Seite ihres Zielbauteils im Gehäuse ausgerichtet, plus
-eine gemeinsame GND-/3.3V-Schiene statt einzelner Rückführungen zum Kabel.
-
-**Verteiler-Platine**: `docs/hat-wiring.html` (im Browser öffnen) zeigt den
-kompletten Schaltplan inkl. 40-Pin-Belegung und Steckverbinder-Pinouts pro
-Modul - Kabel-Konzept wie oben, kein Stapelaufbau der Adapter-Platine selbst.
-Die Pin-Zuordnung dort ist identisch mit den Tabellen unten.
+**Veraltet, für den früheren Aufbau mit eigener Adapter-Platine:**
+`docs/owlbox-wiring-diagram.svg`, `docs/owlbox-adapter-layout.svg` und
+`docs/hat-wiring.html` stammen aus einer älteren Bauvariante, die RC522,
+Taster, Encoder und Display statt per direktem Jumperkabel über eine
+eigene, separat verdrahtete Adapter-Platine anschließt - und zeigen dabei
+noch das frühere 3,5"-SPI-Display (CE0/DC/RST-Pinout) sowie den RC522 auf
+Software-SPI/CE1, nicht die aktuelle Standardverkabelung (7"-DSI-Display,
+RC522 auf Hardware-SPI0/CE0) aus diesem Dokument. Nur relevant, wer
+tatsächlich eine eigene Adapter-Platine bauen will und die Pin-Zuordnung
+selbst an die aktuelle Hardware anpasst - für den normalen Aufbau (direkte
+Jumperkabel, kein eigenes Board) sind `docs/owlbox-gpio-pinout.svg` und die
+Tabellen unten die maßgebliche, aktuelle Referenz.
 
 ## Anschluss: offizielles 7" Touch Display (DSI)
 

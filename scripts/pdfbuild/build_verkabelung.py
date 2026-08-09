@@ -92,10 +92,12 @@ p("Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Standardwerten in 
   "config/config.example.yaml. Wer andere Pins verdrahtet, passt einfach die gpio:/rfid:-Sektion "
   "in config.yaml an.")
 story.append(note_box(
-    "Referenzgrafiken liegen zusätzlich zu dieser PDF im Projekt unter docs/: "
-    "owlbox-wiring-diagram.svg (Gesamtaufbau), owlbox-gpio-pinout.svg (kompletter 40-Pin-Header), "
-    "owlbox-adapter-layout.svg (Platinenlayout-Vorschlag) und hat-wiring.html (kompletter "
-    "Schaltplan, im Browser öffnen)."
+    "Referenzgrafik zusätzlich zu dieser PDF im Projekt: docs/owlbox-gpio-pinout.svg "
+    "(kompletter 40-Pin-Header, aktuell). docs/owlbox-wiring-diagram.svg, "
+    "docs/owlbox-adapter-layout.svg und docs/hat-wiring.html existieren ebenfalls, stammen aber "
+    "aus einer älteren Bauvariante mit eigener Adapter-Platine und zeigen noch das frühere "
+    "3,5″-SPI-Display sowie den RC522 auf Software-SPI - nur relevant für eine eigene "
+    "Adapter-Platine, nicht für den in dieser PDF beschriebenen Standardaufbau."
 ))
 
 h2("Anschluss: offizielles 7″ Touch Display (DSI)")
