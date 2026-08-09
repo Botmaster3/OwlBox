@@ -840,6 +840,41 @@ def test_volume_step_setting_is_persisted_and_used(config):
     assert repository.get_int_setting("volume_step", -1) == 10
 
 
+def test_volume_survives_a_service_restart(config):
+    # Confirmed on real hardware: every restart of owlbox.service (e.g. each
+    # `owlbox-stage <name>` step during the staged bring-up, or just a normal
+    # reboot) used to silently reset playback volume back to
+    # config.audio.default_volume, discarding whatever had actually been set
+    # - a manually-set 80% dropped to the 60% config default the moment the
+    # service next started. Constructing a second Engine against the same
+    # database (same tmp_path-backed config, same pattern as
+    # test_max_volume_clamps_current_and_future_changes/
+    # test_volume_step_setting_is_persisted_and_used above) simulates exactly
+    # that restart.
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.manual_set_volume(80)
+        assert engine.get_state()["player"]["volume"] == 80
+    finally:
+        engine.stop()
+    assert repository.get_int_setting("volume", -1) == 80
+
+    restarted = Engine(config)
+    assert restarted._volume == 80
+    restarted.start()
+    try:
+        assert restarted.get_state()["player"]["volume"] == 80
+    finally:
+        restarted.stop()
+
+
+def test_fresh_install_with_no_saved_volume_falls_back_to_config_default(config):
+    config.audio.default_volume = 42
+    engine = Engine(config)
+    assert engine._volume == 42
+
+
 def test_sleep_timer_pauses_playback_when_it_expires(config):
     config.rfid.poll_interval = 0.05
     _make_story_with_file(config, "AABBCC")

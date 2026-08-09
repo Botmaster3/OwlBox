@@ -77,7 +77,17 @@ class Engine:
         self._last_unknown_uid: Optional[str] = None
         self._max_volume = repository.get_int_setting("max_volume", 100)
         self._volume_step = repository.get_int_setting("volume_step", config.audio.volume_step)
-        self._volume = min(config.audio.default_volume, self._max_volume)
+        # Persisted the same way max_volume/volume_step already are - confirmed
+        # on real hardware this was missing entirely: every restart of
+        # owlbox.service (e.g. each `owlbox-stage <name>` step during the
+        # staged bring-up, or just a normal reboot) silently reset playback
+        # volume to config.audio.default_volume, discarding whatever the user
+        # had actually set via the encoder/web UI. Falls back to
+        # default_volume only when nothing has ever been saved yet (a
+        # genuinely fresh install).
+        self._volume = min(
+            repository.get_int_setting("volume", config.audio.default_volume), self._max_volume
+        )
         # Mirrors whatever volume was last actually handed to the player -
         # normally equal to self._volume, but briefly diverges from it during
         # a chime (see _play_chime_at, which drops the player to a quiet
@@ -616,6 +626,11 @@ class Engine:
         previous = self._volume
         self._volume = max(0, min(self._max_volume, percent))
         self._apply_volume(self._volume)
+        # Persist the real target volume (not chime/fade dips, which never go
+        # through here - see _apply_volume/_play_chime_at) so it survives a
+        # restart of owlbox.service instead of resetting to config default
+        # every time - same pattern as max_volume/volume_step below.
+        repository.set_setting("volume", self._volume)
         # Turning all the way down to 0 pauses, turning back up resumes - mirrors
         # a real volume knob/mute button instead of just playing silently at 0.
         # Raising the volume also wakes the box from the auto-sleep screen, even
@@ -633,6 +648,7 @@ class Engine:
             if self._volume > self._max_volume:
                 self._volume = self._max_volume
                 self._apply_volume(self._volume)
+                repository.set_setting("volume", self._volume)
 
     def set_volume_step(self, percent: int) -> None:
         with self._lock:
