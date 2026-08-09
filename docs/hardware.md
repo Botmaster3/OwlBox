@@ -246,6 +246,26 @@ Ort und Stelle aus (`#dtparam=audio=on`), statt sich auf Override-Semantik
 zu verlassen - derselbe `sudo owlbox-install` plus Neustart wie oben behebt
 beides in einem Rutsch.
 
+**Vierte Falle, an echter Hardware bestätigt: jede Live-Overlay-Änderung ohne
+anschließenden Neustart kann denselben Effekt haben, unabhängig von
+`config.txt`.** `raspi-config nonint do_spi 0` (macht `install.sh` beim
+`rfid`-Stage, um SPI0 für den RC522 zu aktivieren) wendet den Overlay sofort
+zur Laufzeit an, nicht erst beim nächsten Boot. An echter Hardware
+beobachtet: danach digital alles unauffällig (Mixer korrekt, `speaker-test`
+läuft fehlerfrei durch, kein ALSA-Fehler), aber kein Ton am Lautsprecher -
+bis einmal sauber `sudo reboot` gemacht wurde, danach zuverlässig wieder da.
+Dasselbe Symptombild wie bei einem Absturz-Loop (schnell aufeinanderfolgende
+`systemctl restart` mit je einem frischen `mpv`-Start): die Ursache ist
+vermutlich, dass der VC4-I2S/Audio-Hardwareblock (s.o., derselbe, den auch
+der HDMI-Audio-Konflikt betrifft) irgendeine Laufzeitänderung an einem
+benachbarten Peripherie-Treiber nicht sauber verkraftet. `install.sh` stößt
+seit dieser Erkenntnis nach dem `rfid`-Stage automatisch einen Neustart an
+(genau wie bei `sound`/`display`, wenn `config.txt` sich ändert) - auch wenn
+`config.txt` diesmal unverändert bleibt, weil `dtparam=spi=on` schon
+vorher drinstand. `docs/staged-setup.md` beschreibt den Ablauf: `owlbox-install
+rfid` ausführen, Neustart abwarten, denselben Befehl noch einmal ausführen,
+erst danach `owlbox-stage rfid`.
+
 **An echter Hardware bestätigt:** Der Amp2 hat einen TAS5756M-Chip - das ist
 dieselbe PCM512x-Chipfamilie wie bei der DAC+ Pro, ein komplett anderer Chip
 als der TAS5713 des älteren Amp/Amp+. `dtoverlay=hifiberry-amp` ist speziell

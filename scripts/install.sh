@@ -435,6 +435,13 @@ if [ "$DO_RFID" -eq 1 ]; then
   # CE0), see owlbox/rfid/mfrc522_reader.py and docs/hardware.md. Without
   # this the kernel's spi-bcm2835 driver never loads and the device node
   # doesn't exist.
+  #
+  # /dev/spidev0.0 existing already (before we touch anything below) means
+  # SPI0 survived a previous clean boot - `do_spi` below is then a no-op and
+  # doesn't need another reboot. If it's missing, this run is the one
+  # activating SPI0 for the first time.
+  SPI_ALREADY_ACTIVE=0
+  [ -e /dev/spidev0.0 ] && SPI_ALREADY_ACTIVE=1
   if command -v raspi-config >/dev/null 2>&1; then
     raspi-config nonint do_spi 0 || true
   elif [ -n "$CONFIG_TXT" ]; then
@@ -455,6 +462,16 @@ if [ "$DO_RFID" -eq 1 ]; then
       write_stage_block "$CONFIG_TXT" rfid "dtparam=spi=on"
     fi
   fi
+  # Force the reboot path below if SPI0 just went from inactive to active,
+  # even though config.txt's hash may not have changed (e.g. the line was
+  # already there from an earlier install(), just never actually loaded).
+  # `raspi-config nonint do_spi 0` applies the overlay live - confirmed on
+  # real hardware that this live toggle alone (no crash, no config.txt
+  # change) can leave the audio driver in a broken-but-silent state
+  # (digitally clean writes, no error, no sound) until a clean reboot, see
+  # docs/hardware.md's "Vierte Falle". Gated on SPI_ALREADY_ACTIVE so a
+  # second, already-clean run doesn't reboot again on every invocation.
+  [ "$SPI_ALREADY_ACTIVE" -eq 0 ] && NEEDS_REBOOT=1
 fi
 
 # ============================================================ CONTROLS
@@ -484,7 +501,9 @@ fi
 if [ "$NEEDS_REBOOT" -eq 1 ]; then
   cat <<EOF
 
-==> config.txt/cmdline.txt geändert - starte in 10 Sekunden neu (Strg+C zum Abbrechen).
+==> Neustart noetig (config.txt/cmdline.txt geaendert, oder ein Overlay wurde
+    live umgeschaltet - z.B. SPI0 fuer den RC522) - starte in 10 Sekunden neu
+    (Strg+C zum Abbrechen).
     Nach dem Neustart denselben Befehl einmal erneut ausführen:
       sudo owlbox-install $STAGE
 EOF

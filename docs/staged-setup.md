@@ -86,7 +86,20 @@ die Ursache. Danach nochmal kurz hören (Testbefehl wird wieder angezeigt).
 [docs/hardware.md](hardware.md)), dann:
 
 ```bash
-sudo owlbox-install rfid   # aktiviert SPI, kein Neustart noetig
+sudo owlbox-install rfid   # aktiviert SPI0
+```
+
+Genau wie bei "display" startet dieser Befehl danach automatisch neu - beim
+allerersten Aktivieren von SPI0 ist das nicht optional: `raspi-config nonint
+do_spi 0` schaltet SPI0 sonst nur per Live-Overlay ein, ohne echten Neustart,
+und das kann an echter Hardware bestätigt den Audiotreiber in denselben
+kaputten Zustand versetzen wie ein Absturz-Loop (digital sieht alles
+unauffällig aus - Mixer korrekt, `speaker-test` läuft fehlerfrei durch -, es
+kommt aber trotzdem kein Ton, bis einmal sauber neu gestartet wurde). Nach dem
+Neustart denselben Befehl einmal erneut ausführen, dann testen:
+
+```bash
+sudo owlbox-install rfid   # nach dem Neustart erneut - jetzt ohne weiteren Reboot
 sudo owlbox-stage rfid     # startet ein eigenstaendiges Scan-Testwerkzeug
 ```
 
