@@ -562,6 +562,11 @@ story.append(spec_table(
          "Duplikate automatisch, nicht cd owlbox && sudo ./scripts/install.sh - siehe Zeile "
          "„command not found“ oben) und neu starten. aplay -l sollte danach keine "
          "vc4hdmi-Karte mehr zeigen, siehe OwlBox-Verkabelung.pdf, Kapitel 2."],
+        ["aplay -l zeigt zusätzlich „card N: Headphones [bcm2835 Headphones]“",
+         "Dieselbe Duplikat-Falle wie oben, nur für dtparam=audio=on statt dtoverlay=vc4-kms-v3d "
+         "- grep -n dtparam=audio config.txt prüfen, sollte nur noch dtparam=audio=off zeigen. "
+         "sudo owlbox-install erneut ausführen (entfernt vorbestehende dtparam=audio=on-Zeilen "
+         "automatisch) und neu starten."],
         ["Display bleibt schwarz", "dmesg | grep -i drm prüfen - „Cannot find any crtc or "
          "sizes“ bedeutet, dass in config.txt der displayspezifische Overlay fehlt: neben "
          "dtoverlay=vc4-kms-v3d,noaudio wird zusätzlich dtoverlay=vc4-kms-dsi-7inch gebraucht "

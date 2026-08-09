@@ -240,16 +240,18 @@ if [ -n "$CONFIG_TXT" ]; then
   echo "==> Configuring audio (HiFiBerry Amp2) in $CONFIG_TXT"
   BEFORE_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
 
-  # Onboard audio off in favour of the HiFiBerry: no separate sed pass needed
-  # for a pre-existing "dtparam=audio=on" line - the managed block below
-  # already appends its own "dtparam=audio=off" at the *end* of the file, and
-  # the Pi's config.txt parser takes the last occurrence of a given dtparam
-  # as authoritative, so it wins regardless of what an earlier line said.
-  # (A previous version of this script also sed'd the original line in place
-  # AND relied on the managed block, so a stock image's "dtparam=audio=on"
-  # line ended up converted to "off" twice - harmless duplication, but
-  # confusing to find in config.txt; fixed by just not doing that redundant
-  # pass anymore.)
+  # Onboard audio off in favour of the HiFiBerry: an earlier version of this
+  # script assumed a pre-existing "dtparam=audio=on" line was harmless to
+  # leave in place, on the theory that the Pi's config.txt parser takes the
+  # last occurrence of a given dtparam as authoritative, so the managed
+  # block's own "dtparam=audio=off" at the end of the file would win
+  # regardless. Confirmed on real hardware that this "last one wins" theory
+  # doesn't reliably hold in practice - the onboard "bcm2835 Headphones" ALSA
+  # card kept reappearing in aplay -l across reboots even with the managed
+  # block's dtparam=audio=off correctly present and last in the file. Same
+  # fix as for the vc4-kms-v3d duplicate below: don't rely on override
+  # semantics, just remove every pre-existing "dtparam=audio=on" line so
+  # there's nothing left to (maybe) win over.
 
   # Clean up leftover config.txt lines from a previous install targeting the
   # old 3.5" SPI display (tft35a/MHS-35 overlay, its forced virtual-HDMI mode,
@@ -262,19 +264,19 @@ if [ -n "$CONFIG_TXT" ]; then
   # ",noaudio" fix below kept not working on real hardware even after it was
   # added: stock Raspberry Pi OS Bookworm images already ship an active,
   # uncommented "dtoverlay=vc4-kms-v3d" line outside this script's managed
-  # block (near the end of config.txt, under an "[all]" section), and
-  # dtoverlay directives are NOT last-one-wins key/value overrides the way
-  # dtparam lines are - each "dtoverlay=" line applies that overlay as its
-  # own independent action. So the stock line kept registering the vc4hdmi
-  # ALSA card (no ",noaudio" on IT) regardless of the corrected line this
-  # script appended afterwards - crackling persisted because the conflicting
-  # HDMI-audio registration was still happening, just from a second,
-  # untouched source. Confirmed on real hardware: `aplay -l` still showed
-  # "card N: vc4hdmi" after a reboot even with the managed block's
-  # ",noaudio" line present. Deleting every pre-existing occurrence here,
-  # before the managed block re-adds exactly one correct line below, is the
-  # only way to guarantee there isn't a second, audio-registering copy.
-  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d; /^dtoverlay=vc4-kms-v3d(,.*)?$/d' "$CONFIG_TXT"
+  # block (near the end of config.txt, under an "[all]" section). Each
+  # "dtoverlay=" line applies that overlay as its own independent action
+  # rather than overriding an earlier one, so the stock line kept registering
+  # the vc4hdmi ALSA card (no ",noaudio" on IT) regardless of the corrected
+  # line this script appended afterwards - crackling persisted because the
+  # conflicting HDMI-audio registration was still happening, just from a
+  # second, untouched source. Confirmed on real hardware: `aplay -l` still
+  # showed "card N: vc4hdmi" after a reboot even with the managed block's
+  # ",noaudio" line present. Same story for "dtparam=audio=on" (see above) -
+  # deleting every pre-existing occurrence of both here, before the managed
+  # block re-adds exactly one correct copy of each below, is the only way to
+  # guarantee there isn't a second, still-active source of either.
+  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d; /^dtoverlay=vc4-kms-v3d(,.*)?$/d; /^dtparam=audio=on$/d' "$CONFIG_TXT"
 
   # HiFiBerry Amp2's TAS5756M chip is PCM512x-family (same codec as the DAC+
   # Pro) - confirmed on real hardware via a failed I2C probe on the

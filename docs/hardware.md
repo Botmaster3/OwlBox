@@ -210,9 +210,9 @@ EINZIGE `dtoverlay=vc4-kms-v3d`-Zeile in der Datei ist.** Ein frisches
 Raspberry Pi OS Bookworm-Image bringt in `/boot/firmware/config.txt` bereits
 eine eigene, unkommentierte `dtoverlay=vc4-kms-v3d`-Zeile mit (ohne
 `,noaudio`, meist unter einem `[all]`-Abschnitt weiter unten in der Datei).
-Anders als `dtparam=`-Zeilen, bei denen die letzte Zeile gewinnt, sind
-`dtoverlay=`-Zeilen **nicht** Key/Value-Overrides, sondern jede einzelne
-wendet den Overlay als eigene, unabhängige Aktion an. Stehen also zwei
+Anders als bei `dtparam=`-Zeilen sind `dtoverlay=`-Zeilen **nicht**
+Key/Value-Overrides, sondern jede einzelne wendet den Overlay als eigene,
+unabhängige Aktion an. Stehen also zwei
 `dtoverlay=vc4-kms-v3d`-Zeilen in der Datei - die mitgelieferte ohne
 `,noaudio` und die von `install.sh` ergänzte mit `,noaudio` - registriert die
 erste trotzdem ihre eigene `vc4hdmi`-ALSA-Karte, und das Knacksen bleibt
@@ -230,6 +230,21 @@ bereits ausgecheckten Repos landet nicht im Repo-Root, sondern eine Ebene zu
 tief im gleichnamigen Python-Paket-Unterordner, und `./scripts/install.sh`
 meldet dann nur „command not found“, ohne dass irgendetwas vom Skript
 tatsächlich läuft - an echter Hardware genau so aufgetreten.
+
+**Dritte Falle, ebenfalls an echter Hardware bestätigt: `dtparam=audio=on`
+muss aus demselben Grund verschwinden, nicht nur auskommentiert oder von
+einem späteren `dtparam=audio=off` "überschrieben" werden.** Ein frisches
+Bookworm-Image bringt standardmäßig eine eigene, unkommentierte
+`dtparam=audio=on`-Zeile mit. Die naheliegende Annahme - `dtparam=`-Zeilen
+seien Key/Value-Overrides, bei denen die letzte Zeile in der Datei gewinnt,
+also würde `install.sh`s eigenes, weiter unten stehendes
+`dtparam=audio=off` automatisch siegen - hat sich an echter Hardware **nicht
+zuverlässig** bestätigt: die onboard „bcm2835 Headphones“-ALSA-Karte tauchte
+trotz korrekt zuletzt stehendem `dtparam=audio=off` über mehrere Neustarts
+hinweg immer wieder in `aplay -l` auf. `install.sh` entfernt seit dieser
+Erkenntnis auch jede vorbestehende `dtparam=audio=on`-Zeile automatisch,
+statt sich auf Override-Semantik zu verlassen - derselbe `sudo owlbox-install`
+plus Neustart wie oben behebt beides in einem Rutsch.
 
 **An echter Hardware bestätigt:** Der Amp2 hat einen TAS5756M-Chip - das ist
 dieselbe PCM512x-Chipfamilie wie bei der DAC+ Pro, ein komplett anderer Chip

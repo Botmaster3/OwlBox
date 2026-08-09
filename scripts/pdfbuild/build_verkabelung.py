@@ -233,7 +233,7 @@ story.append(note_box(
     "Zweite Falle, an echter Hardware bestätigt: Der Fix wirkt nur, wenn er die EINZIGE "
     "dtoverlay=vc4-kms-v3d-Zeile in der Datei ist. Ein frisches Raspberry Pi OS Bookworm-Image "
     "bringt in config.txt bereits eine eigene, unkommentierte dtoverlay=vc4-kms-v3d-Zeile mit "
-    "(ohne ,noaudio). Anders als dtparam=-Zeilen (letzte Zeile gewinnt) sind dtoverlay=-Zeilen "
+    "(ohne ,noaudio). Anders als dtparam=-Zeilen sind dtoverlay=-Zeilen "
     "KEINE Key/Value-Overrides - jede einzelne wendet den Overlay unabhängig an. Stehen beide "
     "Zeilen in der Datei, registriert die erste trotzdem ihre eigene vc4hdmi-Karte, und das "
     "Knacksen bleibt bestehen. Kontrolle: grep -n dtoverlay=vc4-kms-v3d config.txt sollte genau "
@@ -246,6 +246,20 @@ story.append(note_box(
     "innerhalb eines bereits ausgecheckten Repos landet nicht im Repo-Root, sondern eine Ebene "
     "zu tief im gleichnamigen Python-Paket-Unterordner, und ./scripts/install.sh meldet dann "
     "nur „command not found“, ohne dass irgendetwas vom Skript tatsächlich läuft.",
+    kind="warn",
+))
+story.append(note_box(
+    "Dritte Falle, ebenfalls an echter Hardware bestätigt: dtparam=audio=on muss aus demselben "
+    "Grund verschwinden, nicht nur auskommentiert oder von einem späteren dtparam=audio=off "
+    "\"überschrieben\" werden. Ein frisches Bookworm-Image bringt standardmäßig eine eigene, "
+    "unkommentierte dtparam=audio=on-Zeile mit. Die naheliegende Annahme - dtparam=-Zeilen "
+    "seien Key/Value-Overrides, bei denen die letzte Zeile gewinnt, also würde install.sh's "
+    "eigenes, weiter unten stehendes dtparam=audio=off automatisch siegen - hat sich an echter "
+    "Hardware NICHT zuverlässig bestätigt: die onboard „bcm2835 Headphones“-ALSA-Karte tauchte "
+    "trotz korrekt zuletzt stehendem dtparam=audio=off über mehrere Neustarts hinweg immer "
+    "wieder in aplay -l auf. install.sh entfernt seit dieser Erkenntnis auch jede vorbestehende "
+    "dtparam=audio=on-Zeile automatisch, statt sich auf Override-Semantik zu verlassen - "
+    "derselbe sudo owlbox-install plus Neustart wie oben behebt beides in einem Rutsch.",
     kind="warn",
 ))
 h2("Lautsprecher anschließen")
