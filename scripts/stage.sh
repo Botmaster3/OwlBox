@@ -154,13 +154,19 @@ force_test_volume() {
 
 # run_test_tool <script.py> <freundlicher Name>
 # Runs one of scripts/test_rfid.py / scripts/test_controls.py in the
-# foreground and waits for it to exit (Ctrl+C) before the stage continues -
-# so "wire it, test it, THEN commit the config" happens in one command
-# instead of three separate steps to keep track of.
+# foreground, capped at TEST_TOOL_TIMEOUT_SECONDS - so "wire it, test it,
+# THEN commit the config" happens in one command instead of three separate
+# steps to keep track of, but without forcing a manual Ctrl+C every single
+# time the stage runs (e.g. while retesting something unrelated with the
+# hardware not even attached yet - a real, common case during a staged
+# bring-up). Ctrl+C still works to end it early if you're actually testing
+# a scan/button press and don't want to wait out the timeout.
+TEST_TOOL_TIMEOUT_SECONDS=8
+
 run_test_tool() {
   local script="$1" label="$2"
   if [ "$DRYRUN" = "1" ]; then
-    echo "   [dry-run] $PYTHON $INSTALL_DIR/scripts/$script"
+    echo "   [dry-run] timeout ${TEST_TOOL_TIMEOUT_SECONDS}s $PYTHON $INSTALL_DIR/scripts/$script"
     return
   fi
   if [ ! -x "$PYTHON" ]; then
@@ -168,9 +174,17 @@ run_test_tool() {
     return 1
   fi
   echo
-  echo "-- $label-Test (Strg+C zum Beenden, dann geht's automatisch weiter) --"
+  echo "-- $label-Test (${TEST_TOOL_TIMEOUT_SECONDS}s, oder frueher mit Strg+C beenden) --"
   echo
-  "$PYTHON" "$INSTALL_DIR/scripts/$script" || true
+  # -s INT (not the default SIGTERM): test_rfid.py/test_controls.py only
+  # catch KeyboardInterrupt (SIGINT) to run their `finally: reader.close()`/
+  # `controls.close()` cleanup - a bare SIGTERM would skip that entirely and
+  # could leave the RC522/GPIO chip handle claimed, making the *next* open
+  # (owlbox.service's own, moments later in this same stage) fail with
+  # "GPIO busy" - confirmed real behavior for that exact error elsewhere in
+  # this script's history, just from a different cause. -k 3 as a backstop
+  # in case cleanup itself ever hangs.
+  timeout -s INT -k 3 "${TEST_TOOL_TIMEOUT_SECONDS}s" "$PYTHON" "$INSTALL_DIR/scripts/$script" || true
 }
 
 apply() {  # apply <rfid> <gpio_enabled> <backlight_pin>
