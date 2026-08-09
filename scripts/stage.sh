@@ -254,18 +254,34 @@ EOF
   echo "   1-2 Minuten hoeren."
 }
 
-# Short reminder used at every stage after "sound" - the full sound_check
-# above (card/mixer diagnosis) doesn't need repeating every time, only
-# whether the SAME test still sounds the same as it did before.
+# Short listening check used at every stage after "sound". Confirmed on real
+# hardware: from here on owlbox.service is running, and its mpv instance
+# holds the ALSA device open the whole time it's alive (--idle=yes) - a
+# separate `speaker-test` process trying to open the same hw:X,Y device at
+# the same time fails outright with "Device or resource busy" (see
+# owlbox/feedback.py's own docstring, which already documents this same
+# constraint for chime playback). So testing here can't just run
+# speaker-test alongside the running service like the "sound" stage does -
+# it stops owlbox.service first (freeing the device), runs the test, then
+# starts it again automatically, the same stop-test-resume pattern
+# run_test_tool already uses for the rfid/controls test tools.
 listen_reminder() {
+  local card="${1:-0}"
   echo
   echo "   Zur Kontrolle nochmal hoeren, ob der Ton noch genauso sauber ist"
-  echo "   wie bei der vorherigen Stufe:"
+  echo "   wie bei der vorherigen Stufe. owlbox.service haelt die Soundkarte"
+  echo "   offen (mpv laeuft im Hintergrund) - wird dafuer kurz angehalten:"
   echo
-  echo "        speaker-test -D hw:0,0 -c 2 -t sine -l 1"
+  if [ "$DRYRUN" = "1" ]; then
+    echo "   [dry-run] systemctl stop owlbox.service; speaker-test ...; systemctl start owlbox.service"
+    return
+  fi
+  svc stop owlbox.service || true
+  speaker-test -D "hw:$card,0" -c 2 -t sine -l 1 || true
+  svc start owlbox.service
   echo
-  echo "   Klingt es jetzt anders/schlechter als eben -> die gerade neu"
-  echo "   zugeschaltete Komponente ist die Ursache."
+  echo "   Klang es anders/schlechter als bei der vorherigen Stufe -> die"
+  echo "   gerade neu zugeschaltete Komponente ist die Ursache."
 }
 
 STAGE="${1:-}"

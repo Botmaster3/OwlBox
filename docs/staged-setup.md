@@ -124,6 +124,22 @@ Reihenfolge durchlaufen lassen konvergiert auf eine feste, duplikatfreie
 `config.txt` - kein Wildwuchs an doppelten Zeilen oder Leerzeilen, egal wie
 oft oder in welcher Kombination man es laufen lässt.
 
+## Warum die Hörprobe ab Stufe 2 den Dienst kurz anhält
+
+Ab "display" läuft `owlbox.service` durchgehend (davor, bei "sound", ist es
+bewusst aus). Sein `mpv`-Prozess hält die Soundkarte offen, solange er lebt
+(`--idle=yes`) - ein zweiter Prozess wie `speaker-test`, der versucht,
+dieselbe Karte gleichzeitig zu öffnen, scheitert dann mit `Device or
+resource busy` (bestätigt an echter Hardware; derselbe Grund, aus dem laut
+Code-Kommentar in `owlbox/feedback.py` auch ein Hinweiston mal ausbleiben
+kann, wenn er genau mit `mpv` kollidiert). Deshalb hält `owlbox-stage` den
+Dienst für die Hörprobe ab Stufe 2 selbst kurz an, testet, und startet ihn
+danach automatisch wieder - kein manueller Eingriff nötig, aber wichtig zu
+wissen: **"Device or resource busy" bei eigenen manuellen `speaker-test`-
+Versuchen ist kein Fehler**, sondern bedeutet nur, dass `owlbox.service`
+gerade läuft. Erst `sudo systemctl stop owlbox` nicht vergessen, wenn man
+von Hand testen will, ohne `owlbox-stage` zu benutzen.
+
 ## Wenn eine Stufe nicht sauber ist
 
 ### Kein Ton bei "sound"
