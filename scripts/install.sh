@@ -242,7 +242,25 @@ if [ -n "$CONFIG_TXT" ]; then
   # its ads7846 touch line) - harmless to run on a config.txt that never had
   # them, but leaving them in place on an upgrade would make the kernel keep
   # trying to init display hardware that's no longer physically connected.
-  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d' "$CONFIG_TXT"
+  #
+  # Also strip any OTHER "dtoverlay=vc4-kms-v3d" line, with or without its
+  # own params, wherever it occurs in the file - THE actual reason the
+  # ",noaudio" fix below kept not working on real hardware even after it was
+  # added: stock Raspberry Pi OS Bookworm images already ship an active,
+  # uncommented "dtoverlay=vc4-kms-v3d" line outside this script's managed
+  # block (near the end of config.txt, under an "[all]" section), and
+  # dtoverlay directives are NOT last-one-wins key/value overrides the way
+  # dtparam lines are - each "dtoverlay=" line applies that overlay as its
+  # own independent action. So the stock line kept registering the vc4hdmi
+  # ALSA card (no ",noaudio" on IT) regardless of the corrected line this
+  # script appended afterwards - crackling persisted because the conflicting
+  # HDMI-audio registration was still happening, just from a second,
+  # untouched source. Confirmed on real hardware: `aplay -l` still showed
+  # "card N: vc4hdmi" after a reboot even with the managed block's
+  # ",noaudio" line present. Deleting every pre-existing occurrence here,
+  # before the managed block re-adds exactly one correct line below, is the
+  # only way to guarantee there isn't a second, audio-registering copy.
+  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d; /^dtoverlay=vc4-kms-v3d(,.*)?$/d' "$CONFIG_TXT"
 
   # HiFiBerry Amp2's TAS5756M chip is PCM512x-family (same codec as the DAC+
   # Pro) - confirmed on real hardware via a failed I2C probe on the

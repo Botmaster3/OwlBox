@@ -205,6 +205,25 @@ dtoverlay=vc4-kms-v3d,noaudio
 
 `install.sh` trägt das automatisch so ein.
 
+**Zweite Falle, an echter Hardware bestätigt: Der Fix wirkt nur, wenn er die
+EINZIGE `dtoverlay=vc4-kms-v3d`-Zeile in der Datei ist.** Ein frisches
+Raspberry Pi OS Bookworm-Image bringt in `/boot/firmware/config.txt` bereits
+eine eigene, unkommentierte `dtoverlay=vc4-kms-v3d`-Zeile mit (ohne
+`,noaudio`, meist unter einem `[all]`-Abschnitt weiter unten in der Datei).
+Anders als `dtparam=`-Zeilen, bei denen die letzte Zeile gewinnt, sind
+`dtoverlay=`-Zeilen **nicht** Key/Value-Overrides, sondern jede einzelne
+wendet den Overlay als eigene, unabhängige Aktion an. Stehen also zwei
+`dtoverlay=vc4-kms-v3d`-Zeilen in der Datei - die mitgelieferte ohne
+`,noaudio` und die von `install.sh` ergänzte mit `,noaudio` - registriert die
+erste trotzdem ihre eigene `vc4hdmi`-ALSA-Karte, und das Knacksen bleibt
+bestehen, obwohl die korrekte Zeile ebenfalls in der Datei steht. Kontrolle:
+`grep -n dtoverlay=vc4-kms-v3d /boot/firmware/config.txt` sollte genau eine
+Treffer-Zeile zeigen (die mit `,noaudio`) und `aplay -l` sollte keine
+`vc4hdmi`-Karte mehr auflisten. `install.sh` entfernt seit dieser Erkenntnis
+jede vorbestehende `dtoverlay=vc4-kms-v3d`-Zeile automatisch, bevor es seine
+eigene ergänzt - auf einer schon länger laufenden Installation reicht dafür
+ein erneutes `sudo ./scripts/install.sh` plus Neustart.
+
 **An echter Hardware bestätigt:** Der Amp2 hat einen TAS5756M-Chip - das ist
 dieselbe PCM512x-Chipfamilie wie bei der DAC+ Pro, ein komplett anderer Chip
 als der TAS5713 des älteren Amp/Amp+. `dtoverlay=hifiberry-amp` ist speziell

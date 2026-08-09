@@ -539,9 +539,12 @@ story.append(spec_table(
          "drei Audio-Werte automatisch neu ein."],
         ["Ton knackst/klingt fragmentiert (trotz sonst unauffälligem Signalweg)",
          "vc4-kms-v3d ohne ,noaudio registriert eine eigene, ungenutzte HDMI-Audio-ALSA-Karte, "
-         "die mit dem I2S-Pfad des HiFiBerry kollidiert. In config.txt prüfen: "
-         "dtoverlay=vc4-kms-v3d,noaudio (nicht nur vc4-kms-v3d ohne den Zusatz) - "
-         "scripts/install.sh trägt das automatisch so ein, siehe OwlBox-Verkabelung.pdf, "
+         "die mit dem I2S-Pfad des HiFiBerry kollidiert. grep -n dtoverlay=vc4-kms-v3d "
+         "config.txt ausführen - MUSS genau eine Zeile zeigen, die mit ,noaudio endet. Zeigt es "
+         "zwei Treffer (Bookworm-Images bringen oft schon eine eigene, unkommentierte Zeile "
+         "ohne ,noaudio mit): die zweite Zeile entfernen bzw. scripts/install.sh erneut "
+         "ausführen (entfernt vorbestehende Duplikate automatisch) und neu starten. aplay -l "
+         "sollte danach keine vc4hdmi-Karte mehr zeigen, siehe OwlBox-Verkabelung.pdf, "
          "Kapitel 2."],
         ["Display bleibt schwarz", "dmesg | grep -i drm prüfen - „Cannot find any crtc or "
          "sizes“ bedeutet, dass in config.txt der displayspezifische Overlay fehlt: neben "

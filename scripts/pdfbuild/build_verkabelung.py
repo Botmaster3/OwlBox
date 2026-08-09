@@ -229,6 +229,20 @@ p("Der Fix: ,noaudio an den Overlay anhängen, damit vc4-kms-v3d sich aus der Au
   "gemeinsam genutzten Hardwareblocks komplett heraushält:")
 code(["dtoverlay=vc4-kms-v3d,noaudio"])
 p("install.sh trägt das automatisch so ein.")
+story.append(note_box(
+    "Zweite Falle, an echter Hardware bestätigt: Der Fix wirkt nur, wenn er die EINZIGE "
+    "dtoverlay=vc4-kms-v3d-Zeile in der Datei ist. Ein frisches Raspberry Pi OS Bookworm-Image "
+    "bringt in config.txt bereits eine eigene, unkommentierte dtoverlay=vc4-kms-v3d-Zeile mit "
+    "(ohne ,noaudio). Anders als dtparam=-Zeilen (letzte Zeile gewinnt) sind dtoverlay=-Zeilen "
+    "KEINE Key/Value-Overrides - jede einzelne wendet den Overlay unabhängig an. Stehen beide "
+    "Zeilen in der Datei, registriert die erste trotzdem ihre eigene vc4hdmi-Karte, und das "
+    "Knacksen bleibt bestehen. Kontrolle: grep -n dtoverlay=vc4-kms-v3d config.txt sollte genau "
+    "einen Treffer zeigen (den mit ,noaudio); aplay -l sollte keine vc4hdmi-Karte mehr auflisten. "
+    "install.sh entfernt eine vorbestehende Zeile jetzt automatisch, bevor es seine eigene "
+    "ergänzt - auf einer schon länger laufenden Installation reicht dafür ein erneutes "
+    "sudo ./scripts/install.sh plus Neustart.",
+    kind="warn",
+))
 h2("Lautsprecher anschließen")
 p(
     "Der HiFiBerry Amp2 hat dafür keine Stecker (kein Cinch/Klinke), sondern zwei 2-polige "
