@@ -542,6 +542,22 @@ p(
     "einhängen: ~/.config/lxsession/LXDE-pi/autostart um die Zeile "
     "@/opt/owlbox/scripts/kiosk.sh ergänzen."
 )
+story.append(note_box(
+    "An echter Hardware bestätigt: owlbox-kiosk.service läuft bewusst mit niedrigerer "
+    "CPU-/IO-Priorität als owlbox.service (Nice=15, IOSchedulingClass=best-effort, "
+    "IOSchedulingPriority=7). Grund: Chromium läuft auf dieser Hardware komplett "
+    "softwaregerendert (keine GPU-Beschleunigung verfügbar) - ohne Prioritätsdifferenz "
+    "konkurrieren Chromium und mpv (läuft in owlbox.service) mit exakt gleicher Priorität um "
+    "die knappe CPU eines Pi 3B+. Das war die eigentliche Ursache eines \"Wiedergabe knackt "
+    "durchgehend\"-Rätsels, das auch nach dem Beheben aller config.txt-Probleme (Kapitel 2) und "
+    "dem Entfernen unnötiger Subprozess-Aufrufe aus dem App-Code bestehen blieb: ein reiner "
+    "config.txt-Test direkt nach frischer Installation plus aplay/mpv im Terminal (ganz ohne "
+    "laufenden Kiosk) spielte sauber ab, derselbe Aufbau mit laufendem Kiosk knackste weiterhin. "
+    "Ein positiver Nice-Wert braucht keine besonderen Rechte - install.sh trägt das automatisch "
+    "ein und startet owlbox-kiosk.service bei Bedarf neu, damit die neue Priorität auch ohne "
+    "kompletten Neustart greift.",
+    kind="warn",
+))
 
 # ============================================================ 10. Konfiguration
 h1("10. Konfigurationsdatei (config.yaml)")

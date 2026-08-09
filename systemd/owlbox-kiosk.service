@@ -23,6 +23,28 @@ Type=simple
 ExecStart=/usr/bin/startx /opt/owlbox/scripts/kiosk.sh -- :0 vt1 -nolisten tcp
 Restart=always
 RestartSec=2
+# Deprioritize X/Chromium (and everything it forks - renderer/GPU process
+# etc.) relative to owlbox.service, which is where mpv actually lives.
+# Confirmed on real hardware as THE actual remaining cause of a "continuous
+# crackling during playback" complaint that persisted even after removing
+# every extra subprocess spawn from the app's own hot paths (see
+# owlbox/engine.py's get_state() comment) and after the config.txt/kernel-
+# overlay fixes: a bare config.txt edit plus a terminal aplay/mpv test
+# (no kiosk, no Chromium running at all) played back perfectly clean on
+# the very same hardware, while the full stack with the kiosk's fully
+# software-rendered Chromium (see docs/hardware.md - no GPU-accelerated
+# path available to it) running alongside kept crackling. Both processes
+# had equal (default, Nice=0) scheduling priority, so under the Pi 3B+'s
+# limited CPU, Chromium's unaccelerated rendering could - and did - starve
+# mpv's audio thread of scheduling slots often enough to be audible, even
+# with the app's own generous --audio-buffer=1.0 already in place. A
+# positive nice value needs no special privilege for any user (only
+# *lowering* niceness/raising priority above default does) - this alone,
+# without touching owlbox.service, shifts the CPU scheduler's preference
+# in mpv's favour whenever both are competing for the same cycles.
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
 # X/Chromium can end up in a state that ignores SIGTERM outright (confirmed
 # on real hardware: systemd's default 90s TimeoutStopSec ran out and had to
 # SIGKILL) - shortened so a stuck kiosk gets force-killed and restarted

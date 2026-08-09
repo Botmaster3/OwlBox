@@ -393,6 +393,19 @@ systemctl enable owlbox-kiosk.service
 # so a first-run start attempt could fail against a driver that isn't loaded
 # yet. It's started (best-effort) at the very end once that reboot has
 # happened - see the owlbox.service start line further down.
+#
+# daemon-reload alone does NOT re-apply unit properties like Nice=/
+# IOSchedulingClass= to an already-running instance of this service - those
+# only take effect for a process at the moment systemd forks it. On an
+# existing installation being re-run (no config.txt change this time, so no
+# reboot below) that would silently leave a kiosk process already running
+# at the old (default) priority even though the unit file on disk now says
+# otherwise - restart explicitly whenever it's already active so the new
+# priority actually takes hold without requiring a full reboot.
+if [ "$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)" = "active" ]; then
+  echo "==> Restarting owlbox-kiosk.service to apply updated CPU/IO priority"
+  systemctl restart owlbox-kiosk.service
+fi
 
 # -- audio auto-detection (only meaningful once the HiFiBerry is live) ------
 
