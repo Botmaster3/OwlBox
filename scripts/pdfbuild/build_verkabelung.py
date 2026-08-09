@@ -238,8 +238,9 @@ story.append(note_box(
     "Zeilen in der Datei, registriert die erste trotzdem ihre eigene vc4hdmi-Karte, und das "
     "Knacksen bleibt bestehen. Kontrolle: grep -n dtoverlay=vc4-kms-v3d config.txt sollte genau "
     "einen Treffer zeigen (den mit ,noaudio); aplay -l sollte keine vc4hdmi-Karte mehr auflisten. "
-    "install.sh entfernt eine vorbestehende Zeile jetzt automatisch, bevor es seine eigene "
-    "ergänzt - auf einer schon länger laufenden Installation reicht dafür ein erneutes "
+    "install.sh passt die vorbestehende Zeile jetzt automatisch direkt an Ort und Stelle an "
+    "(statt sie zu löschen und eine eigene Kopie ans Dateiende anzuhängen) - auf einer schon "
+    "länger laufenden Installation reicht dafür ein erneutes "
     "sudo owlbox-install plus Neustart. Wichtig: dafür wirklich owlbox-install verwenden (ein "
     "stabiler Befehl, den das Skript bei seinem ersten erfolgreichen Durchlauf selbst unter "
     "/usr/local/bin anlegt), nicht cd owlbox && sudo ./scripts/install.sh - cd owlbox von "
@@ -257,9 +258,10 @@ story.append(note_box(
     "eigenes, weiter unten stehendes dtparam=audio=off automatisch siegen - hat sich an echter "
     "Hardware NICHT zuverlässig bestätigt: die onboard „bcm2835 Headphones“-ALSA-Karte tauchte "
     "trotz korrekt zuletzt stehendem dtparam=audio=off über mehrere Neustarts hinweg immer "
-    "wieder in aplay -l auf. install.sh entfernt seit dieser Erkenntnis auch jede vorbestehende "
-    "dtparam=audio=on-Zeile automatisch, statt sich auf Override-Semantik zu verlassen - "
-    "derselbe sudo owlbox-install plus Neustart wie oben behebt beides in einem Rutsch.",
+    "wieder in aplay -l auf. install.sh kommentiert seit dieser Erkenntnis die vorbestehende "
+    "dtparam=audio=on-Zeile automatisch direkt an Ort und Stelle aus (#dtparam=audio=on), statt "
+    "sich auf Override-Semantik zu verlassen - derselbe sudo owlbox-install plus Neustart wie "
+    "oben behebt beides in einem Rutsch.",
     kind="warn",
 ))
 h2("Lautsprecher anschließen")

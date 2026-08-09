@@ -219,10 +219,12 @@ erste trotzdem ihre eigene `vc4hdmi`-ALSA-Karte, und das Knacksen bleibt
 bestehen, obwohl die korrekte Zeile ebenfalls in der Datei steht. Kontrolle:
 `grep -n dtoverlay=vc4-kms-v3d /boot/firmware/config.txt` sollte genau eine
 Treffer-Zeile zeigen (die mit `,noaudio`) und `aplay -l` sollte keine
-`vc4hdmi`-Karte mehr auflisten. `install.sh` entfernt seit dieser Erkenntnis
-jede vorbestehende `dtoverlay=vc4-kms-v3d`-Zeile automatisch, bevor es seine
-eigene ergänzt - auf einer schon länger laufenden Installation reicht dafür
-ein erneutes `sudo owlbox-install` plus Neustart. Wichtig: dafür wirklich
+`vc4hdmi`-Karte mehr auflisten. `install.sh` passt seit dieser Erkenntnis die
+vorbestehende `dtoverlay=vc4-kms-v3d`-Zeile automatisch direkt an Ort und
+Stelle an (statt sie zu löschen und eine eigene Kopie ans Dateiende
+anzuhängen - das hält den Diff in `config.txt` minimal und die restliche
+Struktur der Datei unangetastet) - auf einer schon länger laufenden
+Installation reicht dafür ein erneutes `sudo owlbox-install` plus Neustart. Wichtig: dafür wirklich
 `owlbox-install` verwenden (ein stabiler Befehl, den das Skript bei seinem
 ersten erfolgreichen Durchlauf selbst unter `/usr/local/bin` anlegt), nicht
 `cd owlbox && sudo ./scripts/install.sh` - `cd owlbox` von innerhalb eines
@@ -241,10 +243,11 @@ also würde `install.sh`s eigenes, weiter unten stehendes
 `dtparam=audio=off` automatisch siegen - hat sich an echter Hardware **nicht
 zuverlässig** bestätigt: die onboard „bcm2835 Headphones“-ALSA-Karte tauchte
 trotz korrekt zuletzt stehendem `dtparam=audio=off` über mehrere Neustarts
-hinweg immer wieder in `aplay -l` auf. `install.sh` entfernt seit dieser
-Erkenntnis auch jede vorbestehende `dtparam=audio=on`-Zeile automatisch,
-statt sich auf Override-Semantik zu verlassen - derselbe `sudo owlbox-install`
-plus Neustart wie oben behebt beides in einem Rutsch.
+hinweg immer wieder in `aplay -l` auf. `install.sh` kommentiert seit dieser
+Erkenntnis die vorbestehende `dtparam=audio=on`-Zeile automatisch direkt an
+Ort und Stelle aus (`#dtparam=audio=on`), statt sich auf Override-Semantik
+zu verlassen - derselbe `sudo owlbox-install` plus Neustart wie oben behebt
+beides in einem Rutsch.
 
 **An echter Hardware bestätigt:** Der Amp2 hat einen TAS5756M-Chip - das ist
 dieselbe PCM512x-Chipfamilie wie bei der DAC+ Pro, ein komplett anderer Chip

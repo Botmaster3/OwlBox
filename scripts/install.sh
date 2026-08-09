@@ -240,43 +240,45 @@ if [ -n "$CONFIG_TXT" ]; then
   echo "==> Configuring audio (HiFiBerry Amp2) in $CONFIG_TXT"
   BEFORE_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)"
 
-  # Onboard audio off in favour of the HiFiBerry: an earlier version of this
-  # script assumed a pre-existing "dtparam=audio=on" line was harmless to
-  # leave in place, on the theory that the Pi's config.txt parser takes the
-  # last occurrence of a given dtparam as authoritative, so the managed
-  # block's own "dtparam=audio=off" at the end of the file would win
-  # regardless. Confirmed on real hardware that this "last one wins" theory
-  # doesn't reliably hold in practice - the onboard "bcm2835 Headphones" ALSA
-  # card kept reappearing in aplay -l across reboots even with the managed
-  # block's dtparam=audio=off correctly present and last in the file. Same
-  # fix as for the vc4-kms-v3d duplicate below: don't rely on override
-  # semantics, just remove every pre-existing "dtparam=audio=on" line so
-  # there's nothing left to (maybe) win over.
+  # THE actual root cause of the day-long "digital path is fine but playback
+  # is crackling/fragmented" saga, confirmed on real hardware: stock
+  # Raspberry Pi OS Bookworm images already ship their own, active,
+  # uncommented "dtoverlay=vc4-kms-v3d" (no ",noaudio") and
+  # "dtparam=audio=on" lines, both outside this script's own managed block.
+  # An earlier version of this script left those two alone and just appended
+  # its own corrected lines elsewhere, on the assumption that a later
+  # dtoverlay/dtparam line always wins over an earlier one - that assumption
+  # does NOT reliably hold in practice for either directive: `aplay -l` kept
+  # showing both the "vc4hdmi" HDMI-audio card (from the stock, non-,noaudio
+  # overlay application - dtoverlay lines are independent actions, not
+  # key/value overrides, so a second corrected line doesn't retroactively
+  # undo what the first one already registered) and the onboard
+  # "bcm2835 Headphones" card (from the stock dtparam=audio=on) even with
+  # this script's own corrected lines present and last in the file.
+  # Editing the two stock lines directly, in place, instead of leaving them
+  # untouched and fighting them with something appended elsewhere, is what
+  # actually fixed it on real hardware - and keeps the diff to config.txt
+  # minimal instead of growing an ever-larger managed block at the end.
+  sed -i -E 's/^dtoverlay=vc4-kms-v3d$/dtoverlay=vc4-kms-v3d,noaudio/' "$CONFIG_TXT"
+  sed -i -E 's/^dtparam=audio=on$/#dtparam=audio=on/' "$CONFIG_TXT"
 
   # Clean up leftover config.txt lines from a previous install targeting the
   # old 3.5" SPI display (tft35a/MHS-35 overlay, its forced virtual-HDMI mode,
   # its ads7846 touch line) - harmless to run on a config.txt that never had
   # them, but leaving them in place on an upgrade would make the kernel keep
   # trying to init display hardware that's no longer physically connected.
-  #
-  # Also strip any OTHER "dtoverlay=vc4-kms-v3d" line, with or without its
-  # own params, wherever it occurs in the file - THE actual reason the
-  # ",noaudio" fix below kept not working on real hardware even after it was
-  # added: stock Raspberry Pi OS Bookworm images already ship an active,
-  # uncommented "dtoverlay=vc4-kms-v3d" line outside this script's managed
-  # block (near the end of config.txt, under an "[all]" section). Each
-  # "dtoverlay=" line applies that overlay as its own independent action
-  # rather than overriding an earlier one, so the stock line kept registering
-  # the vc4hdmi ALSA card (no ",noaudio" on IT) regardless of the corrected
-  # line this script appended afterwards - crackling persisted because the
-  # conflicting HDMI-audio registration was still happening, just from a
-  # second, untouched source. Confirmed on real hardware: `aplay -l` still
-  # showed "card N: vc4hdmi" after a reboot even with the managed block's
-  # ",noaudio" line present. Same story for "dtparam=audio=on" (see above) -
-  # deleting every pre-existing occurrence of both here, before the managed
-  # block re-adds exactly one correct copy of each below, is the only way to
-  # guarantee there isn't a second, still-active source of either.
-  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d; /^dtoverlay=vc4-kms-v3d(,.*)?$/d; /^dtparam=audio=on$/d' "$CONFIG_TXT"
+  # Also a safety net for the two lines just edited above: delete any
+  # further/duplicate bare copy the in-place substitutions didn't already
+  # catch (e.g. a second stock occurrence) - these two patterns only match
+  # what's still unfixed, so they never touch the lines just corrected above.
+  sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d; /^dtoverlay=vc4-kms-v3d$/d; /^dtparam=audio=on$/d' "$CONFIG_TXT"
+
+  # Fallback for a config.txt that never had a stock "dtoverlay=vc4-kms-v3d"
+  # line to begin with (non-standard/minimal image, or one already stripped
+  # by hand) - the in-place edit above had nothing to upgrade in that case,
+  # so assert the line directly instead of silently ending up without it.
+  grep -q -E '^dtoverlay=vc4-kms-v3d(,.*)?$' "$CONFIG_TXT" \
+    || echo "dtoverlay=vc4-kms-v3d,noaudio" >> "$CONFIG_TXT"
 
   # HiFiBerry Amp2's TAS5756M chip is PCM512x-family (same codec as the DAC+
   # Pro) - confirmed on real hardware via a failed I2C probe on the
@@ -310,42 +312,21 @@ if [ -n "$CONFIG_TXT" ]; then
   # (shows up in `xrandr --query`) but never changes what's on screen, and
   # the older display_lcd_rotate/lcd_rotate params are documented to do
   # nothing under KMS.
-  # dtoverlay=vc4-kms-v3d / dtparam=spi=on / dtparam=i2c_arm=on: set explicitly
-  # here rather than relying on them already being present elsewhere in
-  # config.txt (a previous version of this script only ever *uncommented* a
-  # pre-existing vc4-kms-v3d line via sed, assuming the base image's default
-  # content would still be there) - confirmed on real hardware that
-  # config.txt can end up missing all of its non-OwlBox-managed content
-  # (seen after what looked like an unclean shutdown - /boot/firmware is
-  # FAT32, which tolerates that far worse than ext4), silently leaving the
-  # KMS driver never enabled and the screen black with no obvious error.
-  # Safe to always (re-)assert these here regardless of what else is/isn't
-  # in the file: dtoverlay lines for different overlays are additive, not
-  # exclusive, so this can't conflict with anything else in config.txt.
-  #
-  # ,noaudio on vc4-kms-v3d: THE actual root cause of the day-long "digital
-  # path is fine but playback is crackling/fragmented" saga - confirmed on
-  # real hardware. Without it, vc4-kms-v3d also registers its own HDMI audio
-  # ALSA card (showed up as "card 2: vc4hdmi" in `aplay -l` the whole time)
-  # even though this project never uses HDMI audio at all - display is DSI,
-  # audio is exclusively the HiFiBerry. That HDMI-audio registration
-  # apparently contends with the HiFiBerry's I2S path (both ultimately go
-  # through the same VC4 I2S/audio hardware block) closely enough to explain
-  # everything that was chased today: the recurring pcm512x I2C errors
-  # (snd_soc_component_update_bits ... -5, snd_soc_pcm_component_pm_
-  # runtime_get ... -22) and the audible crackling/fragments, all while the
-  # signal path itself (ALSA hw_params, mixer levels, I2C addressing)
-  # checked out correct every single time. None of the other things tried
-  # first (Auto Mute, disable-bt, runtime-PM sysfs override, a from-scratch
-  # SD card reflash) touched this because none of them address vc4-kms-v3d
-  # claiming the audio side of that shared hardware block in the first
-  # place. Confirmed fixed on real hardware.
+  # dtparam=spi=on / dtparam=i2c_arm=on: set explicitly here rather than
+  # relying on them already being present elsewhere in config.txt - confirmed
+  # on real hardware that config.txt can end up missing all of its
+  # non-OwlBox-managed content (seen after what looked like an unclean
+  # shutdown - /boot/firmware is FAT32, which tolerates that far worse than
+  # ext4), silently leaving SPI/I2C disabled with no obvious error. Safe to
+  # always (re-)assert these here regardless of what else is/isn't in the
+  # file. (dtoverlay=vc4-kms-v3d,noaudio and the dtparam=audio=off it needs
+  # are handled above, in place on the stock lines where they already exist
+  # - not here, to avoid ending up with two active copies of either.)
   write_config_block "$CONFIG_TXT" \
     "dtparam=audio=off" \
     "dtoverlay=hifiberry-dacplus" \
     "disable_splash=1" \
     "boot_delay=0" \
-    "dtoverlay=vc4-kms-v3d,noaudio" \
     "dtparam=spi=on" \
     "dtparam=i2c_arm=on" \
     "dtoverlay=vc4-kms-dsi-7inch"
