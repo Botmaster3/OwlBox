@@ -702,31 +702,25 @@ html[data-theme="weihnachten"] .advent-wreath {
    (-webkit-line-clamp), which ate into the vertical space the rest of the
    .info column (progress, volume, track list) needed on the small kiosk
    panel. Now it always stays a single line - once the text itself doesn't
-   fit, .story-title-text scrolls across instead of the heading growing. */
+   fit, it's cut off with an ellipsis.
+   It used to scroll across via an infinite CSS @keyframes animation
+   (.marquee / story-title-marquee) instead of truncating. That animation
+   kept the title's compositor layer repainting continuously (up to 60fps,
+   for as long as any long title was on screen) on this hardware's fully
+   software-rendered Chromium - suspected contributor to audio crackling
+   during playback on the Pi 3B+. player.js no longer adds the .marquee
+   class at all; the rule and its @keyframes were removed here along with
+   it, in favor of this plain, render-once ellipsis. */
 .story-title {
   font-size: clamp(1.4rem, 4vw, 2.6rem);
   font-weight: 700;
   line-height: 1.2;
   overflow: hidden;
   white-space: nowrap;
+  text-overflow: ellipsis;
   position: relative;
 }
 .story-title-text { display: inline-block; }
-/* Only animated once player.js has confirmed (via scrollWidth) that the text
-   actually overflows - a short title just sits still, no marquee class added. */
-.story-title.marquee .story-title-text {
-  animation-name: story-title-marquee;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-@keyframes story-title-marquee {
-  /* Starts fully off-screen to the right and ends fully off-screen to the
-     left - i.e. runs right to left, like a classic news ticker. The 100%/
-     -100% are relative to the span's own (content) width, so this works
-     regardless of how long the title actually is. */
-  from { transform: translateX(100%); }
-  to { transform: translateX(-100%); }
-}
 
 .track-title {
   font-size: clamp(0.85rem, 1.8vw, 1.05rem);

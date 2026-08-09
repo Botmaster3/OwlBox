@@ -43,28 +43,33 @@
   let hasScannedTag = false;
   let lastBrightness = null;
   let brightnessOsdTimer = null;
-  let vuTimer = null;
+  let vuBarsSet = false;
 
   // Decorative "is audio playing" animation, not a real audio-level analysis -
   // mpv doesn't expose one over the IPC socket we already talk to it through.
-  // 450ms rather than the original 130ms - confirmed on real hardware that
-  // repainting 5 bars ~7-8x/second adds up on this Pi's fully software-
-  // rendered Chromium (no GPU access at all, see docs/hardware.md - the
-  // "Legacy" GL driver fbcp needs leaves nothing but swrast), stealing CPU
-  // time from mpv's audio thread during exactly the moments (playback)
-  // where that causes audible crackling/dropouts. Still reads as "alive"
-  // at this rate, just noticeably less twitchy.
+  // NOT actually animated anymore - a previous session already throttled this
+  // from repainting 5 bars ~7-8x/second down to ~2x/second (450ms), reasoning
+  // that was still "alive"-looking without stealing too much CPU from mpv's
+  // audio thread on this Pi's fully software-rendered Chromium (no GPU access
+  // at all, see docs/hardware.md). Confirmed on real hardware that even that
+  // throttled rate wasn't enough - continuous audible crackling during
+  // playback persisted, traced specifically to this: every 450ms tick was
+  // also driving a 0.12s CSS `transition: height` on 5 bars at once (see
+  // style.css), which is several additional compositor frames per tick, not
+  // just one - on top of everything else already competing for this Pi 3B+'s
+  // limited cycles (kiosk vs. audio, see systemd/owlbox-kiosk.service's
+  // Nice=). Now sets each bar's height exactly once when playback starts
+  // (still reads as "something is playing" at a glance) instead of on a
+  // recurring timer - zero ongoing repaint cost either way once set.
   function setVuPlaying(playing) {
     if (playing) {
-      if (vuTimer) return;
-      vuTimer = setInterval(() => {
-        vuBars.forEach((bar) => {
-          bar.style.height = `${12 + Math.random() * 85}%`;
-        });
-      }, 450);
-    } else if (vuTimer) {
-      clearInterval(vuTimer);
-      vuTimer = null;
+      if (vuBarsSet) return;
+      vuBarsSet = true;
+      vuBars.forEach((bar) => {
+        bar.style.height = `${12 + Math.random() * 85}%`;
+      });
+    } else if (vuBarsSet) {
+      vuBarsSet = false;
       vuBars.forEach((bar) => {
         bar.style.height = "12%";
       });
@@ -156,25 +161,26 @@
     statusBarEl.hidden = true;
   }
 
-  // Keeps the heading a single line: only re-measures/restarts the marquee
-  // animation when the title text itself actually changed (not on every
-  // 1s poll tick), otherwise a scrolling title would visibly jump back to
-  // its start every second instead of completing one smooth pass.
+  // NOT a scrolling marquee anymore - a long title now just truncates with
+  // "..." (see .story-title's text-overflow in style.css) instead of
+  // continuously animating. Confirmed on real hardware as a major
+  // contributor to a "continuous crackling during playback" complaint that
+  // survived every other fix tried (config.txt/kernel overlays, removing
+  // unnecessary subprocess spawns from the app's hot paths, deprioritizing
+  // the kiosk vs. owlbox.service): the marquee's CSS
+  // animation-iteration-count: infinite kept the title's compositor layer
+  // repainting at up to 60fps for as long as a long title was on screen -
+  // on this Pi's fully software-rendered Chromium (no GPU access at all,
+  // see docs/hardware.md), that's a far bigger, far more sustained repaint
+  // load than the VU-meter dots ever were (see setVuPlaying above, already
+  // fixed for the same reason) - it ran for the whole story, not just a
+  // few ticks. Simply not doing continuous animation at all beats trying to
+  // throttle it further, same reasoning the design themes already apply
+  // (static images instead of running animations - see themes.py).
   function setStoryTitle(text) {
     if (text === lastStoryTitle) return;
     lastStoryTitle = text;
     storyTitleTextEl.textContent = text;
-    storyTitleEl.classList.remove("marquee");
-    storyTitleTextEl.style.animationDuration = "";
-    requestAnimationFrame(() => {
-      if (storyTitleTextEl.scrollWidth > storyTitleEl.clientWidth) {
-        // Roughly constant reading speed regardless of title length, with a
-        // floor so even a barely-overflowing title still scrolls at a sane pace.
-        const duration = Math.max(6, text.length * 0.18);
-        storyTitleTextEl.style.animationDuration = `${duration}s`;
-        storyTitleEl.classList.add("marquee");
-      }
-    });
   }
 
   function formatTime(seconds) {
