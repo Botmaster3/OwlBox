@@ -109,11 +109,10 @@ bullets([
     "Raspberry Pi 3B+",
     "microSD-Karte, mindestens 8 GB (16 GB oder mehr empfohlen), Class 10",
     "Passendes Netzteil (5V/2,5A für den Pi selbst; bei aktivem HiFiBerry-Verstärker eher 5V/3A)",
-    "HiFiBerry Amp (I2S-Verstärker-HAT) + Lautsprecher",
+    "HiFiBerry Amp2 (I2S-Verstärker-HAT) + Lautsprecher",
     "RC522 RFID-Modul + mindestens ein RFID-Chip/-Karte (13,56 MHz, MIFARE-kompatibel)",
-    "3,5″ SPI-Touchscreen, 480×320 (tft35a/MHS-35-Familie)",
-    "2 Taster, 2 Dreh-Encoder (KY-040), 1 Transistor/MOSFET fürs Backlight-Dimmen - siehe "
-    "OwlBox-Verkabelung.pdf für die genaue Bauteilliste",
+    "Offizielles Raspberry Pi 7″ Touch Display (DSI, erste Generation)",
+    "2 Taster, 2 Dreh-Encoder (KY-040) - siehe OwlBox-Verkabelung.pdf für die genaue Bauteilliste",
     "PC oder Laptop mit SD-Kartenleser (zum Beschreiben der SD-Karte) - Windows, macOS oder Linux",
     "Netzwerkkabel oder WLAN-Zugang für den Pi",
 ])
@@ -171,25 +170,19 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     step(1, "Gerät wählen", "„CHOOSE DEVICE“ → Raspberry Pi 3.")
     story.append(imager_window_mockup("device", os_key))
     step(2, "Betriebssystem wählen",
-         "„CHOOSE OS“ → „Raspberry Pi OS (other)“ → <b>„Raspberry Pi OS (Legacy) Lite“</b>.",
-         "Diese Variante basiert auf demselben aktuellen Debian Bookworm wie die Standard-Variante "
-         "und bringt den alten Grafiktreiber statt Wayland/labwc mit - das braucht später " +
-         mono("fbcp") + f" fürs SPI-Display (siehe {n}.6). Bewusst „Lite“ statt der vollen "
-         "Desktop-Variante: OwlBox startet für den Kiosk selbst nur ein minimales X ohne "
-         "Desktop-Umgebung (kein lightdm/LXDE) - „Lite“ bringt so eine Desktop-Umgebung gar "
-         "nicht erst mit, die beim Boot nur unnötig Zeit kosten würde, ohne dass sie je zu sehen "
-         "wäre.")
+         "„CHOOSE OS“ → direkt in der obersten Liste <b>„Raspberry Pi OS Lite (64-bit)“</b> "
+         "auswählen (nicht die volle Variante mit Desktop-Umgebung, und nicht „(other)“/„Legacy“ "
+         "nötig).",
+         "Diese Variante ist Debian Bookworm mit dem modernen KMS-Grafiktreiber (Standard, bleibt "
+         f"aktiv - das Display braucht dafür keinen extra Treiber, siehe {n}.6), aber bewusst ohne "
+         "Desktop-Umgebung: OwlBox startet für den Kiosk selbst nur ein minimales X "
+         "(kein lightdm/LXDE) - „Lite“ bringt so eine Desktop-Umgebung gar nicht erst mit, die "
+         "beim Boot nur unnötig Zeit kosten würde, ohne dass sie je zu sehen wäre.")
     story.append(screenshot_with_chrome(str(ASSETS / "imager-os-list.png"), os_key,
-                                         "„CHOOSE OS“ - die oberste Auswahlebene.",
+                                         "„CHOOSE OS“ - „Raspberry Pi OS Lite (64-bit)“ steht "
+                                         "bereits in der obersten Auswahlebene.",
                                          app_title="Operating System"))
-    story.append(screenshot_with_chrome(str(ASSETS / "imager-os-legacy.png"), os_key,
-                                         "Nach Klick auf „Raspberry Pi OS (other)“ - hier "
-                                         "„Raspberry Pi OS (Legacy) Lite“ auswählen (weiter "
-                                         "unten in der Liste).",
-                                         app_title="Operating System"))
-    story.append(screenshot_with_chrome(str(ASSETS / "imager-os-lite-selected.png"), os_key,
-                                         "„Raspberry Pi OS (Legacy) Lite“ ausgewählt.",
-                                         app_title="Raspberry Pi Imager"))
+    story.append(imager_window_mockup("os", os_key))
     step(3, "Speicherziel wählen", "„CHOOSE STORAGE“ → die eingelegte SD-Karte auswählen. "
          "Vorsicht: alles darauf wird überschrieben.")
     story.append(imager_window_mockup("storage", os_key))
@@ -263,11 +256,8 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     )
     code(["sudo raspi-config"])
     bullets([
-        "<b>Interface Options → SPI → Enable</b> (für den RC522-RFID-Leser und das Display - "
-        "falls hier schon „Enabled“ steht, ist nichts weiter zu tun).",
-        "<b>Advanced Options → GL Driver</b>: sollte bei der „Legacy“-Variante aus "
-        f"{n}.2 bereits passend stehen; falls dort „OpenGL (Full KMS)“ oder „OpenGL (Fake "
-        f"KMS)“ ausgewählt ist, auf „Legacy“ umstellen - wichtig für das SPI-Display in {n}.6.",
+        "<b>Interface Options → SPI → Enable</b> (für den RC522-RFID-Leser - falls hier schon "
+        "„Enabled“ steht, ist nichts weiter zu tun).",
         f"Hostname/Zeitzone/Tastaturlayout, falls beim Flashen in {n}.2 nicht schon gesetzt.",
     ])
     p("Menü mit „Finish“ verlassen, bei Aufforderung neu starten.")
@@ -276,9 +266,10 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     h2(f"{n}.5 Hardware verkabeln")
     p(
         "Jetzt den Pi <b>vom Strom trennen</b> und die komplette restliche Hardware verkabeln: "
-        "HiFiBerry Amp (direkt aufgesteckt), RC522-RFID-Leser, beide Taster, beide "
-        "Dreh-Encoder, Display (per Jumperkabeln, nicht aufgesteckt - Steckplatzkollision mit "
-        "dem HiFiBerry) samt Backlight-Transistor."
+        "HiFiBerry Amp2 (direkt aufgesteckt), RC522-RFID-Leser, beide Taster, beide "
+        "Dreh-Encoder sowie das 7″-Touch-Display - per DSI-Flachbandkabel am eigenen "
+        "DSI-Steckplatz (kein Konflikt mit dem HiFiBerry, keine Steckplatzkollision) plus 4 "
+        "Jumperkabel für Strom und Touch-I2C."
     )
     story.append(note_box(
         "Die komplette, detaillierte Verkabelung (jeder Pin, jedes Bauteil, inkl. "
@@ -301,9 +292,8 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "cd owlbox",
     ])
     story.append(note_box(
-        "Meldet der Pi <b>„git: command not found“</b>: Raspberry Pi OS (Legacy) Lite bringt "
-        "git nicht von Haus aus mit. Einmalig nachinstallieren, dann den Befehl oben erneut "
-        "ausführen:"
+        "Meldet der Pi <b>„git: command not found“</b>: Raspberry Pi OS Lite bringt git nicht "
+        "von Haus aus mit. Einmalig nachinstallieren, dann den Befehl oben erneut ausführen:"
     ))
     code([
         "sudo apt update",
@@ -313,39 +303,37 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     story.append(terminal_mockup(app_name, [
         (True, "sudo ./scripts/install.sh"),
         (False, "[*] Installiere Systempakete ..."),
-        (False, "[*] Baue fbcp ..."),
-        (False, "[*] Starte Display-Treiber-Installer ..."),
+        (False, "[*] Aktiviere SPI/I2C ..."),
+        (False, "[*] Trage HiFiBerry- und Display-Overlay in config.txt ein ..."),
         (False, "[*] Neustart erforderlich - starte neu ..."),
     ], os_key=os_key))
     p("Zum Abtippen bzw. Kopieren:")
     code(["sudo ./scripts/install.sh"])
     p(
-        "Für die in Kapitel 1 gelistete Standardhardware (HiFiBerry Amp/Amp2, "
-        "3,5″-SPI-Touchdisplay der tft35a/MHS-35-Familie) automatisiert das Skript "
-        "inzwischen praktisch alles, was früher von Hand nachgetragen werden musste. Im "
-        "ersten Durchlauf erledigt es:"
+        "Für die in Kapitel 1 gelistete Standardhardware (HiFiBerry Amp2, offizielles "
+        "7″-Touch-Display) automatisiert das Skript inzwischen praktisch alles, was früher von "
+        "Hand nachgetragen werden musste. Im ersten Durchlauf erledigt es:"
     )
     bullets([
-        "Benötigte System-Pakete installieren (Python, mpv, alsa-utils, git, Chromium, cmake, "
-        "libraspberrypi-dev, ein minimaler X-Stack für den Kiosk, ...)",
-        "SPI aktivieren",
+        "Benötigte System-Pakete installieren (Python, mpv, alsa-utils, git, Chromium, ein "
+        "minimaler X-Stack für den Kiosk, ...)",
+        "SPI (für den RC522) und I2C aktivieren",
         "Ungenutzte Dienste und Boot-Wartezeiten abschalten, um den Bootvorgang zu verkürzen",
         "Einen eigenen Service-User „owlbox“ anlegen (mit Zugriff auf gpio/spi/audio/video/i2c)",
         "Die Anwendung nach " + mono("/opt/owlbox") + " kopieren, eine "
         "Python-virtuelle-Umgebung anlegen und alle Abhängigkeiten installieren",
         mono("config/config.yaml") + " aus der Vorlage anlegen, falls noch nicht vorhanden",
         "HiFiBerry-Overlay (" + mono("dtoverlay=hifiberry-dacplus") + ", passend zum "
-        "TAS5756M-Chip des Amp2) und GL-Treiber (Legacy statt KMS/Fake-KMS) in config.txt "
-        "eintragen",
-        mono("fbcp") + " aus dem Quellcode bauen und installieren",
-        "Den Display-Treiber-Installer (goodtft/LCD-show) automatisch herunterladen und "
-        "starten - dieser bootet den Pi am Ende meist selbst neu",
+        "TAS5756M-Chip des Amp2) sowie den Grafiktreiber-Overlay (" +
+        mono("dtoverlay=vc4-kms-v3d,noaudio") + " plus " + mono("dtoverlay=vc4-kms-dsi-7inch") +
+        " fürs Display) in config.txt eintragen - das Display selbst braucht keinen separaten "
+        "Treiber-Installer",
+        "Den Pi am Ende automatisch neu starten",
     ])
     story.append(note_box(
-        "Läuft der Neustart nicht automatisch an, meldet das Skript das am Ende deutlich - "
-        "dann einmal von Hand " + mono("sudo reboot") + " ausführen. Auch wenn nur config.txt "
-        "geändert wurde, fordert das Skript zu einem Neustart auf, bevor der zweite Durchlauf "
-        "sinnvoll ist."
+        "Meldet das Skript am Ende trotzdem, dass ein Neustart noch aussteht (z.B. weil der "
+        "automatische Neustart fehlgeschlagen ist): einmal von Hand " + mono("sudo reboot") +
+        " ausführen, bevor der zweite Durchlauf sinnvoll ist."
     ))
     story.append(note_box(
         "Was konkret abgeschaltet wird: die Dienste bluetooth, hciuart, triggerhappy, "
@@ -373,8 +361,6 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     bullets([
         "Das aktive ALSA-Gerät und den passenden Mixer-Namen automatisch erkennen (aplay -l / "
         "amixer scontrols) und in config.yaml eintragen",
-        "Die vom Display-Installer gesetzte Touch-Zeile (dtoverlay=ads7846,...) wieder aus "
-        "config.txt entfernen - Touch bleibt bei diesem Aufbau bewusst deaktiviert",
         "Den Kiosk-Autostart einrichten und aktivieren: ein eigener systemd-Dienst "
         "(" + mono("owlbox-kiosk.service") + ") startet X direkt (kein Desktop, kein "
         "Login-Bildschirm) und darin Chromium im Vollbild",
@@ -529,7 +515,7 @@ story.append(spec_table(
         ["SD-Karte wird vom Imager nicht erkannt", "Anderen Kartenleser/USB-Anschluss "
          "probieren; Karte in einem anderen Gerät auf Schreibschutz/Defekt prüfen."],
         ["„git: command not found“", "Prompt genau ansehen: Steht dort pi@owlbox (SSH-Sitzung "
-         "auf dem Pi), fehlt git auf dem frischen Raspberry Pi OS (Legacy) Lite - beheben mit "
+         "auf dem Pi), fehlt git auf dem frischen Raspberry Pi OS Lite - beheben mit "
          "sudo apt update && sudo apt install -y git. Steht dort der eigene Rechnername (lokal "
          "im Terminal, macOS), stattdessen xcode-select --install ausführen und den Dialog "
          "bestätigen."],
@@ -559,17 +545,22 @@ story.append(spec_table(
          "config.yaml prüfen - muss zur tatsächlichen, mit aplay -l ermittelten Kartennummer "
          "passen (nicht nur audio.alsa_device). scripts/install.sh erneut ausführen, trägt alle "
          "drei Audio-Werte automatisch neu ein."],
-        ["Display bleibt schwarz", "sudo systemctl status owlbox-fbcp prüfen; GL-Driver "
-         "wirklich auf „Legacy“ (Abschnitt „Grundeinstellungen prüfen“); scripts/install.sh "
-         "noch einmal ausführen, falls der Display-Treiber-Installer noch nicht "
-         "durchgelaufen ist (Abschnitt „OwlBox-Software installieren“)."],
+        ["Ton knackst/klingt fragmentiert (trotz sonst unauffälligem Signalweg)",
+         "vc4-kms-v3d ohne ,noaudio registriert eine eigene, ungenutzte HDMI-Audio-ALSA-Karte, "
+         "die mit dem I2S-Pfad des HiFiBerry kollidiert. In config.txt prüfen: "
+         "dtoverlay=vc4-kms-v3d,noaudio (nicht nur vc4-kms-v3d ohne den Zusatz) - "
+         "scripts/install.sh trägt das automatisch so ein, siehe OwlBox-Verkabelung.pdf, "
+         "Kapitel 2."],
+        ["Display bleibt schwarz", "dmesg | grep -i drm prüfen - „Cannot find any crtc or "
+         "sizes“ bedeutet, dass in config.txt der displayspezifische Overlay fehlt: neben "
+         "dtoverlay=vc4-kms-v3d,noaudio wird zusätzlich dtoverlay=vc4-kms-dsi-7inch gebraucht "
+         "(siehe OwlBox-Verkabelung.pdf, Kapitel 8); scripts/install.sh noch einmal ausführen, "
+         "falls das noch nicht eingetragen ist (Abschnitt „OwlBox-Software installieren“)."],
         ["Display zeigt nur einen Textcursor/Login, kein Chromium",
          "sudo systemctl status owlbox-kiosk prüfen; journalctl -u owlbox-kiosk zeigt bei einem "
          "X-Absturz meist nur „status=1“ ohne echten Grund - die eigentliche Fehlermeldung steht "
-         "in sudo tail /var/log/Xorg.0.log. Häufigster Fall: „no screens found“/„open "
-         "/dev/dri/card0“ - fehlt xserver-xorg-video-fbdev bzw. die Xorg-Konfiguration dafür "
-         "(siehe OwlBox-Verkabelung.pdf, Kapitel 9); Xwrapper.config wurde von scripts/install.sh "
-         "unter /etc/X11/Xwrapper.config angelegt - prüfen, ob die Datei noch existiert."],
+         "in sudo tail /var/log/Xorg.0.log. Xwrapper.config wurde von scripts/install.sh unter "
+         "/etc/X11/Xwrapper.config angelegt - prüfen, ob die Datei noch existiert."],
         ["Verwaltung im Browser nicht erreichbar", "IP-Adresse erneut prüfen; auf dem "
          "Kiosk-Display nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Abschnitt „Erste "
          "Einrichtung im Browser“)."],

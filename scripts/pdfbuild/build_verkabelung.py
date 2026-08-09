@@ -79,12 +79,14 @@ bullets([
     "Raspberry Pi 3B+",
     "HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip)",
     "RC522 RFID-Modul (SPI, 13,56 MHz)",
-    "3,5″ SPI-Touchscreen, 480×320, 26-Pin-Header - sehr wahrscheinlich ein „MHS-35“/„tft35a“-Klon "
-    "(ILI9486 + XPT2046, unter vielen Markennamen identisch verkauft). Touch bleibt bewusst deaktiviert.",
+    "Offizielles Raspberry Pi 7″ Touch Display (erste Generation - DSI-Flachbandkabel für Bild "
+    "und Touch, plus 4 Jumperkabel für Strom/I2C, siehe unten). Ersetzt das früher hier "
+    "dokumentierte 3,5″-SPI-Display (tft35a/MHS-35-Klon); dessen Anleitung ist noch in der "
+    "Git-Historie dieser Datei zu finden, falls je wieder gebraucht.",
     "2 Taster (vor/zurück)",
     "1 Dreh-Encoder mit Druckschalter (Lautstärke/Play-Pause)",
-    "1 weiterer Dreh-Encoder ohne Taster (Helligkeit)",
-    "1 NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET für dimmbares Backlight",
+    "1 weiterer Dreh-Encoder ohne Taster (Helligkeit, s.u. - auf dieser Hardware aktuell ohne "
+    "Wirkung, s. Kapitel 6)",
 ])
 p("Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Standardwerten in "
   "config/config.example.yaml. Wer andere Pins verdrahtet, passt einfach die gpio:/rfid:-Sektion "
@@ -96,57 +98,64 @@ story.append(note_box(
     "Schaltplan, im Browser öffnen)."
 ))
 
-h2("Physische Steckplatz-Kollision: Display vs. HiFiBerry")
+h2("Anschluss: offizielles 7″ Touch Display (DSI)")
 p(
-    "Das Display soll laut Beschreibung direkt auf den GPIO-Header gesteckt werden - der HiFiBerry "
-    "braucht aber ebenfalls einen direkten Sitz auf demselben Header (I2S ist empfindlich gegenüber "
-    "zusätzlichen Steckverbindern). <b>Beide gleichzeitig aufstecken geht nicht.</b>"
+    "Anders als das frühere 3,5″-SPI-Display sitzt dieses Display <b>nicht</b> auf dem 40-Pin-"
+    "Header - Bild und Touch laufen komplett über das mitgelieferte DSI-Flachbandkabel (eigener "
+    "Steckplatz auf dem Pi, neben den HDMI-Buchsen). <b>Damit entfällt die frühere "
+    "Steckplatz-Kollision mit dem HiFiBerry komplett</b> - der HiFiBerry sitzt normal direkt auf "
+    "dem 40-Pin-Header, das Display hängt separat am DSI-Steckplatz."
 )
 p(
-    "<b>Lösung:</b> Das Display nicht aufstecken, sondern per Jumper-/Dupont-Kabeln verdrahten. Der "
-    "HiFiBerry sitzt normal direkt auf dem Pi, das Display hängt per Kabel daneben - und es müssen "
-    "nur die tatsächlich gebrauchten Leitungen verbunden werden. Die Touch-Leitungen (CE1/PENIRQ) "
-    "werden dabei einfach gar nicht erst angeschlossen, Touch bleibt so elektrisch inaktiv."
+    "Die kleine Adapter-/Power-Platine auf der Rückseite des Displays braucht trotzdem 4 "
+    "Jumper-/Dupont-Kabel zum Pi, weil DSI selbst weder Strom noch die I2C-Leitung fürs Touch "
+    "mitführt:"
 )
-story.append(note_box(
-    "Der Display-Treiber (mhs35/tft35a-Overlay) meldet dem Kernel trotzdem einen Touch-Controller "
-    "auf SPI0 CE1 an - fest im Overlay einprogrammiert, ohne Parameter zum Abschalten, unabhängig "
-    "davon, ob Touch physisch angeschlossen ist. Beide SPI0-Chipselects sind damit softwareseitig "
-    "belegt, der RC522 kann nicht mit auf SPI0 - siehe Kapitel 3 für die tatsächliche Verkabelung "
-    "über Software-SPI auf freien GPIOs."
-))
 story.append(spec_table(
     [
-        ["Display-Pin (26-Pin-Header)", "Pi-Pin (BCM)", "Zweck"],
-        ["VCC", "3.3V", "Versorgung"],
-        ["GND", "GND", "Masse"],
-        ["SCK", "GPIO11", "SPI0-Takt (nur Display, RC522 hängt an eigenen GPIOs, s. Kapitel 3)"],
-        ["MOSI (SDI)", "GPIO10", "SPI0 (nur Display)"],
-        ["MISO (SDO)", "GPIO9", "SPI0 (nur Display)"],
-        ["CS/CE0", "GPIO8", "Display-Chipselect"],
-        ["DC/RS", "GPIO24", "Data/Command (Standardwert des tft35a-Overlays)"],
-        ["RST", "GPIO25", "Reset (Standardwert des tft35a-Overlays)"],
-        ["LED/Backlight", "GPIO13, über Treibertransistor", "dimmbar, siehe Kapitel 3"],
-        ["T_CLK, T_CS, T_DIN, T_DO, T_IRQ (Touch)", "nicht anschließen", "Touch bleibt so auch elektrisch inaktiv"],
+        ["Display-Adapterplatine", "Pi-Pin (BCM)", "Zweck"],
+        ["5V", "Pin 2 oder Pin 4", "Stromversorgung"],
+        ["GND", "Pin 6 (oder jeder andere GND-Pin)", "Masse"],
+        ["SDA", "Pin 3 (GPIO2)", "I2C-Datenleitung (Touch-Controller)"],
+        ["SCL", "Pin 5 (GPIO3)", "I2C-Taktleitung (Touch-Controller)"],
     ],
-    col_widths=[60 * mm, 40 * mm, 60 * mm],
+    col_widths=[55 * mm, 55 * mm, 50 * mm],
+))
+story.append(note_box(
+    "Kein Konflikt mit dem HiFiBerry, obwohl GPIO2/3 dieselben Pins sind, die er für seine eigene "
+    "I2C-Steuerung nutzt: I2C ist ein echter Mehrgeräte-Bus, mehrere Chips teilen sich Takt-/"
+    "Datenleitung problemlos, solange sie unterschiedliche Adressen haben - der Touch-Controller "
+    "des Displays und der HiFiBerry-Chip (Adresse 0x4d, per i2cdetect -y 1 bestätigt) sitzen auf "
+    "unterschiedlichen Adressen."
+))
+p(
+    "Falls der HiFiBerry bereits vollflächig auf dem 40-Pin-Header aufgesteckt ist und die Pins "
+    "dadurch von oben nicht mehr mit Dupont-Kabeln erreichbar sind: ein GPIO-Stacking-Header "
+    "(Extra-Höhe, mit durchgeführten Pins) zwischen Pi und HiFiBerry löst das, ohne den HiFiBerry "
+    "selbst umverkabeln zu müssen."
+)
+story.append(note_box(
+    "Kein Treiber-Installer nötig, aber ein eigener Overlay ist Pflicht: dtoverlay=vc4-kms-v3d "
+    "allein (Standard seit Bookworm) reicht nicht - das aktiviert nur den generellen "
+    "KMS-Grafiktreiber, kennt aber die Timings/das Panel dieses konkreten Displays nicht. Ohne "
+    "den zusätzlichen, displayspezifischen Overlay dtoverlay=vc4-kms-dsi-7inch bindet der Treiber "
+    "gar kein Panel, Bildschirm bleibt komplett schwarz. Details und Bild-/Touch-Rotation siehe "
+    "Kapitel 8; install.sh trägt den Overlay automatisch ein."
 ))
 
 h2("GPIO-Belegung im Überblick")
 story.append(spec_table(
     [
         ["Funktion", "BCM-Pin", "Genutzt von"],
-        ["I2S BCLK", "18", "HiFiBerry (Display-Backlight bewusst NICHT hierauf gelegt)"],
+        ["I2S BCLK", "18", "HiFiBerry"],
         ["I2S LRCLK", "19", "HiFiBerry"],
         ["I2S DIN", "20", "HiFiBerry"],
         ["I2S DOUT", "21", "HiFiBerry"],
-        ["I2C SDA", "2", "HiFiBerry (Amp-Steuerung)"],
-        ["I2C SCL", "3", "HiFiBerry (Amp-Steuerung)"],
-        ["SPI0 SCLK/MOSI/MISO", "11 / 10 / 9", "Display (RC522 hängt NICHT hier, s. Kapitel 3)"],
-        ["SPI0 CE0", "8", "Display (TFT-Chipselect)"],
-        ["SPI0 CE1", "7", "vom Display-Overlay softwareseitig für Touch reserviert - unbenutzbar"],
-        ["Display DC", "24", "Display"],
-        ["Display RST", "25", "Display"],
+        ["I2C SDA", "2", "HiFiBerry (Amp-Steuerung) und Display-Touch-Controller - gemeinsam am "
+         "selben I2C-Bus, kein Konflikt (unterschiedliche Adressen), s.o."],
+        ["I2C SCL", "3", "HiFiBerry (Amp-Steuerung) und Display-Touch-Controller, s.o."],
+        ["SPI0 SCLK/MOSI/MISO/CE0/CE1", "11 / 10 / 9 / 8 / 7", "frei (das DSI-Display braucht "
+         "kein SPI0 mehr; RC522 bleibt trotzdem auf Software-SPI, s. Kapitel 3)"],
         ["RC522 SCK (Software-SPI)", "4", "RC522 (rfid.sck_pin)"],
         ["RC522 MOSI (Software-SPI)", "16", "RC522 (rfid.mosi_pin)"],
         ["RC522 MISO (Software-SPI)", "15", "RC522 (rfid.miso_pin)"],
@@ -154,12 +163,13 @@ story.append(spec_table(
         ["RC522 RST", "26", "RC522 (rfid.reset_pin)"],
         ["Taster Weiter", "5", "Taster"],
         ["Taster Zurück", "6", "Taster"],
-        ["Encoder CLK", "1", "Lautstärke-Encoder (NICHT 17, s. Kapitel 3)"],
+        ["Encoder CLK", "1", "Lautstärke-Encoder (17 wäre jetzt auch wieder frei, s. Kapitel 5)"],
         ["Encoder DT", "27", "Lautstärke-Encoder"],
         ["Encoder SW", "22", "Lautstärke-Encoder"],
-        ["Display-Backlight (dimmbar)", "13", "Backlight-Dimmen (Treibertransistor)"],
-        ["Helligkeits-Encoder CLK", "23", "Helligkeits-Encoder"],
-        ["Helligkeits-Encoder DT", "12", "Helligkeits-Encoder"],
+        ["Display-Backlight", "-", "läuft über Sysfs, kein GPIO mehr - Backlight-Dimmen aktuell "
+         "nicht angeschlossen, s. Kapitel 6"],
+        ["Helligkeits-Encoder CLK", "23", "Helligkeits-Encoder (aktuell ohne Wirkung, s. Kapitel 6)"],
+        ["Helligkeits-Encoder DT", "12", "Helligkeits-Encoder (aktuell ohne Wirkung, s. Kapitel 6)"],
     ],
     col_widths=[62 * mm, 28 * mm, 70 * mm],
 ))
@@ -197,6 +207,28 @@ story.append(note_box(
     "äußert sich als „eingestellte Lautstärke wird nie gespeichert, zeigt immer 0“.",
     kind="warn",
 ))
+h2("Wichtig: vc4-kms-v3d braucht ,noaudio")
+p(
+    "Der vc4-kms-v3d-Grafiktreiber-Overlay registriert standardmäßig zusätzlich eine eigene "
+    "HDMI-Audio-ALSA-Karte (taucht in aplay -l als „card N: vc4hdmi“ auf), auch wenn HDMI-Audio "
+    "in diesem Projekt nie genutzt wird (Anzeige läuft über DSI, Ton ausschließlich über den "
+    "HiFiBerry)."
+)
+story.append(note_box(
+    "An echter Hardware bestätigt, Ursache eines tagelangen „Wiedergabe knackt/fragmentiert "
+    "trotz digital korrektem Signalweg“-Rätsels: Diese HDMI-Audio-Registrierung kollidiert "
+    "offenbar mit dem I2S-Pfad des HiFiBerry (beide laufen letztlich über denselben "
+    "VC4-I2S/Audio-Hardwareblock) - äußert sich als digital sauber ankommende, aber physisch "
+    "knacksende/fragmentierte Wiedergabe, dazu wiederkehrende pcm512x-I2C-Fehler im Kernel-Log. "
+    "Keins der naheliegenden Gegenmittel (Auto Mute an/aus, Bluetooth deaktivieren, "
+    "Runtime-Power-Management-Sysfs-Override, selbst ein komplett frisches SD-Karten-Image) "
+    "behebt das, weil keins davon die eigentliche Ursache anfasst.",
+    kind="warn",
+))
+p("Der Fix: ,noaudio an den Overlay anhängen, damit vc4-kms-v3d sich aus der Audio-Seite dieses "
+  "gemeinsam genutzten Hardwareblocks komplett heraushält:")
+code(["dtoverlay=vc4-kms-v3d,noaudio"])
+p("install.sh trägt das automatisch so ein.")
 h2("Lautsprecher anschließen")
 p(
     "Der HiFiBerry Amp2 hat dafür keine Stecker (kein Cinch/Klinke), sondern zwei 2-polige "
@@ -219,11 +251,12 @@ h1("3. RC522 RFID-Leser (Software-SPI auf freien GPIOs)")
 story.append(note_box(
     "Anders als in den meisten RC522-Anleitungen im Netz hängt der RC522 hier NICHT an einem der "
     "beiden Hardware-SPI-Busse des Pi, sondern an vier per Software angesteuerten GPIOs. Grund: "
-    "SPI0 ist komplett vom Display-Treiber belegt (CE0 fürs Display, CE1 fest für einen "
-    "Touch-Controller reserviert, siehe Kapitel 1), SPI1 liegt auf GPIO18-21 - exakt den Pins, die "
-    "der HiFiBerry für I2S-Ton braucht. Der RC522 hat keine Mindesttaktrate, Software-SPI "
-    "funktioniert daher zuverlässig, nur etwas langsamer als Hardware-SPI - für einen Chip-Scan "
-    "völlig ausreichend."
+    "SPI1 liegt auf GPIO18-21, exakt den Pins, die der HiFiBerry für I2S-Ton braucht - SPI0 ist "
+    "inzwischen zwar frei (das offizielle 7″-DSI-Touch-Display beansprucht es anders als das "
+    "frühere SPI-Display nicht mehr), die RC522-Verdrahtung bleibt hier aber trotzdem auf "
+    "Software-SPI, um nicht mehr als nötig gleichzeitig umzustellen. Der RC522 hat keine "
+    "Mindesttaktrate, Software-SPI funktioniert daher zuverlässig, nur etwas langsamer als "
+    "Hardware-SPI - für einen Chip-Scan völlig ausreichend."
 ))
 story.append(spec_table(
     [
@@ -241,16 +274,32 @@ story.append(spec_table(
 ))
 p(
     "Alle vier GPIOs (4/14/15/16) sind sonst von nichts in diesem Projekt belegt. SPI selbst muss "
-    "trotzdem aktiviert bleiben, weil das Display es braucht (macht scripts/install.sh bereits via "
-    "raspi-config nonint do_spi 0, alternativ sudo raspi-config → Interface Options → SPI)."
+    "trotzdem aktiviert bleiben, weil der RC522 Software-SPI über lgpio braucht (macht "
+    "scripts/install.sh bereits via raspi-config nonint do_spi 0, alternativ sudo raspi-config → "
+    "Interface Options → SPI)."
 )
 story.append(note_box(
-    "An echter Hardware bestätigt: Der Display-Treiber beansprucht zusätzlich zu SPI0 auch noch "
-    "GPIO17 als Interrupt-Pin („pendown“) für den (nie verdrahteten) Touch-Controller - unabhängig "
-    "davon, ob Touch angeschlossen ist. Zwischen Display-Overlay und diesem Projekt ist dadurch "
-    "jeder GPIO von 2-27 belegt. Der Lautstärke-Encoder liegt deshalb auf GPIO1 statt dem "
-    "naheliegenderen GPIO17 - siehe Kapitel 5."
+    "Historischer Hintergrund zum Lautstärke-Encoder auf GPIO1 statt GPIO17: Das frühere "
+    "SPI-Display beanspruchte zusätzlich zu SPI0/CE0/CE1 auch GPIO17 als Interrupt-Pin "
+    "(„pendown“) für den (nie verdrahteten) Touch-Controller - fest im damaligen Overlay "
+    "einprogrammiert, unabhängig davon, ob Touch physisch angeschlossen war. Deshalb liegt der "
+    "Lautstärke-Encoder-CLK auf GPIO1 (ID_SC, konventionell für ein HAT-ID-EEPROM reserviert, "
+    "hier aber echt frei, da der HiFiBerry ohnehin per manueller dtoverlay-Zeile statt "
+    "EEPROM-Erkennung konfiguriert wird). Mit dem neuen DSI-Display ist GPIO17 jetzt wieder frei "
+    "- die Verkabelung bleibt hier trotzdem auf GPIO1, um nicht ohne Grund vom dokumentierten "
+    "Standard abzuweichen; wer umverkabeln will, kann gpio.encoder_clk in config.yaml frei auf "
+    "GPIO17 umstellen."
 ))
+p(
+    "An echter Hardware bestätigt: Sowohl das Software-SPI als auch der RC522-Reset-Pin laufen "
+    "über lgpio (owlbox/rfid/lgpio_compat.py), nicht über RPi.GPIO - obwohl die mfrc522-"
+    "Bibliothek intern eigentlich fest auf RPi.GPIO setzt (wird per unittest.mock.patch "
+    "umgeleitet). Grund: gpiozero (Taster/Encoder) braucht auf aktuellen Kerneln zwingend lgpio, "
+    "weil RPi.GPIOs eigene Kantenerkennung dort mit „Failed to add edge detection“ abbricht - "
+    "RPi.GPIO zeigte in diesem Prozess außerdem selbst für unbenutzte Pins sofort „already in "
+    "use“-Warnungen. Deshalb läuft die komplette GPIO-Ansteuerung dieses Projekts konsistent "
+    "über lgpio, nirgends mehr über RPi.GPIO."
+)
 
 # ============================================================ 4. Taster
 h1("4. Taster (vor/zurück)")
@@ -298,8 +347,9 @@ p(
 
 h2("Zweiter Dreh-Encoder für Helligkeit (KY-040)")
 p(
-    "Gehört zum Standardaufbau, zusammen mit dem dimmbaren Backlight (Kapitel 6) - dasselbe "
-    "KY-040-Modul, diesmal ohne den Taster zu verdrahten (kein eigener Klick, nur Drehen)."
+    "Gehört zum Standardaufbau - dasselbe KY-040-Modul, diesmal ohne den Taster zu verdrahten "
+    "(kein eigener Klick, nur Drehen). <b>Auf dieser Hardware aktuell ohne Wirkung</b> (siehe "
+    "Kapitel 6) - der Encoder selbst kann so lange unverdrahtet bleiben."
 )
 story.append(spec_table(
     [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO23"], ["DT", "GPIO12"], ["+", "3.3V"], ["GND", "GND"]],
@@ -322,28 +372,24 @@ story.append(note_box(
 ))
 
 # ============================================================ 6. Backlight
-h1("6. Dimmbares Display-Backlight (Pflicht)")
+h1("6. Display-Hintergrundbeleuchtung")
+story.append(note_box(
+    "Wichtiger Unterschied zum alten Display: Dieses Display hat keine per GPIO/PWM ansteuerbare "
+    "LED-Leitung wie das alte SPI-Display - die Helligkeit wird stattdessen intern über eine "
+    "Linux-Backlight-Sysfs-Schnittstelle geregelt "
+    "(/sys/class/backlight/.../brightness), angesteuert vom Power-Chip auf der "
+    "Display-Adapterplatine selbst. Es gibt daher keine eigene Verkabelung mehr für diesen "
+    "Punkt - kein Transistor, kein MOSFET, keine LED-Leitung, kein gpio.backlight_pin."
+))
 p(
-    "Je nach Fertigungscharge ist die LED-Leitung bei diesem Board-Typ ab Werk entweder fest "
-    "verdrahtet oder auf einen GPIO gelegt (öfter berichtet: GPIO18 - genau der Pin, den der "
-    "HiFiBerry für die I2S-Bit-Clock braucht, hier also nicht verwendbar). Bei OwlBox ist das "
-    "Backlight-Dimmen <b>Pflicht, kein optionales Extra</b> - der Helligkeitsregler in den "
-    "Einstellungen und der zweite Dreh-Encoder sind zentrale Bedienelemente."
+    "Die GPIO13-Transistor-Schaltung und gpio.backlight_pin aus der alten Verkabelung entfallen "
+    "damit ersatzlos - <b>das Backlight-Dimmen über den zweiten Dreh-Encoder ist auf dieser "
+    "Hardware aktuell nicht angeschlossen</b>, das müsste in owlbox/controls/gpio_controls.py "
+    "erst auf die Sysfs-Schnittstelle umgestellt werden. Der zweite Encoder (Kapitel 5) kann so "
+    "lange unverdrahtet bleiben - jede Helligkeitsänderung über die Web-Oberfläche blendet den "
+    "neuen Wert zwar kurz auf dem Display ein, die eigentliche Backlight-Steuerung greift aber "
+    "noch nicht."
 )
-bullets([
-    "Die LED-Leitung nicht an 3.3V, sondern an einen freien GPIO anschließen - GPIO13 (physischer "
-    "Pin 33, einer der Hardware-PWM-fähigen Pins neben 12/18/19, von denen 18/19 dem HiFiBerry gehören).",
-    "Da ein Pi-GPIO nicht genug Strom für die Hintergrundbeleuchtung liefern kann, einen kleinen "
-    "NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET als Schalter dazwischenschalten: GPIO13 → "
-    "Basis/Gate (über ~1kΩ Vorwiderstand bei einem BJT), Kollektor/Drain → LED-Kathode, "
-    "Emitter/Source → GND. Die LED-Anode bleibt wie gehabt an 3.3V bzw. an der vom Board "
-    "vorgesehenen Versorgung.",
-    "In config.yaml: gpio.backlight_pin: 13 setzen (Standard in config.example.yaml). Nur auf null "
-    "setzen, wenn das Backlight abweichend vom Standardaufbau doch fest an 3.3V hängt - dann hat der "
-    "Regler in den Einstellungen keine Wirkung.",
-    "Den zweiten KY-040-Dreh-Encoder (Kapitel 5) für die Helligkeit verdrahten - Drehen ändert die "
-    "Helligkeit sofort um gpio.brightness_step (Standard 5%) pro Rastung.",
-])
 
 # ============================================================ 7. Fallback-Hotspot
 h1("7. Fallback-Hotspot (WLAN-Recovery)")
@@ -372,89 +418,77 @@ story.append(note_box(
 ))
 
 # ============================================================ 8. Display-Treiber
-h1("8. 3,5″ SPI-Display: Treiber (ohne Touch)")
+h1("8. 7″ Touch Display: kein Treiber-Setup nötig")
 p(
-    "Diese Board-Familie (tft35a/MHS-35) funktioniert nicht über einen direkten KMS-Grafikausgang, "
-    "sondern über einen Trick: der Pi bekommt per config.txt einen „unsichtbaren“ virtuellen "
-    "HDMI-Ausgang in der Auflösung des Displays vorgegaukelt, X11/Chromium rendern ganz normal "
-    "dorthin, und ein kleines Hilfsprogramm (fbcp) kopiert das Bild laufend per SPI aufs eigentliche "
-    "TFT."
+    "Im Gegensatz zum früheren 3,5″-SPI-Display (das einen virtuellen-HDMI-Trick, fbcp und den "
+    "alten Legacy-Grafiktreiber brauchte, um überhaupt ein Bild zu zeigen) ist das offizielle "
+    "7″-Display an einem normalen Raspberry Pi OS Bookworm-Image komplett plug-and-play: Firmware "
+    "erkennt es automatisch über das DSI-Kabel, keine dtoverlay=-Zeile, kein Treiber-Installer, "
+    "kein Extra-Paket. Empfohlenes Basis-Image bleibt trotzdem Raspberry Pi OS Lite, 64-bit (ohne "
+    "Desktop-Umgebung) - der Kiosk startet X selbst nur für Chromium (siehe Kapitel 9), eine "
+    "mitinstallierte Desktop-Umgebung (lightdm, LXDE) würde beim Boot nur unnötig Zeit kosten. "
+    "Wichtig ist nur: der moderne KMS-Grafiktreiber (vc4-kms-v3d) bleibt aktiv (Bookworm-Standard) "
+    "- er wurde beim alten Display extra deaktiviert, das ist mit diesem Display nicht mehr nötig "
+    "und würde die GPU-Beschleunigung sogar wieder kosten."
 )
-p(
-    "<b>Empfohlener Weg:</b> statt config.txt von Hand zu editieren, den vom Verkäufer verlinkten "
-    "Treiber-Installer benutzen, oder alternativ das quelloffene goodtft/LCD-show-Skript (auf "
-    "GitHub, Skriptname i.d.R. MHS35-show oder LCD35-show) - der Installer setzt automatisch die "
-    "passenden config.txt-Werte, kompiliert/installiert fbcp und richtet den Autostart ein."
-)
-p(
-    "<b>Danach nur einen Schritt selbst nachziehen:</b> in /boot/firmware/config.txt die vom "
-    "Installer eingetragene Touch-Zeile wieder entfernen/auskommentieren - sie beginnt mit "
-    "dtoverlay=ads7846,... . Ohne diese Zeile lädt der Kernel den XPT2046-Touch-Treiber gar nicht "
-    "erst, Touch ist damit auch softwareseitig aus."
-)
-p("Zur Referenz, wie diese Zeilen ungefähr aussehen (der Installer setzt sie automatisch):")
-code([
-    "hdmi_force_hotplug=1", "hdmi_group=2", "hdmi_mode=87",
-    "hdmi_cvt=480 320 60 6 0 0 0", "hdmi_drive=2", "dtparam=spi=on",
-    "dtoverlay=tft35a:rotate=90",
-])
-p("Und als systemd-Service für fbcp, falls der Installer keinen eigenen Autostart einrichtet "
-  "(Vorlage liegt in systemd/owlbox-fbcp.service):")
-code([
-    "sudo cp systemd/owlbox-fbcp.service /etc/systemd/system/",
-    "sudo systemctl daemon-reload",
-    "sudo systemctl enable --now owlbox-fbcp.service",
-])
+story.append(note_box(
+    "Ein eigener Overlay ist trotzdem Pflicht: dtoverlay=vc4-kms-v3d,noaudio allein aktiviert nur "
+    "den generellen KMS-Treiber, kennt aber die Timings dieses konkreten Panels nicht - "
+    "zusätzlich braucht es dtoverlay=vc4-kms-dsi-7inch. Ohne diesen zweiten Overlay bindet der "
+    "Treiber gar kein Panel (dmesg zeigt „[drm] Cannot find any crtc or sizes“, Bildschirm bleibt "
+    "komplett schwarz, kein Fehler sonst irgendwo sichtbar). install.sh trägt beide Zeilen "
+    "automatisch in /boot/firmware/config.txt ein:"
+))
+code(["dtoverlay=vc4-kms-v3d,noaudio", "dtoverlay=vc4-kms-dsi-7inch"])
 
-h2("Wichtig: legacy Grafiktreiber statt Wayland/labwc")
+h2("Drehung um 180° (falls das Display auf dem Kopf verbaut ist)")
 p(
-    "fbcp liest von /dev/fb0 - das gibt es unter dem modernen KMS-Grafiktreiber (vc4-kms-v3d, "
-    "Standard seit Raspberry Pi OS Bullseye/Bookworm mit Wayland/labwc) meist nicht mehr in "
-    "nutzbarer Form. Für diese Display-Familie also in /boot/firmware/config.txt den KMS-Treiber "
-    "deaktivieren:"
+    "Zwei verschiedene Stellschrauben für zwei verschiedene Dinge, an echter Hardware mühsam "
+    "herausgefunden:"
 )
-code(["#dtoverlay=vc4-kms-v3d"])
+bullets([
+    "<b>Bild selbst:</b> Der vc4-kms-dsi-7inch-Overlay hat KEINEN rotate=-Parameter "
+    "(/boot/firmware/overlays/README listet nur sizex/sizey/invx/invy/swapxy/disable_touch/dsi0 - "
+    "ein versuchsweise angehängtes rotate=180 wird stillschweigend ignoriert). Die Bild-Rotation "
+    "läuft stattdessen über einen Kernel-Boot-Parameter in cmdline.txt (nicht config.txt!): ans "
+    "Ende der einzeiligen Datei anhängen.",
+    "<b>Touch-Koordinaten:</b> KEINE zusätzlichen invx/invy-Parameter am Overlay setzen. Sobald "
+    "das Bild über den cmdline.txt-Parameter gedreht ist, korrigiert X11/libinput die "
+    "Touch-Koordinaten am gedrehten Ausgang bereits von sich aus passend mit - zusätzlich "
+    "gesetztes invx,invy dreht dann nochmal drüber und zeigt sich als auf beiden Achsen "
+    "spiegelverkehrter Touch relativ zum (korrekt gedrehten) Bild.",
+])
+code(["video=DSI-1:800x480@60,rotate=180"])
+story.append(note_box(
+    "install.sh trägt das automatisch ein. Wichtig: nicht über xrandr oder display_lcd_rotate "
+    "versuchen - an echter Hardware bestätigt: xrandr --output DSI-1 --rotate inverted wird zwar "
+    "anstandslos angenommen (xrandr --query zeigt danach „inverted“), das Panel zeichnet aber nie "
+    "tatsächlich neu, selbst nach einem erzwungenen --off/--auto-Modeset. Der ältere Parameter "
+    "display_lcd_rotate/lcd_rotate ist unter KMS ebenfalls wirkungslos.",
+    kind="warn",
+))
 p(
-    "und über sudo raspi-config → Advanced Options → GL Driver auf „Legacy“ stellen. Empfohlenes "
-    "Basis-Image ist deshalb Raspberry Pi OS (Legacy) Lite, 64-bit - der alte Grafiktreiber, aber "
-    "bewusst ohne mitinstallierte Desktop-Umgebung (siehe Kapitel 9, warum)."
+    "Einfach dtoverlay=vc4-kms-dsi-7inch ohne weitere Parameter reicht, der Touch-Controller ist "
+    "ohnehin Teil desselben Overlays, kein separater rpi-ft5406-Eintrag nötig."
 )
 
 # ============================================================ 9. Kiosk-Autostart
-h1("9. Kiosk-Autostart (kein Desktop)")
+h1("9. Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)")
 p(
-    "scripts/kiosk.sh startet Chromium im Kiosk-Modus gegen http://localhost:5000/ - das "
-    "funktioniert, sobald fbcp läuft und der legacy Grafiktreiber (nicht Wayland) aktiv ist. Auf "
-    "„Legacy Lite“ gibt es aber keine Desktop-Umgebung (kein lightdm, kein LXDE), in die sich der "
-    "Kiosk einhängen könnte - deshalb startet ein eigener systemd-Dienst "
-    "(owlbox-kiosk.service) X direkt selbst per startx, übernimmt dafür tty1 und lässt "
-    "scripts/kiosk.sh als einzigen X-Client laufen. Kein Panel, kein Dateimanager-Desktop, kein "
-    "Login-Bildschirm - das spart gegenüber einer vollen Desktop-Umgebung spürbar Bootzeit."
+    "Da die Basis „Lite“ keine Desktop-Umgebung mitbringt, gibt es auch kein lightdm/LXDE, in das "
+    "sich der Kiosk einhängen könnte. Stattdessen startet ein eigener systemd-Dienst "
+    "(owlbox-kiosk.service) X direkt selbst (per startx), übernimmt dafür tty1 und lässt "
+    "scripts/kiosk.sh (das Chromium im Kiosk-Modus startet) als einzigen „Client“ laufen - keine "
+    "Fensterleiste, kein Dateimanager-Desktop, kein Panel. Mit aktivem KMS-Treiber findet X's "
+    "eigener, automatisch gewählter „modesetting“-Treiber /dev/dri/card0 von selbst - keine "
+    "eigene Xorg-Konfiguration nötig (anders als beim alten Display, das X explizit auf einen "
+    "Framebuffer-Treiber zwingen musste)."
 )
 code([
-    "sudo apt-get install -y xserver-xorg-video-fbdev",
-    "",
     "# X ohne Display-Manager erlauben:",
     "cat > /etc/X11/Xwrapper.config <<'EOF'",
     "allowed_users=anybody",
     "needs_root_rights=yes",
-    "EOF",
-    "",
-    "# Mit dem Legacy-GL-Treiber (kein /dev/dri/card0) scheitert X's",
-    "# automatisch gewaehlter modesetting-Treiber mit 'no screens found' -",
-    "# stattdessen ausdruecklich auf den Framebuffer zeichnen lassen:",
-    "mkdir -p /etc/X11/xorg.conf.d",
-    "cat > /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf <<'EOF'",
-    "Section \"Device\"",
-    "    Identifier \"OwlBoxFramebuffer\"",
-    "    Driver \"fbdev\"",
-    "    Option \"fbdev\" \"/dev/fb0\"",
-    "EndSection",
-    "",
-    "Section \"Screen\"",
-    "    Identifier \"OwlBoxScreen\"",
-    "    Device \"OwlBoxFramebuffer\"",
-    "EndSection",
     "EOF",
     "",
     "sudo cp /opt/owlbox/systemd/owlbox-kiosk.service /etc/systemd/system/",
@@ -462,20 +496,16 @@ code([
     "sudo systemctl enable --now owlbox-kiosk.service",
 ])
 story.append(note_box(
-    "owlbox-kiosk.service bringt Conflicts=getty@tty1.service schon mit und übernimmt tty1 damit "
-    "automatisch - sauberer läuft es trotzdem mit sudo systemctl disable getty@tty1.service, damit "
-    "dort kein ungenutzter Login-Prompt mehr mitstartet."
-))
-story.append(note_box(
-    "An echter Hardware bestätigt: Ohne xserver-xorg-video-fbdev und die Xorg-Konfiguration oben "
-    "bricht owlbox-kiosk.service sofort mit „no screens found“ ab - sichtbar aber nicht in "
-    "journalctl -u owlbox-kiosk (nur „status=1“), sondern im eigentlichen X-Server-Log unter "
-    "/var/log/Xorg.0.log (dort: „open /dev/dri/card0: No such file or directory“)."
+    "owlbox-kiosk.service bringt Conflicts=getty@tty1.service schon mit, muss also "
+    "getty@tty1.service nicht extra deaktiviert bekommen - läuft aber sauberer, wenn man es "
+    "trotzdem tut (sudo systemctl disable getty@tty1.service), damit dort kein ungenutzter "
+    "Login-Prompt mehr mitstartet."
 ))
 p(
-    "Läuft doch eine volle Desktop-Umgebung (z.B. die volle „Legacy“-Variante statt Lite geflasht): "
-    "alternativ über deren Autostart-Datei einhängen - "
-    "~/.config/lxsession/LXDE-pi/autostart um die Zeile @/opt/owlbox/scripts/kiosk.sh ergänzen."
+    "Läuft doch eine volle Desktop-Umgebung (z.B. weil bewusst die volle Variante statt Lite "
+    "geflasht wurde), lässt sich der Kiosk alternativ ganz klassisch über deren Autostart-Datei "
+    "einhängen: ~/.config/lxsession/LXDE-pi/autostart um die Zeile "
+    "@/opt/owlbox/scripts/kiosk.sh ergänzen."
 )
 
 # ============================================================ 10. Konfiguration
@@ -514,7 +544,7 @@ on_cover = partial(
     cover_page,
     kicker="OWLBOX",
     title=["Verkabelung"],
-    subtitle=["Vollständige Hardware-Referenz:", "Pinbelegung, Display-Treiber, Backlight, Netzwerk-Fallback."],
+    subtitle=["Vollständige Hardware-Referenz:", "Pinbelegung, 7″-DSI-Display, HiFiBerry, Netzwerk-Fallback."],
     meta_lines=["Hardware-Aufbau Raspberry Pi 3B+", "Schnelleinstieg: OwlBox-Schnellstart.pdf"],
 )
 on_page = partial(draw_header_footer, title=TITLE)

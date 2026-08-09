@@ -140,12 +140,13 @@ story.append(note_box(
 ))
 
 # ============================================================ 4. Kiosk-Display
-h1("4. Kiosk-Display (3,5″-Touchscreen)")
+h1("4. Kiosk-Display (7″ Touch Display)")
 p(
     "Die unauthentifizierte „Jetzt läuft“-Anzeige, die im Vollbild-Kiosk-Modus permanent auf dem "
-    "am Gerät verbauten Display läuft. Touch ist an diesem Aufbau bewusst deaktiviert (siehe "
-    "OwlBox-Verkabelung.pdf) - die Anzeige ist reine Information, bedient wird über die physischen "
-    "Elemente aus Kapitel 3 oder über die Web-Verwaltung."
+    "am Gerät verbauten Display läuft. Die Touch-Hardware ist zwar vorhanden, wird von der "
+    "Oberfläche aktuell aber nicht ausgewertet (siehe OwlBox-Verkabelung.pdf) - die Anzeige ist "
+    "reine Information, bedient wird über die physischen Elemente aus Kapitel 3 oder über die "
+    "Web-Verwaltung."
 )
 story.append(spec_table(
     [
@@ -547,9 +548,9 @@ story.append(spec_table(
          "flach auf dem markierten Lesebereich liegen. Siehe auch OwlBox-Verkabelung.pdf, RC522-Verkabelung."],
         ["Kein Ton", "Lautstärke unter Einstellungen → Audio prüfen; ALSA-Gerät/Mixer in config.yaml "
          "gegen aplay -L / amixer scontrols abgleichen (OwlBox-Verkabelung.pdf)."],
-        ["Display bleibt schwarz", "fbcp-Dienst prüfen (systemctl status owlbox-fbcp), legacy "
-         "Grafiktreiber statt Wayland aktiv? Kiosk-Dienst prüfen (systemctl status owlbox-kiosk). "
-         "Siehe OwlBox-Verkabelung.pdf."],
+        ["Display bleibt schwarz", "config.txt auf dtoverlay=vc4-kms-dsi-7inch prüfen (dmesg | "
+         "grep -i drm zeigt „Cannot find any crtc or sizes“, wenn er fehlt); Kiosk-Dienst prüfen "
+         "(systemctl status owlbox-kiosk). Siehe OwlBox-Verkabelung.pdf."],
         ["Verwaltung im Browser nicht erreichbar", "IP-Adresse erneut prüfen; auf dem Kiosk-Display "
          "nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Kapitel 10.5)."],
         ["Helligkeitsregler ohne Wirkung", "Backlight-Pin in config.yaml (gpio.backlight_pin) muss "

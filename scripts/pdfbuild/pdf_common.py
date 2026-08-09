@@ -238,7 +238,7 @@ def imager_window_mockup(highlight, os_key):
     bar = _chrome_bar("Raspberry Pi Imager", width, cfg["chrome"], cfg["bar_bg"], cfg["fg"])
     btn_defs = [
         ("device", "CHOOSE DEVICE", "Raspberry Pi 3"),
-        ("os", "CHOOSE OS", "Raspberry Pi OS (Legacy) Lite"),
+        ("os", "CHOOSE OS", "Raspberry Pi OS Lite (64-bit)"),
         ("storage", "CHOOSE STORAGE", "SD-Karte"),
     ]
     btn_w = (width - 16 * mm) / 3
