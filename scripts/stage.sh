@@ -117,6 +117,41 @@ svc() {
   fi
 }
 
+# Fixed volume every listening test forces the hardware mixer to, regardless
+# of whatever the app/database currently has saved. Confirmed on real
+# hardware to matter: comparing stages by ear while relying on whatever
+# volume the app happened to be at (default_volume, a previously-saved
+# value, a mid-fade dip, ...) confounds "does this stage's hardware affect
+# audio quality" with "what does the app's persisted volume happen to be
+# right now" - two completely different questions. Forcing a known,
+# consistent, clearly-audible level via `amixer` directly (bypassing the app
+# entirely) makes every stage's listening test apples-to-apples.
+TEST_VOLUME_PERCENT=75
+
+# find_mixer_control <card>
+# Echoes the first working control name, or nothing if none respond.
+find_mixer_control() {
+  local card="$1" candidate
+  for candidate in Digital PCM Master Playback; do
+    if amixer -c "$card" sget "$candidate" >/dev/null 2>&1; then
+      echo "$candidate"
+      return
+    fi
+  done
+}
+
+# force_test_volume <card>
+# Sets the hardware mixer to TEST_VOLUME_PERCENT directly via amixer - not
+# through the app, so it works regardless of whether owlbox.service is
+# running, paused mid-fade, or has some old/unexpected value saved in its
+# database. Silently does nothing if no known control responds (sound_check
+# already reports that case in detail).
+force_test_volume() {
+  local card="$1" ctl
+  ctl="$(find_mixer_control "$card")"
+  [ -n "$ctl" ] && amixer -c "$card" sset "$ctl" "${TEST_VOLUME_PERCENT}%" unmute >/dev/null 2>&1
+}
+
 # run_test_tool <script.py> <freundlicher Name>
 # Runs one of scripts/test_rfid.py / scripts/test_controls.py in the
 # foreground and waits for it to exit (Ctrl+C) before the stage continues -
@@ -207,51 +242,50 @@ EOF
 
   echo "-- Mixer --"
   local ctl=""
-  for candidate in Digital PCM Master Playback; do
-    if amixer -c "$card" sget "$candidate" >/dev/null 2>&1; then ctl="$candidate"; break; fi
-  done
+  ctl="$(find_mixer_control "$card")"
   if [ -z "$ctl" ]; then
     echo "   Kein bekannter Regler gefunden. Vorhanden:"
     amixer -c "$card" scontrols 2>/dev/null | sed 's/^/     /'
-  else
-    amixer -c "$card" sget "$ctl" 2>/dev/null | grep -E '^\s+(Mono|Front)' | sed 's/^/   /'
-    local state
-    state="$(amixer -c "$card" sget "$ctl" 2>/dev/null | grep -oE '\[[0-9]+%\]|\[off\]' | head -2 | tr '\n' ' ' || true)"
-    case "$state" in
-      *"[off]"*|*"[0%]"*)
-        echo
-        echo "   !! Der Regler '$ctl' ist stummgeschaltet oder steht auf 0%."
-        echo "      DAS ist der Grund fuer 'kein Ton'. Beheben mit:"
-        echo
-        echo "        sudo amixer -c $card sset $ctl 80% unmute"
-        echo
-        ;;
-      *)
-        echo "   Regler '$ctl' ist aktiv - Lautstaerke sieht in Ordnung aus."
-        ;;
-    esac
+    echo
+    echo "-- Testbefehl --"
+    echo
+    echo "   Kein Regler zum automatischen Setzen gefunden, deshalb ohne feste"
+    echo "   Lautstaerke:"
+    echo
+    echo "        speaker-test -D hw:$card,0 -c 2 -t sine -l 1"
+    return
   fi
+  if [ "$DRYRUN" = "1" ]; then
+    echo "   [dry-run] amixer -c $card sset $ctl ${TEST_VOLUME_PERCENT}% unmute; speaker-test ..."
+    return
+  fi
+  # Force a known, fixed volume directly on the hardware mixer - not through
+  # the app - so this test is never confused by whatever value the app/
+  # database happens to have (its own default, a previously-saved value from
+  # an unrelated earlier session, a chime/fade mid-dip, ...). Confirmed on
+  # real hardware this distinction matters: "kein Ton" during a staged
+  # bring-up turned out twice to be exactly this - the hardware/wiring was
+  # fine, only the app's persisted volume wasn't what was expected.
+  force_test_volume "$card"
+  echo "   Testlautstaerke fest auf ${TEST_VOLUME_PERCENT}% gesetzt (direkt am Mixer,"
+  echo "   unabhaengig davon was die App/Datenbank gerade meint):"
+  amixer -c "$card" sget "$ctl" 2>/dev/null | grep -E '^\s+(Mono|Front)' | sed 's/^/   /'
   echo
 
-  echo "-- Testbefehle --"
+  echo "-- Testton (laeuft automatisch ein paar Sekunden) --"
   echo
-  echo "   1) Reiner Testton, braucht keine Datei:"
-  echo
-  echo "        speaker-test -D hw:$card,0 -c 2 -t sine -l 1"
+  speaker-test -D "hw:$card,0" -c 2 -t sine -l 1 || true
   echo
   local track
   track="$(find "$INSTALL_DIR/media" -type f \( -iname '*.mp3' -o -iname '*.m4a' \
            -o -iname '*.ogg' -o -iname '*.wav' -o -iname '*.flac' \) 2>/dev/null | head -1 || true)"
   if [ -n "$track" ]; then
-    echo "   2) Echte Datei aus deiner Bibliothek:"
+    echo "   Optional auch eine echte Datei aus der Bibliothek testen:"
     echo
     echo "        mpv --no-video --audio-device=alsa/hw:$card,0 \"$track\""
-  else
-    echo "   2) (keine Mediendatei unter $INSTALL_DIR/media gefunden -"
-    echo "       dann reicht der Testton oben)"
+    echo
   fi
-  echo
-  echo "   1-2 Minuten hoeren."
+  echo "   War das eben zu hoeren - klar und ohne Knistern?"
 }
 
 # Short listening check used at every stage after "sound". Confirmed on real
@@ -277,6 +311,13 @@ listen_reminder() {
     return
   fi
   svc stop owlbox.service || true
+  # Same fixed test volume as sound_check, set directly on the hardware
+  # mixer - not through the app, and only possible now that owlbox.service
+  # is stopped and no longer holds the ALSA device. Keeps every stage's
+  # listening test comparable to the others regardless of what volume the
+  # app/database happens to have (see sound_check's comment on why this
+  # matters - confirmed on real hardware more than once).
+  force_test_volume "$card"
   speaker-test -D "hw:$card,0" -c 2 -t sine -l 1 || true
   svc start owlbox.service
   echo
