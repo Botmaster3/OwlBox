@@ -256,15 +256,10 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     # -- X.4 Grundeinstellungen -------------------------------------------------
     h2(f"{n}.4 Grundeinstellungen prüfen")
     p(
-        "scripts/install.sh aktiviert SPI später automatisch - dieser Schritt ist nur zur "
-        "Kontrolle bzw. für alle, die lieber vorher schon alles an einer Stelle einstellen:"
+        "Dieser Schritt ist optional - nur für alle, die Hostname/Zeitzone/Tastaturlayout nicht "
+        f"schon beim Flashen in {n}.2 gesetzt haben:"
     )
     code(["sudo raspi-config"])
-    bullets([
-        "<b>Interface Options → SPI → Enable</b> (für den RC522-RFID-Leser - falls hier schon "
-        "„Enabled“ steht, ist nichts weiter zu tun).",
-        f"Hostname/Zeitzone/Tastaturlayout, falls beim Flashen in {n}.2 nicht schon gesetzt.",
-    ])
     p("Menü mit „Finish“ verlassen, bei Aufforderung neu starten.")
 
     # -- X.5 Hardware verkabeln --------------------------------------------------
@@ -295,15 +290,6 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     code([
         "git clone https://github.com/Botmaster3/owlbox.git",
         "cd owlbox",
-    ])
-    story.append(note_box(
-        "Meldet der Pi trotzdem <b>„git: command not found“</b> (z.B. weil "
-        f"{n}.3 übersprungen wurde): einmalig nachinstallieren, dann den Befehl oben erneut "
-        "ausführen:"
-    ))
-    code([
-        "sudo apt update",
-        "sudo apt install -y git",
     ])
     h3(f"{n}.6.2 Installationsskript ausführen (1. Durchlauf)")
     story.append(terminal_mockup(app_name, [
