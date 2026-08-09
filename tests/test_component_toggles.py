@@ -1,7 +1,7 @@
 """Each hardware component must be switchable off on its own, WITHOUT the
 global `simulate` flag - because simulate swaps in StubPlayer and kills real
 audio, which makes it useless for isolating an audio problem. These toggles
-are what `scripts/audio-stage.sh` drives; see docs/audio-troubleshooting.md.
+are what `scripts/stage.sh` drives; see docs/staged-setup.md.
 """
 from owlbox.backlight import GpioBacklight, NullBacklight, create_backlight
 from owlbox.config import Config, GpioConfig, RfidConfig

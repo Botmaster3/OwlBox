@@ -64,7 +64,7 @@ class GpioConfig:
     # real audio, making it useless for isolating an audio problem). The
     # backlight has its own off switch (backlight_pin: null) and the RFID
     # reader has one too (rfid.reader: simulated), so with this each hardware
-    # component can be enabled one at a time - see docs/audio-troubleshooting.md.
+    # component can be enabled one at a time - see docs/staged-setup.md.
     enabled: bool = True
     button_next: int = 5
     button_prev: int = 6

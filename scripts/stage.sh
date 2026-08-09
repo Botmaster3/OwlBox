@@ -1,24 +1,33 @@
 #!/usr/bin/env bash
-# Staged bring-up for isolating an audio problem (crackling/noise during
-# playback). Each stage switches on exactly ONE more hardware component than
-# the previous one, so the first stage that starts crackling names the culprit
-# directly instead of leaving it to guesswork.
+# Guided, staged bring-up: wire and verify ONE hardware component at a time,
+# in the order you actually connect it, instead of everything at once and
+# then hunting for what's wrong. Each stage only turns on what it needs,
+# leaving everything not yet wired switched off in config.yaml so it can't
+# interfere - see docs/staged-setup.md for the reasoning and what each
+# failure mode looks like.
 #
-#   sudo owlbox-audio-stage 0    # nothing but audio - the baseline
-#   sudo owlbox-audio-stage 1    # + OwlBox app, all hardware still off
-#   sudo owlbox-audio-stage 2    # + kiosk display (Chromium)
-#   sudo owlbox-audio-stage 3    # + backlight PWM
-#   sudo owlbox-audio-stage 4    # + buttons/rotary encoders
-#   sudo owlbox-audio-stage 5    # + RFID reader (= normal operation)
-#   sudo owlbox-audio-stage status
+#   sudo owlbox-stage sound      # 1) nur der HiFiBerry Amp2 angeschlossen
+#   sudo owlbox-stage display    # 2) + 7"-Display (DSI-Kabel + Stromjumper)
+#   sudo owlbox-stage rfid       # 3) + RC522-Leser
+#   sudo owlbox-stage controls   # 4) + Taster und Dreh-Encoder (= Normalbetrieb)
+#   sudo owlbox-stage status     # zeigt den aktuellen Stand, ändert nichts
 #
-# Listen for 1-2 minutes at each stage before moving on. Config edits are done
-# in place and preserve the file's comments, so the box stays fully usable -
-# stage 5 restores exactly the normal configuration.
+# Wiring order matches how the standard build is assembled (see
+# docs/hardware.md) - HiFiBerry sits directly on the header, everything else
+# is added on top of/around it. Each stage prints exactly what to test next
+# before you move on; the rfid/controls stages additionally run a small
+# standalone tool (no browser needed) so wiring can be confirmed directly.
 set -euo pipefail
 
-CONFIG="${OWLBOX_CONFIG:-/opt/owlbox/config/config.yaml}"
-# Set OWLBOX_STAGE_DRYRUN=1 to skip all systemctl calls (used by the tests).
+INSTALL_DIR="${OWLBOX_INSTALL_DIR:-/opt/owlbox}"
+CONFIG="${OWLBOX_CONFIG:-$INSTALL_DIR/config/config.yaml}"
+PYTHON="$INSTALL_DIR/.venv/bin/python3"
+# Presence marks "install.sh has not seen a completed staged bring-up yet" -
+# see install.sh's own STAGED_MARKER comment. Only the "controls" stage
+# (the last one, equivalent to normal operation) removes it.
+STAGED_MARKER="$INSTALL_DIR/config/.staged_setup"
+# Set OWLBOX_STAGE_DRYRUN=1 to skip all systemctl calls and the interactive
+# hardware test tools (used by the tests - they can't drive real GPIO/SPI).
 DRYRUN="${OWLBOX_STAGE_DRYRUN:-0}"
 
 if [ ! -f "$CONFIG" ]; then
@@ -28,7 +37,7 @@ if [ ! -f "$CONFIG" ]; then
 fi
 
 if [ "$DRYRUN" != "1" ] && [ "$(id -u)" -ne 0 ]; then
-  echo "Please run as root: sudo owlbox-audio-stage $*" >&2
+  echo "Please run as root: sudo owlbox-stage $*" >&2
   exit 1
 fi
 
@@ -108,6 +117,27 @@ svc() {
   fi
 }
 
+# run_test_tool <script.py> <freundlicher Name>
+# Runs one of scripts/test_rfid.py / scripts/test_controls.py in the
+# foreground and waits for it to exit (Ctrl+C) before the stage continues -
+# so "wire it, test it, THEN commit the config" happens in one command
+# instead of three separate steps to keep track of.
+run_test_tool() {
+  local script="$1" label="$2"
+  if [ "$DRYRUN" = "1" ]; then
+    echo "   [dry-run] $PYTHON $INSTALL_DIR/scripts/$script"
+    return
+  fi
+  if [ ! -x "$PYTHON" ]; then
+    echo "   $PYTHON nicht gefunden - lief 'sudo owlbox-install' schon durch?" >&2
+    return 1
+  fi
+  echo
+  echo "-- $label-Test (Strg+C zum Beenden, dann geht's automatisch weiter) --"
+  echo
+  "$PYTHON" "$INSTALL_DIR/scripts/$script" || true
+}
+
 apply() {  # apply <rfid> <gpio_enabled> <backlight_pin>
   set_key rfid reader "$1"
   set_key gpio enabled "$2"
@@ -131,11 +161,9 @@ show_status() {
     # non-zero (any state other than "active") - a "|| echo inactive"
     # fallback would run *in addition* to that, doubling the output, since
     # a command substitution captures everything written inside it, not just
-    # the last command's. The state itself is always non-empty text, so an
-    # empty capture (e.g. systemctl missing) is the only real fallback case.
-    # "|| true" (not "|| echo ...") only to keep `set -e` from treating the
-    # assignment's exit status - which is is-active's own, e.g. 3 for
-    # "inactive" - as a script-ending failure.
+    # the last command's. "|| true" (not "|| echo ...") only to keep set -e
+    # from treating the assignment's exit status - which is is-active's own,
+    # e.g. 3 for "inactive" - as a script-ending failure.
     local owlbox_state kiosk_state
     owlbox_state="$(systemctl is-active owlbox.service 2>/dev/null || true)"
     kiosk_state="$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)"
@@ -145,13 +173,13 @@ show_status() {
   echo
 }
 
-# Stage 0 is the baseline the whole procedure rests on, so it doesn't just
-# print a command to try - it checks the things that make "no sound at all"
-# far more likely than a crackle: missing/extra sound cards and a muted or
-# zeroed ALSA mixer. A muted mixer produces silence that looks exactly like a
-# broken driver, and OwlBox drives that same hardware mixer for its own volume
-# control, so it can genuinely be left at 0 when the service is stopped.
-baseline_check() {
+# The "sound" stage is the baseline everything else rests on, so it doesn't
+# just print a command to try - it checks the things that make "no sound at
+# all" far more likely than a crackle: missing/extra sound cards and a muted
+# or zeroed ALSA mixer. A muted mixer produces silence that looks exactly
+# like a broken driver, and OwlBox drives that same hardware mixer for its
+# own volume control, so it can genuinely be left at 0 from a previous run.
+sound_check() {
   echo
   if ! command -v aplay >/dev/null 2>&1; then
     echo "   aplay nicht gefunden - bitte 'sudo apt install alsa-utils' nachholen." >&2
@@ -205,101 +233,109 @@ EOF
   fi
   echo
 
-  echo "-- Testbefehle (alles gestoppt, nichts stoert) --"
+  echo "-- Testbefehle --"
   echo
   echo "   1) Reiner Testton, braucht keine Datei:"
   echo
   echo "        speaker-test -D hw:$card,0 -c 2 -t sine -l 1"
   echo
   local track
-  track="$(find /opt/owlbox/media -type f \( -iname '*.mp3' -o -iname '*.m4a' \
+  track="$(find "$INSTALL_DIR/media" -type f \( -iname '*.mp3' -o -iname '*.m4a' \
            -o -iname '*.ogg' -o -iname '*.wav' -o -iname '*.flac' \) 2>/dev/null | head -1 || true)"
   if [ -n "$track" ]; then
     echo "   2) Echte Datei aus deiner Bibliothek:"
     echo
     echo "        mpv --no-video --audio-device=alsa/hw:$card,0 \"$track\""
   else
-    echo "   2) (keine Mediendatei unter /opt/owlbox/media gefunden -"
+    echo "   2) (keine Mediendatei unter $INSTALL_DIR/media gefunden -"
     echo "       dann reicht der Testton oben)"
   fi
-  cat <<'EOF'
+  echo
+  echo "   1-2 Minuten hoeren."
+}
 
-   1-2 Minuten hoeren. Das ist die Referenz:
-   Knistert es SCHON HIER, liegt es nicht an der OwlBox-Software, sondern an
-   Hardware/Verkabelung/Netzteil/config.txt - siehe docs/audio-troubleshooting.md.
-EOF
+# Short reminder used at every stage after "sound" - the full sound_check
+# above (card/mixer diagnosis) doesn't need repeating every time, only
+# whether the SAME test still sounds the same as it did before.
+listen_reminder() {
+  echo
+  echo "   Zur Kontrolle nochmal hoeren, ob der Ton noch genauso sauber ist"
+  echo "   wie bei der vorherigen Stufe:"
+  echo
+  echo "        speaker-test -D hw:0,0 -c 2 -t sine -l 1"
+  echo
+  echo "   Klingt es jetzt anders/schlechter als eben -> die gerade neu"
+  echo "   zugeschaltete Komponente ist die Ursache."
 }
 
 STAGE="${1:-}"
 
 case "$STAGE" in
-  0)
-    echo "== Stufe 0: nur Audio, OwlBox komplett aus =="
+  sound)
+    echo "== 1) Sound: nur der HiFiBerry Amp2 angeschlossen =="
+    echo "   (noch kein Display, kein RC522, keine Taster/Encoder verkabelt)"
+    apply simulated false null
     svc stop owlbox.service owlbox-kiosk.service || true
-    baseline_check
-    ;;
-  1)
-    echo "== Stufe 1: + OwlBox-App, alle Hardware aus, kein Display =="
-    apply simulated false null
-    svc stop owlbox-kiosk.service || true
-    svc restart owlbox.service
-    cat <<'EOF'
-
-   Die App laeuft, aber ohne RFID, ohne Taster/Encoder, ohne Backlight-PWM
-   und ohne Kiosk. Abspielen ueber die Weboberflaeche vom Handy/Laptop:
-   http://<Pi-IP>:5000 -> Bibliothek -> Geschichte starten.
-EOF
-    ;;
-  2)
-    echo "== Stufe 2: + Kiosk/Display =="
-    apply simulated false null
-    svc restart owlbox.service
-    svc restart owlbox-kiosk.service
+    sound_check
     echo
-    echo "   Chromium laeuft jetzt mit. Backlight-PWM weiterhin aus"
-    echo "   (Display haengt an voller Helligkeit, das ist so gewollt)."
+    echo "   Sauber? Dann Display anschliessen (DSI-Kabel + 4 Stromjumper,"
+    echo "   siehe docs/hardware.md), danach: sudo owlbox-stage display"
     ;;
-  3)
-    echo "== Stufe 3: + Backlight-PWM =="
+  display)
+    echo "== 2) Display: + 7\"-Touch-Display (DSI) =="
     apply simulated false 13
     svc restart owlbox.service
     svc restart owlbox-kiosk.service
-    cat <<'EOF'
-
-   Jetzt zusaetzlich die Software-PWM auf GPIO 13.
-   WICHTIG bei dieser Stufe: die Helligkeit einmal verstellen (Regler oder
-   Einstellungen) - auf ~50% und auf 100%. Aendert sich das Knistern mit
-   der Helligkeit, ist die PWM die Ursache.
-EOF
+    echo
+    echo "   Bildschirm sollte jetzt die Now-Playing-Anzeige zeigen."
+    echo "   Helligkeit dabei einmal verstellen (Regler unter Einstellungen"
+    echo "   im Web-UI, oder der zweite Dreh-Encoder sobald der verkabelt ist)"
+    echo "   - wenn sich der Ton dabei aendert, ist die Backlight-PWM (GPIO 13)"
+    echo "   die Ursache."
+    listen_reminder
+    echo
+    echo "   Sauber? Dann RC522 anschliessen (siehe docs/hardware.md),"
+    echo "   danach: sudo owlbox-stage rfid"
     ;;
-  4)
-    echo "== Stufe 4: + Taster und Drehregler =="
-    apply simulated true 13
+  rfid)
+    echo "== 3) RFID: + RC522-Leser =="
+    apply mfrc522 false 13
+    svc stop owlbox.service || true   # sonst kaempfen App und Testtool um dieselben GPIOs
+    run_test_tool test_rfid.py "RFID"
     svc restart owlbox.service
     svc restart owlbox-kiosk.service
+    listen_reminder
     echo
-    echo "   GPIO-Bedienelemente aktiv. RFID weiterhin aus."
+    echo "   Sauber und Chip wurde beim Test erkannt? Dann Taster/Encoder"
+    echo "   anschliessen (siehe docs/hardware.md), danach:"
+    echo "   sudo owlbox-stage controls"
     ;;
-  5)
-    echo "== Stufe 5: + RFID-Leser (= normaler Betrieb) =="
+  controls)
+    echo "== 4) Taster/Encoder: + Bedienelemente (= normaler Betrieb) =="
+    apply mfrc522 false 13
+    svc stop owlbox.service || true   # sonst kaempfen App und Testtool um dieselben GPIOs
+    run_test_tool test_controls.py "Taster/Encoder"
     apply mfrc522 true 13
+    svc enable owlbox.service || true
     svc restart owlbox.service
     svc restart owlbox-kiosk.service
+    if [ "$DRYRUN" != "1" ] && [ -f "$STAGED_MARKER" ]; then
+      rm -f "$STAGED_MARKER"
+      echo "   Gestaffelte Einrichtung abgeschlossen - owlbox.service ist ab jetzt normal aktiviert."
+    fi
+    listen_reminder
     echo
-    echo "   Vollstaendige normale Konfiguration wiederhergestellt."
+    echo "   Vollstaendige normale Konfiguration aktiv. Fertig! Noch zu erledigen:"
+    echo "   http://<pi-ip>:5000/admin oeffnen, Ersteinrichtung (Benutzername/"
+    echo "   Passwort) durchlaufen, erste Geschichte hochladen und einem Chip zuweisen."
     ;;
   status|"")
     echo "== Aktueller Stand =="
     ;;
   *)
-    echo "Unbekannte Stufe: $STAGE (erlaubt: 0 1 2 3 4 5 status)" >&2
+    echo "Unbekannte Stufe: $STAGE (erlaubt: sound display rfid controls status)" >&2
     exit 1
     ;;
 esac
 
 show_status
-
-if [ "$STAGE" != "status" ] && [ -n "$STAGE" ]; then
-  echo "1-2 Minuten hoeren. Sauber -> naechste Stufe."
-  echo "Knistert es -> die zuletzt zugeschaltete Komponente ist die Ursache."
-fi

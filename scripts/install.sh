@@ -250,18 +250,29 @@ python3 -m venv "$INSTALL_DIR/.venv"
 "$INSTALL_DIR/.venv/bin/pip" install --upgrade pip
 "$INSTALL_DIR/.venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
 
+# FRESH_CONFIG marks a genuine first-time install (no config.yaml existed
+# yet) - used below to start in "sound only" state instead of jumping
+# straight to full normal operation with hardware that likely isn't even
+# wired up yet (RC522/buttons/encoders/backlight transistor), see
+# docs/staged-setup.md. A re-run against an already-configured box must NOT
+# touch these settings again - that would silently undo a stage the user
+# has already progressed past (or is deliberately testing at right now).
+FRESH_CONFIG=0
 if [ ! -f "$INSTALL_DIR/config/config.yaml" ]; then
   cp "$INSTALL_DIR/config/config.example.yaml" "$INSTALL_DIR/config/config.yaml"
   echo "==> Wrote default config/config.yaml"
+  FRESH_CONFIG=1
 fi
 
 mkdir -p "$INSTALL_DIR/media" "$INSTALL_DIR/data"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
-chmod +x "$INSTALL_DIR/scripts/kiosk.sh" "$INSTALL_DIR/scripts/audio-stage.sh"
-# Staged bring-up helper for isolating audio problems. Safe as a plain symlink
-# (unlike owlbox-install above): this script only edits config.yaml and
-# restarts services, it never derives a source directory from its own path.
-ln -sf "$INSTALL_DIR/scripts/audio-stage.sh" /usr/local/bin/owlbox-audio-stage
+chmod +x "$INSTALL_DIR/scripts/kiosk.sh" "$INSTALL_DIR/scripts/stage.sh" \
+  "$INSTALL_DIR/scripts/test_rfid.py" "$INSTALL_DIR/scripts/test_controls.py"
+# Guided staged bring-up (sound -> display -> rfid -> controls), see
+# docs/staged-setup.md. Safe as a plain symlink (unlike owlbox-install
+# above): this script only edits config.yaml and restarts services, it never
+# derives a source directory from its own path.
+ln -sf "$INSTALL_DIR/scripts/stage.sh" /usr/local/bin/owlbox-stage
 
 # -- HiFiBerry Amp2 (config.txt) --------------------------------------------
 # The official 7" DSI Touch Display needs NO config.txt entry at all - it's
@@ -479,23 +490,33 @@ fi
 echo "==> Installing systemd service"
 cp "$INSTALL_DIR/systemd/owlbox.service" /etc/systemd/system/owlbox.service
 systemctl daemon-reload
-systemctl enable --now owlbox.service
-[ "$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)" != "active" ] \
-  && systemctl start owlbox-kiosk.service 2>/dev/null || true
+
+# STAGED_MARKER survives across the reboot between the 1st and 2nd run (a
+# plain shell variable wouldn't - each run is a separate process) - its mere
+# presence means "this box has never finished the guided sound -> display ->
+# rfid -> controls bring-up yet". `owlbox-stage controls` removes it once
+# that bring-up actually completes; until then, this script must never
+# auto-start owlbox.service itself; that would try to open the
+# RC522/buttons/encoders/backlight transistor before any of it is even
+# wired, which is exactly the "everything at once, then guess what's wrong"
+# situation the staged flow (docs/staged-setup.md) replaces.
+STAGED_MARKER="$INSTALL_DIR/config/.staged_setup"
+if [ "$FRESH_CONFIG" = "1" ]; then
+  sed -i -E 's/^(\s*reader:).*/\1 simulated   # mfrc522 | simulated/' "$INSTALL_DIR/config/config.yaml"
+  sed -i -E 's/^(\s*enabled:).*/\1 false/' "$INSTALL_DIR/config/config.yaml"
+  sed -i -E 's/^(\s*backlight_pin:).*/\1 null/' "$INSTALL_DIR/config/config.yaml"
+  chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config/config.yaml"
+  touch "$STAGED_MARKER"
+  chown "$SERVICE_USER:$SERVICE_USER" "$STAGED_MARKER"
+fi
 
 # -- summary -----------------------------------------------------------------
-
-cat <<EOF
-
-==> owlbox.service installiert und gestartet (systemctl status owlbox).
-EOF
 
 if [ "$NEEDS_REBOOT" -eq 1 ]; then
   cat <<EOF
 
 ==> config.txt wurde geändert - starte in 10 Sekunden neu (Strg+C zum Abbrechen).
-    Nach dem Neustart dieses Skript einmal erneut ausführen, um die
-    Audio-Erkennung und den Kiosk-Autostart abzuschließen:
+    Nach dem Neustart dieses Skript einmal erneut ausführen:
       sudo owlbox-install
 EOF
   # Confirmed on real hardware: leaving this as a printed instruction rather
@@ -515,14 +536,27 @@ elif [ "$AUDIO_CONFIGURED" -eq 0 ]; then
       sudo reboot
       sudo owlbox-install
 EOF
-else
+elif [ -f "$STAGED_MARKER" ]; then
   cat <<EOF
 
-==> Alles eingerichtet. Noch zu erledigen (kein Skript kann das für dich tun):
-  1. RC522-RFID-Leser (Software-SPI), beide Taster, beide Dreh-Encoder und die
-     4 Jumperkabel des Displays (Strom + I2C für Touch) verkabeln - siehe
-     OwlBox-Verkabelung.pdf.
-  2. http://<pi-ip>:5000/admin öffnen, Ersteinrichtung (Benutzername/Passwort)
-     durchlaufen, erste Geschichte hochladen und einem Chip zuweisen.
+==> Basissystem fertig, owlbox.service ABSICHTLICH noch nicht gestartet.
+    Jetzt Stück für Stück in Betrieb nehmen (jede Stufe einzeln testbar,
+    siehe docs/staged-setup.md):
+
+        sudo owlbox-stage sound
+
+    (nur der HiFiBerry Amp2 muss dafür bereits angeschlossen sein - Display,
+    RC522 und Taster/Encoder kommen erst in den späteren Stufen dazu)
+EOF
+else
+  systemctl enable --now owlbox.service
+  [ "$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)" != "active" ] \
+    && systemctl start owlbox-kiosk.service 2>/dev/null || true
+  cat <<EOF
+
+==> owlbox.service installiert und gestartet (systemctl status owlbox).
+    Alles eingerichtet: http://<pi-ip>:5000/admin öffnen, Ersteinrichtung
+    (Benutzername/Passwort) durchlaufen, erste Geschichte hochladen und
+    einem Chip zuweisen.
 EOF
 fi

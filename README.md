@@ -177,12 +177,15 @@ unnötig Zeit kosten würde).
 
 Für die Standardhardware (Pi 3B+, HiFiBerry Amp2, offizielles 7"-Touch-
 Display (DSI), RC522, Taster/Encoder auf den Standard-Pins - siehe
-[docs/hardware.md](docs/hardware.md)) genügt es, das Skript **zweimal mit
-einem Neustart dazwischen** laufen zu lassen:
+[docs/hardware.md](docs/hardware.md)) läuft die Einrichtung **gestaffelt**:
+erst nur der Sound, dann Display, RFID und Taster/Encoder einzeln dazu - jede
+Stufe für sich mit eigenem Testwerkzeug verifizierbar, statt alles auf einmal
+anzuschließen und danach zu raten, woran ein Problem liegt. Vollständig
+beschrieben in [docs/staged-setup.md](docs/staged-setup.md); kurz zusammengefasst:
 
 ```bash
 sudo apt update && sudo apt install -y git   # frisches Raspberry Pi OS Lite hat kein git vorinstalliert
-git clone <dieses-repo> owlbox
+git clone https://github.com/Botmaster3/OwlBox owlbox
 cd owlbox
 sudo ./scripts/install.sh
 ```
@@ -198,11 +201,26 @@ Treiber/Overlay, es wird automatisch über DSI erkannt.
 **Danach das Skript einmal erneut ausführen** (`sudo owlbox-install` - ein
 stabiler Befehl, den der erste Durchlauf selbst anlegt, funktioniert ab da
 von jedem Verzeichnis aus statt `cd owlbox && sudo ./scripts/install.sh`,
-was leicht danebengeht, siehe Kasten unten):
-jetzt ist die HiFiBerry-Soundkarte aktiv, das Skript erkennt automatisch das
-richtige ALSA-Gerät/den Mixer und trägt es in `config/config.yaml` ein,
-richtet den Kiosk-Autostart ein (eigener systemd-Dienst, startet X direkt
-ohne Desktop-Umgebung) und startet `owlbox.service`.
+was leicht danebengeht, siehe Kasten unten): jetzt ist die HiFiBerry-
+Soundkarte aktiv, das Skript erkennt automatisch das richtige ALSA-Gerät/den
+Mixer und trägt es in `config/config.yaml` ein - erkennt dabei auch, dass es
+sich um eine echte Erstinstallation handelt, und stellt `config.yaml` auf
+"nur Sound" (`owlbox.service` wird bewusst noch **nicht** gestartet). Die
+Ausgabe zeigt direkt den nächsten Befehl:
+
+```bash
+sudo owlbox-stage sound
+```
+
+Ab hier Stück für Stück: `sudo owlbox-stage sound` prüft automatisch
+Soundkarte/Mixer und zeigt Testbefehle; ist das sauber, Display anschließen
+und `sudo owlbox-stage display`; dann RC522 anschließen und
+`sudo owlbox-stage rfid` (startet dafür ein eigenständiges Scan-Testwerkzeug,
+kein Browser nötig); zuletzt Taster/Encoder anschließen und
+`sudo owlbox-stage controls` (eigenes Tastendruck-Testwerkzeug) - das ist
+gleichzeitig die letzte Stufe und aktiviert `owlbox.service` dauerhaft.
+Komplette Anleitung inkl. was bei jeder Stufe schiefgehen kann:
+[docs/staged-setup.md](docs/staged-setup.md).
 
 > **Hinweis:** `cd owlbox` von *innerhalb* eines bereits ausgecheckten Repos
 > landet nicht wieder im Repo-Root, sondern eine Ebene zu tief im
@@ -212,16 +230,12 @@ ohne Desktop-Umgebung) und startet `owlbox.service`.
 > aktuellen Verzeichnis funktioniert.
 
 Das Skript ist beliebig oft wiederholbar (idempotent) - jeder Schritt prüft
-zuerst, ob er schon erledigt ist. Danach bleiben nur zwei Dinge wirklich
-manuell, weil kein Skript sie übernehmen kann:
-
-1. RC522-RFID-Leser (Software-SPI auf freien GPIOs, siehe docs/hardware.md),
-   Taster, Dreh-Encoder und die 4 Jumperkabel des Displays (Strom + I2C für
-   Touch) verkabeln - siehe [docs/hardware.md](docs/hardware.md) bzw.
-   **OwlBox-Verkabelung.pdf**.
-2. `http://<pi-ip>:5000/admin` öffnen und die Ersteinrichtung (Benutzername/
-   Passwort) durchlaufen - aus Sicherheitsgründen bewusst ohne automatisch
-   gesetztes Standardpasswort.
+zuerst, ob er schon erledigt ist; eine bereits abgeschlossene Konfiguration
+(RFID/Taster-Encoder/Backlight) lässt ein erneuter Lauf unangetastet. Nach
+der gestaffelten Einrichtung bleibt nur noch eins wirklich manuell, weil kein
+Skript es übernehmen kann: `http://<pi-ip>:5000/admin` öffnen und die
+Ersteinrichtung (Benutzername/Passwort) durchlaufen - aus Sicherheitsgründen
+bewusst ohne automatisch gesetztes Standardpasswort.
 
 Abweichende Hardware (andere HiFiBerry-Variante, anderes Display) lässt sich
 weiterhin ganz nach [docs/hardware.md](docs/hardware.md) von Hand einrichten -
