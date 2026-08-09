@@ -118,11 +118,29 @@ show_status() {
   echo
   echo "Aktive Komponenten laut $CONFIG:"
   printf '   %-22s %s\n' "RFID-Leser:"   "$(get_key rfid reader)"
-  printf '   %-22s %s\n' "Taster/Encoder:" "$(get_key gpio enabled)"
+  local gpio_enabled
+  gpio_enabled="$(get_key gpio enabled)"
+  # config.yaml files created before gpio.enabled existed simply lack the
+  # key - the app defaults it to true (see GpioConfig.enabled), so say that
+  # plainly instead of the confusing raw "(not set)".
+  [ "$gpio_enabled" = "(not set)" ] && gpio_enabled="true (Standardwert, Zeile fehlt noch in config.yaml)"
+  printf '   %-22s %s\n' "Taster/Encoder:" "$gpio_enabled"
   printf '   %-22s %s\n' "Backlight-PWM:" "$(get_key gpio backlight_pin)"
   if [ "$DRYRUN" != "1" ]; then
-    printf '   %-22s %s\n' "owlbox.service:" "$(systemctl is-active owlbox.service 2>/dev/null || echo inactive)"
-    printf '   %-22s %s\n' "Kiosk/Display:" "$(systemctl is-active owlbox-kiosk.service 2>/dev/null || echo inactive)"
+    # systemctl is-active prints the state to stdout even when it exits
+    # non-zero (any state other than "active") - a "|| echo inactive"
+    # fallback would run *in addition* to that, doubling the output, since
+    # a command substitution captures everything written inside it, not just
+    # the last command's. The state itself is always non-empty text, so an
+    # empty capture (e.g. systemctl missing) is the only real fallback case.
+    # "|| true" (not "|| echo ...") only to keep `set -e` from treating the
+    # assignment's exit status - which is is-active's own, e.g. 3 for
+    # "inactive" - as a script-ending failure.
+    local owlbox_state kiosk_state
+    owlbox_state="$(systemctl is-active owlbox.service 2>/dev/null || true)"
+    kiosk_state="$(systemctl is-active owlbox-kiosk.service 2>/dev/null || true)"
+    printf '   %-22s %s\n' "owlbox.service:" "${owlbox_state:-inactive}"
+    printf '   %-22s %s\n' "Kiosk/Display:" "${kiosk_state:-inactive}"
   fi
   echo
 }
