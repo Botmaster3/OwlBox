@@ -154,12 +154,8 @@ story.append(spec_table(
         ["I2C SDA", "2", "HiFiBerry (Amp-Steuerung) und Display-Touch-Controller - gemeinsam am "
          "selben I2C-Bus, kein Konflikt (unterschiedliche Adressen), s.o."],
         ["I2C SCL", "3", "HiFiBerry (Amp-Steuerung) und Display-Touch-Controller, s.o."],
-        ["SPI0 SCLK/MOSI/MISO/CE0/CE1", "11 / 10 / 9 / 8 / 7", "frei (das DSI-Display braucht "
-         "kein SPI0 mehr; RC522 bleibt trotzdem auf Software-SPI, s. Kapitel 3)"],
-        ["RC522 SCK (Software-SPI)", "4", "RC522 (rfid.sck_pin)"],
-        ["RC522 MOSI (Software-SPI)", "16", "RC522 (rfid.mosi_pin)"],
-        ["RC522 MISO (Software-SPI)", "15", "RC522 (rfid.miso_pin)"],
-        ["RC522 SDA/CS (Software-SPI)", "14", "RC522 (rfid.cs_pin)"],
+        ["SPI0 SCLK/MOSI/MISO/CE0", "11 / 10 / 9 / 8", "RC522 (Hardware-SPI, s. Kapitel 3)"],
+        ["SPI0 CE1", "7", "frei (nicht genutzt - der RC522 braucht nur CE0)"],
         ["RC522 RST", "26", "RC522 (rfid.reset_pin)"],
         ["Taster Weiter", "5", "Taster"],
         ["Taster Zurück", "6", "Taster"],
@@ -282,16 +278,12 @@ bullets([
 ])
 
 # ============================================================ 3. RC522
-h1("3. RC522 RFID-Leser (Software-SPI auf freien GPIOs)")
+h1("3. RC522 RFID-Leser (Hardware-SPI0)")
 story.append(note_box(
-    "Anders als in den meisten RC522-Anleitungen im Netz hängt der RC522 hier NICHT an einem der "
-    "beiden Hardware-SPI-Busse des Pi, sondern an vier per Software angesteuerten GPIOs. Grund: "
-    "SPI1 liegt auf GPIO18-21, exakt den Pins, die der HiFiBerry für I2S-Ton braucht - SPI0 ist "
-    "inzwischen zwar frei (das offizielle 7″-DSI-Touch-Display beansprucht es anders als das "
-    "frühere SPI-Display nicht mehr), die RC522-Verdrahtung bleibt hier aber trotzdem auf "
-    "Software-SPI, um nicht mehr als nötig gleichzeitig umzustellen. Der RC522 hat keine "
-    "Mindesttaktrate, Software-SPI funktioniert daher zuverlässig, nur etwas langsamer als "
-    "Hardware-SPI - für einen Chip-Scan völlig ausreichend."
+    "Der RC522 hängt an SPI0, dem Hardware-SPI-Bus des Pi (/dev/spidev0.0, CE0). Grund, warum das "
+    "möglich ist: SPI1 liegt auf GPIO18-21, exakt den Pins, die der HiFiBerry für I2S-Ton braucht "
+    "- SPI0 ist mit dem offiziellen 7″-DSI-Touch-Display aber frei (anders als beim früheren "
+    "SPI-Display, dessen Overlay beide Chip-Selects von SPI0 belegte)."
 ))
 story.append(spec_table(
     [
@@ -299,19 +291,18 @@ story.append(spec_table(
         ["VCC", "3.3V (nicht 5V!)", "-"],
         ["GND", "GND", "-"],
         ["RST", "GPIO26", "rfid.reset_pin"],
-        ["SDA (CS)", "GPIO14", "rfid.cs_pin"],
-        ["SCK", "GPIO4", "rfid.sck_pin"],
-        ["MOSI", "GPIO16", "rfid.mosi_pin"],
-        ["MISO", "GPIO15", "rfid.miso_pin"],
+        ["SDA (CS)", "GPIO8 (SPI0 CE0)", "-"],
+        ["SCK", "GPIO11 (SPI0 SCLK)", "-"],
+        ["MOSI", "GPIO10 (SPI0 MOSI)", "-"],
+        ["MISO", "GPIO9 (SPI0 MISO)", "-"],
         ["IRQ", "nicht verbunden", "-"],
     ],
     col_widths=[45 * mm, 55 * mm, 45 * mm],
 ))
 p(
-    "Alle vier GPIOs (4/14/15/16) sind sonst von nichts in diesem Projekt belegt. SPI selbst muss "
-    "trotzdem aktiviert bleiben, weil der RC522 Software-SPI über lgpio braucht (macht "
-    "scripts/install.sh bereits via raspi-config nonint do_spi 0, alternativ sudo raspi-config → "
-    "Interface Options → SPI)."
+    "Die mfrc522-Python-Bibliothek spricht den Bus direkt über spidev an, kein Bit-Banging mehr "
+    "nötig. SPI selbst muss aktiviert bleiben (macht scripts/install.sh bereits via "
+    "raspi-config nonint do_spi 0, alternativ sudo raspi-config → Interface Options → SPI)."
 )
 story.append(note_box(
     "Historischer Hintergrund zum Lautstärke-Encoder auf GPIO1 statt GPIO17: Das frühere "
@@ -326,14 +317,15 @@ story.append(note_box(
     "GPIO17 umstellen."
 ))
 p(
-    "An echter Hardware bestätigt: Sowohl das Software-SPI als auch der RC522-Reset-Pin laufen "
-    "über lgpio (owlbox/rfid/lgpio_compat.py), nicht über RPi.GPIO - obwohl die mfrc522-"
-    "Bibliothek intern eigentlich fest auf RPi.GPIO setzt (wird per unittest.mock.patch "
-    "umgeleitet). Grund: gpiozero (Taster/Encoder) braucht auf aktuellen Kerneln zwingend lgpio, "
-    "weil RPi.GPIOs eigene Kantenerkennung dort mit „Failed to add edge detection“ abbricht - "
-    "RPi.GPIO zeigte in diesem Prozess außerdem selbst für unbenutzte Pins sofort „already in "
-    "use“-Warnungen. Deshalb läuft die komplette GPIO-Ansteuerung dieses Projekts konsistent "
-    "über lgpio, nirgends mehr über RPi.GPIO."
+    "An echter Hardware bestätigt: Der RC522-Reset-Pin läuft über lgpio (owlbox/rfid/"
+    "lgpio_compat.py), nicht über RPi.GPIO - obwohl die mfrc522-Bibliothek intern eigentlich fest "
+    "auf RPi.GPIO setzt (wird per unittest.mock.patch umgeleitet, nur für diesen einen Pin - die "
+    "SPI-Datenleitungen selbst laufen über den Kernel-spidev-Treiber). Grund: gpiozero "
+    "(Taster/Encoder) braucht auf aktuellen Kerneln zwingend lgpio, weil RPi.GPIOs eigene "
+    "Kantenerkennung dort mit „Failed to add edge detection“ abbricht - RPi.GPIO zeigte in diesem "
+    "Prozess außerdem selbst für unbenutzte Pins sofort „already in use“-Warnungen. Deshalb läuft "
+    "die komplette GPIO-Ansteuerung dieses Projekts konsistent über lgpio, nirgends mehr über "
+    "RPi.GPIO."
 )
 
 # ============================================================ 4. Taster
@@ -579,7 +571,7 @@ story.append(spec_table(
     [
         ["Abschnitt", "Wichtigste Werte"],
         ["audio:", "alsa_device, mixer_control, default_volume, volume_step, chime_enabled"],
-        ["rfid:", "reader, sck_pin, mosi_pin, miso_pin, cs_pin, reset_pin, poll_interval"],
+        ["rfid:", "reader, reset_pin, poll_interval"],
         ["gpio:", "button_next/prev, encoder_clk/dt/switch, backlight_pin, "
          "brightness_encoder_clk/dt, shutdown_hold_seconds, seek_hold_seconds"],
         ["playback:", "restart_track_after_seconds, position_save_interval, auto_sleep_minutes, "

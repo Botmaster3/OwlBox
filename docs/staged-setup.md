@@ -82,7 +82,7 @@ Now-Playing-Anzeige zeigen. Helligkeit einmal verstellen (Regler in den
 Einstellungen im Web-UI) - ändert sich der Ton dabei, ist die Backlight-PWM
 die Ursache. Danach nochmal kurz hören (Testbefehl wird wieder angezeigt).
 
-**3. RC522-RFID-Leser anschließen** (Software-SPI auf freien GPIOs, siehe
+**3. RC522-RFID-Leser anschließen** (Hardware-SPI0, siehe
 [docs/hardware.md](hardware.md)), dann:
 
 ```bash
@@ -183,10 +183,10 @@ benennt die Komponente.
   muss verschwinden. Abhilfe: `gpio.backlight_pin: null` setzen (Dimmung
   entfällt, Display läuft auf voller Helligkeit) oder den
   Backlight-Treibertransistor mit einem RC-Glied entstören.
-- **Erst ab "rfid"**: der RC522 hängt an Software-SPI (GPIO-Pins werden aus
-  Python heraus einzeln umgeschaltet, siehe `owlbox/rfid/soft_spi.py`).
-  `rfid.poll_interval` in `config.yaml` erhöhen (z.B. `0.5`) oder den RC522
-  auf echtes Hardware-SPI (SPI0, seit dem DSI-Display frei) umverdrahten.
+- **Erst ab "rfid"**: der RC522 hängt an Hardware-SPI0 (siehe
+  `owlbox/rfid/mfrc522_reader.py`). Falls hier trotzdem Störungen auftreten,
+  `rfid.poll_interval` in `config.yaml` erhöhen (z.B. `0.5`) als erste
+  Gegenprobe.
 - **Erst ab "controls"**: Masseführung der Taster-/Encoder-Verkabelung
   prüfen, insbesondere gemeinsame Masse mit der Audioplatine vermeiden.
 

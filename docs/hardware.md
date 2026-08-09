@@ -152,11 +152,8 @@ unverdrahtet bleiben.
 | I2S DOUT                        | 21      | HiFiBerry           |
 | I2C SDA                         | 2       | HiFiBerry (Amp-Steuerung) **und** Display-Touch-Controller - gemeinsam am selben I2C-Bus, kein Konflikt (unterschiedliche Adressen), s.o. |
 | I2C SCL                         | 3       | HiFiBerry (Amp-Steuerung) **und** Display-Touch-Controller, s.o. |
-| SPI0 SCLK/MOSI/MISO/CE0/CE1     | 11/10/9/8/7 | **frei** (das DSI-Display braucht kein SPI0 mehr; RC522 bleibt trotzdem auf Software-SPI, s.u.) |
-| RC522 SCK (Software-SPI)        | 4       | RC522 (`rfid.sck_pin`) |
-| RC522 MOSI (Software-SPI)       | 16      | RC522 (`rfid.mosi_pin`) |
-| RC522 MISO (Software-SPI)       | 15      | RC522 (`rfid.miso_pin`) |
-| RC522 SDA/CS (Software-SPI)     | 14      | RC522 (`rfid.cs_pin`) |
+| SPI0 SCLK/MOSI/MISO/CE0         | 11/10/9/8 | RC522 (Hardware-SPI, s.u.) |
+| SPI0 CE1                        | 7       | **frei** (nicht genutzt - der RC522 braucht nur CE0) |
 | RC522 RST                       | 26      | RC522 (`rfid.reset_pin`) |
 | Taster Weiter                   | 5       | Taster              |
 | Taster Zurück                   | 6       | Taster              |
@@ -290,48 +287,44 @@ zwei 2-polige Federklemmen direkt auf der Platine (eine pro Kanal, jeweils
 - Am Lautsprecher selbst hängt der Anschluss vom jeweiligen Modell ab
   (blanker Draht, Flachsteckhülsen/Bananas oder Lötfahnen).
 
-## RC522 RFID-Leser (Software-SPI auf freien GPIOs)
+## RC522 RFID-Leser (Hardware-SPI0)
 
-**Wichtig, unterscheidet sich von den meisten RC522-Anleitungen im Netz:**
-Auf dieser Standardhardware hängt der RC522 **nicht** an einem der beiden
-Hardware-SPI-Busse des Pi, sondern an vier per Software angesteuerten
-GPIOs. Grund: SPI1 liegt auf GPIO18-21, exakt den Pins, die der HiFiBerry
-für I2S-Ton braucht - SPI0 ist inzwischen zwar frei (das offizielle 7"-
-DSI-Touch-Display beansprucht es anders als das frühere SPI-Display nicht
-mehr), die RC522-Verdrahtung bleibt hier aber trotzdem auf Software-SPI, um
-nicht mehr als nötig gleichzeitig umzustellen. Der RC522 hat keine
-Mindesttaktrate, Software-SPI funktioniert zuverlässig, nur eben etwas
-langsamer als Hardware-SPI (für einen Chip-Scan völlig ausreichend).
+Der RC522 hängt an SPI0, dem Hardware-SPI-Bus des Pi (`/dev/spidev0.0`,
+CE0). Grund, warum das möglich ist: SPI1 liegt auf GPIO18-21, exakt den
+Pins, die der HiFiBerry für I2S-Ton braucht - SPI0 ist mit dem offiziellen
+7"-DSI-Touch-Display aber frei (anders als beim frühren SPI-Display, dessen
+Overlay beide Chip-Selects von SPI0 belegte). SPI selbst muss aktiviert
+sein (macht `scripts/install.sh` via `raspi-config nonint do_spi 0`).
 
 | RC522 Pin | Raspberry Pi | Config-Feld |
 |-----------|--------------|-------------|
 | VCC       | 3.3V (**nicht 5V!**) | - |
 | GND       | GND          | - |
 | RST       | GPIO26       | `rfid.reset_pin` |
-| SDA (CS)  | GPIO14       | `rfid.cs_pin` |
-| SCK       | GPIO4        | `rfid.sck_pin` |
-| MOSI      | GPIO16       | `rfid.mosi_pin` |
-| MISO      | GPIO15       | `rfid.miso_pin` |
+| SDA (CS)  | GPIO8 (SPI0 CE0) | - |
+| SCK       | GPIO11 (SPI0 SCLK) | - |
+| MOSI      | GPIO10 (SPI0 MOSI) | - |
+| MISO      | GPIO9 (SPI0 MISO)  | - |
 | IRQ       | nicht verbunden | - |
 
-Alle vier GPIOs (4/14/15/16) sind sonst von nichts in diesem Projekt belegt.
-Die eigentliche Bit-Bang-Logik steckt in `owlbox/rfid/soft_spi.py`, die
-`mfrc522`-Python-Bibliothek (Registerprotokoll) läuft unverändert darüber -
-siehe `owlbox/rfid/mfrc522_reader.py` für Details. SPI selbst muss trotzdem
-aktiviert bleiben, weil das Display es braucht (macht `scripts/install.sh`
-bereits via `raspi-config nonint do_spi 0`).
+Die `mfrc522`-Python-Bibliothek spricht den Bus direkt über `spidev` an,
+kein Bit-Banging mehr nötig - siehe `owlbox/rfid/mfrc522_reader.py` für
+Details. (Die frühere Software-SPI-Implementierung, `owlbox/rfid/soft_spi.py`,
+bleibt im Repo bestehen - getestet, weiterverwendbar, aber seit dieser
+Umstellung nicht mehr der Standardpfad.)
 
-**Wichtig, an echter Hardware bestätigt:** Sowohl das Software-SPI als auch
-der RC522-Reset-Pin laufen über `lgpio` (`owlbox/rfid/lgpio_compat.py`),
-**nicht** über `RPi.GPIO` - obwohl die `mfrc522`-Bibliothek intern eigentlich
-fest auf `RPi.GPIO` setzt (wird per `unittest.mock.patch` umgeleitet). Grund:
-`gpiozero` (Taster/Encoder) braucht auf aktuellen Kerneln zwingend `lgpio`,
-weil `RPi.GPIO`s eigene Kantenerkennung dort mit „Failed to add edge
-detection" abbricht. `RPi.GPIO` zeigte in diesem Prozess außerdem selbst für
-Pins, die sonst nichts anfasst, sofort „already in use"-Warnungen - ein
-Zeichen, dass es auf diesem Kernel generell nicht sauber läuft. Deshalb
-läuft die komplette GPIO-Ansteuerung dieses Projekts konsistent über
-`lgpio`, nirgends mehr über `RPi.GPIO`.
+**Wichtig, an echter Hardware bestätigt:** Der RC522-Reset-Pin läuft über
+`lgpio` (`owlbox/rfid/lgpio_compat.py`), **nicht** über `RPi.GPIO` - obwohl
+die `mfrc522`-Bibliothek intern eigentlich fest auf `RPi.GPIO` setzt (wird
+per `unittest.mock.patch` umgeleitet, nur für diesen einen Pin - die
+SPI-Datenleitungen selbst laufen über den Kernel-`spidev`-Treiber, gar nicht
+über GPIO). Grund: `gpiozero` (Taster/Encoder) braucht auf aktuellen
+Kerneln zwingend `lgpio`, weil `RPi.GPIO`s eigene Kantenerkennung dort mit
+„Failed to add edge detection" abbricht. `RPi.GPIO` zeigte in diesem
+Prozess außerdem selbst für Pins, die sonst nichts anfasst, sofort „already
+in use"-Warnungen - ein Zeichen, dass es auf diesem Kernel generell nicht
+sauber läuft. Deshalb läuft die komplette GPIO-Ansteuerung dieses Projekts
+konsistent über `lgpio`, nirgends mehr über `RPi.GPIO`.
 
 **Historischer Hintergrund zum Lautstärke-Encoder auf GPIO1 statt GPIO17:**
 Das frühere SPI-Display beanspruchte zusätzlich zu SPI0 CE0/CE1 auch
@@ -344,11 +337,6 @@ statt EEPROM-Erkennung konfiguriert wird). Mit dem neuen DSI-Display ist
 GPIO17 jetzt wieder frei - die Verkabelung bleibt hier trotzdem auf GPIO1,
 um nicht ohne Grund vom dokumentierten Standard abzuweichen; wer umverkabeln
 will, kann `gpio.encoder_clk` in `config.yaml` frei auf GPIO17 umstellen.
-
-Wer den RC522 stattdessen an echtem Hardware-SPI betreiben will (jetzt, wo
-SPI0 frei ist), kann `owlbox/rfid/mfrc522_reader.py` entsprechend anpassen
-(dort direkt `spidev`/`MFRC522(bus=0, device=...)` verwenden statt
-`SoftSpi`) - im Standardaufbau bleibt es aber bei Software-SPI, siehe oben.
 
 ## Taster (vor/zurück)
 

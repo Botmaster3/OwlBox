@@ -431,11 +431,10 @@ fi
 # ============================================================ RFID
 if [ "$DO_RFID" -eq 1 ]; then
   echo "==> [RFID] Enabling SPI"
-  # Not strictly required by the RC522 itself - it runs on software
-  # (bit-banged) SPI over plain GPIOs (see owlbox/rfid/soft_spi.py), not the
-  # Pi's hardware SPI bus - but enabling it costs nothing and keeps the door
-  # open for whoever rewires to real hardware SPI later (see
-  # docs/hardware.md).
+  # Required: the RC522 runs on the Pi's hardware SPI0 bus (/dev/spidev0.0,
+  # CE0), see owlbox/rfid/mfrc522_reader.py and docs/hardware.md. Without
+  # this the kernel's spi-bcm2835 driver never loads and the device node
+  # doesn't exist.
   if command -v raspi-config >/dev/null 2>&1; then
     raspi-config nonint do_spi 0 || true
   elif [ -n "$CONFIG_TXT" ]; then

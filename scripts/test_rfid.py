@@ -4,7 +4,8 @@
 Reads config/config.yaml (same one the app uses), opens the RC522 exactly
 the way owlbox.rfid.mfrc522_reader.Mfrc522Reader does, and prints every UID
 it sees. Meant to be run with owlbox.service stopped (both would otherwise
-fight over the same GPIO pins) - `owlbox-stage rfid` does this for you.
+fight over the same SPI0 device and reset GPIO) - `owlbox-stage rfid` does
+this for you.
 
 Usage: sudo /opt/owlbox/.venv/bin/python3 /opt/owlbox/scripts/test_rfid.py
 Ctrl+C to stop.
@@ -23,9 +24,8 @@ from owlbox.rfid.mfrc522_reader import Mfrc522Reader  # noqa: E402
 
 def main() -> None:
     config = load_config()
-    print(f"RC522 an SCK={config.rfid.sck_pin} MOSI={config.rfid.mosi_pin} "
-          f"MISO={config.rfid.miso_pin} CS={config.rfid.cs_pin} "
-          f"RST={config.rfid.reset_pin} (BCM-Nummerierung)")
+    print(f"RC522 an SPI0 (bus=0, device=0/CE0) mit RST={config.rfid.reset_pin} "
+          f"(BCM-Nummerierung)")
     print("Chip auf den Leser legen. Ctrl+C zum Beenden.\n")
 
     reader = Mfrc522Reader(config.rfid)
