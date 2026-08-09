@@ -525,21 +525,48 @@ statt Lite geflasht wurde), lässt sich der Kiosk alternativ ganz klassisch
 über deren Autostart-Datei einhängen: `~/.config/lxsession/LXDE-pi/autostart`
 um die Zeile `@/opt/owlbox/scripts/kiosk.sh` ergänzen.
 
-**Wichtig, an echter Hardware bestätigt: `owlbox-kiosk.service` läuft
-bewusst mit niedrigerer CPU-/IO-Priorität als `owlbox.service`** (`Nice=15`,
-`IOSchedulingClass=best-effort`, `IOSchedulingPriority=7`). Grund: Chromium
-läuft auf dieser Hardware komplett softwaregerendert (keine GPU-
-Beschleunigung verfügbar) - ohne eine Prioritätsdifferenz konkurrieren
-Chromium und `mpv` (läuft in `owlbox.service`) mit exakt gleicher Priorität
-um die knappe CPU eines Pi 3B+. Das war die eigentliche Ursache eines
-"Wiedergabe knackt durchgehend"-Rätsels, das auch nach dem Beheben aller
-`config.txt`-Probleme (siehe oben) und dem Entfernen unnötiger
-Subprozess-Aufrufe aus dem App-Code (siehe `owlbox/engine.py`,
-`get_state()`) bestehen blieb: ein reiner `config.txt`-Test direkt nach
-frischer Raspbian-Installation plus `aplay`/`mpv` im Terminal (ganz ohne
-laufenden Kiosk) spielte sauber ab, derselbe Aufbau mit laufendem Kiosk
-knackste weiterhin. Ein positiver `Nice`-Wert braucht keine besonderen
-Rechte (nur ein *negativer*, also höhere Priorität als Standard, würde
-das) - `install.sh` trägt das automatisch ein und startet
-`owlbox-kiosk.service` bei Bedarf neu, damit die neue Priorität auch ohne
-kompletten Neustart greift.
+`owlbox-kiosk.service` läuft bewusst mit niedrigerer CPU-/IO-Priorität als
+`owlbox.service` (`Nice=15`, `IOSchedulingClass=best-effort`,
+`IOSchedulingPriority=7`). Grund: Chromium läuft auf dieser Hardware
+komplett softwaregerendert (keine GPU-Beschleunigung verfügbar) - ohne eine
+Prioritätsdifferenz konkurrieren Chromium und `mpv` (läuft in
+`owlbox.service`) mit exakt gleicher Priorität um die knappe CPU eines Pi
+3B+. Ein positiver `Nice`-Wert braucht keine besonderen Rechte (nur ein
+*negativer*, also höhere Priorität als Standard, würde das) - `install.sh`
+trägt das automatisch ein und startet `owlbox-kiosk.service` bei Bedarf
+neu, damit die neue Priorität auch ohne kompletten Neustart greift.
+
+**Korrektur, an echter Hardware geprüft:** Dieser Nice-Fix allein hat das
+durchgehende Knacken bei Wiedergabe *nicht* behoben - an echter Hardware
+mit dem Fix aktiv knackte es weiterhin. `vcgencmd get_throttled` zeigte
+`0x0` (keine Unterspannung/Drosselung), `top` zeigte im knackenden Zustand
+noch 62.5% CPU im Leerlauf (Load Average 0.52) und `dmesg` keinerlei
+ALSA-/I2S-Fehler - die CPU war also im klassischen Sinn nie wirklich
+ausgelastet, der Nice-Unterschied konnte also gar nicht viel bewirken.
+Trotzdem bleibt die Priorisierung sinnvoll (kostet nichts, kann in anderen
+Situationen helfen) und wurde nicht wieder zurückgenommen.
+
+**Aktuelle, noch nicht an echter Hardware verifizierte Vermutung:** nicht
+die *Menge* an CPU-Last war das Problem, sondern *kontinuierliches*
+Repaint/Compositing im Kiosk selbst, das auf dem komplett softwaregerenderten
+Chromium immer wieder kurze, aber regelmäßige Lastspitzen erzeugt haben
+könnte - genug, um `mpv`s Audio-Thread gelegentlich einen Scheduling-Slot
+zu kosten, ohne dass das in einer `top`-Momentaufnahme auffällt. Zwei
+Dauerschleifen in der Jetzt-läuft-Seite kamen dafür in Frage und wurden
+entfernt:
+
+- Der Titel-Marquee-Effekt (langer Titel läuft als Laufschrift durch)
+  nutzte eine CSS-`@keyframes`-Animation mit
+  `animation-iteration-count: infinite`, die lief, solange ein langer Titel
+  angezeigt wurde - nicht nur kurz beim Wechsel. Ersetzt durch einfaches
+  Abschneiden mit "…" (`text-overflow: ellipsis`), das nur einmal beim
+  Rendern kostet.
+- Die VU-Meter-Balkenanzeige (rein dekorativ) randomisierte per
+  `setInterval` alle 450ms erneut die Höhe von 5 Balken, samt CSS-
+  `transition`, für die komplette Dauer der Wiedergabe. Ersetzt durch eine
+  einmalige Randomisierung beim Start der Wiedergabe.
+
+Diese beiden Änderungen sind Stand jetzt **noch nicht auf echter Hardware
+getestet** - sie beheben nichts nachweislich, sind aber die nächsten
+plausiblen Kandidaten, nachdem `config.txt`, Kernel/ALSA, Stromversorgung
+und CPU-Auslastung alle bereits sauber geprüft wurden.

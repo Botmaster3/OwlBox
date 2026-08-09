@@ -543,19 +543,29 @@ p(
     "@/opt/owlbox/scripts/kiosk.sh ergänzen."
 )
 story.append(note_box(
-    "An echter Hardware bestätigt: owlbox-kiosk.service läuft bewusst mit niedrigerer "
-    "CPU-/IO-Priorität als owlbox.service (Nice=15, IOSchedulingClass=best-effort, "
-    "IOSchedulingPriority=7). Grund: Chromium läuft auf dieser Hardware komplett "
-    "softwaregerendert (keine GPU-Beschleunigung verfügbar) - ohne Prioritätsdifferenz "
-    "konkurrieren Chromium und mpv (läuft in owlbox.service) mit exakt gleicher Priorität um "
-    "die knappe CPU eines Pi 3B+. Das war die eigentliche Ursache eines \"Wiedergabe knackt "
-    "durchgehend\"-Rätsels, das auch nach dem Beheben aller config.txt-Probleme (Kapitel 2) und "
-    "dem Entfernen unnötiger Subprozess-Aufrufe aus dem App-Code bestehen blieb: ein reiner "
-    "config.txt-Test direkt nach frischer Installation plus aplay/mpv im Terminal (ganz ohne "
-    "laufenden Kiosk) spielte sauber ab, derselbe Aufbau mit laufendem Kiosk knackste weiterhin. "
-    "Ein positiver Nice-Wert braucht keine besonderen Rechte - install.sh trägt das automatisch "
-    "ein und startet owlbox-kiosk.service bei Bedarf neu, damit die neue Priorität auch ohne "
-    "kompletten Neustart greift.",
+    "owlbox-kiosk.service läuft bewusst mit niedrigerer CPU-/IO-Priorität als owlbox.service "
+    "(Nice=15, IOSchedulingClass=best-effort, IOSchedulingPriority=7). Grund: Chromium läuft "
+    "auf dieser Hardware komplett softwaregerendert (keine GPU-Beschleunigung verfügbar) - ohne "
+    "Prioritätsdifferenz konkurrieren Chromium und mpv (läuft in owlbox.service) mit exakt "
+    "gleicher Priorität um die knappe CPU eines Pi 3B+. Ein positiver Nice-Wert braucht keine "
+    "besonderen Rechte - install.sh trägt das automatisch ein und startet owlbox-kiosk.service "
+    "bei Bedarf neu, damit die neue Priorität auch ohne kompletten Neustart greift.",
+))
+story.append(note_box(
+    "Korrektur, an echter Hardware geprüft: Dieser Nice-Fix allein hat ein durchgehendes "
+    "Knacken bei Wiedergabe NICHT behoben - mit dem Fix aktiv knackte es an echter Hardware "
+    "weiterhin. vcgencmd get_throttled zeigte 0x0 (keine Unterspannung/Drosselung), top zeigte "
+    "im knackenden Zustand noch 62.5% CPU im Leerlauf (Load Average 0.52) und dmesg keinerlei "
+    "ALSA-/I2S-Fehler - die CPU war im klassischen Sinn nie wirklich ausgelastet. Die "
+    "Priorisierung bleibt trotzdem bestehen (kostet nichts), war aber nicht die vollständige "
+    "Lösung. Aktuelle, noch nicht an echter Hardware verifizierte Vermutung: kontinuierliches "
+    "Repaint im Kiosk selbst (unendlich laufende CSS-Animation für lange Story-Titel als "
+    "Laufschrift, sowie ein setInterval alle 450ms für die VU-Meter-Balken) erzeugte auf dem "
+    "softwaregerenderten Chromium regelmäßige kurze Lastspitzen, die in einer top-Momentaufnahme "
+    "nicht auffallen, aber mpvs Audio-Thread gelegentlich einen Scheduling-Slot gekostet haben "
+    "könnten. Beide Dauerschleifen wurden entfernt (Laufschrift durch einfaches Abschneiden mit "
+    "\"...\" ersetzt, VU-Balken randomisieren nur noch einmal beim Start der Wiedergabe) - "
+    "dieser Fix ist Stand jetzt noch nicht an echter Hardware getestet.",
     kind="warn",
 ))
 
