@@ -222,20 +222,25 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     p(
         f"Nach ca. 1-2 Minuten (erster Boot dauert etwas länger als spätere) {terminal_open} "
         "öffnen und per SSH verbinden. Funktioniert der Hostname nicht, stattdessen die "
-        "IP-Adresse verwenden (z.B. aus der Router-Oberfläche abgelesen). System danach einmal "
+        "IP-Adresse verwenden (z.B. aus der Router-Oberfläche abgelesen). Raspberry Pi OS Lite "
+        "bringt git nicht von Haus aus mit - gleich mit installieren, dann das System einmal "
         "komplett aktualisieren und neu starten:"
     )
     story.append(terminal_mockup(app_name, [
         (True, "ssh pi@owlbox.local"),
         (False, "pi@owlbox.local's password:"),
         (False, "Linux owlbox 6.12 ..."),
-        (True, "sudo apt update && sudo apt full-upgrade -y"),
+        (True, "sudo apt update"),
+        (True, "sudo apt install -y git"),
+        (True, "sudo apt full-upgrade -y"),
         (True, "sudo reboot"),
     ], os_key=os_key))
     p("Zum Abtippen bzw. Kopieren, Zeile für Zeile:")
     code([
         "ssh pi@owlbox.local",
-        "sudo apt update && sudo apt full-upgrade -y",
+        "sudo apt update",
+        "sudo apt install -y git",
+        "sudo apt full-upgrade -y",
         "sudo reboot",
     ])
     story.append(note_box(
@@ -292,8 +297,9 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "cd owlbox",
     ])
     story.append(note_box(
-        "Meldet der Pi <b>„git: command not found“</b>: Raspberry Pi OS Lite bringt git nicht "
-        "von Haus aus mit. Einmalig nachinstallieren, dann den Befehl oben erneut ausführen:"
+        "Meldet der Pi trotzdem <b>„git: command not found“</b> (z.B. weil "
+        f"{n}.3 übersprungen wurde): einmalig nachinstallieren, dann den Befehl oben erneut "
+        "ausführen:"
     ))
     code([
         "sudo apt update",
