@@ -127,22 +127,98 @@ show_status() {
   echo
 }
 
+# Stage 0 is the baseline the whole procedure rests on, so it doesn't just
+# print a command to try - it checks the things that make "no sound at all"
+# far more likely than a crackle: missing/extra sound cards and a muted or
+# zeroed ALSA mixer. A muted mixer produces silence that looks exactly like a
+# broken driver, and OwlBox drives that same hardware mixer for its own volume
+# control, so it can genuinely be left at 0 when the service is stopped.
+baseline_check() {
+  echo
+  if ! command -v aplay >/dev/null 2>&1; then
+    echo "   aplay nicht gefunden - bitte 'sudo apt install alsa-utils' nachholen." >&2
+    return
+  fi
+
+  echo "-- Soundkarten (aplay -l) --"
+  aplay -l 2>/dev/null | grep '^card' || echo "   KEINE Soundkarte gefunden!"
+  echo
+
+  local card
+  card="$(aplay -l 2>/dev/null | sed -n 's/^card \([0-9]\+\):.*hifiberry.*/\1/Ip' | head -1 || true)"
+  if [ -z "$card" ]; then
+    cat <<'EOF'
+   !! Keine HiFiBerry-Karte gefunden.
+      Damit kann es keinen Ton geben - das ist die Ursache, nicht das Knistern.
+      Pruefen: dtoverlay=hifiberry-dacplus in der config.txt vorhanden,
+      dtparam=audio=on auskommentiert, vc4-kms-v3d mit ",noaudio".
+      Siehe docs/hardware.md. Danach neu starten.
+EOF
+    return
+  fi
+  echo "   HiFiBerry ist Karte $card."
+  echo
+
+  echo "-- Mixer --"
+  local ctl=""
+  for candidate in Digital PCM Master Playback; do
+    if amixer -c "$card" sget "$candidate" >/dev/null 2>&1; then ctl="$candidate"; break; fi
+  done
+  if [ -z "$ctl" ]; then
+    echo "   Kein bekannter Regler gefunden. Vorhanden:"
+    amixer -c "$card" scontrols 2>/dev/null | sed 's/^/     /'
+  else
+    amixer -c "$card" sget "$ctl" 2>/dev/null | grep -E '^\s+(Mono|Front)' | sed 's/^/   /'
+    local state
+    state="$(amixer -c "$card" sget "$ctl" 2>/dev/null | grep -oE '\[[0-9]+%\]|\[off\]' | head -2 | tr '\n' ' ' || true)"
+    case "$state" in
+      *"[off]"*|*"[0%]"*)
+        echo
+        echo "   !! Der Regler '$ctl' ist stummgeschaltet oder steht auf 0%."
+        echo "      DAS ist der Grund fuer 'kein Ton'. Beheben mit:"
+        echo
+        echo "        sudo amixer -c $card sset $ctl 80% unmute"
+        echo
+        ;;
+      *)
+        echo "   Regler '$ctl' ist aktiv - Lautstaerke sieht in Ordnung aus."
+        ;;
+    esac
+  fi
+  echo
+
+  echo "-- Testbefehle (alles gestoppt, nichts stoert) --"
+  echo
+  echo "   1) Reiner Testton, braucht keine Datei:"
+  echo
+  echo "        speaker-test -D hw:$card,0 -c 2 -t sine -l 1"
+  echo
+  local track
+  track="$(find /opt/owlbox/media -type f \( -iname '*.mp3' -o -iname '*.m4a' \
+           -o -iname '*.ogg' -o -iname '*.wav' -o -iname '*.flac' \) 2>/dev/null | head -1 || true)"
+  if [ -n "$track" ]; then
+    echo "   2) Echte Datei aus deiner Bibliothek:"
+    echo
+    echo "        mpv --no-video --audio-device=alsa/hw:$card,0 \"$track\""
+  else
+    echo "   2) (keine Mediendatei unter /opt/owlbox/media gefunden -"
+    echo "       dann reicht der Testton oben)"
+  fi
+  cat <<'EOF'
+
+   1-2 Minuten hoeren. Das ist die Referenz:
+   Knistert es SCHON HIER, liegt es nicht an der OwlBox-Software, sondern an
+   Hardware/Verkabelung/Netzteil/config.txt - siehe docs/audio-troubleshooting.md.
+EOF
+}
+
 STAGE="${1:-}"
 
 case "$STAGE" in
   0)
     echo "== Stufe 0: nur Audio, OwlBox komplett aus =="
     svc stop owlbox.service owlbox-kiosk.service || true
-    cat <<'EOF'
-
-   Alles gestoppt. Jetzt direkt im Terminal abspielen, z.B.:
-
-     mpv --no-video --audio-device=alsa/hw:0,0 /opt/owlbox/media/<irgendeine>.mp3
-
-   1-2 Minuten hoeren. Das ist die Referenz: knistert es SCHON HIER,
-   liegt es nicht an der OwlBox-Software, sondern an Hardware/Verkabelung/
-   config.txt - dann bei Stufe 0 bleiben und dort weitersuchen.
-EOF
+    baseline_check
     ;;
   1)
     echo "== Stufe 1: + OwlBox-App, alle Hardware aus, kein Display =="
