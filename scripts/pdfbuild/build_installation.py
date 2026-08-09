@@ -335,19 +335,29 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "Funktionsverlust für OwlBox."
     ))
     h3(f"{n}.6.3 Installationsskript erneut ausführen (2. Durchlauf, nach dem Neustart)")
-    p("Nach dem Neustart erneut per SSH verbinden und das Skript noch einmal starten:")
+    p(
+        "Nach dem Neustart erneut per SSH verbinden und das Skript noch einmal starten - dafür "
+        "nicht mehr in das Repo-Verzeichnis wechseln, sondern den stabilen Befehl "
+        + mono("owlbox-install") + " verwenden, den der erste Durchlauf gerade selbst unter "
+        "/usr/local/bin angelegt hat:"
+    )
     story.append(terminal_mockup(app_name, [
-        (True, "cd owlbox"),
-        (True, "sudo ./scripts/install.sh"),
+        (True, "sudo owlbox-install"),
         (False, "[*] Erkenne ALSA-Gerät ... hw:0,0"),
         (False, "[*] Richte Kiosk-Autostart ein ..."),
         (False, "[OK] Alles eingerichtet."),
     ], os_key=os_key))
     p("Zum Abtippen bzw. Kopieren:")
-    code([
-        "cd owlbox",
-        "sudo ./scripts/install.sh",
-    ])
+    code(["sudo owlbox-install"])
+    story.append(note_box(
+        "Wichtig: nicht cd owlbox && sudo ./scripts/install.sh probieren, wenn schon einmal "
+        "ein Repo-Ordner ausgecheckt wurde (z.B. weil man gerade schon darin steht) - cd owlbox "
+        "von innerhalb eines bereits ausgecheckten Repos landet nicht im Repo-Root, sondern eine "
+        "Ebene zu tief im gleichnamigen Python-Paket-Unterordner, und ./scripts/install.sh "
+        "meldet dann nur „command not found“, ohne dass irgendetwas vom Skript tatsächlich "
+        "läuft - an echter Hardware genau so aufgetreten. owlbox-install funktioniert dagegen "
+        "unabhängig vom aktuellen Verzeichnis."
+    ))
     p("Jetzt ist die Hardware aktiv, deshalb erledigt das Skript in diesem Durchlauf "
       "zusätzlich:")
     bullets([
@@ -522,12 +532,18 @@ story.append(spec_table(
         ["scripts/install.sh bricht ab", "Fehlermeldung genau lesen - meist ein fehlendes "
          "Netzwerkpaket oder fehlende Root-Rechte (mit sudo ausführen). Skript ist mehrfach "
          "gefahrlos wiederholbar."],
+        ["„sudo: ./scripts/install.sh: command not found“ beim erneuten Ausführen",
+         "cd owlbox von innerhalb eines bereits ausgecheckten Repos landet nicht im Repo-Root, "
+         "sondern eine Ebene zu tief im gleichnamigen Python-Paket-Unterordner "
+         "owlbox/owlbox - an echter Hardware genau so aufgetreten. Ab dem ersten "
+         "erfolgreichen Durchlauf stattdessen sudo owlbox-install verwenden (legt das Skript "
+         "selbst unter /usr/local/bin an, funktioniert unabhängig vom aktuellen Verzeichnis)."],
         ["systemctl status owlbox zeigt „failed“", "sudo journalctl -u owlbox -n 50 für die "
-         "letzten Log-Zeilen; scripts/install.sh ein weiteres Mal ausführen - meist fehlt nur "
+         "letzten Log-Zeilen; sudo owlbox-install ein weiteres Mal ausführen - meist fehlt nur "
          "der zweite Durchlauf nach einem Neustart (Abschnitt „OwlBox-Software "
          "installieren“)."],
         ["Kein Ton", "aplay -l zeigt die HiFiBerry-Karte erst nach einem Neustart mit aktivem "
-         "Overlay; danach scripts/install.sh erneut ausführen, das trägt ALSA-Gerät und Mixer "
+         "Overlay; danach sudo owlbox-install erneut ausführen, das trägt ALSA-Gerät und Mixer "
          "automatisch in config.yaml ein (Abschnitt „OwlBox-Software installieren“). Zeigt "
          "aplay -l „no soundcards found“ dauerhaft: falsches Overlay für den Chip - der Amp2 "
          "braucht dtoverlay=hifiberry-dacplus (TAS5756M-Chip), nicht hifiberry-amp (das ist für "
@@ -535,21 +551,21 @@ story.append(spec_table(
          "(TAS5756M/Amp2) oder 0x1b (TAS5713/Amp) antwortet."],
         ["Eingestellte Lautstärke wird nie gespeichert, zeigt immer 0", "audio.mixer_card in "
          "config.yaml prüfen - muss zur tatsächlichen, mit aplay -l ermittelten Kartennummer "
-         "passen (nicht nur audio.alsa_device). scripts/install.sh erneut ausführen, trägt alle "
+         "passen (nicht nur audio.alsa_device). sudo owlbox-install erneut ausführen, trägt alle "
          "drei Audio-Werte automatisch neu ein."],
         ["Ton knackst/klingt fragmentiert (trotz sonst unauffälligem Signalweg)",
          "vc4-kms-v3d ohne ,noaudio registriert eine eigene, ungenutzte HDMI-Audio-ALSA-Karte, "
          "die mit dem I2S-Pfad des HiFiBerry kollidiert. grep -n dtoverlay=vc4-kms-v3d "
          "config.txt ausführen - MUSS genau eine Zeile zeigen, die mit ,noaudio endet. Zeigt es "
          "zwei Treffer (Bookworm-Images bringen oft schon eine eigene, unkommentierte Zeile "
-         "ohne ,noaudio mit): die zweite Zeile entfernen bzw. scripts/install.sh erneut "
-         "ausführen (entfernt vorbestehende Duplikate automatisch) und neu starten. aplay -l "
-         "sollte danach keine vc4hdmi-Karte mehr zeigen, siehe OwlBox-Verkabelung.pdf, "
-         "Kapitel 2."],
+         "ohne ,noaudio mit): sudo owlbox-install erneut ausführen (entfernt vorbestehende "
+         "Duplikate automatisch, nicht cd owlbox && sudo ./scripts/install.sh - siehe Zeile "
+         "„command not found“ oben) und neu starten. aplay -l sollte danach keine "
+         "vc4hdmi-Karte mehr zeigen, siehe OwlBox-Verkabelung.pdf, Kapitel 2."],
         ["Display bleibt schwarz", "dmesg | grep -i drm prüfen - „Cannot find any crtc or "
          "sizes“ bedeutet, dass in config.txt der displayspezifische Overlay fehlt: neben "
          "dtoverlay=vc4-kms-v3d,noaudio wird zusätzlich dtoverlay=vc4-kms-dsi-7inch gebraucht "
-         "(siehe OwlBox-Verkabelung.pdf, Kapitel 8); scripts/install.sh noch einmal ausführen, "
+         "(siehe OwlBox-Verkabelung.pdf, Kapitel 8); sudo owlbox-install noch einmal ausführen, "
          "falls das noch nicht eingetragen ist (Abschnitt „OwlBox-Software installieren“)."],
         ["Display zeigt nur einen Textcursor/Login, kein Chromium",
          "sudo systemctl status owlbox-kiosk prüfen; journalctl -u owlbox-kiosk zeigt bei einem "

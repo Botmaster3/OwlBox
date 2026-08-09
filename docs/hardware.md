@@ -222,7 +222,14 @@ Treffer-Zeile zeigen (die mit `,noaudio`) und `aplay -l` sollte keine
 `vc4hdmi`-Karte mehr auflisten. `install.sh` entfernt seit dieser Erkenntnis
 jede vorbestehende `dtoverlay=vc4-kms-v3d`-Zeile automatisch, bevor es seine
 eigene ergänzt - auf einer schon länger laufenden Installation reicht dafür
-ein erneutes `sudo ./scripts/install.sh` plus Neustart.
+ein erneutes `sudo owlbox-install` plus Neustart. Wichtig: dafür wirklich
+`owlbox-install` verwenden (ein stabiler Befehl, den das Skript bei seinem
+ersten erfolgreichen Durchlauf selbst unter `/usr/local/bin` anlegt), nicht
+`cd owlbox && sudo ./scripts/install.sh` - `cd owlbox` von innerhalb eines
+bereits ausgecheckten Repos landet nicht im Repo-Root, sondern eine Ebene zu
+tief im gleichnamigen Python-Paket-Unterordner, und `./scripts/install.sh`
+meldet dann nur „command not found“, ohne dass irgendetwas vom Skript
+tatsächlich läuft - an echter Hardware genau so aufgetreten.
 
 **An echter Hardware bestätigt:** Der Amp2 hat einen TAS5756M-Chip - das ist
 dieselbe PCM512x-Chipfamilie wie bei der DAC+ Pro, ein komplett anderer Chip
@@ -408,7 +415,7 @@ Update-Button auf der Info-Seite beim Neustart `sudo: a password is required`,
 weil der tatsächlich ausgeführte Befehl dann nicht mehr zur Regel passt. Ein
 einfaches `git pull` reicht auf einem Bestandssystem nicht, um eine bereits
 vorhandene `/etc/sudoers.d/owlbox` zu aktualisieren - dafür entweder
-`sudo ./scripts/install.sh` erneut laufen lassen oder die Zeile per
+`sudo owlbox-install` erneut laufen lassen oder die Zeile per
 `sudo visudo -f /etc/sudoers.d/owlbox` von Hand anpassen.
 
 ## Fallback-Hotspot (WLAN-Recovery)

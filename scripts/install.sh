@@ -197,6 +197,20 @@ echo "==> Copying application to $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 rsync -a --exclude ".venv" --exclude "data" --exclude "__pycache__" "$REPO_DIR"/ "$INSTALL_DIR"/
 
+# Stable re-run command, independent of which directory (or which checkout)
+# this script was originally invoked from: confirmed on real hardware that
+# "cd owlbox" from inside an already-checked-out repo silently lands one
+# level too deep in the owlbox/owlbox Python package (it shares its name
+# with the repo root), after which "./scripts/install.sh" fails with
+# "command not found" - the fix above (removing a stray, non-,noaudio
+# dtoverlay=vc4-kms-v3d line) never got a chance to run because of exactly
+# this, even though `git pull` itself had succeeded. A stable symlink into
+# the synced-to-/opt/owlbox copy sidesteps the whole class of mistake: this
+# always re-runs the current install, from any cwd, no `cd`/checkout-path
+# guessing required.
+ln -sf "$INSTALL_DIR/scripts/install.sh" /usr/local/bin/owlbox-install
+echo "==> Re-runs from now on: sudo owlbox-install (works from any directory)"
+
 echo "==> Creating Python virtualenv"
 python3 -m venv "$INSTALL_DIR/.venv"
 "$INSTALL_DIR/.venv/bin/pip" install --upgrade pip
@@ -448,7 +462,7 @@ if [ "$NEEDS_REBOOT" -eq 1 ]; then
 ==> config.txt wurde geändert - starte in 10 Sekunden neu (Strg+C zum Abbrechen).
     Nach dem Neustart dieses Skript einmal erneut ausführen, um die
     Audio-Erkennung und den Kiosk-Autostart abzuschließen:
-      sudo ./scripts/install.sh
+      sudo owlbox-install
 EOF
   # Confirmed on real hardware: leaving this as a printed instruction rather
   # than actually rebooting meant the "der Pi startet am Ende von selbst
@@ -465,7 +479,7 @@ elif [ "$AUDIO_CONFIGURED" -eq 0 ]; then
     letzten Neustart?) - bitte einmal manuell neu starten und dieses Skript
     danach erneut ausführen:
       sudo reboot
-      sudo ./scripts/install.sh
+      sudo owlbox-install
 EOF
 else
   cat <<EOF

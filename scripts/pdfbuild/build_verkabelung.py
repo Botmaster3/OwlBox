@@ -240,7 +240,12 @@ story.append(note_box(
     "einen Treffer zeigen (den mit ,noaudio); aplay -l sollte keine vc4hdmi-Karte mehr auflisten. "
     "install.sh entfernt eine vorbestehende Zeile jetzt automatisch, bevor es seine eigene "
     "ergänzt - auf einer schon länger laufenden Installation reicht dafür ein erneutes "
-    "sudo ./scripts/install.sh plus Neustart.",
+    "sudo owlbox-install plus Neustart. Wichtig: dafür wirklich owlbox-install verwenden (ein "
+    "stabiler Befehl, den das Skript bei seinem ersten erfolgreichen Durchlauf selbst unter "
+    "/usr/local/bin anlegt), nicht cd owlbox && sudo ./scripts/install.sh - cd owlbox von "
+    "innerhalb eines bereits ausgecheckten Repos landet nicht im Repo-Root, sondern eine Ebene "
+    "zu tief im gleichnamigen Python-Paket-Unterordner, und ./scripts/install.sh meldet dann "
+    "nur „command not found“, ohne dass irgendetwas vom Skript tatsächlich läuft.",
     kind="warn",
 ))
 h2("Lautsprecher anschließen")

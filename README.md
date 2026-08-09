@@ -195,11 +195,21 @@ Python-venv ein, trägt den HiFiBerry-Overlay automatisch in `config.txt` ein
 - der Pi startet am Ende von selbst neu. Das Display selbst braucht keinen
 Treiber/Overlay, es wird automatisch über DSI erkannt.
 
-**Danach das Skript einmal erneut ausführen** (`sudo ./scripts/install.sh`):
+**Danach das Skript einmal erneut ausführen** (`sudo owlbox-install` - ein
+stabiler Befehl, den der erste Durchlauf selbst anlegt, funktioniert ab da
+von jedem Verzeichnis aus statt `cd owlbox && sudo ./scripts/install.sh`,
+was leicht danebengeht, siehe Kasten unten):
 jetzt ist die HiFiBerry-Soundkarte aktiv, das Skript erkennt automatisch das
 richtige ALSA-Gerät/den Mixer und trägt es in `config/config.yaml` ein,
 richtet den Kiosk-Autostart ein (eigener systemd-Dienst, startet X direkt
 ohne Desktop-Umgebung) und startet `owlbox.service`.
+
+> **Hinweis:** `cd owlbox` von *innerhalb* eines bereits ausgecheckten Repos
+> landet nicht wieder im Repo-Root, sondern eine Ebene zu tief im
+> gleichnamigen Python-Paket-Unterordner `owlbox/owlbox` - `./scripts/install.sh`
+> meldet dann „command not found“, ohne dass das Skript selbst je startet.
+> `sudo owlbox-install` vermeidet das komplett, da es unabhängig vom
+> aktuellen Verzeichnis funktioniert.
 
 Das Skript ist beliebig oft wiederholbar (idempotent) - jeder Schritt prüft
 zuerst, ob er schon erledigt ist. Danach bleiben nur zwei Dinge wirklich
