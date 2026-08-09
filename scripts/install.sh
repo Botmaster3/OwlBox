@@ -288,12 +288,30 @@ if [ -n "$CONFIG_TXT" ]; then
   # Safe to always (re-)assert these here regardless of what else is/isn't
   # in the file: dtoverlay lines for different overlays are additive, not
   # exclusive, so this can't conflict with anything else in config.txt.
+  #
+  # ,noaudio on vc4-kms-v3d: THE actual root cause of the day-long "digital
+  # path is fine but playback is crackling/fragmented" saga - confirmed on
+  # real hardware. Without it, vc4-kms-v3d also registers its own HDMI audio
+  # ALSA card (showed up as "card 2: vc4hdmi" in `aplay -l` the whole time)
+  # even though this project never uses HDMI audio at all - display is DSI,
+  # audio is exclusively the HiFiBerry. That HDMI-audio registration
+  # apparently contends with the HiFiBerry's I2S path (both ultimately go
+  # through the same VC4 I2S/audio hardware block) closely enough to explain
+  # everything that was chased today: the recurring pcm512x I2C errors
+  # (snd_soc_component_update_bits ... -5, snd_soc_pcm_component_pm_
+  # runtime_get ... -22) and the audible crackling/fragments, all while the
+  # signal path itself (ALSA hw_params, mixer levels, I2C addressing)
+  # checked out correct every single time. None of the other things tried
+  # first (Auto Mute, disable-bt, runtime-PM sysfs override, a from-scratch
+  # SD card reflash) touched this because none of them address vc4-kms-v3d
+  # claiming the audio side of that shared hardware block in the first
+  # place. Confirmed fixed on real hardware.
   write_config_block "$CONFIG_TXT" \
     "dtparam=audio=off" \
     "dtoverlay=hifiberry-dacplus" \
     "disable_splash=1" \
     "boot_delay=0" \
-    "dtoverlay=vc4-kms-v3d" \
+    "dtoverlay=vc4-kms-v3d,noaudio" \
     "dtparam=spi=on" \
     "dtparam=i2c_arm=on" \
     "dtoverlay=vc4-kms-dsi-7inch"

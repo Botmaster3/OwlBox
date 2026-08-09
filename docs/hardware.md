@@ -179,6 +179,32 @@ dtparam=audio=off
 dtoverlay=hifiberry-dacplus
 ```
 
+**Wichtig, an echter Hardware bestätigt (Ursache eines tagelangen
+"Wiedergabe knackt/fragmentiert trotz digital korrektem Signalweg"-Rätsels):**
+Der `vc4-kms-v3d`-Grafiktreiber-Overlay registriert standardmäßig **zusätzlich
+eine eigene HDMI-Audio-ALSA-Karte** (taucht in `aplay -l` als `card N:
+vc4hdmi` auf), auch wenn HDMI-Audio in diesem Projekt nie genutzt wird
+(Anzeige läuft über DSI, Ton ausschließlich über den HiFiBerry). Diese
+HDMI-Audio-Registrierung kollidiert offenbar mit dem I2S-Pfad des HiFiBerry
+(beide laufen letztlich über denselben VC4-I2S/Audio-Hardwareblock) - äußert
+sich als digital sauber ankommende, aber physisch knacksende/fragmentierte
+Wiedergabe, dazu wiederkehrende `pcm512x`-I2C-Fehler im Kernel-Log
+(`snd_soc_component_update_bits ... -5`, `snd_soc_pcm_component_pm_
+runtime_get ... -22`) - bei ansonsten unauffälligem Signalweg (korrekte
+`hw_params`, korrekte Mixer-Werte, korrekte I2C-Adresse). Keins der
+naheliegenden Gegenmittel (Auto Mute an/aus, Bluetooth deaktivieren,
+Runtime-Power-Management-Sysfs-Override, selbst ein komplett frisches
+SD-Karten-Image) behebt das, weil keins davon die eigentliche Ursache
+anfasst. **Der Fix: `,noaudio` an den Overlay anhängen**, damit `vc4-kms-v3d`
+sich aus der Audio-Seite dieses gemeinsam genutzten Hardwareblocks
+komplett heraushält:
+
+```
+dtoverlay=vc4-kms-v3d,noaudio
+```
+
+`install.sh` trägt das automatisch so ein.
+
 **An echter Hardware bestätigt:** Der Amp2 hat einen TAS5756M-Chip - das ist
 dieselbe PCM512x-Chipfamilie wie bei der DAC+ Pro, ein komplett anderer Chip
 als der TAS5713 des älteren Amp/Amp+. `dtoverlay=hifiberry-amp` ist speziell
