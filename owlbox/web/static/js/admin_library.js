@@ -1,6 +1,9 @@
 (function () {
   const storyList = document.getElementById("story-list");
   const librarySearch = document.getElementById("library-search");
+  const librarySort = document.getElementById("library-sort");
+  const filterChipGroup = document.getElementById("filter-chip-group");
+  const filterTypeGroup = document.getElementById("filter-type-group");
   const addTracksInput = document.getElementById("add-tracks-input");
   const assignOverlay = document.getElementById("assign-overlay");
   const assignStatus = document.getElementById("assign-status");
@@ -22,6 +25,24 @@
   // tracks already visible here instead of a separate search). Array, not
   // a Set, so playlist order matches the order tracks were checked in.
   let selectedTracks = [];
+
+  // Sort/filter state, persisted across reloads so the chosen view survives
+  // a page refresh - purely a display concern, never sent to the backend.
+  const LIBRARY_VIEW_KEY = "owlbox.library.view";
+  let libraryView = { sort: "added-desc", chip: "all", type: "all" };
+  try {
+    const saved = JSON.parse(localStorage.getItem(LIBRARY_VIEW_KEY) || "{}");
+    libraryView = Object.assign(libraryView, saved);
+  } catch (err) {
+    /* corrupt/old value - fall back to defaults above */
+  }
+  function saveLibraryView() {
+    try {
+      localStorage.setItem(LIBRARY_VIEW_KEY, JSON.stringify(libraryView));
+    } catch (err) {
+      /* private mode / storage full - view choice just won't survive a reload */
+    }
+  }
 
   function showToast(message, isError) {
     let toast = document.getElementById("toast");
@@ -58,10 +79,15 @@
 
   // SQLite's datetime('now') returns "YYYY-MM-DD HH:MM:SS" in UTC with no
   // timezone marker - Date needs that spelled out to parse it consistently.
-  function formatRelativeTime(sqliteTimestamp) {
+  function parseSqliteTimestamp(sqliteTimestamp) {
     if (!sqliteTimestamp) return null;
-    const date = new Date(sqliteTimestamp.replace(" ", "T") + "Z");
-    const diffSeconds = Math.max(0, (Date.now() - date.getTime()) / 1000);
+    return new Date(sqliteTimestamp.replace(" ", "T") + "Z").getTime();
+  }
+
+  function formatRelativeTime(sqliteTimestamp) {
+    const ts = parseSqliteTimestamp(sqliteTimestamp);
+    if (ts === null) return null;
+    const diffSeconds = Math.max(0, (Date.now() - ts) / 1000);
     if (diffSeconds < 60) return "gerade eben";
     if (diffSeconds < 3600) return `vor ${Math.floor(diffSeconds / 60)} Min.`;
     if (diffSeconds < 86400) return `vor ${Math.floor(diffSeconds / 3600)} Std.`;
@@ -91,15 +117,113 @@
     renderFilteredStories();
   }
 
+  // Sum of a story's own track lengths - not story.total_seconds, which is
+  // accumulated *listened* time (Hörstatistik), a completely different
+  // number. A livestream has no fixed length at all, hence null.
+  function storyDurationSeconds(story) {
+    if (story.stream_url) return null;
+    return (story.tracks || []).reduce((sum, t) => sum + (t.duration || 0), 0);
+  }
+
+  function matchesQuery(story, query) {
+    if (!query) return true;
+    if (story.title.toLowerCase().includes(query)) return true;
+    if (story.uid && story.uid.toLowerCase().includes(query)) return true;
+    return (story.tracks || []).some((t) => (t.title || t.filename || "").toLowerCase().includes(query));
+  }
+
+  function matchesFilters(story) {
+    if (libraryView.chip === "assigned" && !story.uid) return false;
+    if (libraryView.chip === "unassigned" && story.uid) return false;
+    if (libraryView.type === "stories" && story.stream_url) return false;
+    if (libraryView.type === "streams" && !story.stream_url) return false;
+    return true;
+  }
+
+  // Livestreams have no fixed length (storyDurationSeconds returns null for
+  // them) - they're always pushed to the end of a length sort, in either
+  // direction, rather than sorted as if their length were 0.
+  function sortStories(stories, sortKey) {
+    const arr = stories.slice();
+    const byTitle = (a, b) => a.title.localeCompare(b.title, "de");
+    const byDuration = (dir) => (a, b) => {
+      const da = storyDurationSeconds(a);
+      const db = storyDurationSeconds(b);
+      if (da === null && db === null) return byTitle(a, b);
+      if (da === null) return 1;
+      if (db === null) return -1;
+      return dir * (da - db);
+    };
+    switch (sortKey) {
+      case "title-asc":
+        arr.sort(byTitle);
+        break;
+      case "title-desc":
+        arr.sort((a, b) => byTitle(b, a));
+        break;
+      case "duration-asc":
+        arr.sort(byDuration(1));
+        break;
+      case "duration-desc":
+        arr.sort(byDuration(-1));
+        break;
+      case "plays-desc":
+        arr.sort((a, b) => b.play_count - a.play_count || byTitle(a, b));
+        break;
+      case "last-played-desc":
+        arr.sort((a, b) => (parseSqliteTimestamp(b.last_played_at) || 0) - (parseSqliteTimestamp(a.last_played_at) || 0));
+        break;
+      case "added-asc":
+        arr.sort((a, b) => (parseSqliteTimestamp(a.created_at) || 0) - (parseSqliteTimestamp(b.created_at) || 0));
+        break;
+      case "added-desc":
+      default:
+        arr.sort((a, b) => (parseSqliteTimestamp(b.created_at) || 0) - (parseSqliteTimestamp(a.created_at) || 0));
+    }
+    return arr;
+  }
+
   // Client-side only - allStories is already the full, current list (kept
-  // in sync by loadStories()), so filtering by the search box never needs
-  // its own round-trip, just a re-render of what's already in memory.
+  // in sync by loadStories()), so search/sort/filter never need their own
+  // round-trip, just a re-render of what's already in memory.
   function renderFilteredStories() {
     const query = librarySearch.value.trim().toLowerCase();
-    const filtered = query ? allStories.filter((s) => s.title.toLowerCase().includes(query)) : allStories;
-    renderStories(filtered, allStories.length > 0);
+    const filtered = allStories.filter((s) => matchesFilters(s) && matchesQuery(s, query));
+    renderStories(sortStories(filtered, libraryView.sort), allStories.length > 0);
   }
   librarySearch.addEventListener("input", renderFilteredStories);
+  librarySort.addEventListener("change", () => {
+    libraryView.sort = librarySort.value;
+    saveLibraryView();
+    renderFilteredStories();
+  });
+
+  function wireSegmentedFilter(group, stateKey) {
+    group.querySelectorAll(".segmented-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        libraryView[stateKey] = btn.dataset.value;
+        group.querySelectorAll(".segmented-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        saveLibraryView();
+        renderFilteredStories();
+      });
+    });
+  }
+  wireSegmentedFilter(filterChipGroup, "chip");
+  wireSegmentedFilter(filterTypeGroup, "type");
+
+  // Apply the restored (or default) view state to the controls themselves,
+  // so the very first render already matches what loadStories() will show -
+  // otherwise the dropdown/buttons would silently disagree with the list
+  // until the user touches one of them.
+  librarySort.value = libraryView.sort;
+  [
+    [filterChipGroup, "chip"],
+    [filterTypeGroup, "type"],
+  ].forEach(([group, stateKey]) => {
+    group.querySelectorAll(".segmented-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.value === libraryView[stateKey]);
+    });
+  });
 
   const statsTotalPlays = document.getElementById("stats-total-plays");
   const statsTotalTime = document.getElementById("stats-total-time");
@@ -236,7 +360,7 @@
     storyList.innerHTML = "";
     if (stories.length === 0) {
       storyList.innerHTML = libraryHasAnyStories
-        ? '<p class="hint">Keine Geschichte passt zur Suche.</p>'
+        ? '<p class="hint">Keine Geschichte passt zur aktuellen Suche/Filterung.</p>'
         : '<p class="hint">Noch keine Geschichten angelegt. <a href="/admin/add">Jetzt hinzufügen</a>.</p>';
       return;
     }

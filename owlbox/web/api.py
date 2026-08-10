@@ -43,6 +43,7 @@ def _story_to_dict(story: repository.Story) -> dict:
         "play_count": story.play_count,
         "total_seconds": story.total_seconds,
         "last_played_at": story.last_played_at,
+        "created_at": story.created_at,
         "track_count": len(tracks),
         "tracks": [
             {"id": t.id, "position": t.position, "filename": t.filename, "title": t.title, "duration": t.duration}

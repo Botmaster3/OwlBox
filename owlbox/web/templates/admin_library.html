@@ -36,12 +36,48 @@
 
   <div class="card">
     <h2>Bibliothek</h2>
-    <div class="field">
-      <label for="library-search">Suche</label>
-      <input type="text" id="library-search" placeholder="Titel durchsuchen…" autocomplete="off">
-      <p class="field-help">Filtert die Liste unten live nach Titel, der Rest bleibt unverändert
-        (Zuweisung, Reihenfolge etc.) - nur eine Anzeigefilterung, keine Auswahl.</p>
+    <div class="library-toolbar">
+      <div class="field">
+        <label for="library-search">Suche</label>
+        <input type="text" id="library-search" placeholder="Titel, Track oder Chip-UID durchsuchen…" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="library-sort">Sortierung</label>
+        <select id="library-sort">
+          <option value="added-desc">Neueste zuerst</option>
+          <option value="added-asc">Älteste zuerst</option>
+          <option value="title-asc">Titel (A–Z)</option>
+          <option value="title-desc">Titel (Z–A)</option>
+          <option value="duration-asc">Länge (kürzeste zuerst)</option>
+          <option value="duration-desc">Länge (längste zuerst)</option>
+          <option value="plays-desc">Am häufigsten gespielt</option>
+          <option value="last-played-desc">Zuletzt gehört</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Chip-Zuweisung</label>
+        <div class="segmented" id="filter-chip-group">
+          <button type="button" class="segmented-btn active" data-value="all">Alle</button>
+          <button type="button" class="segmented-btn" data-value="assigned">Mit Chip</button>
+          <button type="button" class="segmented-btn" data-value="unassigned">Ohne Chip</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Typ</label>
+        <div class="segmented" id="filter-type-group">
+          <button type="button" class="segmented-btn active" data-value="all">Alle</button>
+          <button type="button" class="segmented-btn" data-value="stories">Geschichten</button>
+          <button type="button" class="segmented-btn" data-value="streams">Livestreams</button>
+        </div>
+      </div>
     </div>
+    <p class="field-help">
+      Suche, Sortierung und Filter wirken nur auf die Anzeige hier unten - Zuweisung, Reihenfolge
+      innerhalb einer Geschichte usw. bleiben unverändert. Die Suche durchsucht Geschichtentitel,
+      einzelne Tracktitel/Dateinamen und die zugewiesene Chip-UID. „Länge“ ist die Summe aller
+      Tracklängen einer Geschichte; Livestreams haben keine feste Länge und stehen bei dieser
+      Sortierung immer am Ende.
+    </p>
     <div id="story-list"></div>
   </div>
 </div>

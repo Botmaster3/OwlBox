@@ -244,9 +244,18 @@ bullets([
 ])
 
 h2("7.2 Geschichten-Liste")
-ctrl("Suche", "Textfeld über der Liste", "Filtert die Liste live nach Titel (nur die Anzeige, "
-     "ändert nichts an den Geschichten selbst) - hilfreich, sobald die Bibliothek zu groß für einen "
-     "schnellen Überblick auf einen Blick wird.")
+ctrl("Suche", "Textfeld über der Liste", "Filtert die Liste live nach Geschichtentitel, einzelnen "
+     "Tracktiteln/Dateinamen und der zugewiesenen Chip-UID (nur die Anzeige, ändert nichts an den "
+     "Geschichten selbst) - hilfreich, sobald die Bibliothek zu groß für einen schnellen Überblick "
+     "auf einen Blick wird.")
+ctrl("Sortierung", "Auswahlmenü", "Neueste/Älteste zuerst, Titel A-Z/Z-A, Länge kürzeste/längste "
+     "zuerst, am häufigsten gespielt, zuletzt gehört. „Länge“ ist die Summe aller Tracklängen einer "
+     "Geschichte - Livestreams haben keine feste Länge und stehen bei dieser Sortierung immer am "
+     "Ende. Die Wahl bleibt über einen Seitenaufruf hinweg gespeichert (im Browser, nicht auf dem "
+     "Server).")
+ctrl("Filter „Chip-Zuweisung“ / „Typ“", "Je eine Drei-Wege-Auswahl", "Schränkt die Liste auf Geschichten "
+     "mit/ohne zugewiesenen Chip bzw. auf Geschichten/Livestreams ein - kombinierbar mit Suche und "
+     "Sortierung.")
 p("Für jede angelegte Geschichte bzw. jeden Livestream steht eine Zeile mit folgenden Elementen zur Verfügung:")
 ctrl("„▶️ Abspielen“", "Button", "Startet diese Geschichte sofort, genau wie das Auflegen ihres Chips - "
      "auch wenn ihr (noch) gar kein Chip zugewiesen ist. Setzt an der zuletzt gespeicherten Position "
