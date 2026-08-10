@@ -914,7 +914,7 @@ html[data-theme="weihnachten"] .advent-wreath {
 }
 .game-grid {
   display: grid;
-  gap: 2vw;
+  gap: 1.5vw;
   width: 100%;
   max-width: 100vh; /* keeps cards roughly square-ish even in portrait */
 }

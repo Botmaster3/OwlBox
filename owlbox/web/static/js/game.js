@@ -11,9 +11,12 @@
   const winMovesEl = document.getElementById("game-win-moves");
   const againBtn = document.getElementById("game-again-btn");
 
-  // More than this many pairs stops being "klein" on a 5" display - extra
-  // uploaded images just widen the pool a new round can draw from instead.
-  const MAX_PAIRS = 8;
+  // Cards auto-size to fit however many pairs a round has (see layoutGrid()
+  // below) - this just caps how many pairs one round pulls out of the pool,
+  // so the board doesn't become impossible to scan on a 5" display. Extra
+  // uploaded images beyond this just widen the pool a new round can draw
+  // from instead.
+  const MAX_PAIRS = 12;
   // How long a non-matching pair stays face-up before flipping back, so
   // there's actually time to see what was wrong.
   const MISMATCH_DELAY_MS = 900;
