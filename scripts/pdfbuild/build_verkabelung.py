@@ -183,13 +183,15 @@ story.append(spec_table(
         ["RC522 RST", "26", "RC522 (rfid.reset_pin)"],
         ["Taster Weiter", "5", "Taster"],
         ["Taster Zurück", "6", "Taster"],
-        ["Encoder CLK", "1", "Lautstärke-Encoder (17 wäre jetzt auch wieder frei, s. Kapitel 5)"],
+        ["Encoder CLK", "1", "Lautstärke-Encoder (17 ist inzwischen wieder belegt, s.u.)"],
         ["Encoder DT", "27", "Lautstärke-Encoder"],
         ["Encoder SW", "22", "Lautstärke-Encoder"],
-        ["Display-Backlight", "-", "läuft über Sysfs, kein GPIO mehr - Backlight-Dimmen aktuell "
-         "nicht angeschlossen, s. Kapitel 6"],
-        ["Helligkeits-Encoder CLK", "23", "Helligkeits-Encoder (aktuell ohne Wirkung, s. Kapitel 6)"],
-        ["Helligkeits-Encoder DT", "12", "Helligkeits-Encoder (aktuell ohne Wirkung, s. Kapitel 6)"],
+        ["Display-Backlight", "-", "läuft über Sysfs, kein GPIO mehr - ob eine Helligkeitsänderung "
+         "per Encoder unten physisch etwas bewirkt, ist noch offen, s. Kapitel 6"],
+        ["Helligkeits-Encoder CLK", "23", "Helligkeits-Encoder"],
+        ["Helligkeits-Encoder DT", "12", "Helligkeits-Encoder"],
+        ["Helligkeits-Encoder SW", "17", "Helligkeits-Encoder - Nachtmodus-Umschalter "
+         "(gpio.brightness_encoder_switch), s.u."],
     ],
     col_widths=[62 * mm, 28 * mm, 70 * mm],
 ))
@@ -486,16 +488,37 @@ p(
 
 h2("Zweiter Dreh-Encoder für Helligkeit (KY-040)")
 p(
-    "Gehört zum Standardaufbau - dasselbe KY-040-Modul, diesmal ohne den Taster zu verdrahten "
-    "(kein eigener Klick, nur Drehen). <b>Auf dieser Hardware aktuell ohne Wirkung</b> (siehe "
-    "Kapitel 6) - der Encoder selbst kann so lange unverdrahtet bleiben."
+    "Gehört zum Standardaufbau - dasselbe KY-040-Modul wie beim Lautstärke-Encoder, diesmal "
+    "<b>mit</b> Taster (anders als früher - der Taster wird jetzt für den Nachtmodus gebraucht, "
+    "s.u.)."
 )
 story.append(spec_table(
-    [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO23"], ["DT", "GPIO12"], ["+", "3.3V"], ["GND", "GND"]],
+    [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO23"], ["DT", "GPIO12"],
+     ["SW", "GPIO17 (gpio.brightness_encoder_switch)"], ["+", "3.3V"], ["GND", "GND"]],
     col_widths=[100 * mm, 60 * mm],
 ))
 p("Drehen ändert die Helligkeit (Schrittweite gpio.brightness_step, Standard 5%), sofort und rein "
-  "manuell - es gibt kein automatisches Dimmen.")
+  "manuell - es gibt kein automatisches Dimmen. Diese Box nutzt bewusst nicht die eigene "
+  "Touch-Helligkeitsregelung, die das Waveshare-Display selbst laut Auftraggeber mitbringt - "
+  "ausschließlich Encoder und Web-UI.")
+story.append(note_box(
+    "Noch nicht an echter Hardware verifiziert: ob eine Helligkeitsänderung per Encoder/Software "
+    "auf diesem Display überhaupt sichtbar etwas bewirkt - siehe Kapitel 6, Status dort schon "
+    "länger unklar, unabhängig vom Nachtmodus-Feature hier.",
+    kind="warn",
+))
+p(
+    "<b>Nachtmodus:</b> Ein Druck auf den Taster (SW) schaltet zwischen der normalen "
+    "(\"Tag\"-)Helligkeit und einer separat konfigurierbaren, oft deutlich dunkleren "
+    "Nachtmodus-Helligkeit um - konfigurierbar in Einstellungen → Anzeige (night_brightness, "
+    "Standard 5%). Anders als die normale Helligkeit darf die Nachtmodus-Helligkeit bewusst unter "
+    "die dort eingestellte Minimal-Helligkeit gehen, das ist der ganze Zweck. Kein Zeitplan - "
+    "bleibt aktiv, bis erneut gedrückt wird, außer über einen Neustart hinweg (startet immer im "
+    "Tag-Modus). Ändert sich die Helligkeit während des Nachtmodus direkt (Schieberegler, Drehen "
+    "an demselben Encoder), beendet das den Nachtmodus automatisch, statt den neuen Wert beim "
+    "nächsten Tastendruck wieder zu verwerfen. gpio.brightness_encoder_switch auf null setzen, um "
+    "den Taster unverdrahtet zu lassen und die Funktion nur über die Web-UI nutzbar zu machen."
+)
 story.append(note_box(
     "Damit Shutdown/Neustart (auch über die Web-UI oder einen Funktions-Chip) sowie der "
     "Update-Button auf der Info-Seite ohne Passwortabfrage funktionieren, braucht der Service-User "
@@ -513,21 +536,23 @@ story.append(note_box(
 # ============================================================ 6. Backlight
 h1("6. Display-Hintergrundbeleuchtung")
 story.append(note_box(
-    "Wichtiger Unterschied zum alten Display: Dieses Display hat keine per GPIO/PWM ansteuerbare "
-    "LED-Leitung wie das alte SPI-Display - die Helligkeit wird stattdessen intern über eine "
-    "Linux-Backlight-Sysfs-Schnittstelle geregelt "
-    "(/sys/class/backlight/.../brightness), angesteuert vom Power-Chip auf der "
-    "Display-Adapterplatine selbst. Es gibt daher keine eigene Verkabelung mehr für diesen "
-    "Punkt - kein Transistor, kein MOSFET, keine LED-Leitung, kein gpio.backlight_pin."
+    "Noch nicht an echter Hardware verifiziert, welchen Mechanismus dieses Display für die "
+    "Helligkeit anbietet: eine per GPIO/PWM ansteuerbare LED-Leitung wie beim alten SPI-Display, "
+    "eine interne Linux-Backlight-Sysfs-Schnittstelle (/sys/class/backlight/.../brightness, "
+    "angesteuert vom Power-Chip auf der Display-Adapterplatine) - oder nur die eigene, laut "
+    "Auftraggeber vorhandene Touch-Helligkeitsregelung des Displays, die diese Box bewusst nicht "
+    "verwendet (siehe Kapitel 5). Falls es tatsächlich Sysfs ist: kein gpio.backlight_pin, kein "
+    "Transistor/MOSFET nötig, aber owlbox/backlight.py müsste dafür erst auf die Sysfs-"
+    "Schnittstelle umgestellt werden - aktuell nutzt es noch GPIO-PWM.",
+    kind="warn",
 ))
 p(
-    "Die GPIO13-Transistor-Schaltung und gpio.backlight_pin aus der alten Verkabelung entfallen "
-    "damit ersatzlos - <b>das Backlight-Dimmen über den zweiten Dreh-Encoder ist auf dieser "
-    "Hardware aktuell nicht angeschlossen</b>, das müsste in owlbox/controls/gpio_controls.py "
-    "erst auf die Sysfs-Schnittstelle umgestellt werden. Der zweite Encoder (Kapitel 5) kann so "
-    "lange unverdrahtet bleiben - jede Helligkeitsänderung über die Web-Oberfläche blendet den "
-    "neuen Wert zwar kurz auf dem Display ein, die eigentliche Backlight-Steuerung greift aber "
-    "noch nicht."
+    "Software-seitig ist der zweite Encoder trotzdem vollständig verdrahtet und angebunden (CLK/DT "
+    "fürs Drehen, SW für den Nachtmodus-Taster, siehe Kapitel 5) - jede Helligkeitsänderung über "
+    "Encoder, Web-Oberfläche oder Nachtmodus-Taster ändert den intern gespeicherten "
+    "brightness-Wert zuverlässig und blendet ihn kurz auf dem Display ein. Ob sich davon auch die "
+    "tatsächliche Display-Helligkeit sichtbar ändert, hängt vom oben noch offenen Mechanismus ab "
+    "und ist erst an echter Hardware zu klären."
 )
 
 # ============================================================ 7. Fallback-Hotspot

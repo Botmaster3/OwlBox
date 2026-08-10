@@ -196,12 +196,16 @@ mitkorrigiert oder ob `invx`/`invy`/`swapxy` von Hand nötig sind, ist für
 dieses Display noch nicht getestet.
 
 **Zur Hintergrundbeleuchtung:** Noch nicht bekannt, ob dieses Display eine
-per GPIO/PWM ansteuerbare LED-Leitung hat oder die Helligkeit wie das
-bisherige Display intern über eine Linux-Backlight-Sysfs-Schnittstelle
-regelt. Für die bisherige Hardware gilt: keine GPIO13-Transistor-Schaltung
-mehr nötig, `gpio.backlight_pin` bleibt `null`. Das Backlight-Dimmen über
-den zweiten Dreh-Encoder ist damit weiterhin nicht angeschlossen - der
-zweite Encoder kann so lange unverdrahtet bleiben.
+per GPIO/PWM ansteuerbare LED-Leitung hat, die Helligkeit wie das bisherige
+Display intern über eine Linux-Backlight-Sysfs-Schnittstelle regelt - oder
+nur über die eigene Touch-Helligkeitsregelung verfügt, die diese Box
+bewusst nicht verwendet (siehe „Zweiter Dreh-Encoder für Helligkeit"
+unten). Für die bisherige Hardware gilt: keine GPIO13-Transistor-Schaltung
+mehr nötig, `gpio.backlight_pin` bleibt `null`. Software-seitig ist der
+zweite Encoder inzwischen trotzdem vollständig angebunden (Drehen **und**
+sein Taster für den Nachtmodus, s.u.) - der interne `brightness`-Wert
+ändert sich zuverlässig, ob das auch die tatsächliche Display-Helligkeit
+sichtbar ändert, hängt vom noch offenen Mechanismus hier ab.
 
 ## GPIO-Belegung im Überblick
 
@@ -218,14 +222,15 @@ zweite Encoder kann so lange unverdrahtet bleiben.
 | RC522 RST                       | 26      | RC522 (`rfid.reset_pin`) |
 | Taster Weiter                   | 5       | Taster              |
 | Taster Zurück                   | 6       | Taster              |
-| Encoder CLK                     | 1       | Lautstärke-Encoder (17 wäre jetzt auch wieder frei, s.o.) |
+| Encoder CLK                     | 1       | Lautstärke-Encoder (17 ist inzwischen wieder belegt, s.u.) |
 | Encoder DT                      | 27      | Lautstärke-Encoder  |
 | Encoder SW                      | 22      | Lautstärke-Encoder  |
 | HiFiBerry 5V (Speiseleitung)     | Pin 2 und/oder 4 (physisch, nicht BCM) | HiFiBerry - jetzt über Adapter-Platine statt direkt gestapelt, s.u. |
 | HiFiBerry GND                   | z.B. Pin 6/9/14 (physisch) | HiFiBerry - über Adapter-Platine, s.u. |
-| Display-Backlight               | -       | läuft über Sysfs, kein GPIO mehr - Backlight-Dimmen aktuell nicht angeschlossen, s.o. |
-| Helligkeits-Encoder CLK         | 23      | Helligkeits-Encoder (aktuell ohne Wirkung, s.o.) |
-| Helligkeits-Encoder DT          | 12      | Helligkeits-Encoder (aktuell ohne Wirkung, s.o.) |
+| Display-Backlight               | -       | läuft über Sysfs, kein GPIO mehr - ob die Helligkeits-Änderung über den Encoder unten physisch etwas bewirkt, ist noch offen, s.u. |
+| Helligkeits-Encoder CLK         | 23      | Helligkeits-Encoder |
+| Helligkeits-Encoder DT          | 12      | Helligkeits-Encoder |
+| Helligkeits-Encoder SW          | 17      | Helligkeits-Encoder - Nachtmodus-Umschalter (`gpio.brightness_encoder_switch`), s.u. |
 
 ## HiFiBerry Amp2
 
@@ -489,10 +494,11 @@ Controller** - fest im damaligen Overlay einprogrammiert, unabhängig davon,
 ob Touch physisch angeschlossen war. Deshalb liegt der Lautstärke-Encoder-CLK
 auf **GPIO1** (ID_SC, konventionell für ein HAT-ID-EEPROM reserviert, hier
 aber echt frei, da der HiFiBerry ohnehin per manueller `dtoverlay`-Zeile
-statt EEPROM-Erkennung konfiguriert wird). Mit dem neuen DSI-Display ist
-GPIO17 jetzt wieder frei - die Verkabelung bleibt hier trotzdem auf GPIO1,
-um nicht ohne Grund vom dokumentierten Standard abzuweichen; wer umverkabeln
-will, kann `gpio.encoder_clk` in `config.yaml` frei auf GPIO17 umstellen.
+statt EEPROM-Erkennung konfiguriert wird). Mit dem neuen DSI-Display war
+GPIO17 zwischenzeitlich wieder frei - inzwischen aber wieder belegt, siehe
+„Zweiter Dreh-Encoder für Helligkeit" unten (dessen Taster für den
+Nachtmodus). Die Verkabelung des Lautstärke-Encoders bleibt trotzdem auf
+GPIO1, um nicht ohne Grund vom dokumentierten Standard abzuweichen.
 
 ## Taster (vor/zurück)
 
@@ -544,18 +550,50 @@ ohne Zugriff auf ein Terminal. Auf 0 setzen, um das abzuschalten.
 ## Zweiter Dreh-Encoder für Helligkeit (KY-040)
 
 Gehört zum Standardaufbau, zusammen mit dem dimmbaren Backlight oben -
-dasselbe KY-040-Modul, diesmal ohne den Taster zu verdrahten (kein eigener
-Klick, nur Drehen):
+dasselbe KY-040-Modul wie beim Lautstärke-Encoder, diesmal **mit** Taster
+(anders als früher, s.u. warum):
 
 | Encoder Pin | Raspberry Pi |
 |-------------|--------------|
 | CLK         | GPIO23       |
 | DT          | GPIO12       |
+| SW          | GPIO17 (`gpio.brightness_encoder_switch`) |
 | +           | 3.3V         |
 | GND         | GND          |
 
 Drehen ändert die Helligkeit (Schrittweite `gpio.brightness_step`, Standard
-5%), sofort und rein manuell - es gibt kein automatisches Dimmen.
+5%), sofort und rein manuell - es gibt kein automatisches Dimmen. Das
+Waveshare-Display kann laut Auftraggeber seine Helligkeit auch eigenständig
+per Touch regeln - diese Box nutzt das **bewusst nicht**, ausschließlich
+den Encoder/die Web-UI. Beide gleichzeitig zu verwenden würde die hier
+gespeicherte `brightness`-Einstellung und die tatsächliche
+Display-Helligkeit auseinanderlaufen lassen, ohne dass OwlBox davon etwas
+mitbekommt - die Touch-Helligkeitsregelung des Displays also am besten gar
+nicht erst anfassen.
+
+**Noch offen, nicht an echter Hardware verifiziert:** ob `owlbox/backlight.py`s
+GPIO-PWM-Ansatz (siehe „Zur Hintergrundbeleuchtung" oben - Status dort schon
+länger unklar, unabhängig von diesem Feature hier) auf diesem Display
+überhaupt etwas bewirkt, oder ob der Encoder am Ende nur den intern
+gespeicherten `brightness`-Wert ändert, ohne dass sich am Display sichtbar
+etwas tut. Erst an echter Hardware zu klären, welcher Mechanismus (falls
+überhaupt einer per Software erreichbar ist) tatsächlich zieht.
+
+**Nachtmodus, noch nicht an echter Hardware verifiziert:** Ein Druck auf den
+Taster (SW) schaltet zwischen der normalen ("Tag"-)Helligkeit und einer
+separat konfigurierbaren, oft deutlich dunkleren Nachtmodus-Helligkeit um -
+konfigurierbar in Einstellungen → Anzeige (`night_brightness`, Standard 5%).
+Anders als die normale Helligkeit darf die Nachtmodus-Helligkeit bewusst
+unter die dort eingestellte Minimal-Helligkeit gehen, das ist der ganze
+Zweck. Kein Zeitplan - bleibt aktiv, bis erneut gedrückt wird, außer über
+einen Neustart hinweg (startet immer im Tag-Modus). Ändert sich die
+Helligkeit während des Nachtmodus direkt (Schieberegler, Drehen an
+demselben Encoder), beendet das den Nachtmodus automatisch, statt den neuen
+Wert beim nächsten Tastendruck wieder zu verwerfen - siehe
+`Engine.toggle_night_mode`/`Engine._exit_night_mode_without_restoring_locked`
+in `owlbox/engine.py`. `gpio.brightness_encoder_switch` auf `null` setzen,
+um den Taster unverdrahtet zu lassen und die Funktion nur über die Web-UI
+nutzbar zu machen (dort geht sie immer, unabhängig von diesem Pin).
 
 Damit Shutdown/Neustart (auch über die Web-UI unter Einstellungen bzw.
 über einen "Pi neu starten"/"WLAN aus"-Funktions-Chip, siehe unten) sowie der

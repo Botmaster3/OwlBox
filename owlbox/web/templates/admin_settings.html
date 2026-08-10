@@ -306,8 +306,38 @@
     <p class="hint">
       Helligkeit wird ausschließlich manuell geregelt - hier per Schieberegler oder am Gerät über
       den zweiten Dreh-Encoder (kein automatisches Dimmen). Begrenzt auf den oben eingestellten
-      Bereich. Braucht die Hintergrundbeleuchtung auf einem eigenen GPIO statt fest an 3.3V (siehe
-      docs/hardware.md) - ohne diese Verkabelung hat der Regler hier keine sichtbare Wirkung.
+      Bereich - <b>außer im Nachtmodus</b> (s.u.), der bewusst auch unter die hier eingestellte
+      Minimal-Helligkeit gehen darf. Braucht die Hintergrundbeleuchtung auf einem eigenen GPIO statt
+      fest an 3.3V (siehe docs/hardware.md) - ohne diese Verkabelung hat der Regler hier keine
+      sichtbare Wirkung. Die eigene Touch-Helligkeitsregelung des Displays selbst wird von OwlBox
+      nicht angesteuert und sollte nicht parallel benutzt werden, sonst weichen die beiden
+      Einstellungen ohne Vorwarnung voneinander ab.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Nachtmodus</h2>
+    <div class="field">
+      <label for="night-brightness">Nachtmodus-Helligkeit (%)</label>
+      <input type="number" id="night-brightness" min="0" max="100" value="5">
+      <p class="field-help">Helligkeit, auf die im Nachtmodus gedimmt wird - darf auch unter der
+        oben eingestellten Minimal-Helligkeit liegen.</p>
+    </div>
+    <button class="btn" id="night-brightness-save-btn" type="button">Speichern</button>
+    <button class="btn secondary" id="night-mode-toggle-btn" type="button">🌙 Nachtmodus: Aus</button>
+    <p class="hint">
+      Ein Druck auf den Knopf des Helligkeits-Encoders am Gerät schaltet zwischen normaler
+      Helligkeit ("Tag") und der hier eingestellten Nachtmodus-Helligkeit um - die zuletzt aktive
+      Tag-Helligkeit wird dabei gemerkt und beim nächsten Druck wiederhergestellt. Der Knopf oben
+      schaltet denselben Zustand auch von hier aus um, praktisch zum Testen ohne am Gerät zu sein.
+      Kein automatischer Zeitplan - der Nachtmodus bleibt aktiv, bis er erneut umgeschaltet wird.
+      Ausnahme: ein Neustart des Geräts setzt immer auf Tag-Modus zurück, auch wenn der Nachtmodus
+      vorher aktiv war. Wird die Helligkeit während des Nachtmodus direkt geändert (Schieberegler
+      oben, Drehen am selben Encoder), beendet das den Nachtmodus automatisch - der neu eingestellte
+      Wert gilt dann als der neue "Tag"-Wert, statt vom nächsten Knopfdruck wieder überschrieben zu
+      werden. Braucht den Taster des Helligkeits-Encoders verkabelt
+      (<code>gpio.brightness_encoder_switch</code>, siehe docs/hardware.md) - ohne den ist der
+      Knopf hier trotzdem nutzbar, nur der physische Encoder am Gerät nicht.
     </p>
   </div>
 

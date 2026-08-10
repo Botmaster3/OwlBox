@@ -60,6 +60,7 @@ class Engine:
             on_seek=self.manual_seek,
             on_brightness_delta=self._handle_brightness_delta,
             on_shutdown=self._handle_shutdown if config.gpio.shutdown_hold_seconds else None,
+            on_night_toggle=self.toggle_night_mode,
         )
 
         self._lock = threading.RLock()
@@ -131,6 +132,16 @@ class Engine:
         self._brightness = max(
             self._min_brightness, min(self._max_brightness, repository.get_int_setting("brightness", 100))
         )
+        # Night mode: a deliberately separate, deeper dim level from the usual
+        # min/max_brightness range (that pair bounds the day-to-day slider/
+        # encoder, night mode intentionally overrides it) - toggled by
+        # pressing the brightness encoder's switch (see GpioControls) or the
+        # web UI, not something that runs on a schedule. Never persisted
+        # across a restart - always starts back in day mode, same as the
+        # sleep-timer/auto-sleep state below never surviving one either.
+        self._night_brightness = repository.get_int_setting("night_brightness", 5)
+        self._night_mode_active = False
+        self._day_brightness: Optional[int] = None
 
         # Cached WLAN reception, refreshed periodically in _loop rather than on every
         # get_state() call - nmcli is a subprocess call, too slow to run on every poll
@@ -816,12 +827,25 @@ class Engine:
 
     def manual_set_brightness(self, percent: int) -> None:
         with self._lock:
+            self._exit_night_mode_without_restoring_locked()
             self._brightness = max(self._min_brightness, min(self._max_brightness, percent))
             repository.set_setting("brightness", self._brightness)
             self._backlight.set_brightness(self._brightness)
 
+    def _exit_night_mode_without_restoring_locked(self) -> None:
+        """A direct brightness set (slider, or rotating the very encoder
+        night mode's own switch lives on) always means "I want exactly this
+        brightness now" - silently keep night mode flagged active underneath
+        it, and the next button press would instead throw the just-picked
+        value away and jump back to whatever "day" brightness was remembered
+        before night mode started, which would make no sense to whoever just
+        set it. Caller must already hold self._lock."""
+        self._night_mode_active = False
+        self._day_brightness = None
+
     def _handle_brightness_delta(self, direction: int) -> None:
         with self._lock:
+            self._exit_night_mode_without_restoring_locked()
             self._brightness = max(
                 self._min_brightness,
                 min(self._max_brightness, self._brightness + direction * self._brightness_step),
@@ -857,6 +881,51 @@ class Engine:
             repository.set_setting("max_brightness", self._max_brightness)
             if self._brightness > self._max_brightness:
                 self._brightness = self._max_brightness
+                repository.set_setting("brightness", self._brightness)
+                self._backlight.set_brightness(self._brightness)
+
+    # -- night mode -------------------------------------------------------------
+    # Manual dim/undim toggle, deliberately independent of min/max_brightness
+    # (see the __init__ comment) - "day" here just means "brightness as it was
+    # right before night mode was switched on", not a literal time of day.
+
+    def _set_night_mode_locked(self, active: bool) -> None:
+        """Caller must already hold self._lock."""
+        if active == self._night_mode_active:
+            return
+        if active:
+            self._day_brightness = self._brightness
+            self._night_mode_active = True
+            self._brightness = max(0, min(100, self._night_brightness))
+        else:
+            self._night_mode_active = False
+            if self._day_brightness is not None:
+                self._brightness = self._day_brightness
+            self._day_brightness = None
+        repository.set_setting("brightness", self._brightness)
+        self._backlight.set_brightness(self._brightness)
+
+    def toggle_night_mode(self) -> None:
+        """Wired to the brightness encoder's push switch - one press dims to
+        night_brightness and remembers the current ("day") brightness, the
+        next press restores it. See docs/hardware.md for the wiring."""
+        with self._lock:
+            self._set_night_mode_locked(not self._night_mode_active)
+        logger.info("night mode %s", "activated" if self._night_mode_active else "deactivated")
+
+    def set_night_mode_active(self, active: bool) -> None:
+        """Explicit set (vs. toggle_night_mode's flip) - used by the web UI,
+        where a checkbox/button needs to land on a known state rather than
+        blindly flipping whatever the physical encoder last left it at."""
+        with self._lock:
+            self._set_night_mode_locked(active)
+
+    def set_night_brightness(self, percent: int) -> None:
+        with self._lock:
+            self._night_brightness = max(0, min(100, percent))
+            repository.set_setting("night_brightness", self._night_brightness)
+            if self._night_mode_active:
+                self._brightness = self._night_brightness
                 repository.set_setting("brightness", self._brightness)
                 self._backlight.set_brightness(self._brightness)
 
@@ -1008,6 +1077,8 @@ class Engine:
             min_brightness = self._min_brightness
             max_brightness = self._max_brightness
             brightness_step = self._brightness_step
+            night_brightness = self._night_brightness
+            night_mode_active = self._night_mode_active
             wifi_enabled = self._wifi_enabled
             wifi_signal = self._wifi_signal
             hotspot_active = self._hotspot_active
@@ -1083,6 +1154,8 @@ class Engine:
                 "min_brightness": min_brightness,
                 "max_brightness": max_brightness,
                 "brightness_step": brightness_step,
+                "night_brightness": night_brightness,
+                "night_mode_active": night_mode_active,
                 "auto_sleep_minutes": auto_sleep_minutes,
                 "chime_enabled": chime_enabled,
                 "chime_volume_percent": chime_volume_percent,

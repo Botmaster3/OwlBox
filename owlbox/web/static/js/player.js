@@ -24,8 +24,10 @@
   const sleepTimerRemaining = document.getElementById("sleep-timer-remaining");
   const splashEl = document.getElementById("splash");
   const brightnessOsd = document.getElementById("brightness-osd");
+  const brightnessOsdIcon = document.getElementById("brightness-osd-icon");
   const brightnessOsdValue = document.getElementById("brightness-osd-value");
   const brightnessOsdFill = document.getElementById("brightness-osd-fill");
+  const nightModeBadge = document.getElementById("night-mode-badge");
   const wifiBars = document.querySelectorAll("#wifi-bars .wifi-bar");
   const wifiLabel = document.getElementById("wifi-label");
   const statusBarEl = document.getElementById("status-bar");
@@ -42,6 +44,7 @@
   let parentModeActive = false;
   let hasScannedTag = false;
   let lastBrightness = null;
+  let lastNightModeActive = null;
   let brightnessOsdTimer = null;
   let vuBarsSet = false;
 
@@ -84,9 +87,13 @@
     return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
   }
 
-  function showBrightnessOsd(percent, min, max) {
+  function showBrightnessOsd(percent, min, max, nightModeActive) {
+    brightnessOsdIcon.textContent = nightModeActive ? "🌙" : "☀️";
     brightnessOsdValue.textContent = percent;
-    brightnessOsdFill.style.width = `${relativePercent(percent, min, max)}%`;
+    // Night mode deliberately goes below min (see Engine.toggle_night_mode) -
+    // the relative-fill bar would otherwise clamp to 0% instead of showing
+    // how dim it actually went, so widen the range just for that reading.
+    brightnessOsdFill.style.width = `${relativePercent(percent, nightModeActive ? Math.min(min, percent) : min, max)}%`;
     brightnessOsd.hidden = false;
     clearTimeout(brightnessOsdTimer);
     brightnessOsdTimer = setTimeout(() => {
@@ -241,10 +248,18 @@
       document.documentElement.dataset.christmasEve = String(settings.christmas_eve);
     }
     if (typeof settings.brightness === "number") {
-      if (lastBrightness !== null && settings.brightness !== lastBrightness) {
-        showBrightnessOsd(settings.brightness, settings.min_brightness, settings.max_brightness);
+      const nightModeActive = !!settings.night_mode_active;
+      const brightnessChanged = lastBrightness !== null && settings.brightness !== lastBrightness;
+      // Also trigger on a night-mode flip with no brightness change - e.g.
+      // night_brightness happens to equal the current day brightness, still
+      // worth surfacing that the mode itself just switched.
+      const nightModeChanged = lastNightModeActive !== null && nightModeActive !== lastNightModeActive;
+      if (lastBrightness !== null && (brightnessChanged || nightModeChanged)) {
+        showBrightnessOsd(settings.brightness, settings.min_brightness, settings.max_brightness, nightModeActive);
       }
       lastBrightness = settings.brightness;
+      lastNightModeActive = nightModeActive;
+      nightModeBadge.hidden = !nightModeActive;
     }
     applyWifi(state.wifi);
     applyHotspotBanner(state.wifi);

@@ -92,6 +92,16 @@ class GpioConfig:
     brightness_encoder_dt: int = 12
     # Brightness change (percent) per encoder detent.
     brightness_step: int = 5
+    # Push switch on the brightness encoder - toggles night mode (dims to
+    # night_brightness, see Engine.toggle_night_mode) on press, back to the
+    # previous brightness on the next press. Not the same physical pin as
+    # encoder_switch above (that one's on the volume encoder). GPIO17: the
+    # display's own touch controller used to claim this pin as an always-on
+    # IRQ regardless of wiring (see encoder_clk's comment) - the current
+    # Waveshare display doesn't need that reservation, so it's free again.
+    # Set to None to leave the switch unwired and disable the feature
+    # entirely (night mode then stays reachable only via the web UI).
+    brightness_encoder_switch: Optional[int] = 17
 
 
 @dataclass

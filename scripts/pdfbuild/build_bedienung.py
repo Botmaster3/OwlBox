@@ -126,13 +126,24 @@ story.append(spec_table(
         ["Lautstärke-Encoder, drücken", "Play/Pause umschalten.", "Ab 4 Sekunden gehalten: fährt den Pi "
          "sicher herunter - praktisch als Not-Aus ohne Terminalzugriff."],
         ["Helligkeits-Encoder, drehen", "Jede Rastung ändert die Display-Helligkeit um die eingestellte "
-         "Schrittweite (Standard 5%).", "kein Taster an diesem Encoder"],
+         "Schrittweite (Standard 5%).", "–"],
+        ["Helligkeits-Encoder, drücken", "Schaltet den Nachtmodus um: normale Helligkeit („Tag“) "
+         "↔ separat konfigurierte, meist deutlich dunklere Nachtmodus-Helligkeit. Merkt sich die "
+         "zuletzt aktive Tag-Helligkeit und stellt sie beim nächsten Druck wieder her.", "–"],
     ],
     col_widths=[38 * mm, 66 * mm, 56 * mm],
 ))
 story.append(note_box(
     "Es gibt bewusst kein automatisches Abdimmen des Displays - die Helligkeit bleibt exakt so, wie "
-    "sie zuletzt eingestellt wurde, bis sie erneut geändert wird."
+    "sie zuletzt eingestellt wurde, bis sie erneut geändert wird (per Regler, Encoder oder "
+    "Nachtmodus-Knopfdruck)."
+))
+story.append(note_box(
+    "Noch nicht an echter Hardware verifiziert: ob eine Helligkeitsänderung über Software auf diesem "
+    "Display überhaupt sichtbar etwas bewirkt (siehe OwlBox-Verkabelung.pdf, Abschnitt „Zweiter "
+    "Dreh-Encoder für Helligkeit“). Das Display kann seine Helligkeit auch eigenständig per Touch "
+    "regeln - diese Box nutzt das bewusst nicht, ausschließlich Encoder und Web-UI.",
+    kind="warn",
 ))
 story.append(note_box(
     "Alle Zahlenwerte (Schrittweiten, Haltezeiten) lassen sich in <font face=\"DejaVuSansMono\" "
@@ -159,7 +170,8 @@ story.append(spec_table(
         ["WLAN-Balken (oben rechts)", "Immer", "4-stufige Signalstärke-Balken + Prozentwert bzw. „Aus“/„Getrennt“"],
         ["CPU-Temperatur (oben links)", "Immer", "Aktuelle Prozessortemperatur des Pi in °C - färbt sich gelb/rot, "
          "wenn er in Richtung der automatischen Drosselschwelle (ca. 80°C) läuft"],
-        ["Helligkeits-Overlay", "Kurz nach jeder Änderung am Helligkeits-Encoder", "Sonnensymbol, Balken und aktueller Prozentwert"],
+        ["Helligkeits-Overlay", "Kurz nach jeder Änderung am Helligkeits-Encoder/Nachtmodus-Umschaltung", "Sonnen- bzw. Mondsymbol (je nach Tag-/Nachtmodus), Balken und aktueller Prozentwert"],
+        ["Nachtmodus-Anzeige (unten links)", "Solange der Nachtmodus aktiv ist (s. Kapitel 3)", "„🌙 Nachtmodus“ - bleibt dauerhaft sichtbar, anders als das kurze Helligkeits-Overlay oben"],
         ["Hotspot-Banner", "Solange der Notfall-Hotspot aktiv ist (siehe Kapitel 10.5)", "SSID, Passwort und die Verwaltungs-URL im Hotspot"],
         ["„Jetzt läuft“-Ansicht", "Sobald ein Story-Chip aufliegt bzw. weiterläuft", "Cover, Titel, aktueller Track, VU-Meter-Animation, "
          "Fortschritt, Lautstärkebalken, die nächsten 3 kommenden Tracks"],
@@ -486,9 +498,28 @@ ctrl("Schrittweite pro Tastendruck/Encoder-Schritt", "Zahlenfeld (1-50%, Standar
      "Änderung pro Rastung des Helligkeits-Encoders.")
 story.append(note_box(
     "Die Helligkeit wird ausschließlich manuell geregelt (Regler hier oder Helligkeits-Encoder am "
-    "Gerät) - es gibt kein automatisches Dimmen. Der Regler braucht die Hintergrundbeleuchtung auf "
-    "einem eigenen GPIO statt fest an 3,3V verdrahtet (siehe OwlBox-Verkabelung.pdf) - ohne diese "
-    "Verkabelung bleibt er ohne sichtbare Wirkung."
+    "Gerät) - es gibt kein automatisches Dimmen, außer über den Nachtmodus (s.u.), der bewusst auch "
+    "unter die hier eingestellte Minimal-Helligkeit gehen darf. Der Regler braucht die "
+    "Hintergrundbeleuchtung auf einem eigenen GPIO statt fest an 3,3V verdrahtet (siehe "
+    "OwlBox-Verkabelung.pdf) - ohne diese Verkabelung bleibt er ohne sichtbare Wirkung. Die eigene "
+    "Touch-Helligkeitsregelung des Displays wird von OwlBox nicht angesteuert und sollte nicht "
+    "parallel benutzt werden, sonst weichen beide Einstellungen ohne Vorwarnung voneinander ab."
+))
+
+h3("Nachtmodus")
+ctrl("Nachtmodus-Helligkeit", "Zahlenfeld (0-100%, Standard 5) + „Speichern“-Button",
+     "Helligkeit, auf die im Nachtmodus gedimmt wird - darf unter der oben eingestellten "
+     "Minimal-Helligkeit liegen.")
+ctrl("„🌙 Nachtmodus: An/Aus“", "Umschalter-Button",
+     "Schaltet denselben Zustand wie der Taster des Helligkeits-Encoders am Gerät um (siehe Kapitel "
+     "3) - praktisch zum Testen ohne am Gerät zu sein.")
+story.append(note_box(
+    "Ein Druck auf den Taster des Helligkeits-Encoders merkt sich die zuletzt aktive Tag-Helligkeit "
+    "und wechselt zur Nachtmodus-Helligkeit; der nächste Druck stellt die Tag-Helligkeit wieder her. "
+    "Kein automatischer Zeitplan - bleibt aktiv, bis erneut umgeschaltet wird, außer über einen "
+    "Neustart des Geräts hinweg (startet immer im Tag-Modus). Wird die Helligkeit während des "
+    "Nachtmodus direkt geändert (Regler oben, Drehen am selben Encoder), beendet das den Nachtmodus "
+    "automatisch - der neu eingestellte Wert gilt dann als neuer Tag-Wert."
 ))
 
 h2("10.5 Netzwerk (WLAN)")

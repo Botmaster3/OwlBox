@@ -89,11 +89,17 @@ gpio:
   backlight_pin: 13
   # Second KY-040 rotary encoder, dedicated to brightness - required hardware.
   # Turning it (or the slider in Einstellungen) is the only way brightness
-  # changes, there is no automatic dimming. See docs/hardware.md.
+  # changes, there is no automatic dimming. See docs/hardware.md. This box
+  # deliberately doesn't use the display's own touch-based brightness control.
   brightness_encoder_clk: 23
   brightness_encoder_dt: 12
   # Brightness change (%) per encoder detent.
   brightness_step: 5
+  # Push switch on the brightness encoder - toggles night mode (dims to
+  # night_brightness, configurable in Einstellungen, then back on the next
+  # press) - see docs/hardware.md. Set to null to leave the switch unwired;
+  # night mode then stays reachable only through the web UI toggle.
+  brightness_encoder_switch: 17
 
 playback:
   # When pressing "previous", restart the current track instead of jumping to the

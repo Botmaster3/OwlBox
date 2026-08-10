@@ -365,6 +365,48 @@
     }
   });
 
+  // -- night mode -----------------------------------------------------------
+
+  const nightBrightnessInput = document.getElementById("night-brightness");
+  const nightBrightnessSaveBtn = document.getElementById("night-brightness-save-btn");
+  const nightModeToggleBtn = document.getElementById("night-mode-toggle-btn");
+  let nightModeActive = false;
+
+  function renderNightModeToggle() {
+    nightModeToggleBtn.textContent = `🌙 Nachtmodus: ${nightModeActive ? "An" : "Aus"}`;
+    nightModeToggleBtn.classList.toggle("active", nightModeActive);
+  }
+
+  nightBrightnessSaveBtn.addEventListener("click", async () => {
+    try {
+      const settings = await api("/api/settings/brightness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ night_brightness: parseInt(nightBrightnessInput.value, 10) }),
+      });
+      nightBrightnessInput.value = settings.night_brightness;
+      showToast("Nachtmodus-Helligkeit gespeichert.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  nightModeToggleBtn.addEventListener("click", async () => {
+    try {
+      const settings = await api("/api/settings/brightness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ night_mode_active: !nightModeActive }),
+      });
+      nightModeActive = settings.night_mode_active;
+      renderNightModeToggle();
+      currentBrightnessInput.value = settings.brightness;
+      currentBrightnessValue.textContent = settings.brightness;
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
   // -- auto-sleep (sleeping-owl screen) ----------------------------------
 
   const autoSleepStatus = document.getElementById("auto-sleep-status");
@@ -570,6 +612,9 @@
       brightnessStepInput.value = state.settings.brightness_step;
       currentBrightnessInput.min = state.settings.min_brightness;
       currentBrightnessInput.max = state.settings.max_brightness;
+      nightBrightnessInput.value = state.settings.night_brightness;
+      nightModeActive = state.settings.night_mode_active;
+      renderNightModeToggle();
       autoSleepMinutesInput.value = state.settings.auto_sleep_minutes;
     } catch (err) {
       // ignore, fields keep their HTML defaults
@@ -589,6 +634,14 @@
       if (!brightnessSliderBeingDragged) {
         currentBrightnessInput.value = state.settings.brightness;
         currentBrightnessValue.textContent = state.settings.brightness;
+      }
+
+      // Live, not edit-and-save like min/max_brightness above - the physical
+      // encoder button can flip this at any moment, independent of whatever
+      // this page happens to be showing.
+      if (state.settings.night_mode_active !== nightModeActive) {
+        nightModeActive = state.settings.night_mode_active;
+        renderNightModeToggle();
       }
 
       applyHotspotBanner(state.wifi);

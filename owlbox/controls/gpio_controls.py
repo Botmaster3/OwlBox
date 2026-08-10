@@ -13,7 +13,8 @@ _HOLD_DISABLED = 1e9
 class GpioControls:
     """Two push buttons (next/prev) plus two rotary encoders: one with a push switch
     for volume (rotate = volume +/-, click = play/pause, optional long-press shutdown),
-    and a plain one dedicated to display brightness."""
+    and one dedicated to display brightness (rotate = brightness +/-, click = toggle
+    night mode, if gpio_config.brightness_encoder_switch is wired)."""
 
     def __init__(
         self,
@@ -25,6 +26,7 @@ class GpioControls:
         on_seek: Callable[[float], None],
         on_brightness_delta: Callable[[int], None],
         on_shutdown: Optional[Callable[[], None]] = None,
+        on_night_toggle: Optional[Callable[[], None]] = None,
     ):
         from gpiozero import Button, RotaryEncoder
 
@@ -35,6 +37,7 @@ class GpioControls:
         self._on_seek = on_seek
         self._on_brightness_delta = on_brightness_delta
         self._on_shutdown = on_shutdown
+        self._on_night_toggle = on_night_toggle
         self._long_press_triggered = False
         self._seek_step_seconds = gpio_config.seek_step_seconds
         self._next_held = False
@@ -82,6 +85,19 @@ class GpioControls:
         )
         self._brightness_encoder.when_rotated_clockwise = lambda: self._safe(self._on_brightness_delta, 1)
         self._brightness_encoder.when_rotated_counter_clockwise = lambda: self._safe(self._on_brightness_delta, -1)
+
+        # Optional: the brightness encoder's own push switch, toggling night
+        # mode. Only wired if a pin is actually configured - unlike the volume
+        # encoder's switch (always present, this project's baseline hardware),
+        # this one was unwired hardware until night mode existed, so None
+        # (feature disabled, no pin claimed) has to stay a valid choice.
+        self._brightness_encoder_button = None
+        switch_pin = gpio_config.brightness_encoder_switch
+        if switch_pin is not None and on_night_toggle is not None:
+            self._brightness_encoder_button = Button(
+                switch_pin, pull_up=True, bounce_time=gpio_config.bounce_time
+            )
+            self._brightness_encoder_button.when_released = lambda: self._safe(self._on_night_toggle)
 
         shutdown_after = gpio_config.shutdown_hold_seconds
         hold_time = shutdown_after if shutdown_after and shutdown_after > 0 else _HOLD_DISABLED
@@ -131,13 +147,16 @@ class GpioControls:
             self._safe(self._on_shutdown)
 
     def close(self) -> None:
-        for device in (
+        devices = [
             self._btn_next,
             self._btn_prev,
             self._encoder,
             self._encoder_button,
             self._brightness_encoder,
-        ):
+        ]
+        if self._brightness_encoder_button is not None:
+            devices.append(self._brightness_encoder_button)
+        for device in devices:
             try:
                 device.close()
             except Exception:

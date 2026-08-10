@@ -614,6 +614,13 @@ def update_brightness():
             _engine().manual_set_brightness(int(data["brightness"]))
         except (TypeError, ValueError):
             return jsonify({"error": "brightness must be an integer"}), 400
+    if "night_brightness" in data:
+        try:
+            _engine().set_night_brightness(int(data["night_brightness"]))
+        except (TypeError, ValueError):
+            return jsonify({"error": "night_brightness must be an integer"}), 400
+    if "night_mode_active" in data:
+        _engine().set_night_mode_active(bool(data["night_mode_active"]))
     return jsonify(_engine().get_state()["settings"])
 
 

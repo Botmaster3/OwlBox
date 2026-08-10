@@ -12,6 +12,7 @@ def create_controls(
     on_seek,
     on_brightness_delta,
     on_shutdown=None,
+    on_night_toggle=None,
 ):
     # gpio.enabled is the per-component switch (see GpioConfig.enabled):
     # simulate turns off everything at once, this turns off only the physical
@@ -29,4 +30,5 @@ def create_controls(
         on_seek,
         on_brightness_delta,
         on_shutdown,
+        on_night_toggle,
     )

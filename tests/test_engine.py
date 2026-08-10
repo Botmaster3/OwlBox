@@ -1318,6 +1318,150 @@ def test_brightness_range_clamps_current_and_future_changes(config):
     assert repository.get_int_setting("min_brightness", -1) == 90
 
 
+def test_toggle_night_mode_dims_and_restores_brightness(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.set_night_brightness(7)
+        engine.manual_set_brightness(80)
+
+        engine.toggle_night_mode()
+        state = engine.get_state()["settings"]
+        assert state["night_mode_active"] is True
+        assert state["brightness"] == 7
+
+        engine.toggle_night_mode()
+        state = engine.get_state()["settings"]
+        assert state["night_mode_active"] is False
+        assert state["brightness"] == 80
+    finally:
+        engine.stop()
+    # The live brightness (back to day level) is what's persisted, not the
+    # night level - a restart should come back up showing what it looked
+    # like before night mode, not still dimmed.
+    assert repository.get_int_setting("brightness", -1) == 80
+
+
+def test_night_mode_bypasses_min_max_brightness_bounds(config):
+    # Night mode is a deliberate override, independent of the day-time
+    # min/max_brightness range - it must be able to go dimmer than the
+    # configured daytime minimum, that's the whole point.
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.set_min_brightness(30)
+        engine.set_night_brightness(5)
+        engine.manual_set_brightness(50)
+
+        engine.toggle_night_mode()
+        assert engine.get_state()["settings"]["brightness"] == 5
+    finally:
+        engine.stop()
+
+
+def test_set_night_mode_active_is_idempotent_and_explicit(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.manual_set_brightness(80)
+        engine.set_night_brightness(10)
+
+        engine.set_night_mode_active(True)
+        assert engine.get_state()["settings"]["night_mode_active"] is True
+        assert engine.get_state()["settings"]["brightness"] == 10
+
+        # Setting it to the same state again must be a no-op, not a second
+        # "remember current brightness as day brightness" - the point of
+        # set_night_mode_active (vs. toggle_night_mode) is landing on an
+        # exact requested state safely from something like a web checkbox.
+        engine.set_night_mode_active(True)
+        assert engine.get_state()["settings"]["brightness"] == 10
+
+        engine.set_night_mode_active(False)
+        assert engine.get_state()["settings"]["night_mode_active"] is False
+        assert engine.get_state()["settings"]["brightness"] == 80
+    finally:
+        engine.stop()
+
+
+def test_set_night_brightness_applies_live_while_night_mode_is_active(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.set_night_brightness(5)
+        engine.toggle_night_mode()
+        assert engine.get_state()["settings"]["brightness"] == 5
+
+        # Changing the configured night level while already dimmed should
+        # take effect immediately, not just the next time night mode starts.
+        engine.set_night_brightness(15)
+        assert engine.get_state()["settings"]["night_brightness"] == 15
+        assert engine.get_state()["settings"]["brightness"] == 15
+    finally:
+        engine.stop()
+    assert repository.get_int_setting("night_brightness", -1) == 15
+
+
+def test_night_mode_does_not_survive_a_restart(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.toggle_night_mode()
+        assert engine.get_state()["settings"]["night_mode_active"] is True
+    finally:
+        engine.stop()
+
+    engine2 = Engine(config)
+    engine2.start()
+    try:
+        assert engine2.get_state()["settings"]["night_mode_active"] is False
+    finally:
+        engine2.stop()
+
+
+def test_manual_brightness_change_while_in_night_mode_exits_it_cleanly(config):
+    # A direct brightness set (slider, or turning the same encoder night mode's
+    # switch lives on) while dimmed must mean "I want exactly this now" - not
+    # silently stay flagged as night mode underneath it, which would make the
+    # next button press throw the just-picked value away and jump back to the
+    # stale remembered "day" brightness instead.
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.manual_set_brightness(80)
+        engine.toggle_night_mode()
+        assert engine.get_state()["settings"]["night_mode_active"] is True
+
+        engine.manual_set_brightness(45)
+        state = engine.get_state()["settings"]
+        assert state["night_mode_active"] is False
+        assert state["brightness"] == 45
+
+        # The remembered day brightness must be gone too - toggling back on
+        # now starts a fresh night/day cycle from this new brightness, not
+        # from the 80 set before the first toggle.
+        engine.toggle_night_mode()
+        assert engine.get_state()["settings"]["brightness"] == engine.get_state()["settings"]["night_brightness"]
+        engine.toggle_night_mode()
+        assert engine.get_state()["settings"]["brightness"] == 45
+    finally:
+        engine.stop()
+
+
+def test_brightness_delta_while_in_night_mode_exits_it_cleanly(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.manual_set_brightness(80)
+        engine.toggle_night_mode()
+        assert engine.get_state()["settings"]["night_mode_active"] is True
+
+        engine._handle_brightness_delta(1)
+        assert engine.get_state()["settings"]["night_mode_active"] is False
+    finally:
+        engine.stop()
+
+
 def test_state_includes_cached_wifi_status(config):
     config.rfid.poll_interval = 0.01
     engine = Engine(config)
