@@ -2,14 +2,24 @@
 # Installs OwlBox onto a Raspberry Pi (tested against Raspberry Pi OS Bookworm/Legacy Lite).
 # Run as root (sudo ./scripts/install.sh [stage]) from inside a checkout of this repo.
 #
-# Targets the project's standard hardware (see docs/hardware.md): Pi 3B+, HiFiBerry
-# Amp2 (TAS5756M chip - the PCM512x family, same codec as the DAC+ Pro; NOT the
-# older Amp/Amp+'s TAS5713, a different chip needing a different overlay), a
-# 5" Waveshare DSI touch display (5-DSI-TOUCH-A, 720x1280, DSI ribbon cable +
-# I2C touch - see docs/hardware.md; replaced the project's earlier official
-# 7" Raspberry Pi Touch Display), RC522 on the Pi's real hardware SPI0 bus
-# (free since the display doesn't use SPI at all), buttons/encoders on the
-# documented default pins.
+# Targets the project's standard hardware (see docs/hardware.md): Pi 5 (4GB),
+# with active cooling and the HiFiBerry Amp2 no longer stacked directly on the
+# 40-pin header (the cooler needs the clearance) - it now hangs off its own
+# adapter board instead, connected by jumper wires like the RC522/buttons/
+# encoders already were. Replaced the project's earlier Pi 3B+; that
+# hardware's fully verified setup is still in this file's git history if ever
+# needed again. HiFiBerry Amp2 (TAS5756M chip - the PCM512x family, same
+# codec as the DAC+ Pro; NOT the older Amp/Amp+'s TAS5713, a different chip
+# needing a different overlay - and, on a Pi 5 specifically, needing the
+# separate "hifiberry-dacplus-std" overlay rather than plain
+# "hifiberry-dacplus", see the SOUND stage below), a 5" Waveshare DSI touch
+# display (5-DSI-TOUCH-A, 720x1280, DSI ribbon cable + I2C touch - see
+# docs/hardware.md; replaced the project's earlier official 7" Raspberry Pi
+# Touch Display), RC522 on the Pi's real hardware SPI0 bus (free since the
+# display doesn't use SPI at all), buttons/encoders on the documented default
+# pins. NOT yet verified on real Pi 5 hardware in this project (still Pi 3B+
+# at the time of writing this) - see docs/hardware.md for exactly which parts
+# of this are still pending confirmation.
 #
 # STAGED INSTALL - the real point of this script's structure. Four independent
 # stages, each installing only the OS packages/config.txt lines that ONE piece
@@ -78,6 +88,22 @@ CMDLINE_TXT=""
 for candidate in /boot/firmware/cmdline.txt /boot/cmdline.txt; do
   [ -f "$candidate" ] && { CMDLINE_TXT="$candidate"; break; }
 done
+
+# Board detection - so far only used to pick the right HiFiBerry overlay (see
+# SOUND stage below): a Pi 5 needs "hifiberry-dacplus-std" instead of the
+# regular "hifiberry-dacplus", a kernel-side probe fix specific to the Pi 5's
+# BCM2712 SoC. Not yet verified on real Pi 5 hardware in this project (still
+# Pi 3B+ at the time of writing this) - see docs/hardware.md. `/proc/device-
+# tree/model` exists on every Bookworm+ image (the only OS this script
+# targets, see header comment) and is null-terminated, hence the `tr -d
+# '\0'`; a completely missing file (non-Pi, or a very old/minimal image)
+# just leaves PI_MODEL empty and IS_PI5=0, same as any other non-Pi-5 board.
+PI_MODEL="$(tr -d '\0' < /proc/device-tree/model 2>/dev/null || true)"
+IS_PI5=0
+case "$PI_MODEL" in
+  *"Raspberry Pi 5"*) IS_PI5=1 ;;
+esac
+echo "==> Erkanntes Board: ${PI_MODEL:-unbekannt (kein /proc/device-tree/model gefunden)}"
 
 NEEDS_REBOOT=0
 [ -n "$CONFIG_TXT" ] && BEFORE_HASH="$(sha256sum "$CONFIG_TXT" | cut -d' ' -f1)" || BEFORE_HASH=""
@@ -434,9 +460,20 @@ if [ "$DO_SOUND" -eq 1 ]; then
     # family's address. "hifiberry-amp" is for the older Amp/Amp+'s TAS5713
     # instead - different chip, different overlay, even though the products
     # are easy to confuse by name.
+    #
+    # On a Pi 5 specifically, "hifiberry-dacplus" alone is reported (by
+    # HiFiBerry and in the mainline raspberrypi/linux issue tracker) to fail
+    # its I2C probe against the BCM2712 SoC/RP1 combination - the fix is the
+    # separate "hifiberry-dacplus-std" overlay instead. NOT yet verified on
+    # real Pi 5 hardware in this project (still Pi 3B+ at the time of writing
+    # this) - see docs/hardware.md. If audio doesn't come up on a Pi 5 even
+    # with this overlay selected, that's the first thing to double-check
+    # against HiFiBerry's own current documentation.
+    HIFIBERRY_OVERLAY="hifiberry-dacplus"
+    [ "$IS_PI5" -eq 1 ] && HIFIBERRY_OVERLAY="hifiberry-dacplus-std"
     write_stage_block "$CONFIG_TXT" sound \
       "dtparam=audio=off" \
-      "dtoverlay=hifiberry-dacplus"
+      "dtoverlay=$HIFIBERRY_OVERLAY"
   else
     echo "WARNUNG: config.txt nicht gefunden (weder /boot/firmware/config.txt noch /boot/config.txt)." >&2
     echo "         HiFiBerry-Overlay konnte nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2

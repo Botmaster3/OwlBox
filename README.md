@@ -85,8 +85,8 @@ den Pi geladen und einem Chip zugewiesen.
     frei einstellbares eigenes Design - Weihnachten mit einem Adventskranz, dessen Kerzen automatisch
     je nach aktuellem Advent nacheinander angezündet werden (plus Geschenke am 24.12.), Ostern mit
     einem Osterkörbchen samt Gras und Eiern, Winter (Sonderedition) mit dunklem Eisblau, Silvester mit
-    einem Feuerwerk am Himmel - alles als Standbild statt laufender Animation, um den Pi 3B+ nicht
-    unnötig zu belasten; das Standard-Thema "Winter" bekommt dafür ein statisches Schneeflocken-Muster.
+    einem Feuerwerk am Himmel - alles als Standbild statt laufender Animation, um die Kiosk-Anzeige
+    nicht unnötig zu belasten; das Standard-Thema "Winter" bekommt dafür ein statisches Schneeflocken-Muster.
     Für Kiosk-Anzeige und Web-UI, inkl. unterschiedlicher Balken-Optik; drei der Standard-Themes
     stehen zusätzlich für die kalendarischen Jahreszeiten (Frühling/Sommer/Herbst), sodass zusammen
     mit den Sonderedition-Fenstern (1.-26.12. Weihnachten, 31.12.-1.1. Silvester, 27.12.-19.3. Winter,
@@ -139,12 +139,13 @@ Ein einziger Python-Prozess (`owlbox.main`) vereint:
   Polling aktualisiert), `/admin` (Bibliotheksverwaltung), `/api/*` (REST).
 
 Das Now-Playing-Display läuft als ganz normale Webseite, die im Kiosk-Modus
-in Chromium auf dem 7"-Touch-Display angezeigt wird (`scripts/kiosk.sh`) -
-kein separates GUI-Toolkit nötig, funktioniert offline und ist auf einem
-Pi 3B+ mit 1 GB RAM deutlich genügsamer als z.B. Kivy oder Qt. Das Display
-wird von der Pi-Firmware automatisch über DSI erkannt, kein Kernel-Overlay
-nötig (siehe docs/hardware.md) - Touch ist am Board vorhanden, wird von der
-Oberfläche aktuell aber noch nicht ausgewertet.
+in Chromium auf dem DSI-Touch-Display angezeigt wird (`scripts/kiosk.sh`) -
+kein separates GUI-Toolkit nötig, funktioniert offline und ist deutlich
+genügsamer als z.B. Kivy oder Qt. Das Display braucht eine eigene
+`dtoverlay=`-Zeile in `config.txt` (kein separater Treiber-Installer nötig,
+aber die Overlay-Zeile selbst ist Pflicht - siehe docs/hardware.md) - Touch
+ist am Board vorhanden, wird von der Oberfläche aktuell aber noch nicht
+ausgewertet.
 
 ## Schnellstart (Entwicklung, ohne Pi-Hardware)
 
@@ -175,8 +176,9 @@ brauchte), aber bewusst *ohne* Desktop-Umgebung, da der Kiosk-Autostart X
 nur für Chromium selbst startet (kein lightdm/LXDE, das beim Boot nur
 unnötig Zeit kosten würde).
 
-Für die Standardhardware (Pi 3B+, HiFiBerry Amp2, offizielles 7"-Touch-
-Display (DSI), RC522, Taster/Encoder auf den Standard-Pins - siehe
+Für die Standardhardware (Pi 5, HiFiBerry Amp2 über eigene Adapter-Platine
+statt direkt gestapelt, DSI-Touch-Display, RC522, Taster/Encoder auf den
+Standard-Pins - siehe
 [docs/hardware.md](docs/hardware.md)) läuft die Einrichtung **gestaffelt**,
 und zwar nicht nur beim erstmaligen Testen, sondern als das Installations-
 Skript selbst: `scripts/install.sh` kennt vier unabhängige Stufen (`sound`,

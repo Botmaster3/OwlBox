@@ -76,8 +76,13 @@ story.append(toc)
 # ============================================================ 1. Zielhardware
 h1("1. Zielhardware")
 bullets([
-    "Raspberry Pi 3B+",
-    "HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip)",
+    "Raspberry Pi 5 (4GB) mit aktiver Kühlung (siehe Kapitel 2). Ersetzt das früher hier "
+    "dokumentierte Pi 3B+; dessen vollständig verifiziertes Setup ist noch in der Git-Historie "
+    "dieser Datei zu finden. Noch NICHT an echter Hardware verifiziert.",
+    "HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip) - sitzt wegen des Kühlkörpers NICHT mehr "
+    "direkt gestapelt auf dem 40-Pin-Header, sondern hängt über eine eigene Adapter-Platine dran, "
+    "per Jumperkabel wie RC522/Taster/Encoder auch (siehe Kapitel 2). Noch NICHT an echter "
+    "Hardware verifiziert.",
     "RC522 RFID-Modul (SPI, 13,56 MHz)",
     "Waveshare 5″ DSI Capacitive Touch Display (Modell 5-DSI-TOUCH-A, 720×1280, DSI-Flachbandkabel "
     "für Bild und Touch, plus 4 Jumperkabel für Strom/I2C, siehe unten). Ersetzt das früher hier "
@@ -114,7 +119,8 @@ story.append(note_box(
 p(
     "Wie beim bisherigen Display sitzt es <b>nicht</b> auf dem 40-Pin-Header - Bild und Touch "
     "laufen über das DSI-Flachbandkabel (eigener Steckplatz auf dem Pi, neben den HDMI-Buchsen), "
-    "keine Steckplatz-Kollision mit dem HiFiBerry, der normal direkt auf dem 40-Pin-Header sitzt."
+    "keine Steckplatz-Kollision mit dem HiFiBerry (der auf diesem Aufbau ohnehin nicht mehr direkt "
+    "auf dem 40-Pin-Header sitzt, sondern über eine Adapter-Platine läuft, siehe Kapitel 2)."
 )
 p(
     "Die Adapter-/Power-Platine des Displays braucht vermutlich weiterhin 4 Jumper-/Dupont-Kabel "
@@ -143,10 +149,11 @@ story.append(note_box(
     "Touch-Controller dieses Displays sitzt tatsächlich auch auf I2C."
 ))
 p(
-    "Falls der HiFiBerry bereits vollflächig auf dem 40-Pin-Header aufgesteckt ist und die Pins "
-    "dadurch von oben nicht mehr mit Dupont-Kabeln erreichbar sind: ein GPIO-Stacking-Header "
-    "(Extra-Höhe, mit durchgeführten Pins) zwischen Pi und HiFiBerry löst das, ohne den HiFiBerry "
-    "selbst umverkabeln zu müssen."
+    "(Hinweis aus dem früheren, direkt gestapelten Aufbau, hier nur noch der Vollständigkeit "
+    "halber: säße der HiFiBerry doch einmal wieder direkt auf dem 40-Pin-Header und die Pins "
+    "dadurch von oben nicht mehr mit Dupont-Kabeln erreichbar, würde ein GPIO-Stacking-Header "
+    "[Extra-Höhe, mit durchgeführten Pins] zwischen Pi und HiFiBerry das lösen. Auf dem aktuellen "
+    "Aufbau nicht relevant, da der HiFiBerry ohnehin über die Adapter-Platine läuft, s. Kapitel 2.)"
 )
 story.append(note_box(
     "Overlay laut Waveshare-Wiki (waveshare.com/wiki/5-DSI-TOUCH-A - nicht direkt erreichbar "
@@ -194,6 +201,13 @@ p(
     "Verstärkersteuerung. In /boot/firmware/config.txt (bzw. /boot/config.txt auf älteren Images):"
 )
 code(["dtparam=audio=off", "dtoverlay=hifiberry-dacplus"])
+story.append(note_box(
+    "Auf dem Pi 5 stattdessen dtoverlay=hifiberry-dacplus-std - ein kernelseitiger Probe-Fix, "
+    "spezifisch für die BCM2712-SoC/RP1-Kombination des Pi 5 (laut HiFiBerry und dem "
+    "raspberrypi/linux-Issue-Tracker). Noch NICHT an echter Pi-5-Hardware verifiziert. "
+    "install.sh wählt das automatisch anhand des erkannten Boards (/proc/device-tree/model).",
+    kind="warn",
+))
 story.append(note_box(
     "An echter Hardware bestätigt: Der Amp2 hat einen TAS5756M-Chip - dieselbe PCM512x-Chipfamilie "
     "wie die DAC+ Pro, ein komplett anderer Chip als der TAS5713 des älteren Amp/Amp+. "
@@ -293,6 +307,87 @@ bullets([
     "Am Lautsprecher selbst hängt der Anschluss vom jeweiligen Modell ab (blanker Draht, "
     "Flachsteckhülsen/Bananas oder Lötfahnen).",
 ])
+
+h2("2.1 Aktive Kühlung (Pi 5)")
+story.append(note_box(
+    "Dieser komplette Abschnitt ist noch NICHT an echter Hardware verifiziert - die "
+    "Software-Anpassungen sind vorbereitet, aber dieses Projekt lief zum Zeitpunkt des Schreibens "
+    "noch auf einem Pi 3B+.",
+    kind="warn",
+))
+p(
+    "Verbaut: GeeekPi Low-Profile Plus CPU Cooler (Aluminium-Kühlkörper mit Lüfter, für Pi 5 "
+    "4GB/8GB/16GB). Steckt wie der offizielle Raspberry-Pi-„Active Cooler“ auf den eigenen "
+    "4-Pin-JST-Lüfteranschluss des Pi 5 (rechts oben, zwischen 40-Pin-Header und den USB-2-Ports) "
+    "- <b>kein GPIO-Pin, keine config.txt-Zeile nötig</b>. Die Drehzahl regelt die Pi-5-Firmware "
+    "selbst temperaturabhängig (Stufen bei ca. 60°C/67,5°C/75°C), unabhängig vom Betriebssystem. "
+    "Damit ist die Kühlung für dieses Projekt reine Mechanik - sie taucht in keiner GPIO-Tabelle "
+    "auf und braucht keine eigene config.yaml-Einstellung."
+)
+story.append(note_box(
+    "Nur falls stattdessen doch einmal ein anderer, GPIO-verdrahteter Lüfter verbaut wird (nicht "
+    "der hier tatsächlich verbaute, nur zur Einordnung): das bräuchte einen zusätzlichen freien "
+    "BCM-Pin plus einen eigenen Fan-Overlay/eine eigene Steuerlogik - für den GeeekPi-Kühler oben "
+    "nicht relevant, der läuft komplett über den festen 4-Pin-Anschluss."
+))
+story.append(note_box(
+    "Stromversorgung: Der Pi 5 empfiehlt offiziell ein 5V/5A-USB-C-PD-Netzteil (27W) - mit "
+    "HiFiBerry Amp2 (kann bei Zimmerlautstärke durchaus über 1A aus der 5V-Schiene ziehen) und "
+    "aktivem Lüfter zusammen an einem schwächeren Netzteil (z.B. die alten 5V/2,5-3A-Netzteile "
+    "vom Pi-3B+-Aufbau) drohen Unterspannungswarnungen/-drosselung. Für diesen Aufbau (Amp2 unter "
+    "Last plus Lüfter) das offizielle 27W-Netzteil verwenden.",
+    kind="warn",
+))
+
+h2("2.2 Nicht mehr direkt aufgesteckt: Anschluss über Adapter-Platine")
+story.append(note_box(
+    "Dieser Abschnitt ist noch NICHT an echter Hardware verifiziert.",
+    kind="warn",
+))
+p(
+    "Wegen des Kühlkörpers auf dem Pi 5 sitzt der Amp2 nicht mehr direkt gestapelt auf dem "
+    "40-Pin-Header, sondern hängt über Jumperkabel an einer eigenen, separat verdrahteten "
+    "Adapter-Platine - demselben Eigenbau-Muster (Lochraster + Jumperkabel), das dieses Projekt "
+    "für RC522/Taster/Encoder schon einsetzt (docs/hat-wiring.html, dort aber noch nicht auf "
+    "diesen Aufbau aktualisiert). Der Amp2 selbst bleibt unverändert - es ändert sich nur, wie "
+    "seine Pins den Pi erreichen."
+)
+story.append(spec_table(
+    [
+        ["HiFiBerry Amp2", "Pi-Pin (BCM)", "Zweck"],
+        ["BCLK", "GPIO18", "I2S-Bit-Clock"],
+        ["LRCLK/WS", "GPIO19", "I2S-Wortauswahl (links/rechts)"],
+        ["DIN", "GPIO20", "I2S-Audiodaten"],
+        ["DOUT", "GPIO21", "I2S (vom Amp2 ungenutzt für reine Wiedergabe, trotzdem verbinden)"],
+        ["SDA", "GPIO2", "I2C-Datenleitung (Verstärkersteuerung)"],
+        ["SCL", "GPIO3", "I2C-Taktleitung (Verstärkersteuerung)"],
+    ],
+    col_widths=[45 * mm, 40 * mm, 75 * mm],
+))
+story.append(spec_table(
+    [
+        ["HiFiBerry Amp2", "Pi-Pin (physisch)", "Zweck"],
+        ["5V", "Pin 2 UND Pin 4", "Versorgung des kompletten Verstärkers inkl. Lautsprecherausgang"],
+        ["GND", "mind. 1-2 GND-Pins (z.B. 6, 9, 14)", "Masse"],
+    ],
+    col_widths=[45 * mm, 55 * mm, 60 * mm],
+))
+story.append(note_box(
+    "Wichtig, unabhängig von echter Hardware ableitbar (Elektrotechnik, nicht projektspezifisch "
+    "getestet): Anders als bei RC522/Tastern/Encodern, die nur Milliampere-Signalpegel führen, "
+    "zieht der Amp2 seine komplette Lautsprecher-Ausgangsleistung direkt aus der 5V-Schiene "
+    "(Class-D-Verstärker) - bei Zimmerlautstärke können das ohne Weiteres über 1A sein, "
+    "kurzzeitig bei Bässen/hoher Lautstärke auch mehr. Für diese eine Verbindung NICHT dieselben "
+    "dünnen Jumper-/Dupont-Kabel wie für RC522/Taster/Encoder verwenden (typischerweise nur für "
+    "&lt; 1A ausgelegt): beide 5V-Pins UND mehrere GND-Pins parallel nutzen, wenn möglich kurze, "
+    "dickere Leitungen (z.B. AWG 20 oder dicker) für genau diese beiden Adern. Nach dem "
+    "Zusammenbau prüfen: vcgencmd get_throttled sollte 0x0 zeigen (keine Unterspannung); bei "
+    "hörbarem Verzerren/Aussetzern unter Last zuerst hier ansetzen. Kein 3.3V-Pin nötig - der "
+    "Amp2 hat kein ID_SD/ID_SC-EEPROM (der Overlay wird manuell eingetragen, s.o.). Die genaue "
+    "Stromaufnahme steht im Datenblatt des Amp2 (HiFiBerry-eigene Seite) - vor dem endgültigen "
+    "Verkabeln dort noch einmal gegenprüfen.",
+    kind="warn",
+))
 
 # ============================================================ 3. RC522
 h1("3. RC522 RFID-Leser (Hardware-SPI0)")
@@ -556,6 +651,15 @@ story.append(note_box(
     "bei Bedarf neu, damit die neue Priorität auch ohne kompletten Neustart greift.",
 ))
 story.append(note_box(
+    "Hinweis für den Pi 5: Der komplette Rest dieses Abschnitts (Nice-Fix, die folgenden "
+    "Korrekturen/Vermutungen zum Knacken, die entfernten Dauerschleifen) wurde ausschließlich an "
+    "einem Pi 3B+ untersucht - \"die knappe CPU eines Pi 3B+\" trifft auf einen Pi 5 (deutlich "
+    "schnellere CPU, zudem echte GPU-Beschleunigung für Chromium grundsätzlich möglich) so "
+    "womöglich gar nicht mehr zu. Die Priorisierung selbst bleibt harmlos, ob sie auf einem Pi 5 "
+    "überhaupt noch etwas bewirkt ist offen - noch nicht an echter Pi-5-Hardware verifiziert.",
+    kind="warn",
+))
+story.append(note_box(
     "Korrektur, an echter Hardware geprüft: Dieser Nice-Fix allein hat ein durchgehendes "
     "Knacken bei Wiedergabe NICHT behoben - mit dem Fix aktiv knackte es an echter Hardware "
     "weiterhin. vcgencmd get_throttled zeigte 0x0 (keine Unterspannung/Drosselung), top zeigte "
@@ -610,7 +714,7 @@ on_cover = partial(
     kicker="OWLBOX",
     title=["Verkabelung"],
     subtitle=["Vollständige Hardware-Referenz:", "Pinbelegung, DSI-Display, HiFiBerry, Netzwerk-Fallback."],
-    meta_lines=["Hardware-Aufbau Raspberry Pi 3B+", "Schnelleinstieg: OwlBox-Schnellstart.pdf"],
+    meta_lines=["Hardware-Aufbau Raspberry Pi 5", "Schnelleinstieg: OwlBox-Schnellstart.pdf"],
 )
 on_page = partial(draw_header_footer, title=TITLE)
 

@@ -46,7 +46,7 @@ audio:
 rfid:
   reader: mfrc522   # mfrc522 | simulated
   # Real hardware SPI0 (bus=0, device=0/CE0, BCM 11/10/9/8/7) - free on the
-  # standard hardware, the 7" DSI display doesn't use SPI0, and SPI1 stays
+  # standard hardware, the DSI display doesn't use SPI0, and SPI1 stays
   # reserved for the HiFiBerry's I2S audio. Only the reset pin below is a
   # plain GPIO. See docs/hardware.md for the exact wiring.
   reset_pin: 26      # BCM numbering - verify against your display's pinout, see docs/hardware.md

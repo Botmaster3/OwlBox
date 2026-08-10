@@ -7,7 +7,25 @@ qrcode>=7.4
 gpiozero>=2.0
 mfrc522>=0.0.7
 spidev>=3.6
-RPi.GPIO>=0.7.1; platform_machine == "armv6l" or platform_machine == "armv7l" or platform_machine == "aarch64"
+# rpi-lgpio, NOT the real "RPi.GPIO" PyPI package - it installs into the exact
+# same `RPi.GPIO` import path (drop-in, same author as gpiozero itself) but is
+# backed by `lgpio` under the hood instead of talking to the GPIO chip
+# directly. Needed because the real RPi.GPIO does not support a Raspberry Pi
+# 5 at all (its board-detection table predates the Pi 5's RP1 GPIO chip;
+# `import RPi.GPIO` raises "This module can only be run on a Raspberry Pi!"
+# there even though it's actually running on one) - and the third-party
+# `mfrc522` package does an unconditional `import RPi.GPIO as GPIO` at module
+# level (see owlbox/rfid/mfrc522_reader.py for why that reference then gets
+# monkey-patched to our own owlbox/rfid/lgpio_compat.py right after, rather
+# than actually used) - so importing `mfrc522` at all would already fail on a
+# Pi 5 with the real package installed, before any of our own code runs.
+# rpi-lgpio and the real RPi.GPIO cannot both be installed in the same venv
+# (both claim the same import path) - this project only ever wants this one.
+# Not yet verified on real Pi 5 hardware in this project (still Pi 3B+ at
+# the time of writing this), but confirmed unaffected on the previous Pi
+# 3B+/4 hardware: rpi-lgpio supports those the same way lgpio itself always
+# has, it's the official recommended replacement package, not a fork/hack.
+rpi-lgpio>=0.4; platform_machine == "armv6l" or platform_machine == "armv7l" or platform_machine == "aarch64"
 # gpiozero's preferred pin factory on current Raspberry Pi OS kernels - without it,
 # gpiozero silently falls back to RPi.GPIO's sysfs-based edge detection, which
 # fails outright ("Failed to add edge detection") on recent (6.6+) kernels.

@@ -402,6 +402,20 @@
       diese Adapter-Platine geführt werden. Kein Backlight-Transistor mehr nötig - die
       Display-Helligkeit läuft intern über die Display-Adapterplatine, s. hardware.md.
     </p>
+    <div class="warn" style="margin-top: 20px;">
+      <strong>Veraltete Grundannahme, noch nicht überarbeitet:</strong> Diese ganze Seite geht
+      unten noch davon aus, dass Pi und HiFiBerry direkt gestapelt bleiben und nur RC522/Taster/
+      Encoder über den Pass-Through-Header des HiFiBerry zur Adapter-Platine geführt werden. Für
+      den aktuellen Aufbau (Pi 5 mit aktiver Kühlung) stimmt das nicht mehr - der HiFiBerry selbst
+      kommt jetzt ebenfalls vom Stapel herunter und muss zusätzlich über die Adapter-Platine
+      laufen (I2S BCLK/LRCLK/DIN/DOUT, I2C SDA/SCL, plus eine belastbare 5V/GND-Zuleitung für den
+      Verstärker - siehe <code>docs/hardware.md</code>, Abschnitt „HiFiBerry Amp2" →
+      „Nicht mehr direkt aufgesteckt: Anschluss über Adapter-Platine", dort auch der Hinweis zur
+      nötigen Kabeldicke für die Stromversorgung). Das Stapel-Diagramm, die Pin-Legende und der
+      Warnhinweis weiter unten auf dieser Seite spiegeln das noch <strong>nicht</strong> wider - bis zur
+      Überarbeitung ist <code>docs/hardware.md</code> die maßgebliche, aktuelle Referenz für die
+      HiFiBerry-Verkabelung, nicht diese Seite.
+    </div>
   </header>
 
   <section>
@@ -459,8 +473,8 @@
         <span class="through-label">steckt direkt auf - kein Kabel</span>
       </div>
       <div class="stack-board pi">
-        <div class="label">Raspberry Pi 3B+</div>
-        <div class="sub">40-Pin-GPIO-Header</div>
+        <div class="label">Raspberry Pi 5</div>
+        <div class="sub">40-Pin-GPIO-Header (Diagramm noch nicht auf den nicht mehr gestapelten HiFiBerry aktualisiert, s. Hinweis oben)</div>
       </div>
     </div>
     <div class="cable-row">

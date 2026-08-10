@@ -11,8 +11,15 @@ fehlschlägt und von Hand nachgeholt werden muss.
 
 Zielhardware:
 
-- Raspberry Pi 3B+
-- HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip)
+- **Raspberry Pi 5 (4GB)** mit aktiver Kühlung (siehe eigener Abschnitt
+  unten). Ersetzt das früher hier dokumentierte Pi 3B+ - dessen vollständig
+  verifiziertes Setup ist noch in der Git-Historie dieser Datei zu finden,
+  falls je wieder gebraucht. Noch **nicht an echter Hardware verifiziert**.
+- HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip) - sitzt wegen des
+  Kühlkörpers **nicht mehr direkt gestapelt** auf dem 40-Pin-Header, sondern
+  hängt über eine eigene Adapter-Platine dran, per Jumperkabel wie RC522/
+  Taster/Encoder auch (siehe eigener Abschnitt unter „HiFiBerry Amp2"
+  unten). Noch **nicht an echter Hardware verifiziert**.
 - RC522 RFID-Modul (SPI, 13.56 MHz)
 - **Waveshare 5" DSI Capacitive Touch Display** (Modell 5-DSI-TOUCH-A,
   720×1280, DSI-Flachbandkabel für Bild und Touch, plus 4 Jumperkabel für
@@ -28,7 +35,10 @@ Zielhardware:
 
 Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 `config/config.example.yaml`. Wer andere Pins verdrahtet, passt einfach die
-`gpio:`/`rfid:` Sektion in `config/config.yaml` an.
+`gpio:`/`rfid:` Sektion in `config/config.yaml` an. Die physischen 40-Pin-
+Header-Positionen sind über alle Pi-Modelle mit 40-Pin-Header hinweg identisch
+(auch der Pi 5) - nur *welcher Linux-`gpiochip`* dahintersteckt, unterscheidet
+sich, siehe „Raspberry Pi 5: was sich geändert hat" unten.
 
 **GPIO-Pinbelegung als Grafik**: `docs/owlbox-gpio-pinout.svg` zeigt den
 kompletten 40-Pin-Header (physische Nummerierung wie auf der Pi-Platine) mit
@@ -37,20 +47,88 @@ per Jumperkabel wie in diesem Dokument beschrieben. Die Display-Zeilen dort
 zeigen weiterhin nur die generische DSI-Display-Stromversorgung/-I2C-Adern
 (5V/GND/SDA/SCL) - die exakte Overlay-/Auflösungs-Konfiguration für das
 aktuelle Waveshare-Display steht ausschließlich hier im Text, nicht in der
-Grafik.
+Grafik. Die Grafik zeigt noch nicht die neuen HiFiBerry-Adern (I2S/I2C/
+Strom) auf der Adapter-Platine - dafür bis auf Weiteres die Tabelle im
+HiFiBerry-Abschnitt unten verwenden, die Grafik selbst ist dafür noch nicht
+aktualisiert.
 
 **Für den Aufbau mit eigener Adapter-Platine:** `docs/owlbox-wiring-diagram.svg`
 (Gesamtaufbau), `docs/owlbox-adapter-layout.svg` (Platinenlayout-Vorschlag) und
 `docs/hat-wiring.html` (kompletter Schaltplan, im Browser öffnen) zeigen eine
 Bauvariante, die RC522, Taster und beide Encoder statt per direktem
 Jumperkabel über eine eigene, separat verdrahtete Adapter-Platine anschließt
-- aktuell für RC522 (Hardware-SPI0/CE0). Das Display selbst
-hängt dabei weiterhin über sein eigenes DSI-Kabel direkt am Pi, nicht an der
-Adapter-Platine - nur seine vier Strom-/I2C-Adern lassen sich optional mit
-über die Adapter-Platine führen. Nur relevant, wer tatsächlich eine eigene
-Adapter-Platine bauen will; für den normalen Aufbau (direkte Jumperkabel,
-kein eigenes Board) sind `docs/owlbox-gpio-pinout.svg` und die Tabellen
-unten die maßgebliche Referenz.
+- aktuell für RC522 (Hardware-SPI0/CE0). **Der HiFiBerry Amp2 gehört jetzt
+ebenfalls auf diese Adapter-Platine** (s.o.) - die drei genannten
+Diagramme zeigen das aber noch **nicht**, nur die Tabelle im HiFiBerry-
+Abschnitt unten ist dafür aktuell; die Diagramme selbst folgen, sobald der
+tatsächliche Aufbau feststeht. Das Display hängt weiterhin über sein
+eigenes DSI-Kabel direkt am Pi, nicht an der Adapter-Platine - nur seine
+vier Strom-/I2C-Adern lassen sich optional mit über die Adapter-Platine
+führen. Nur relevant, wer tatsächlich eine eigene Adapter-Platine bauen
+will; für den normalen Aufbau (direkte Jumperkabel, kein eigenes Board)
+sind `docs/owlbox-gpio-pinout.svg` und die Tabellen unten die maßgebliche
+Referenz.
+
+## Raspberry Pi 5: was sich geändert hat
+
+**Dieser komplette Abschnitt ist noch nicht an echter Hardware
+verifiziert** - die Software-Anpassungen unten sind vorbereitet, aber
+dieses Projekt lief zum Zeitpunkt des Schreibens noch auf einem Pi 3B+.
+
+- **GPIO-Chip-Nummer:** Auf einem Pi 3B+/4 sitzen die 40-Pin-Header-GPIOs
+  direkt auf dem SoC und damit auf `/dev/gpiochip0`. Auf einem Pi 5 hängen
+  sie stattdessen hinter einem separaten Chip (RP1), der je nach Kernel als
+  `/dev/gpiochip4` auftaucht statt als `gpiochip0`. `owlbox/rfid/
+  lgpio_compat.py` (der RC522-Reset-Pin) erkennt das jetzt automatisch -
+  exakt dieselbe Erkennung, die `gpiozero`s eigene `lgpio`-Pin-Factory
+  bereits für die Taster/Encoder verwendet (Revision-Code prüfen, nur auf
+  `gpiochip4` wechseln, wenn der auch tatsächlich existiert), damit beide
+  Hälften der GPIO-Ansteuerung dieses Projekts immer denselben Chip für
+  dieselben physischen Pins verwenden.
+- **`RPi.GPIO` → `rpi-lgpio`:** Die echte `RPi.GPIO`-Paket kennt den Pi 5
+  gar nicht (sein Board-Erkennungscode ist älter als der Pi 5) - `import
+  RPi.GPIO` bricht auf einem Pi 5 mit „This module can only be run on a
+  Raspberry Pi!" ab, obwohl es genau darauf läuft. Weil die Drittanbieter-
+  Bibliothek `mfrc522` beim Importieren unbedingt `import RPi.GPIO as GPIO`
+  ausführt (bevor dieses Projekt die Chance hat, das auf `lgpio`
+  umzuleiten, s.u.), würde allein das Importieren von `mfrc522` auf einem
+  Pi 5 schon fehlschlagen. `requirements.txt` installiert seit dieser
+  Erkenntnis `rpi-lgpio` statt der echten `RPi.GPIO` - ein Drop-in-Ersatz
+  (selber Autor wie `gpiozero`), der sich unter demselben Importnamen
+  installiert, aber intern auf `lgpio` statt auf einen direkten
+  Kernel-Zugriff setzt, der auf dem Pi 5 gar nicht mehr existiert.
+- **HiFiBerry-Overlay:** `dtoverlay=hifiberry-dacplus-std` statt
+  `dtoverlay=hifiberry-dacplus` - siehe HiFiBerry-Abschnitt unten.
+  `install.sh` wählt das automatisch anhand von `/proc/device-tree/model`.
+- **Aktive Kühlung:** siehe eigener Absatz unten - läuft über den
+  eingebauten 4-Pin-Lüfteranschluss, keine config.txt-/GPIO-Änderung nötig.
+- **Stromversorgung:** Der Pi 5 empfiehlt offiziell ein 5V/5A-USB-C-PD-
+  Netzteil (27W) - mit HiFiBerry Amp2 (kann bei Zimmerlautstärke durchaus
+  über 1A aus der 5V-Schiene ziehen) und aktivem Lüfter zusammen an einem
+  schwächeren Netzteil (die alten 5V/2,5-3A-Netzteile vom Pi-3B+-Aufbau)
+  drohen Unterspannungswarnungen/-drosselung. Ein 3A-Netzteil reicht laut
+  Raspberry Pi selbst nur bei geringerer Peripherie-Last - für diesen
+  Aufbau (Amp2 unter Last plus Lüfter) das offizielle 27W-Netzteil
+  verwenden.
+
+### Aktive Kühlung
+
+Verbaut: **GeeekPi Low-Profile Plus CPU Cooler** (Aluminium-Kühlkörper mit
+Lüfter, für Pi 5 4GB/8GB/16GB). Steckt wie der offizielle Raspberry-Pi-
+„Active Cooler" auf den eigenen **4-Pin-JST-Lüfteranschluss** des Pi 5
+(rechts oben, zwischen 40-Pin-Header und den USB-2-Ports) - **kein GPIO-Pin,
+keine config.txt-Zeile nötig**. Die Drehzahl regelt die Pi-5-Firmware selbst
+temperaturabhängig (Stufen bei ca. 60°C/67,5°C/75°C), unabhängig vom
+Betriebssystem. Damit ist die Kühlung für dieses Projekt reine Mechanik -
+sie taucht in keiner der GPIO-Tabellen unten auf und braucht keine eigene
+`config.yaml`-Einstellung.
+
+**Nur falls stattdessen doch einmal ein anderer, GPIO-verdrahteter Lüfter
+verbaut wird** (nicht der hier tatsächlich verbaute, nur zur Einordnung):
+das bräuchte einen zusätzlichen freien BCM-Pin (siehe GPIO-Belegung unten,
+welche noch frei sind) plus einen eigenen Fan-Overlay/eine eigene
+Steuerlogik - für den GeeekPi-Kühler oben nicht relevant, der läuft komplett
+über den festen 4-Pin-Anschluss.
 
 ## Anschluss: 5" Waveshare DSI Touch Display
 
@@ -143,6 +221,8 @@ zweite Encoder kann so lange unverdrahtet bleiben.
 | Encoder CLK                     | 1       | Lautstärke-Encoder (17 wäre jetzt auch wieder frei, s.o.) |
 | Encoder DT                      | 27      | Lautstärke-Encoder  |
 | Encoder SW                      | 22      | Lautstärke-Encoder  |
+| HiFiBerry 5V (Speiseleitung)     | Pin 2 und/oder 4 (physisch, nicht BCM) | HiFiBerry - jetzt über Adapter-Platine statt direkt gestapelt, s.u. |
+| HiFiBerry GND                   | z.B. Pin 6/9/14 (physisch) | HiFiBerry - über Adapter-Platine, s.u. |
 | Display-Backlight               | -       | läuft über Sysfs, kein GPIO mehr - Backlight-Dimmen aktuell nicht angeschlossen, s.o. |
 | Helligkeits-Encoder CLK         | 23      | Helligkeits-Encoder (aktuell ohne Wirkung, s.o.) |
 | Helligkeits-Encoder DT          | 12      | Helligkeits-Encoder (aktuell ohne Wirkung, s.o.) |
@@ -158,6 +238,11 @@ In `/boot/firmware/config.txt` (bzw. `/boot/config.txt` auf älteren Images):
 dtparam=audio=off
 dtoverlay=hifiberry-dacplus
 ```
+
+**Auf dem Pi 5 stattdessen `dtoverlay=hifiberry-dacplus-std`** (noch nicht
+an echter Hardware verifiziert, siehe „Raspberry Pi 5: was sich geändert
+hat" oben) - `install.sh` wählt das automatisch anhand des erkannten
+Boards, hier zur Referenz falls von Hand eingetragen wird.
 
 **Wichtig, an echter Hardware bestätigt (Ursache eines tagelangen
 "Wiedergabe knackt/fragmentiert trotz digital korrektem Signalweg"-Rätsels):**
@@ -290,12 +375,67 @@ zwei 2-polige Federklemmen direkt auf der Platine (eine pro Kanal, jeweils
 - Am Lautsprecher selbst hängt der Anschluss vom jeweiligen Modell ab
   (blanker Draht, Flachsteckhülsen/Bananas oder Lötfahnen).
 
+### Nicht mehr direkt aufgesteckt: Anschluss über Adapter-Platine
+
+**Dieser Abschnitt ist noch nicht an echter Hardware verifiziert.** Wegen
+des Kühlkörpers auf dem Pi 5 sitzt der Amp2 nicht mehr direkt gestapelt auf
+dem 40-Pin-Header, sondern hängt über Jumperkabel an einer eigenen,
+separat verdrahteten Adapter-Platine - genau demselben Eigenbau-Muster
+(Lochraster + Jumperkabel), das dieses Projekt für RC522/Taster/Encoder
+schon einsetzt (`docs/hat-wiring.html`). Der Amp2 selbst bleibt dabei
+unverändert - es ändert sich nur, *wie* seine Pins den Pi erreichen.
+
+Alle sechs Signal-/Steuerleitungen, wie oben schon einzeln erwähnt:
+
+| HiFiBerry Amp2 | Pi-Pin (BCM) | Zweck |
+|---|---|---|
+| BCLK | GPIO18 | I2S-Bit-Clock |
+| LRCLK/WS | GPIO19 | I2S-Wortauswahl (links/rechts) |
+| DIN | GPIO20 | I2S-Audiodaten |
+| DOUT | GPIO21 | I2S (vom Amp2 ungenutzt für reine Wiedergabe, trotzdem verbinden) |
+| SDA | GPIO2 | I2C-Datenleitung (Verstärkersteuerung, Lautstärke/Mute-Register) |
+| SCL | GPIO3 | I2C-Taktleitung (Verstärkersteuerung) |
+
+Dazu **Stromversorgung, getrennt von den Signalleitungen zu betrachten**:
+
+| HiFiBerry Amp2 | Pi-Pin (physisch) | Zweck |
+|---|---|---|
+| 5V | Pin 2 und Pin 4 (beide, siehe unten) | Versorgung des kompletten Verstärkers inkl. Lautsprecherausgang |
+| GND | mindestens 1-2 der GND-Pins (z.B. 6, 9, 14) | Masse |
+
+**Wichtig, unabhängig von echter Hardware ableitbar (Elektrotechnik, nicht
+projektspezifisch getestet):** Anders als bei RC522/Tastern/Encodern, die
+nur Milliampere-Signalpegel führen, zieht der Amp2 seine komplette
+Lautsprecher-Ausgangsleistung direkt aus der 5V-Schiene (Class-D-Verstärker
+- die Ausgangsleistung kommt praktisch 1:1 aus der Versorgungsspannung,
+nicht aus einer separaten Verstärkerstufe). Bei Zimmerlautstärke können das
+ohne Weiteres deutlich über 1A sein, kurzzeitig bei Bässen/hoher Lautstärke
+auch mehr. Für diese eine Verbindung **nicht** dieselben dünnen
+Jumper-/Dupont-Kabel wie für RC522/Taster/Encoder verwenden (typischerweise
+nur für < 1A ausgelegt, spürbarer Spannungsabfall bei mehr) - stattdessen:
+
+- Beide 5V-Pins (2 und 4) UND mehrere GND-Pins parallel nutzen, nicht nur je
+  einen - reduziert den Übergangswiderstand.
+- Wenn möglich kurze, dickere Leitungen (z.B. AWG 20 oder dicker) statt
+  Standard-Dupont-Kabel für genau diese beiden Adern.
+- Nach dem Zusammenbau prüfen: `vcgencmd get_throttled` sollte `0x0` zeigen
+  (keine Unterspannung); bei hörbarem Verzerren/Aussetzern unter Last zuerst
+  hier ansetzen, bevor andere Ursachen gesucht werden.
+- **Kein 3.3V-Pin nötig** - der Amp2 hat kein `ID_SD`/`ID_SC`-EEPROM, über
+  das dieses Projekt ihn erkennen lässt (der Overlay wird manuell in
+  `config.txt` eingetragen, s.o.), entsprechend bleibt auch der sonst dafür
+  reservierte 3.3V-Pin unbenutzt.
+
+Die genaue Stromaufnahme steht im Datenblatt des Amp2 (HiFiBerry-eigene
+Seite) - vor dem endgültigen Verkabeln dort noch einmal gegenprüfen, welcher
+Peak-Strom bei voller Lautstärke/4-Ω-Last tatsächlich zu erwarten ist.
+
 ## RC522 RFID-Leser (Hardware-SPI0)
 
 Der RC522 hängt an SPI0, dem Hardware-SPI-Bus des Pi (`/dev/spidev0.0`,
 CE0). Grund, warum das möglich ist: SPI1 liegt auf GPIO18-21, exakt den
-Pins, die der HiFiBerry für I2S-Ton braucht - SPI0 ist mit dem offiziellen
-7"-DSI-Touch-Display aber frei (anders als beim frühren SPI-Display, dessen
+Pins, die der HiFiBerry für I2S-Ton braucht - SPI0 ist mit dem aktuellen
+DSI-Touch-Display aber frei (anders als beim frühren SPI-Display, dessen
 Overlay beide Chip-Selects von SPI0 belegte). SPI selbst muss aktiviert
 sein (macht `scripts/install.sh` via `raspi-config nonint do_spi 0`).
 
@@ -328,6 +468,19 @@ Prozess außerdem selbst für Pins, die sonst nichts anfasst, sofort „already
 in use"-Warnungen - ein Zeichen, dass es auf diesem Kernel generell nicht
 sauber läuft. Deshalb läuft die komplette GPIO-Ansteuerung dieses Projekts
 konsistent über `lgpio`, nirgends mehr über `RPi.GPIO`.
+
+**Auf dem Pi 5 kommt eine zweite, noch nicht an echter Hardware verifizierte
+Ebene desselben Themas dazu:** die echte `RPi.GPIO`-Bibliothek unterstützt
+den Pi 5 gar nicht - `import RPi.GPIO` bricht dort ab, bevor `mfrc522`
+überhaupt fertig importiert ist, also bevor dieses Projekt die Chance hat,
+irgendetwas umzuleiten. `requirements.txt` installiert deshalb `rpi-lgpio`
+(ein Drop-in-Ersatz, installiert sich unter demselben `RPi.GPIO`-Namen,
+läuft aber selbst schon auf `lgpio`) statt der echten `RPi.GPIO` - siehe
+„Raspberry Pi 5: was sich geändert hat" oben für den genauen Grund.
+Zusätzlich wählt `owlbox/rfid/lgpio_compat.py` jetzt automatisch den
+richtigen `lgpio`-Chip (`gpiochip4` statt `gpiochip0` auf einem Pi 5, falls
+vorhanden) - exakt dieselbe Erkennung, die `gpiozero`s eigene
+`lgpio`-Pin-Factory für die Taster/Encoder ohnehin schon macht.
 
 **Historischer Hintergrund zum Lautstärke-Encoder auf GPIO1 statt GPIO17:**
 Das frühere SPI-Display beanspruchte zusätzlich zu SPI0 CE0/CE1 auch
@@ -527,6 +680,17 @@ Prioritätsdifferenz konkurrieren Chromium und `mpv` (läuft in
 *negativer*, also höhere Priorität als Standard, würde das) - `install.sh`
 trägt das automatisch ein und startet `owlbox-kiosk.service` bei Bedarf
 neu, damit die neue Priorität auch ohne kompletten Neustart greift.
+
+**Hinweis für den Pi 5:** Der komplette Rest dieses Abschnitts (Nice-Fix,
+die folgenden zwei Korrekturen/Vermutungen zum Knacken, die entfernten
+Dauerschleifen) wurde ausschließlich an einem Pi 3B+ untersucht - "die
+knappe CPU eines Pi 3B+" trifft auf einen Pi 5 (deutlich schnellere CPU,
+zudem echte GPU-Beschleunigung für Chromium grundsätzlich möglich) so
+womöglich gar nicht mehr zu. Die Priorisierung selbst bleibt harmlos und
+wird nicht entfernt, aber ob sie auf einem Pi 5 überhaupt noch etwas
+bewirkt (oder das zugrundeliegende Knack-Problem auf dieser Hardware
+überhaupt noch auftritt) ist offen - noch nicht an echter Pi-5-Hardware
+verifiziert.
 
 **Korrektur, an echter Hardware geprüft:** Dieser Nice-Fix allein hat das
 durchgehende Knacken bei Wiedergabe *nicht* behoben - an echter Hardware

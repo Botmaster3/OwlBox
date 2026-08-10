@@ -115,3 +115,113 @@ def test_close_chip_frees_every_claimed_pin_and_closes_the_handle(fake_lgpio):
     freed = {c[2] for c in fake_lgpio.calls if c[0] == "gpio_free"}
     assert freed == {4, 15}
     assert ("gpiochip_close", 0) in fake_lgpio.calls
+
+
+def test_explicit_chip_argument_bypasses_detection(fake_lgpio):
+    # An explicit chip= always wins, no revision/gpiochip4 probing at all -
+    # covers callers (tests, or a future manual override) that don't want
+    # auto-detection.
+    from owlbox.rfid.lgpio_compat import LgpioCompat
+
+    LgpioCompat(chip=7)
+
+    assert ("gpiochip_open", 7) in fake_lgpio.calls
+
+
+def test_detect_chip_defaults_to_0_when_no_revision_is_readable(fake_lgpio, monkeypatch, tmp_path):
+    # The sandbox/CI environment this test suite normally runs in has neither
+    # /proc/device-tree nor a Pi-style /proc/cpuinfo - _detect_chip() must
+    # degrade to the historical default rather than raise.
+    from owlbox.rfid import lgpio_compat
+
+    monkeypatch.setattr(lgpio_compat, "_get_pi_revision", lambda: None)
+
+    assert lgpio_compat._detect_chip() == 0
+
+
+def test_detect_chip_picks_4_on_a_pi5_revision_when_gpiochip4_exists(fake_lgpio, monkeypatch):
+    from owlbox.rfid import lgpio_compat
+
+    # 0x17 in bits 4-11 is BCM2712 (Pi 5) in the new-style revision code -
+    # the rest of the bits are arbitrary/don't matter for this check.
+    monkeypatch.setattr(lgpio_compat, "_get_pi_revision", lambda: 0xC04170)
+    monkeypatch.setattr(lgpio_compat.os.path, "exists", lambda path: path == "/dev/gpiochip4")
+
+    assert lgpio_compat._detect_chip() == 4
+
+
+def test_detect_chip_falls_back_to_0_on_pi5_if_gpiochip4_is_missing(fake_lgpio, monkeypatch):
+    # Matches gpiozero's own guard: a kernel where the RP1 chip enumerates
+    # back at gpiochip0 (no /dev/gpiochip4 node at all) must not still force
+    # chip 4 just because the revision says Pi 5.
+    from owlbox.rfid import lgpio_compat
+
+    monkeypatch.setattr(lgpio_compat, "_get_pi_revision", lambda: 0xC04170)
+    monkeypatch.setattr(lgpio_compat.os.path, "exists", lambda path: False)
+
+    assert lgpio_compat._detect_chip() == 0
+
+
+def test_detect_chip_defaults_to_0_on_a_non_pi5_revision(fake_lgpio, monkeypatch):
+    # 0x11 is a Pi 3B+ (BCM2837B0) - must never pick chip 4, even if
+    # /dev/gpiochip4 happens to exist for some unrelated reason.
+    from owlbox.rfid import lgpio_compat
+
+    monkeypatch.setattr(lgpio_compat, "_get_pi_revision", lambda: 0xA020D3)
+    monkeypatch.setattr(lgpio_compat.os.path, "exists", lambda path: True)
+
+    assert lgpio_compat._detect_chip() == 0
+
+
+def test_get_pi_revision_reads_device_tree_first(fake_lgpio, monkeypatch, tmp_path):
+    from owlbox.rfid import lgpio_compat
+
+    dt_path = tmp_path / "linux,revision"
+    dt_path.write_bytes((0xC04170).to_bytes(4, "big"))
+
+    real_open = open
+
+    def fake_open(path, mode="r", *args, **kwargs):
+        if path == "/proc/device-tree/system/linux,revision":
+            return real_open(dt_path, mode, *args, **kwargs)
+        raise AssertionError(f"unexpected open: {path}")
+
+    monkeypatch.setattr(lgpio_compat, "open", fake_open, raising=False)
+
+    assert lgpio_compat._get_pi_revision() == 0xC04170
+
+
+def test_get_pi_revision_falls_back_to_cpuinfo(fake_lgpio, monkeypatch):
+    from owlbox.rfid import lgpio_compat
+
+    import io
+
+    def fake_open(path, mode="r", *args, **kwargs):
+        if path == "/proc/device-tree/system/linux,revision":
+            raise FileNotFoundError(path)
+        if path == "/proc/cpuinfo":
+            return io.StringIO("Hardware\t: BCM2835\nRevision\t: c04170\n")
+        raise AssertionError(f"unexpected open: {path}")
+
+    monkeypatch.setattr(lgpio_compat, "open", fake_open, raising=False)
+
+    assert lgpio_compat._get_pi_revision() == 0xC04170
+
+
+def test_get_pi_revision_strips_the_overvolted_prefix_from_cpuinfo(fake_lgpio, monkeypatch):
+    # Old-style 4-hex-digit revision "000d" (Pi Model B rev 2), overvolted -
+    # "100" gets prepended ("100000d"); the real code is the last 4 chars.
+    from owlbox.rfid import lgpio_compat
+
+    import io
+
+    def fake_open(path, mode="r", *args, **kwargs):
+        if path == "/proc/device-tree/system/linux,revision":
+            raise FileNotFoundError(path)
+        if path == "/proc/cpuinfo":
+            return io.StringIO("Revision\t: 100000d\n")
+        raise AssertionError(f"unexpected open: {path}")
+
+    monkeypatch.setattr(lgpio_compat, "open", fake_open, raising=False)
+
+    assert lgpio_compat._get_pi_revision() == 0x000D

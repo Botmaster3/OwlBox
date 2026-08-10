@@ -17,6 +17,8 @@ third-party `mfrc522` package actually make on a `GPIO`-like object.
 """
 from __future__ import annotations
 
+import os
+
 import lgpio
 
 BCM = "BCM"
@@ -24,6 +26,55 @@ OUT = "OUT"
 IN = "IN"
 HIGH = 1
 LOW = 0
+
+# On a Raspberry Pi 5, the 40-pin header's GPIOs are not on the SoC's own
+# gpiochip0 anymore - they're behind the separate RP1 southbridge chip,
+# which (on the kernels seen so far) enumerates as a *later* gpiochip, not
+# necessarily 0. NOT yet verified on real Pi 5 hardware in this project
+# (still Pi 3B+ at the time of writing this) - this mirrors, on purpose,
+# the exact same detection gpiozero's own installed LGPIOFactory already
+# does (see `gpiozero/pins/lgpio.py`/`local.py` in the installed package -
+# `chip = 4 if (revision & 0xff0) >> 4 == 0x17 and
+# os.path.exists('/dev/gpiochip4') else 0`, 0x17 being the Pi 5's BCM2712
+# SoC code in the revision field). Duplicated here, rather than imported
+# from gpiozero, to keep this shim dependency-free - but it MUST keep
+# agreeing with gpiozero's own choice, since gpiozero drives the buttons/
+# encoders on the very same physical header at the very same time (see
+# owlbox/controls/gpio_controls.py) - if the two ever picked different
+# chips for the same Pi, pin numbers would silently mean different physical
+# pins between the two halves of this project's GPIO usage.
+_PI5_SOC_CODE = 0x17
+
+
+def _get_pi_revision() -> "int | None":
+    """Same two-source lookup gpiozero's own `get_pi_revision()` uses -
+    device-tree first (present on any Bookworm+ image), `/proc/cpuinfo` as
+    the older fallback. Returns None (never raises) if neither is readable,
+    e.g. when not actually running on a Pi at all - `_detect_chip()` below
+    then just falls back to the historical default, chip 0."""
+    try:
+        with open("/proc/device-tree/system/linux,revision", "rb") as f:
+            return int.from_bytes(f.read(4), "big")
+    except OSError:
+        pass
+    try:
+        with open("/proc/cpuinfo") as f:
+            for line in f:
+                if line.startswith("Revision"):
+                    revision = line.split(":")[1].strip().lower()
+                    if revision.startswith("100"):  # "overvolted" marker prefix
+                        revision = revision[-4:]
+                    return int(revision, 16)
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def _detect_chip() -> int:
+    revision = _get_pi_revision()
+    if revision is not None and (revision & 0xFF0) >> 4 == _PI5_SOC_CODE and os.path.exists("/dev/gpiochip4"):
+        return 4
+    return 0
 
 
 class LgpioCompat:
@@ -36,7 +87,9 @@ class LgpioCompat:
     HIGH = HIGH
     LOW = LOW
 
-    def __init__(self, chip: int = 0):
+    def __init__(self, chip: "int | None" = None):
+        if chip is None:
+            chip = _detect_chip()
         self._handle = lgpio.gpiochip_open(chip)
         self._mode = None
         self._claimed: set[int] = set()

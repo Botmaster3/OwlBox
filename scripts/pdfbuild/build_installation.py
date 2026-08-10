@@ -106,10 +106,17 @@ story.append(toc)
 h1("1. Was du brauchst")
 h2("1.1 Hardware")
 bullets([
-    "Raspberry Pi 3B+",
+    "Raspberry Pi 5 (4GB) mit aktiver Kühlung (z.B. GeeekPi Low-Profile Plus CPU Cooler, steckt "
+    "auf den eingebauten 4-Pin-Lüfteranschluss, kein GPIO nötig) - ersetzt das früher hier "
+    "dokumentierte Pi 3B+. Noch nicht an echter Hardware verifiziert, siehe OwlBox-Verkabelung.pdf "
+    "Kapitel 2.",
     "microSD-Karte, mindestens 8 GB (16 GB oder mehr empfohlen), Class 10",
-    "Passendes Netzteil (5V/2,5A für den Pi selbst; bei aktivem HiFiBerry-Verstärker eher 5V/3A)",
-    "HiFiBerry Amp2 (I2S-Verstärker-HAT) + Lautsprecher",
+    "Offizielles Pi-5-Netzteil empfohlen (5V/5A USB-C PD, 27W) - mit HiFiBerry-Verstärker unter "
+    "Last und aktivem Lüfter zusammen reicht ein schwächeres Netzteil laut Raspberry Pi ggf. "
+    "nicht aus, siehe OwlBox-Verkabelung.pdf Kapitel 2.1",
+    "HiFiBerry Amp2 (I2S-Verstärker-HAT) + Lautsprecher - sitzt wegen der aktiven Kühlung nicht "
+    "mehr direkt gestapelt auf dem Pi, sondern über eine eigene Adapter-Platine, siehe "
+    "OwlBox-Verkabelung.pdf Kapitel 2.2",
     "RC522 RFID-Modul + mindestens ein RFID-Chip/-Karte (13,56 MHz, MIFARE-kompatibel)",
     "Waveshare 5″ DSI Touch Display (5-DSI-TOUCH-A, 720×1280) - noch nicht an echter "
     "Hardware verifiziert, siehe OwlBox-Verkabelung.pdf Kapitel 1.1",
@@ -267,10 +274,11 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     h2(f"{n}.5 Hardware verkabeln")
     p(
         "Jetzt den Pi <b>vom Strom trennen</b> und die komplette restliche Hardware verkabeln: "
-        "HiFiBerry Amp2 (direkt aufgesteckt), RC522-RFID-Leser, beide Taster, beide "
-        "Dreh-Encoder sowie das 5″-Waveshare-Touch-Display - per DSI-Flachbandkabel am eigenen "
-        "DSI-Steckplatz (kein Konflikt mit dem HiFiBerry, keine Steckplatzkollision) plus 4 "
-        "Jumperkabel für Strom und Touch-I2C."
+        "HiFiBerry Amp2 (wegen der aktiven Kühlung über eine eigene Adapter-Platine statt direkt "
+        "gestapelt, siehe OwlBox-Verkabelung.pdf Kapitel 2.2), RC522-RFID-Leser, beide Taster, "
+        "beide Dreh-Encoder sowie das 5″-Waveshare-Touch-Display - per DSI-Flachbandkabel am "
+        "eigenen DSI-Steckplatz (keine Steckplatzkollision mit dem HiFiBerry) plus 4 Jumperkabel "
+        "für Strom und Touch-I2C."
     )
     story.append(note_box(
         "Die komplette, detaillierte Verkabelung (jeder Pin, jedes Bauteil, inkl. "
@@ -317,7 +325,9 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "Python-virtuelle-Umgebung anlegen und alle Abhängigkeiten installieren",
         mono("config/config.yaml") + " aus der Vorlage anlegen, falls noch nicht vorhanden",
         "HiFiBerry-Overlay (" + mono("dtoverlay=hifiberry-dacplus") + ", passend zum "
-        "TAS5756M-Chip des Amp2) sowie den Grafiktreiber-Overlay (" +
+        "TAS5756M-Chip des Amp2 - auf einem Pi 5 automatisch " +
+        mono("dtoverlay=hifiberry-dacplus-std") + " stattdessen, noch nicht an echter "
+        "Pi-5-Hardware verifiziert) sowie den Grafiktreiber-Overlay (" +
         mono("dtoverlay=vc4-kms-v3d,noaudio") + " plus " +
         mono("dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a") +
         " fürs Display, noch nicht an echter Hardware verifiziert) in config.txt eintragen - "
@@ -548,9 +558,10 @@ story.append(spec_table(
          "Overlay; danach sudo owlbox-install erneut ausführen, das trägt ALSA-Gerät und Mixer "
          "automatisch in config.yaml ein (Abschnitt „OwlBox-Software installieren“). Zeigt "
          "aplay -l „no soundcards found“ dauerhaft: falsches Overlay für den Chip - der Amp2 "
-         "braucht dtoverlay=hifiberry-dacplus (TAS5756M-Chip), nicht hifiberry-amp (das ist für "
-         "den älteren Amp/Amp+ mit TAS5713); mit i2cdetect -y 1 prüfen, ob Adresse 0x4d "
-         "(TAS5756M/Amp2) oder 0x1b (TAS5713/Amp) antwortet."],
+         "braucht dtoverlay=hifiberry-dacplus (TAS5756M-Chip, auf einem Pi 5 stattdessen "
+         "hifiberry-dacplus-std, noch nicht an echter Pi-5-Hardware verifiziert), nicht "
+         "hifiberry-amp (das ist für den älteren Amp/Amp+ mit TAS5713); mit i2cdetect -y 1 "
+         "prüfen, ob Adresse 0x4d (TAS5756M/Amp2) oder 0x1b (TAS5713/Amp) antwortet."],
         ["Eingestellte Lautstärke wird nie gespeichert, zeigt immer 0", "audio.mixer_card in "
          "config.yaml prüfen - muss zur tatsächlichen, mit aplay -l ermittelten Kartennummer "
          "passen (nicht nur audio.alsa_device). sudo owlbox-install erneut ausführen, trägt alle "
