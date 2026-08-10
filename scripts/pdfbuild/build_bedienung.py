@@ -534,6 +534,22 @@ story.append(note_box(
     "abzuschneiden (einstellbar über config.yaml → playback.sleep_fade_seconds, 0 = sofortige "
     "Hart-Pause)."
 ))
+h3("Weckmodus")
+ctrl("„Weckmodus aktiv“", "Checkbox", "Schaltet den täglichen Wecker komplett ein/aus.")
+ctrl("Weckzeit", "Uhrzeit-Feld (Stunden:Minuten)", "Uhrzeit, zu der täglich automatisch die "
+     "Weck-Geschichte gestartet wird.")
+ctrl("Weck-Geschichte", "Auswahlliste aller Geschichten in der Bibliothek",
+     "Legt fest, welche Geschichte der Weckmodus startet.")
+ctrl("Einblendzeit", "Zahlenfeld in Sekunden (0-600, Standard 60, 0 = sofort volle Lautstärke)",
+     "Die Lautstärke steigt über diese Zeit sanft von 0 auf die aktuell eingestellte Lautstärke, "
+     "statt die Geschichte abrupt in voller Lautstärke zu starten.")
+ctrl("„Speichern“", "Button", "Speichert alle vier Weckmodus-Einstellungen zusammen.")
+story.append(note_box(
+    "Der Weckmodus greift nur, wenn gerade nichts läuft (z.B. über Nacht pausiert oder noch kein "
+    "Chip aufgelegt) - eine bereits laufende Geschichte wird dadurch nie unterbrochen, auch nicht "
+    "genau zur eingestellten Weckzeit. Löst pro Tag höchstens einmal aus, auch wenn die Weckzeit "
+    "eine ganze Minute lang zutrifft."
+))
 
 h2("10.4 Anzeige")
 ctrl("Helligkeit", "Schieberegler (0-100%)", "Identisch zum Regler auf der Home-Seite.")

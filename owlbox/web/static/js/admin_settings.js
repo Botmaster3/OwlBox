@@ -655,6 +655,58 @@
     }
   });
 
+  // -- Weckmodus (daily alarm) ---------------------------------------------
+
+  const alarmStatus = document.getElementById("alarm-status");
+  const alarmEnabledInput = document.getElementById("alarm-enabled");
+  const alarmTimeInput = document.getElementById("alarm-time");
+  const alarmStorySelect = document.getElementById("alarm-story");
+  const alarmFadeSecondsInput = document.getElementById("alarm-fade-seconds");
+  const alarmSaveBtn = document.getElementById("alarm-save-btn");
+
+  async function loadAlarmStoryOptions() {
+    try {
+      const stories = await api("/api/stories");
+      for (const story of stories) {
+        const option = document.createElement("option");
+        option.value = story.id;
+        option.textContent = story.title;
+        alarmStorySelect.appendChild(option);
+      }
+    } catch (err) {
+      // ignore - the dropdown just stays at its placeholder option
+    }
+  }
+
+  function renderAlarmStatus(alarm) {
+    if (!alarm.enabled) {
+      alarmStatus.textContent = "Weckmodus aus.";
+    } else if (alarm.story_title) {
+      alarmStatus.textContent = `Weckmodus: ${alarm.time} Uhr - „${alarm.story_title}“.`;
+    } else {
+      alarmStatus.textContent = `Weckmodus: ${alarm.time} Uhr - keine Geschichte ausgewählt (wird nicht auslösen).`;
+    }
+  }
+
+  alarmSaveBtn.addEventListener("click", async () => {
+    try {
+      const alarm = await api("/api/settings/alarm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alarm_enabled: alarmEnabledInput.checked,
+          alarm_time: alarmTimeInput.value || "07:00",
+          alarm_story_id: alarmStorySelect.value || null,
+          alarm_fade_seconds: parseInt(alarmFadeSecondsInput.value, 10) || 0,
+        }),
+      });
+      renderAlarmStatus(alarm);
+      showToast("Weckmodus gespeichert.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
   // -- wifi ---------------------------------------------------------------
 
   const wifiStatus = document.getElementById("wifi-status");
@@ -796,6 +848,13 @@
       nightModeActive = state.settings.night_mode_active;
       renderNightModeToggle();
       autoSleepMinutesInput.value = state.settings.auto_sleep_minutes;
+
+      await loadAlarmStoryOptions();
+      alarmEnabledInput.checked = state.alarm.enabled;
+      alarmTimeInput.value = state.alarm.time;
+      alarmStorySelect.value = state.alarm.story_id || "";
+      alarmFadeSecondsInput.value = state.alarm.fade_seconds;
+      renderAlarmStatus(state.alarm);
     } catch (err) {
       // ignore, fields keep their HTML defaults
     }

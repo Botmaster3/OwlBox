@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import subprocess
 import threading
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -18,6 +20,14 @@ from .player import create_player
 from .rfid import create_reader
 
 logger = logging.getLogger("owlbox.engine")
+
+_ALARM_TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+def _wall_clock_now() -> datetime:
+    """Thin wrapper around datetime.now() so tests can monkeypatch a fixed
+    time instead of fighting the datetime builtin's own immutability."""
+    return datetime.now()
 
 # Function tags ("control cards"): scanning one of these runs an action instead of
 # playing a story. (value, German label) - the label is what the RFID-tags admin
@@ -126,6 +136,25 @@ class Engine:
         self._paused_since: Optional[float] = None
         self._sleep_mode_active = False
 
+        # Weckmodus (Einstellungen -> Audio): daily alarm that starts a
+        # chosen story at a fixed time, ramping the volume up gently over
+        # _alarm_fade_seconds instead of blasting in at full volume - the
+        # reverse of the sleep timer's fade-out above. Persisted (unlike
+        # game_mode/night_mode below) since a wake time set once should
+        # survive a restart; _alarm_last_triggered_date is the one exception,
+        # deliberately never persisted - it only exists to stop the same
+        # alarm firing twice within its trigger minute, and starting fresh
+        # after a restart just means "hasn't fired today yet", which is
+        # always a safe assumption to fall back to.
+        self._alarm_enabled = bool(repository.get_int_setting("alarm_enabled", 0))
+        self._alarm_time = repository.get_setting("alarm_time") or "07:00"
+        alarm_story_id = repository.get_int_setting("alarm_story_id", 0)
+        self._alarm_story_id: Optional[int] = alarm_story_id or None
+        self._alarm_fade_seconds = repository.get_int_setting("alarm_fade_seconds", 60)
+        self._alarm_last_triggered_date = None
+        self._alarm_fading = False
+        self._alarm_fade_start = 0.0
+
         # Spiele-Menü (Einstellungen -> Spiel): toggled on/off by a dedicated
         # RFID function tag ("game_toggle" - see FUNCTION_ACTIONS/_execute_
         # function_action), same momentary-scan-toggles-state pattern as
@@ -233,6 +262,7 @@ class Engine:
 
                 self._check_sleep_timer(now)
                 self._check_auto_sleep(now)
+                self._check_alarm(now)
                 self._check_wifi_status(now)
             except Exception:
                 logger.exception("engine loop iteration failed")
@@ -1047,6 +1077,67 @@ class Engine:
                     "auto-sleep: paused for %.0f min, showing sleeping-owl screen", self._auto_sleep_minutes
                 )
 
+    # -- Weckmodus ------------------------------------------------------------
+
+    def set_alarm(
+        self,
+        enabled: bool,
+        time_str: str,
+        story_id: Optional[int],
+        fade_seconds: int,
+    ) -> None:
+        if not _ALARM_TIME_RE.match(time_str):
+            raise ValueError("time_str must be HH:MM")
+        with self._lock:
+            self._alarm_enabled = enabled
+            self._alarm_time = time_str
+            self._alarm_story_id = story_id
+            self._alarm_fade_seconds = max(0, fade_seconds)
+            repository.set_setting("alarm_enabled", int(enabled))
+            repository.set_setting("alarm_time", time_str)
+            repository.set_setting("alarm_story_id", story_id or 0)
+            repository.set_setting("alarm_fade_seconds", self._alarm_fade_seconds)
+
+    def _check_alarm(self, now: float) -> None:
+        # Two clocks in play here on purpose: `now` (time.monotonic) paces the
+        # fade-in the same way _check_sleep_timer paces its fade-out, while
+        # matching "is it time to wake up yet" needs actual wall-clock time -
+        # monotonic time has no relationship to the hour of day.
+        trigger_story_id = None
+        with self._lock:
+            if self._alarm_fading:
+                elapsed = now - self._alarm_fade_start
+                if self._alarm_fade_seconds <= 0 or elapsed >= self._alarm_fade_seconds:
+                    self._alarm_fading = False
+                    self._apply_volume(self._volume)
+                else:
+                    self._apply_volume(round(self._volume * (elapsed / self._alarm_fade_seconds)))
+
+            if not self._alarm_enabled or self._alarm_story_id is None:
+                return
+            wall_now = _wall_clock_now()
+            if wall_now.strftime("%H:%M") != self._alarm_time:
+                return
+            if self._alarm_last_triggered_date == wall_now.date():
+                return
+            # Only wakes an idle/paused box - a story already playing (a kid
+            # got up early and started listening themselves, or an earlier
+            # scan is still going) is never interrupted by the alarm.
+            if self._player.get_status().get("playing"):
+                return
+            self._alarm_last_triggered_date = wall_now.date()
+            trigger_story_id = self._alarm_story_id
+
+        if trigger_story_id is not None:
+            logger.info("alarm: waking with story id=%s", trigger_story_id)
+            if self.play_story(trigger_story_id):
+                with self._lock:
+                    self._alarm_fade_start = now
+                    self._alarm_fading = self._alarm_fade_seconds > 0
+                    self._apply_volume(0 if self._alarm_fading else self._volume)
+            else:
+                logger.warning("alarm: configured story id=%s no longer exists", trigger_story_id)
+
     def _handle_shutdown(self) -> None:
         logger.warning("shutdown requested via encoder long-press")
         self.request_shutdown()
@@ -1113,6 +1204,14 @@ class Engine:
             wifi_signal = self._wifi_signal
             hotspot_active = self._hotspot_active
             hotspot_ip = self._hotspot_ip
+            alarm_enabled = self._alarm_enabled
+            alarm_time = self._alarm_time
+            alarm_story_id = self._alarm_story_id
+            alarm_fade_seconds = self._alarm_fade_seconds
+        alarm_story_title = None
+        if alarm_story_id is not None:
+            alarm_story = repository.get_story(alarm_story_id)
+            alarm_story_title = alarm_story.title if alarm_story is not None else None
         status = self._player.get_status()
         # Overrides player.get_status()'s own placeholder "volume" (see its
         # comment - MpvPlayer used to fill this via a live `amixer sget`
@@ -1216,6 +1315,13 @@ class Engine:
             },
             "parent_mode": {"active": parent_label is not None, "label": parent_label},
             "game_mode": {"active": game_mode_active},
+            "alarm": {
+                "enabled": alarm_enabled,
+                "time": alarm_time,
+                "story_id": alarm_story_id,
+                "story_title": alarm_story_title,
+                "fade_seconds": alarm_fade_seconds,
+            },
             # A plain sysfs read (see system_info.get_cpu_temperature_celsius),
             # not a subprocess call like the WiFi signal above - cheap enough
             # to do inline on every poll instead of needing the same

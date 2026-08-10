@@ -91,6 +91,14 @@ den Pi geladen und einem Chip zugewiesen.
   Eule statt der Now-Playing-Ansicht. Aufwecken (Track läuft exakt an der
   Pausenstelle weiter): Lautstärke erhöhen, Play/Pause drücken oder einen
   RFID-Chip auflegen. Dauer unter Einstellungen konfigurierbar, 0 schaltet es ab.
+- **Weckmodus**: startet täglich zur eingestellten Uhrzeit automatisch eine
+  frei wählbare Geschichte - die Lautstärke steigt dabei über eine
+  einstellbare Einblendzeit sanft von 0 auf die eingestellte Lautstärke, statt
+  abrupt in voller Lautstärke loszulegen. Greift nur, wenn gerade nichts läuft
+  (z.B. über Nacht pausiert oder noch kein Chip aufgelegt) - eine bereits
+  laufende Geschichte wird dadurch nie unterbrochen. Einmal pro Tag, unter
+  Einstellungen → Audio konfigurierbar (an/aus, Uhrzeit, Geschichte,
+  Einblendzeit).
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - "Jetzt läuft"-Anzeige (groß, wie auf dem Display, inkl. WLAN-Empfang) als erste
@@ -135,7 +143,8 @@ den Pi geladen und einem Chip zugewiesen.
     einstellbarer Minimal-/Maximalwert, der den Schieberegler hier und den Helligkeits-Encoder am
     Gerät begrenzt); Automatischer Ruhemodus (Minuten bis zur schlafenden Eule nach dem Pausieren,
     0 = aus); Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert
-    automatisch nach Ablauf, mit sanftem Ausblenden); Spiel (Bild- und Klang-Pools fürs
+    automatisch nach Ablauf, mit sanftem Ausblenden); Weckmodus (an/aus, tägliche Weckzeit,
+    Geschichte, Einblendzeit der Lautstärke, siehe oben); Spiel (Bild- und Klang-Pools fürs
     Spiele-Menü hochladen/löschen, siehe oben); WLAN (Status, an/aus, nach Netzwerken suchen
     und verbinden); Pi neu starten/herunterfahren.
   - **Info** - Systeminfos: Hardware-Modell, Betriebssystem, Laufzeit, CPU-Temperatur,

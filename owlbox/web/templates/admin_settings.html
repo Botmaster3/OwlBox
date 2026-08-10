@@ -275,6 +275,36 @@
       Wiedergabe zu beenden.</p>
   </div>
 
+  <div class="card">
+    <h2>Weckmodus</h2>
+    <p class="hint" id="alarm-status">Weckmodus aus.</p>
+    <div class="field">
+      <label><input type="checkbox" id="alarm-enabled"> Weckmodus aktiv</label>
+    </div>
+    <div class="field">
+      <label for="alarm-time">Weckzeit</label>
+      <input type="time" id="alarm-time" value="07:00">
+    </div>
+    <div class="field">
+      <label for="alarm-story">Weck-Geschichte</label>
+      <select id="alarm-story">
+        <option value="">– Geschichte wählen –</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="alarm-fade-seconds">Einblendzeit (Sekunden, 0 = sofort volle Lautstärke)</label>
+      <input type="number" id="alarm-fade-seconds" min="0" max="600" value="60">
+      <p class="field-help">Die Lautstärke steigt über diese Zeit sanft von 0 auf die aktuell
+        eingestellte Lautstärke, statt die Geschichte sofort in voller Lautstärke zu starten.</p>
+    </div>
+    <button class="btn" id="alarm-save-btn" type="button">Speichern</button>
+    <p class="hint">
+      Startet täglich zur eingestellten Uhrzeit automatisch die gewählte Geschichte. Greift nur,
+      wenn gerade nichts läuft (z.B. über Nacht pausiert oder noch kein Chip aufgelegt) - eine
+      bereits laufende Geschichte wird dadurch nie unterbrochen.
+    </p>
+  </div>
+
   </div>
 
   <div class="settings-panel" data-panel="anzeige" hidden>

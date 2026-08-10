@@ -1,6 +1,10 @@
 import subprocess
 import time
+from datetime import datetime
 
+import pytest
+
+from owlbox import engine as engine_module
 from owlbox import feedback, network, repository, system_info, themes
 from owlbox.engine import Engine
 
@@ -2016,3 +2020,124 @@ def test_game_mode_does_not_pause_a_story_playing_in_the_background(config):
         assert state["story"]["id"] == story.id
     finally:
         engine.stop()
+
+
+def test_set_alarm_validates_time_format(config):
+    # Deliberately not started (no background loop) - same pattern as
+    # test_wifi_status_check_is_throttled above: set_alarm/_check_alarm don't
+    # need the player or RFID reader running, and skipping start()/stop()
+    # sidesteps any race between the background loop's own _check_alarm
+    # ticks (driven by the real wall clock) and this test's explicit calls.
+    engine = Engine(config)
+    with pytest.raises(ValueError):
+        engine.set_alarm(True, "not-a-time", None, 60)
+    with pytest.raises(ValueError):
+        engine.set_alarm(True, "25:00", None, 60)
+
+
+def test_set_alarm_persists_across_restart(config):
+    story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
+
+    engine = Engine(config)
+    engine.set_alarm(True, "07:30", story.id, 45)
+    alarm = engine.get_state()["alarm"]
+    assert alarm == {
+        "enabled": True,
+        "time": "07:30",
+        "story_id": story.id,
+        "story_title": "Wake Story",
+        "fade_seconds": 45,
+    }
+
+    engine2 = Engine(config)
+    alarm = engine2.get_state()["alarm"]
+    assert alarm["enabled"] is True
+    assert alarm["time"] == "07:30"
+    assert alarm["story_id"] == story.id
+    assert alarm["fade_seconds"] == 45
+
+
+def test_alarm_triggers_configured_story_at_wake_time(config, monkeypatch):
+    story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
+    monkeypatch.setattr(engine_module, "_wall_clock_now", lambda: datetime(2026, 8, 10, 7, 0))
+
+    engine = Engine(config)
+    engine.set_alarm(True, "07:00", story.id, 0)
+    engine._check_alarm(time.monotonic())
+    state = engine.get_state()
+    assert state["story"]["id"] == story.id
+    assert state["player"]["playing"] is True
+
+
+def test_alarm_does_not_trigger_outside_configured_minute(config, monkeypatch):
+    story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
+    monkeypatch.setattr(engine_module, "_wall_clock_now", lambda: datetime(2026, 8, 10, 6, 59))
+
+    engine = Engine(config)
+    engine.set_alarm(True, "07:00", story.id, 0)
+    engine._check_alarm(time.monotonic())
+    assert engine.get_state()["story"] is None
+
+
+def test_alarm_does_not_retrigger_same_day(config, monkeypatch):
+    story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
+    monkeypatch.setattr(engine_module, "_wall_clock_now", lambda: datetime(2026, 8, 10, 7, 0))
+
+    engine = Engine(config)
+    engine.set_alarm(True, "07:00", story.id, 0)
+    engine._check_alarm(time.monotonic())
+    assert engine.get_state()["player"]["playing"] is True
+
+    # Paused, still "today" - a second check in the same trigger minute must
+    # not restart it from the beginning.
+    engine.manual_pause()
+    engine._check_alarm(time.monotonic())
+    assert engine.get_state()["player"]["playing"] is False
+
+
+def test_alarm_does_not_interrupt_a_story_already_playing(config, monkeypatch):
+    # This one genuinely needs the background loop (simulate_scan only takes
+    # effect via _loop's RFID polling), so start()/stop() stay - but the
+    # scenario is race-safe either way: any extra background _check_alarm
+    # tick would independently reach the same "already playing, skip"
+    # conclusion this test asserts.
+    story = _make_story_with_file(config, "AABBCC", title="Already Playing")
+    wake_story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
+    monkeypatch.setattr(engine_module, "_wall_clock_now", lambda: datetime(2026, 8, 10, 7, 0))
+
+    config.rfid.poll_interval = 0.01
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine.get_state()["story"]["id"] == story.id
+
+        engine.set_alarm(True, "07:00", wake_story.id, 0)
+        engine._check_alarm(time.monotonic())
+        # Still the manually-started story, not the alarm's.
+        assert engine.get_state()["story"]["id"] == story.id
+    finally:
+        engine.stop()
+
+
+def test_alarm_fades_volume_in_gradually(config, monkeypatch):
+    story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
+    monkeypatch.setattr(engine_module, "_wall_clock_now", lambda: datetime(2026, 8, 10, 7, 0))
+
+    engine = Engine(config)
+    engine.set_alarm(True, "07:00", story.id, 60)
+    trigger_time = time.monotonic()
+    engine._check_alarm(trigger_time)
+    # Fade just started - volume should be at (or very near) 0, not the full
+    # configured target.
+    assert engine.get_state()["player"]["volume"] <= 1
+
+    # Halfway through the fade window.
+    engine._check_alarm(trigger_time + 30)
+    halfway_volume = engine.get_state()["player"]["volume"]
+    assert 0 < halfway_volume < engine._volume
+
+    # Past the fade window - back to the real target volume.
+    engine._check_alarm(trigger_time + 61)
+    assert engine.get_state()["player"]["volume"] == engine._volume

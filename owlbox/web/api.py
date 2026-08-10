@@ -637,6 +637,25 @@ def update_auto_sleep():
     return jsonify(_engine().get_state()["settings"])
 
 
+@api_bp.route("/settings/alarm", methods=["POST"])
+@admin_required
+def update_alarm():
+    data = request.get_json(silent=True) or {}
+    enabled = bool(data.get("alarm_enabled"))
+    time_str = str(data.get("alarm_time") or "07:00")
+    try:
+        raw_story_id = data.get("alarm_story_id")
+        story_id = int(raw_story_id) if raw_story_id else None
+        fade_seconds = int(data.get("alarm_fade_seconds", 60))
+    except (TypeError, ValueError):
+        return jsonify({"error": "alarm_story_id/alarm_fade_seconds must be integers"}), 400
+    try:
+        _engine().set_alarm(enabled, time_str, story_id, fade_seconds)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    return jsonify(_engine().get_state()["alarm"])
+
+
 @api_bp.route("/settings/chime", methods=["POST"])
 @admin_required
 def update_chime():
