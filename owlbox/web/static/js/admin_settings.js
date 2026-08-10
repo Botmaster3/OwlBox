@@ -464,6 +464,129 @@
 
   loadGameImages();
 
+  // -- Sound-Memory: sound clip pool ---------------------------------------
+
+  const soundClipUpload = document.getElementById("sound-clip-upload");
+  const soundClipUploadBtn = document.getElementById("sound-clip-upload-btn");
+  const soundClipList = document.getElementById("sound-clip-list");
+  const soundClipEmptyHint = document.getElementById("sound-clip-empty-hint");
+
+  function renderSoundClips(clips) {
+    soundClipList.innerHTML = "";
+    soundClipEmptyHint.hidden = clips.length > 0;
+    for (const clip of clips) {
+      const row = document.createElement("div");
+      row.className = "sound-clip-row";
+      row.innerHTML = `
+        <audio controls src="${clip.url}"></audio>
+        <button type="button" class="btn danger small" data-delete-clip="${clip.id}">🗑</button>
+      `;
+      row.querySelector("[data-delete-clip]").addEventListener("click", async () => {
+        try {
+          await api(`/api/sound/clips/${clip.id}`, { method: "DELETE" });
+          loadSoundClips();
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      });
+      soundClipList.appendChild(row);
+    }
+  }
+
+  async function loadSoundClips() {
+    try {
+      renderSoundClips(await api("/api/sound/clips"));
+    } catch (err) {
+      // ignore - tab may just not be visible yet on first load
+    }
+  }
+
+  soundClipUploadBtn.addEventListener("click", async () => {
+    const files = Array.from(soundClipUpload.files || []);
+    if (files.length === 0) {
+      showToast("Bitte zuerst Klänge auswählen.", true);
+      return;
+    }
+    const formData = new FormData();
+    files.forEach((f) => formData.append("sounds", f));
+    try {
+      const clips = await api("/api/sound/clips", { method: "POST", body: formData });
+      renderSoundClips(clips);
+      soundClipUpload.value = "";
+      showToast(`${files.length} Klang/Klänge hochgeladen.`);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  loadSoundClips();
+
+  // -- Tier-Sound-Quiz: picture+sound item pool ----------------------------
+
+  const quizItemImageInput = document.getElementById("quiz-item-image");
+  const quizItemSoundInput = document.getElementById("quiz-item-sound");
+  const quizItemLabelInput = document.getElementById("quiz-item-label");
+  const quizItemUploadBtn = document.getElementById("quiz-item-upload-btn");
+  const quizItemList = document.getElementById("quiz-item-list");
+  const quizItemEmptyHint = document.getElementById("quiz-item-empty-hint");
+
+  function renderQuizItems(items) {
+    quizItemList.innerHTML = "";
+    quizItemEmptyHint.hidden = items.length > 0;
+    for (const item of items) {
+      const row = document.createElement("div");
+      row.className = "quiz-item-row";
+      row.innerHTML = `
+        <img src="${item.image_url}" alt="">
+        <audio controls src="${item.sound_url}"></audio>
+        <span class="quiz-item-label">${item.label || ""}</span>
+        <button type="button" class="btn danger small" data-delete-item="${item.id}">🗑</button>
+      `;
+      row.querySelector("[data-delete-item]").addEventListener("click", async () => {
+        try {
+          await api(`/api/quiz/items/${item.id}`, { method: "DELETE" });
+          loadQuizItems();
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      });
+      quizItemList.appendChild(row);
+    }
+  }
+
+  async function loadQuizItems() {
+    try {
+      renderQuizItems(await api("/api/quiz/items"));
+    } catch (err) {
+      // ignore - tab may just not be visible yet on first load
+    }
+  }
+
+  quizItemUploadBtn.addEventListener("click", async () => {
+    const image = quizItemImageInput.files && quizItemImageInput.files[0];
+    const sound = quizItemSoundInput.files && quizItemSoundInput.files[0];
+    if (!image || !sound) {
+      showToast("Bitte Bild und Ton auswählen.", true);
+      return;
+    }
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("sound", sound);
+    if (quizItemLabelInput.value.trim()) formData.append("label", quizItemLabelInput.value.trim());
+    try {
+      const items = await api("/api/quiz/items", { method: "POST", body: formData });
+      renderQuizItems(items);
+      quizItemImageInput.value = "";
+      quizItemSoundInput.value = "";
+      quizItemLabelInput.value = "";
+      showToast("Rätsel hinzugefügt.");
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  loadQuizItems();
+
   // -- auto-sleep (sleeping-owl screen) ----------------------------------
 
   const autoSleepStatus = document.getElementById("auto-sleep-status");

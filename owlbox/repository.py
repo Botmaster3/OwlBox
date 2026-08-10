@@ -555,3 +555,83 @@ def delete_game_image(image_id: int) -> Optional[str]:
     with write_cursor() as cur:
         cur.execute("DELETE FROM game_images WHERE id = ?", (image_id,))
     return row["filename"]
+
+
+# -- Sound-Memory clip pool ---------------------------------------------------
+
+@dataclass
+class SoundClip:
+    id: int
+    filename: str
+    position: int
+
+
+def list_sound_clips() -> list[SoundClip]:
+    rows = get_connection().execute("SELECT id, filename, position FROM sound_clips ORDER BY position ASC").fetchall()
+    return [SoundClip(id=r["id"], filename=r["filename"], position=r["position"]) for r in rows]
+
+
+def add_sound_clip(filename: str) -> SoundClip:
+    with write_cursor() as cur:
+        next_position = cur.execute("SELECT COALESCE(MAX(position), -1) + 1 AS n FROM sound_clips").fetchone()["n"]
+        cur.execute("INSERT INTO sound_clips (filename, position) VALUES (?, ?)", (filename, next_position))
+        clip_id = cur.lastrowid
+    return SoundClip(id=clip_id, filename=filename, position=next_position)
+
+
+def delete_sound_clip(clip_id: int) -> Optional[str]:
+    """Returns the deleted row's filename (so the caller can also remove the
+    file from disk - this only touches the DB row) or None if it didn't exist."""
+    conn = get_connection()
+    row = conn.execute("SELECT filename FROM sound_clips WHERE id = ?", (clip_id,)).fetchone()
+    if row is None:
+        return None
+    with write_cursor() as cur:
+        cur.execute("DELETE FROM sound_clips WHERE id = ?", (clip_id,))
+    return row["filename"]
+
+
+# -- Tier-Sound-Quiz item pool -------------------------------------------------
+
+@dataclass
+class QuizItem:
+    id: int
+    image_filename: str
+    sound_filename: str
+    label: Optional[str]
+    position: int
+
+
+def list_quiz_items() -> list[QuizItem]:
+    rows = get_connection().execute(
+        "SELECT id, image_filename, sound_filename, label, position FROM quiz_items ORDER BY position ASC"
+    ).fetchall()
+    return [
+        QuizItem(id=r["id"], image_filename=r["image_filename"], sound_filename=r["sound_filename"],
+                 label=r["label"], position=r["position"])
+        for r in rows
+    ]
+
+
+def add_quiz_item(image_filename: str, sound_filename: str, label: Optional[str] = None) -> QuizItem:
+    with write_cursor() as cur:
+        next_position = cur.execute("SELECT COALESCE(MAX(position), -1) + 1 AS n FROM quiz_items").fetchone()["n"]
+        cur.execute(
+            "INSERT INTO quiz_items (image_filename, sound_filename, label, position) VALUES (?, ?, ?, ?)",
+            (image_filename, sound_filename, label, next_position),
+        )
+        item_id = cur.lastrowid
+    return QuizItem(id=item_id, image_filename=image_filename, sound_filename=sound_filename,
+                     label=label, position=next_position)
+
+
+def delete_quiz_item(item_id: int) -> Optional[tuple[str, str]]:
+    """Returns the deleted row's (image_filename, sound_filename) - so the
+    caller can also remove both files from disk - or None if it didn't exist."""
+    conn = get_connection()
+    row = conn.execute("SELECT image_filename, sound_filename FROM quiz_items WHERE id = ?", (item_id,)).fetchone()
+    if row is None:
+        return None
+    with write_cursor() as cur:
+        cur.execute("DELETE FROM quiz_items WHERE id = ?", (item_id,))
+    return (row["image_filename"], row["sound_filename"])

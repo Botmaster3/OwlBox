@@ -98,15 +98,44 @@ CREATE TABLE IF NOT EXISTS daily_listening (
     PRIMARY KEY (date, story_id)
 );
 
--- Uploaded picture pool for the Memory game (Einstellungen -> Spiel) - the
+-- Uploaded picture pool for the Spiele-Menü (Einstellungen -> Spiel) - the
 -- kiosk's one deliberate use of the display's touch hardware (otherwise
 -- unused, see docs/hardware.md), unlocked by a dedicated "game_toggle"
--- function tag (see Engine.FUNCTION_ACTIONS). Flat list, no per-story
--- grouping needed - position is just upload order, shown/shuffled into
--- pairs client-side (owlbox/web/static/js/game.js).
+-- function tag (see Engine.FUNCTION_ACTIONS). Shared by two mini-games -
+-- Memory (match pairs) and Schiebe-Puzzle (reassemble one sliced-up image) -
+-- so one upload benefits both instead of asking for the same kind of
+-- picture twice. Flat list, no per-story grouping needed - position is just
+-- upload order, drawn from client-side (owlbox/web/static/js/game-memory.js,
+-- game-puzzle.js).
 CREATE TABLE IF NOT EXISTS game_images (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filename TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Uploaded sound-clip pool for the Sound-Memory mini-game (same Spiele-Menü
+-- as above) - pairs are matched by ear instead of by sight: tapping a card
+-- plays its clip, find the other card with the same clip. Same flat-list/
+-- upload-order shape as game_images, just audio instead of images - see
+-- game-soundmemory.js.
+CREATE TABLE IF NOT EXISTS sound_clips (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Picture+sound pairs for the Tier-Sound-Quiz mini-game (same Spiele-Menü) -
+-- a clip plays (e.g. a cow mooing), the player taps the matching picture out
+-- of a few shown. label is optional, admin-only context (e.g. "Kuh") never
+-- shown to the player - the game is meant to work by ear/eye, not by text.
+-- See game-quiz.js.
+CREATE TABLE IF NOT EXISTS quiz_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    image_filename TEXT NOT NULL,
+    sound_filename TEXT NOT NULL,
+    label TEXT,
     position INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

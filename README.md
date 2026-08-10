@@ -20,9 +20,9 @@ den Pi geladen und einem Chip zugewiesen.
   an/aus, Wiederholung Ordner an/aus, Wiederholung Track an/aus,
   Einschlaf-Timer starten (15/30/45/60 Min., blendet die Lautstärke in den
   letzten 60s sanft aus statt hart abzuschneiden) oder abbrechen,
-  Memory-Spiel an/aus (siehe unten), Pi neu starten/herunterfahren. Praktisch
+  Spiele-Menü an/aus (siehe unten), Pi neu starten/herunterfahren. Praktisch
   als "Bedienkarten" ohne Taster anfassen zu müssen. Die
-  Shuffle-/Wiederholungs-/Memory-Chips wirken auch nachdem der jeweils
+  Shuffle-/Wiederholungs-/Spiele-Menü-Chips wirken auch nachdem der jeweils
   auslösende Chip schon wieder abgenommen wurde, und schalten beim ersten
   Auflegen ein und beim erneuten Auflegen wieder aus.
 - **Akustisches Feedback**: kurzer, unterschiedlicher Ton für Chip erkannt /
@@ -36,28 +36,49 @@ den Pi geladen und einem Chip zugewiesen.
   Track-Liste der Geschichte mit hervorgehobenem aktuellen Titel, Lautstärke,
   WLAN-Empfang - Bedienung läuft primär über Taster/Encoder/Funktions-Chips
   (siehe docs/hardware.md); die Touch-Hardware wird von der Oberfläche einzig
-  im Memory-Spiel ausgewertet (siehe unten) - überall sonst bleibt der Kiosk
+  im Spiele-Menü ausgewertet (siehe unten) - überall sonst bleibt der Kiosk
   reines Anzeige-Display. Helligkeit ausschließlich manuell regelbar (Regler
   unter Einstellungen/Home oder ein zweiter Dreh-Encoder am Gerät) - kein
   automatisches Dimmen; jede Änderung blendet den neuen Wert kurz auf dem
   Display ein, **die eigentliche Backlight-Steuerung ist auf dieser Hardware
   aber noch nicht angeschlossen** (das Display regelt seine Helligkeit über
   eine Linux-Sysfs-Schnittstelle statt über GPIO/PWM, siehe docs/hardware.md).
-- **Memory-Spiel**: per Funktions-Chip "Memory-Spiel an/aus" freigeschaltete
+- **Spiele-Menü**: per Funktions-Chip "Spiele-Menü an/aus" freigeschaltete
   Bildschirmansicht - die einzige Stelle im ganzen Kiosk, an der Touch
-  tatsächlich etwas bewirkt (Karten antippen zum Umdrehen). Jede Aktivierung
-  fragt zuerst den Schwierigkeitsgrad ab (Leicht/Mittel/Schwer = 4/8/12
-  Bildpaare, per Antippen wählbar), danach zufällig aus dem Bilderpool
-  gezogene Paare für eine Runde, mit Zug-Zähler und Gewinn-Anzeige samt
-  "Nochmal spielen" und "Schwierigkeit ändern". Die Bildpaare stammen aus
-  frei unter Einstellungen → Spiel hochladbaren eigenen Bildern
-  (JPG/PNG/WebP); mit weniger hochgeladenen Bildern als der gewählte
-  Schwierigkeitsgrad verlangt wird die Runde einfach entsprechend kleiner.
-  Läuft unabhängig von der Wiedergabe - eine Geschichte spielt im
-  Hintergrund weiter. Denselben Chip erneut auflegen deaktiviert die
-  Spielansicht wieder und zeigt die normale Now-Playing-Anzeige.
-  **Touch-Bedienung noch nicht an echter Hardware verifiziert** (siehe
-  docs/hardware.md).
+  tatsächlich etwas bewirkt. Erstes Auflegen zeigt ein Menü mit sechs
+  antippbaren Mini-Spielen; erneutes Auflegen desselben Chips verlässt das
+  Menü komplett und zeigt wieder die normale Now-Playing-Anzeige, egal in
+  welchem Mini-Spiel man gerade war. Ein eigener „← Menü“-Knopf springt
+  jederzeit vom laufenden Mini-Spiel zurück zur Auswahl, ohne den Chip
+  abnehmen zu müssen. Läuft unabhängig von der Wiedergabe - eine Geschichte
+  spielt im Hintergrund weiter. **Touch-Bedienung noch nicht an echter
+  Hardware verifiziert** (siehe docs/hardware.md). Die sechs Spiele:
+  - **Memory** - Bildpaare finden (Karten antippen zum Umdrehen). Vor jeder
+    Runde eine Schwierigkeitsauswahl (Leicht/Mittel/Schwer = 4/8/12
+    Bildpaare), danach zufällig aus dem Bilderpool gezogene Paare, mit
+    Zug-Zähler und Gewinn-Anzeige samt "Nochmal spielen" und "Schwierigkeit
+    ändern".
+  - **Simon Sagt** - eine wachsende Farb-/Ton-Sequenz nachtippen (4 große
+    Farbfelder); ein Fehler beendet die Runde und zeigt das erreichte Level.
+    Kein Bilder-Upload nötig.
+  - **Schiebe-Puzzle** - ein zufälliges Bild aus demselben Bilderpool wie
+    Memory wird in Teile zerschnitten (3×3/4×4/5×5 je nach Schwierigkeit);
+    zwei Teile antippen vertauscht sie, bis das Bild wieder stimmt.
+  - **Reaktion** - ein Whack-a-Mole-artiges Tippspiel: eine Eule taucht kurz
+    an zufälligen Stellen in einem 3×3-Raster auf, antippen bevor sie
+    verschwindet. Die Schwierigkeit bestimmt nur das Tempo.
+  - **Tier-Sound-Quiz** - ein Klang spielt ab, aus mehreren Bildern das
+    passende antippen (z.B. Kuh-Bild zu Muh-Ton). Feste Bild+Ton-Paare, frei
+    unter Einstellungen → Spiel anlegbar (inkl. optionaler, nur intern
+    sichtbarer Bezeichnung).
+  - **Sound-Memory** - wie Memory, aber es werden Klangpaare statt Bildpaare
+    per Gehör gesucht: Karte antippen spielt einen kurzen Klang ab, die
+    zweite Karte mit demselben Klang finden.
+
+  Die Bild- und Klang-Pools lassen sich alle frei unter Einstellungen →
+  Spiel hochladen/löschen (JPG/PNG/WebP bzw. gängige Audioformate); mit
+  weniger Inhalten als eine gewählte Schwierigkeit verlangt wird die jeweilige
+  Runde einfach entsprechend kleiner statt einen Fehler zu zeigen.
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,
@@ -114,8 +135,8 @@ den Pi geladen und einem Chip zugewiesen.
     einstellbarer Minimal-/Maximalwert, der den Schieberegler hier und den Helligkeits-Encoder am
     Gerät begrenzt); Automatischer Ruhemodus (Minuten bis zur schlafenden Eule nach dem Pausieren,
     0 = aus); Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert
-    automatisch nach Ablauf, mit sanftem Ausblenden); Spiel (eigene Bilder für das Memory-Spiel
-    hochladen/löschen, siehe oben); WLAN (Status, an/aus, nach Netzwerken suchen
+    automatisch nach Ablauf, mit sanftem Ausblenden); Spiel (Bild- und Klang-Pools fürs
+    Spiele-Menü hochladen/löschen, siehe oben); WLAN (Status, an/aus, nach Netzwerken suchen
     und verbinden); Pi neu starten/herunterfahren.
   - **Info** - Systeminfos: Hardware-Modell, Betriebssystem, Laufzeit, CPU-Temperatur,
     Speicher-/RAM-Belegung, Bibliotheks-Statistik, OwlBox-Version; Wochenrückblick (Hördauer und

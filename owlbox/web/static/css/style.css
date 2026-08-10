@@ -900,18 +900,62 @@ html[data-theme="weihnachten"] .advent-wreath {
 .sleep-label { font-size: clamp(1.2rem, 3.2vw, 2rem); font-weight: 700; }
 .sleep-hint { color: var(--text-dim); font-size: clamp(0.9rem, 2vw, 1.1rem); max-width: 60ch; }
 
-/* Memory game (game.js) - the kiosk's one touch-interactive screen, see
-   docs/hardware.md. Full-viewport like .sleep-mode/.parent-mode above. */
+/* Spiele-Menü (game.js + game-<name>.js) - the kiosk's one touch-interactive
+   screen, see docs/hardware.md. Full-viewport like .sleep-mode/.parent-mode
+   above; .game-mode itself is just the outer box (and the back button's
+   anchor), each individual screen (menu or one mini-game) centers its own
+   content via .game-screen so only one is ever doing layout at a time. */
 .game-mode {
   height: 100vh;
   width: 100vw;
+  box-sizing: border-box;
+  position: relative;
+}
+.game-screen {
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 3vh 3vw;
   box-sizing: border-box;
+  gap: 2vh;
 }
+.game-back-btn {
+  position: absolute;
+  /* Below the CPU-temp badge (.cpu-temp-badge, top: 2.5vh) which stays
+     visible everywhere including here - a higher position would overlap it. */
+  top: 6.5vh;
+  left: 2vw;
+  z-index: 90;
+}
+
+.game-menu-title { font-size: clamp(1.3rem, 4.5vw, 2.1rem); font-weight: 700; }
+.game-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3vw;
+  width: 100%;
+  max-width: 92vw;
+}
+.game-menu-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1vh;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 3vh 2vw;
+  cursor: pointer;
+  min-height: 96px; /* comfortably above the 44px tap-target floor */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.game-menu-tile:active { filter: brightness(0.95); }
+.game-menu-tile-icon { font-size: clamp(2rem, 8vw, 3rem); }
+.game-menu-tile-label { font-size: clamp(0.85rem, 2.6vw, 1.15rem); font-weight: 600; text-align: center; }
 .game-grid {
   display: grid;
   gap: 1.5vw;
@@ -960,6 +1004,10 @@ html[data-theme="weihnachten"] .advent-wreath {
 .game-card-front {
   background: var(--panel);
   transform: rotateY(180deg);
+  /* Only used by .game-card-front img below when there's an actual picture
+     (Memory) - Sound-Memory's front is a plain icon instead, so it needs
+     its own font-size the same way .game-card-back has one. */
+  font-size: clamp(1.4rem, 5vw, 2.4rem);
 }
 .game-card-front img { width: 100%; height: 100%; object-fit: cover; }
 .game-card.matched .game-card-front { outline: 3px solid var(--accent); outline-offset: -3px; }
@@ -973,12 +1021,126 @@ html[data-theme="weihnachten"] .advent-wreath {
 .game-difficulty-owl { font-size: clamp(3rem, 16vw, 6rem); }
 .game-difficulty-title { font-size: clamp(1.1rem, 3.5vw, 1.6rem); font-weight: 700; margin: 0; }
 .game-difficulty-buttons { display: flex; gap: 3vw; flex-wrap: wrap; justify-content: center; }
-.game-difficulty-btn {
+/* Shared look for every mini-game's own difficulty picker (Memory, Puzzle,
+   Reaktion, Sound-Memory each use their own class so their JS only ever
+   queries its own buttons, never a sibling game's - see game-*.js). */
+.game-difficulty-btn,
+.game-puzzle-difficulty-btn,
+.game-reaction-difficulty-btn,
+.game-soundmemory-difficulty-btn {
   min-width: 96px;
   min-height: 44px; /* same tap-target floor as the memory cards themselves */
   padding: 1.2vh 4vw;
   font-size: clamp(1rem, 2.6vw, 1.3rem);
 }
+
+/* Simon-Sagt (game-simon.js) - no uploaded content, just 4 big color pads. */
+.game-simon-status { font-size: clamp(1.2rem, 3.5vw, 1.8rem); font-weight: 700; }
+.game-simon-pad-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2.5vw;
+  width: 100%;
+  max-width: 80vw;
+  aspect-ratio: 1;
+}
+.game-simon-pad {
+  --pad-color: #888;
+  background: var(--pad-color);
+  opacity: 0.55;
+  border: none;
+  border-radius: 16px;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  transition: opacity 0.1s, transform 0.1s;
+}
+.game-simon-pad:active { transform: scale(0.96); }
+.game-simon-pad.flash { opacity: 1; box-shadow: 0 0 24px var(--pad-color); }
+.game-simon-gameover { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.5vh; font-size: clamp(1rem, 2.8vw, 1.3rem); }
+
+/* Schiebe-Puzzle (game-puzzle.js) - reuses the Memory picture pool. */
+.game-puzzle-board-wrap { display: flex; flex-direction: column; align-items: center; gap: 1.5vh; width: 100%; }
+.game-puzzle-reference {
+  width: 22vw;
+  max-width: 140px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+}
+.game-puzzle-grid {
+  display: grid;
+  gap: 0.5vw;
+  width: 100%;
+  max-width: 100vh;
+}
+.game-puzzle-tile {
+  aspect-ratio: 1;
+  border: 2px solid var(--panel);
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+.game-puzzle-tile.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent) inset; }
+
+/* Reaktionsspiel (game-reaction.js) - fixed 3x3 grid, no uploaded content. */
+.game-reaction-board-wrap { display: flex; flex-direction: column; align-items: center; gap: 2vh; width: 100%; }
+.game-reaction-status { font-size: clamp(1.2rem, 3.5vw, 1.8rem); font-weight: 700; }
+.game-reaction-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3vw;
+  width: 100%;
+  max-width: 80vw;
+}
+.game-reaction-hole {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px dashed var(--border);
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  overflow: hidden;
+}
+.game-reaction-owl {
+  font-size: clamp(1.5rem, 7vw, 2.6rem);
+  transform: scale(0);
+  transition: transform 0.15s;
+}
+.game-reaction-hole.active .game-reaction-owl { transform: scale(1); }
+.game-reaction-hole.hit { background: var(--accent); }
+
+/* Tier-Sound-Quiz (game-quiz.js) - own picture+sound pool, /api/quiz/items. */
+.game-quiz-board-wrap { display: flex; flex-direction: column; align-items: center; gap: 1.5vh; width: 100%; }
+.game-quiz-status { font-size: clamp(1rem, 3vw, 1.4rem); font-weight: 700; }
+.game-quiz-replay-btn { min-height: 44px; }
+.game-quiz-grid {
+  display: grid;
+  gap: 2vw;
+  width: 100%;
+  max-width: 90vw;
+}
+.game-quiz-option {
+  aspect-ratio: 1;
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--panel);
+}
+.game-quiz-option img { width: 100%; height: 100%; object-fit: cover; }
+.game-quiz-option.correct { border-color: #2ecc71; box-shadow: 0 0 0 3px #2ecc71 inset; }
+.game-quiz-option.wrong { border-color: #e74c3c; box-shadow: 0 0 0 3px #e74c3c inset; }
 
 .game-win-banner {
   position: fixed;
@@ -1268,7 +1430,8 @@ a.btn { display: inline-block; text-decoration: none; }
 .theme-group-label:first-of-type { margin-top: 0; }
 .theme-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 6px; }
 
-/* Memory-game image pool (Einstellungen -> Spiel). */
+/* Mini-game content pools (Einstellungen -> Spiel): Memory/Puzzle images,
+   Sound-Memory clips, Tier-Sound-Quiz picture+sound pairs. */
 .game-image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -1288,6 +1451,19 @@ a.btn { display: inline-block; text-decoration: none; }
   bottom: 6px;
   right: 6px;
 }
+.sound-clip-list, .quiz-item-list { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.sound-clip-row, .quiz-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.sound-clip-row audio, .quiz-item-row audio { flex: 1; min-width: 0; }
+.quiz-item-row img { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.quiz-item-label { flex: 1; color: var(--text-dim); }
+.sound-clip-row .btn, .quiz-item-row .btn { flex-shrink: 0; }
 .theme-swatch {
   display: block;
   width: 100%;

@@ -860,3 +860,105 @@ def delete_game_image(image_id):
         return jsonify({"error": "not found"}), 404
     (_config().media_dir / "game" / filename).unlink(missing_ok=True)
     return jsonify({"ok": True})
+
+
+# -- Sound-Memory clip pool ----------------------------------------------------
+
+
+def _sound_clip_to_dict(clip: repository.SoundClip) -> dict:
+    return {"id": clip.id, "url": f"/media/sounds/{clip.filename}"}
+
+
+@api_bp.route("/sound/clips")
+def list_sound_clips():
+    # Public, same reasoning as /api/game/images above - the kiosk page
+    # needs this without being logged in.
+    return jsonify([_sound_clip_to_dict(clip) for clip in repository.list_sound_clips()])
+
+
+@api_bp.route("/sound/clips", methods=["POST"])
+@admin_required
+def upload_sound_clips():
+    files = [f for f in request.files.getlist("sounds") if f and f.filename]
+    if not files:
+        return jsonify({"error": "at least one sound file is required"}), 400
+    for f in files:
+        if not is_allowed_audio(f.filename):
+            return jsonify({"error": f"unsupported audio file: {f.filename}"}), 400
+
+    sounds_dir = _config().media_dir / "sounds"
+    sounds_dir.mkdir(parents=True, exist_ok=True)
+    for f in files:
+        filename = f"{uuid.uuid4().hex}{Path(secure_filename(f.filename)).suffix.lower()}"
+        f.save(sounds_dir / filename)
+        repository.add_sound_clip(filename)
+
+    return jsonify([_sound_clip_to_dict(clip) for clip in repository.list_sound_clips()]), 201
+
+
+@api_bp.route("/sound/clips/<int:clip_id>", methods=["DELETE"])
+@admin_required
+def delete_sound_clip(clip_id):
+    filename = repository.delete_sound_clip(clip_id)
+    if filename is None:
+        return jsonify({"error": "not found"}), 404
+    (_config().media_dir / "sounds" / filename).unlink(missing_ok=True)
+    return jsonify({"ok": True})
+
+
+# -- Tier-Sound-Quiz item pool --------------------------------------------------
+
+
+def _quiz_item_to_dict(item: repository.QuizItem) -> dict:
+    return {
+        "id": item.id,
+        "image_url": f"/media/quiz/{item.image_filename}",
+        "sound_url": f"/media/quiz/{item.sound_filename}",
+        "label": item.label,
+    }
+
+
+@api_bp.route("/quiz/items")
+def list_quiz_items():
+    # Public, same reasoning as /api/game/images above.
+    return jsonify([_quiz_item_to_dict(item) for item in repository.list_quiz_items()])
+
+
+@api_bp.route("/quiz/items", methods=["POST"])
+@admin_required
+def upload_quiz_item():
+    image = request.files.get("image")
+    sound = request.files.get("sound")
+    label = (request.form.get("label") or "").strip() or None
+    if not image or not image.filename or not sound or not sound.filename:
+        return jsonify({"error": "image and sound are both required"}), 400
+    if not is_allowed_image(image.filename):
+        return jsonify({"error": f"unsupported image: {image.filename}"}), 400
+    if not is_allowed_audio(sound.filename):
+        return jsonify({"error": f"unsupported audio file: {sound.filename}"}), 400
+
+    # Flat shared folder for both images and sounds - the uuid filenames
+    # can't collide with each other, and the file extension is enough for
+    # send_from_directory to pick the right content type on the way out.
+    quiz_dir = _config().media_dir / "quiz"
+    quiz_dir.mkdir(parents=True, exist_ok=True)
+    image_filename = f"{uuid.uuid4().hex}{Path(secure_filename(image.filename)).suffix.lower()}"
+    sound_filename = f"{uuid.uuid4().hex}{Path(secure_filename(sound.filename)).suffix.lower()}"
+    image.save(quiz_dir / image_filename)
+    sound.save(quiz_dir / sound_filename)
+    repository.add_quiz_item(image_filename, sound_filename, label)
+
+    return jsonify([_quiz_item_to_dict(item) for item in repository.list_quiz_items()]), 201
+
+
+@api_bp.route("/quiz/items/<int:item_id>", methods=["DELETE"])
+@admin_required
+def delete_quiz_item(item_id):
+    filenames = repository.delete_quiz_item(item_id)
+    if filenames is None:
+        return jsonify({"error": "not found"}), 404
+    image_filename, sound_filename = filenames
+    quiz_dir = _config().media_dir / "quiz"
+    (quiz_dir / image_filename).unlink(missing_ok=True)
+    (quiz_dir / sound_filename).unlink(missing_ok=True)
+    return jsonify({"ok": True})

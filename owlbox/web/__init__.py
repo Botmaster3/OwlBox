@@ -58,4 +58,17 @@ def create_app(engine, config) -> Flask:
         # repository.game_images / api.py's /api/game/images.
         return send_from_directory(config.media_dir / "game", filename)
 
+    @app.route("/media/sounds/<path:filename>")
+    def sound_clip_media(filename: str):
+        # Sound-Memory mini-game's clip pool - see repository.sound_clips /
+        # api.py's /api/sound/clips.
+        return send_from_directory(config.media_dir / "sounds", filename)
+
+    @app.route("/media/quiz/<path:filename>")
+    def quiz_media(filename: str):
+        # Tier-Sound-Quiz mini-game's picture+sound pairs - see
+        # repository.quiz_items / api.py's /api/quiz/items. Images and
+        # sounds share this one flat folder (uuid filenames, can't collide).
+        return send_from_directory(config.media_dir / "quiz", filename)
+
     return app

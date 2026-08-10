@@ -439,3 +439,47 @@ def test_game_images_crud_and_ordering(config):
     assert fourth.position == 3
 
     assert repository.delete_game_image(999999) is None
+
+
+def test_sound_clips_crud_and_ordering(config):
+    assert repository.list_sound_clips() == []
+
+    first = repository.add_sound_clip("aaa.mp3")
+    second = repository.add_sound_clip("bbb.mp3")
+    third = repository.add_sound_clip("ccc.mp3")
+    assert first.position == 0
+    assert second.position == 1
+    assert third.position == 2
+
+    clips = repository.list_sound_clips()
+    assert [clip.filename for clip in clips] == ["aaa.mp3", "bbb.mp3", "ccc.mp3"]
+
+    deleted_filename = repository.delete_sound_clip(second.id)
+    assert deleted_filename == "bbb.mp3"
+    assert [clip.filename for clip in repository.list_sound_clips()] == ["aaa.mp3", "ccc.mp3"]
+
+    fourth = repository.add_sound_clip("ddd.mp3")
+    assert fourth.position == 3
+
+    assert repository.delete_sound_clip(999999) is None
+
+
+def test_quiz_items_crud_and_ordering(config):
+    assert repository.list_quiz_items() == []
+
+    first = repository.add_quiz_item("cow.png", "moo.mp3", "Kuh")
+    second = repository.add_quiz_item("dog.png", "woof.mp3")
+    assert first.position == 0
+    assert first.label == "Kuh"
+    assert second.position == 1
+    assert second.label is None
+
+    items = repository.list_quiz_items()
+    assert [item.image_filename for item in items] == ["cow.png", "dog.png"]
+    assert [item.sound_filename for item in items] == ["moo.mp3", "woof.mp3"]
+
+    deleted = repository.delete_quiz_item(first.id)
+    assert deleted == ("cow.png", "moo.mp3")
+    assert [item.image_filename for item in repository.list_quiz_items()] == ["dog.png"]
+
+    assert repository.delete_quiz_item(999999) is None

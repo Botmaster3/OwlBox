@@ -42,7 +42,7 @@ FUNCTION_ACTIONS = [
     ("sleep_timer_cancel", "Einschlaf-Timer abbrechen"),
     ("restart", "Pi neu starten"),
     ("shutdown", "Pi herunterfahren"),
-    ("game_toggle", "Memory-Spiel an/aus"),
+    ("game_toggle", "Spiele-Menü an/aus"),
 ]
 FUNCTION_ACTION_VALUES = {value for value, _label in FUNCTION_ACTIONS}
 
@@ -126,12 +126,15 @@ class Engine:
         self._paused_since: Optional[float] = None
         self._sleep_mode_active = False
 
-        # Memory game (Einstellungen -> Spiel): toggled on/off by a dedicated
+        # Spiele-Menü (Einstellungen -> Spiel): toggled on/off by a dedicated
         # RFID function tag ("game_toggle" - see FUNCTION_ACTIONS/_execute_
         # function_action), same momentary-scan-toggles-state pattern as
         # shuffle_toggle. Never persisted - always starts off after a
         # restart, same reasoning as night mode above: physical state (is
-        # the box currently in game mode) shouldn't outlive a reboot.
+        # the box currently in game mode) shouldn't outlive a reboot. Which
+        # mini-game is currently open (if any) is purely a client-side
+        # concern (see owlbox/web/static/js/game.js) - the engine only knows
+        # whether the game screen as a whole is showing.
         self._game_mode_active = False
 
         self._backlight = create_backlight(config)
@@ -985,12 +988,14 @@ class Engine:
             else:
                 self._restore_volume_after_fade_locked()
 
-    # -- Memory game ------------------------------------------------------------
-    # Purely a display-mode flag - which images to show and the actual matching
-    # logic live entirely client-side (owlbox/web/static/js/game.js), fed by
-    # /api/game/images. Independent of playback: toggling it doesn't
-    # pause/resume anything, a story can keep playing in the background while
-    # the kiosk shows the game screen instead of the now-playing view.
+    # -- Spiele-Menü --------------------------------------------------------
+    # Purely a display-mode flag - the menu, which mini-game is open and its
+    # logic live entirely client-side (owlbox/web/static/js/game*.js). The
+    # only server-side content is the per-game media pools (game_images,
+    # sound_clips, quiz_items - see repository.py/api.py). Independent of
+    # playback: toggling it doesn't pause/resume anything, a story can keep
+    # playing in the background while the kiosk shows the game screen
+    # instead of the now-playing view.
 
     def toggle_game_mode(self) -> None:
         with self._lock:

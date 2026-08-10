@@ -195,18 +195,22 @@ X/Y vertauschen - ob X11/libinput das wie beim alten Display automatisch
 mitkorrigiert oder ob `invx`/`invy`/`swapxy` von Hand nötig sind, ist für
 dieses Display noch nicht getestet.
 
-**Erste tatsächliche Nutzung des Touch: Memory-Spiel.** Bisher blieb der
+**Erste tatsächliche Nutzung des Touch: Spiele-Menü.** Bisher blieb der
 Touch-Controller dieses Displays komplett ungenutzt - die komplette
 Kiosk-Oberfläche war reines Anzeige-Display, bedient wurde nur über
-physische Taster/Encoder/RFID-Chips. Seit dem Memory-Spiel (Einstellungen
+physische Taster/Encoder/RFID-Chips. Seit dem Spiele-Menü (Einstellungen
 → Spiel, aktiviert/deaktiviert per eigenem RFID-Funktions-Chip
-"Memory-Spiel an/aus") ist das die **eine** Bildschirmansicht der Box, auf
-der Touch tatsächlich etwas bewirkt (Karten antippen zum Umdrehen) - überall
-sonst bleibt der Kiosk weiterhin reines Anzeige-Display. Die
-Client-seitige Logik braucht dafür keinerlei zusätzlichen Treiber- oder
-Betriebssystem-Code: sobald der Touch-Controller wie oben beschrieben per
-I2C angebunden ist, kommen Tipp-Ereignisse als normale Browser-Klick-/
-Pointer-Events an, auf die `owlbox/web/static/js/game.js` mit ganz
+"Spiele-Menü an/aus") ist das die **eine** Bildschirmansicht der Box, auf
+der Touch tatsächlich etwas bewirkt (Menü-Kachel bzw. Karten/Felder
+antippen) - überall sonst bleibt der Kiosk weiterhin reines Anzeige-Display.
+Sechs Mini-Spiele hängen an diesem einen Menü: Memory, Simon Sagt,
+Schiebe-Puzzle, Reaktion, Tier-Sound-Quiz und Sound-Memory (Details siehe
+README.md) - jedes ein eigenes `owlbox/web/static/js/game-<name>.js`, vom
+Menü-Orchestrator `game.js` per `window.OwlBoxGame<Name> = {start, stop}`
+ein-/ausgeblendet. Die Client-seitige Logik braucht dafür keinerlei
+zusätzlichen Treiber- oder Betriebssystem-Code: sobald der Touch-Controller
+wie oben beschrieben per I2C angebunden ist, kommen Tipp-Ereignisse als
+normale Browser-Klick-/Pointer-Events an, auf die jedes Mini-Spiel mit ganz
 gewöhnlichen `addEventListener("click", ...)`-Handlern reagiert. **Noch
 nicht an echter Hardware verifiziert** - dieses Projekt hatte bislang keine
 Gelegenheit, Touch-Eingaben auf dem echten Waveshare-Display zu testen, ob

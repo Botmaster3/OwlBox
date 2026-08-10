@@ -154,8 +154,8 @@ story.append(note_box(
 h1("4. Kiosk-Display (5″ Waveshare Touch Display)")
 p(
     "Die unauthentifizierte „Jetzt läuft“-Anzeige, die im Vollbild-Kiosk-Modus permanent auf dem "
-    "am Gerät verbauten Display läuft. Die Touch-Hardware wird von der Oberfläche einzig in der "
-    "Memory-Spielansicht ausgewertet (siehe unten sowie Kapitel 9.2, 10.5) - überall sonst ist die "
+    "am Gerät verbauten Display läuft. Die Touch-Hardware wird von der Oberfläche einzig im "
+    "Spiele-Menü ausgewertet (siehe Kapitel 4.1 sowie 9.2, 10.5) - überall sonst ist die "
     "Anzeige reine Information, bedient wird über die physischen Elemente aus Kapitel 3 oder über die "
     "Web-Verwaltung."
 )
@@ -182,13 +182,50 @@ story.append(spec_table(
         ["„Unbekannter Chip“-Banner", "Nach dem Auflegen eines nicht zugewiesenen Chips", "Hinweis, den Chip im Admin-Bereich zuzuweisen"],
         ["Schlafmodus-Anzeige", "Nach der eingestellten Pause-Dauer im automatischen Ruhemodus (Kapitel 10.3)", "Schlafende Eule + Hinweis, wie man sie weckt"],
         ["Eltern-Modus / QR-Code", "Solange ein Eltern-Chip aufliegt", "QR-Code zur Login-Seite, damit sich Eltern per Handy einloggen können"],
-        ["Memory-Spielansicht", "Solange das Memory-Spiel per Funktions-Chip aktiv ist (Kapitel 9.2)",
-         "Zunächst Schwierigkeitsauswahl (Leicht/Mittel/Schwer), danach Kartenraster zum Antippen "
-         "(einzige Ansicht mit Touch-Bedienung), Zug-Zähler und Gewinn-Anzeige mit „Nochmal spielen“/"
-         "„Schwierigkeit ändern“ nach vollständig aufgedecktem Feld - eine im Hintergrund laufende "
-         "Geschichte spielt dabei normal weiter"],
+        ["Spiele-Menü-Ansicht", "Solange das Spiele-Menü per Funktions-Chip aktiv ist (Kapitel 9.2)",
+         "Menü mit sechs antippbaren Mini-Spielen (einzige Ansicht mit Touch-Bedienung), Details in "
+         "Kapitel 4.1 - eine im Hintergrund laufende Geschichte spielt währenddessen normal weiter"],
     ],
     col_widths=[42 * mm, 58 * mm, 60 * mm],
+))
+
+h2("4.1 Spiele-Menü")
+p(
+    "Sechs kleine Spiele, alle über dasselbe Menü erreichbar (siehe Kapitel 9.2, 10.5 zur "
+    "Aktivierung). Ein „← Menü“-Knopf oben links springt aus jedem laufenden Spiel zurück zur "
+    "Auswahl, ohne den auslösenden Chip abnehmen zu müssen; erst das erneute Auflegen des Chips "
+    "verlässt das Spiele-Menü komplett."
+)
+story.append(spec_table(
+    [
+        ["Spiel", "Ablauf"],
+        ["Memory", "Bildpaare per Antippen finden. Vor jeder Runde eine Schwierigkeitsauswahl "
+         "(Leicht/Mittel/Schwer = 4/8/12 Bildpaare) aus dem unter Kapitel 10.5 hochgeladenen "
+         "Bilderpool; Zug-Zähler und Gewinn-Anzeige mit „Nochmal spielen“/„Schwierigkeit ändern“."],
+        ["Simon Sagt", "Eine wachsende Farb-/Ton-Sequenz auf vier Feldern nachtippen - jede "
+         "richtige Runde hängt ein weiterer Schritt an. Ein Fehler beendet die Runde und zeigt das "
+         "erreichte Level. Braucht keine hochgeladenen Inhalte."],
+        ["Schiebe-Puzzle", "Ein zufälliges Bild aus demselben Bilderpool wie Memory wird in Teile "
+         "zerschnitten (3×3/4×4/5×5 je nach Schwierigkeit); zwei Teile antippen vertauscht sie, bis "
+         "das Bild wieder stimmt. Zug-Zähler und Gewinn-Anzeige wie bei Memory."],
+        ["Reaktion", "Eine Eule taucht kurz an zufälligen Stellen in einem 3×3-Raster auf - "
+         "antippen, bevor sie wieder verschwindet. Die Schwierigkeit bestimmt nur das Tempo "
+         "(wie lange sie sichtbar bleibt), nicht die Feldgröße. Endet nach 15 Durchgängen mit "
+         "Trefferzahl."],
+        ["Tier-Sound-Quiz", "Ein Klang spielt ab, aus mehreren Bildern das passende antippen (z.B. "
+         "Kuh-Bild zu Muh-Ton). Ein „🔊 Nochmal anhören“-Knopf spielt den Klang erneut ab. Nutzt die "
+         "unter Kapitel 10.5 angelegten Bild+Ton-Paare, endet nach 8 Runden mit Punktzahl."],
+        ["Sound-Memory", "Wie Memory, aber es werden Klangpaare statt Bildpaare per Gehör gesucht: "
+         "Karte antippen spielt einen kurzen Klang ab, die zweite Karte mit demselben Klang finden. "
+         "Nutzt den unter Kapitel 10.5 hochgeladenen Klang-Pool, sonst identischer Ablauf wie Memory."],
+    ],
+    col_widths=[35 * mm, 125 * mm],
+))
+story.append(note_box(
+    "Reichen die hochgeladenen Bilder/Klänge nicht für die gewählte Schwierigkeit, wird die Runde "
+    "einfach entsprechend kleiner, statt einen Fehler zu zeigen. Mit zu wenig Inhalten für ein Spiel "
+    "überhaupt (weniger als 2 Bilder/Klänge bzw. weniger als 2 Rätsel-Paare) zeigt die jeweilige "
+    "Ansicht stattdessen einen Hinweis, welche Inhalte unter Einstellungen → Spiel noch fehlen."
 ))
 
 # ============================================================ 5. Navigation
@@ -385,8 +422,8 @@ story.append(spec_table(
         ["Einschlaf-Timer 15/30/45/60 Min", "Startet einen Einschlaf-Timer mit der jeweiligen Dauer "
          "(siehe Kapitel 10.3)."],
         ["Einschlaf-Timer abbrechen", "Bricht einen laufenden Einschlaf-Timer sofort ab."],
-        ["Memory-Spiel an/aus", "Blendet die Memory-Spielansicht auf dem Kiosk-Display ein/aus - "
-         "gleiches Ein-/Aus-Prinzip wie Shuffle oben (siehe Kapitel 10.5)."],
+        ["Spiele-Menü an/aus", "Blendet das Spiele-Menü auf dem Kiosk-Display ein/aus - "
+         "gleiches Ein-/Aus-Prinzip wie Shuffle oben (siehe Kapitel 4.1, 10.5)."],
         ["Pi neu starten / Pi herunterfahren", "Fährt den Raspberry Pi neu bzw. sicher herunter - die "
          "aktuelle Wiedergabeposition wird vorher gespeichert."],
     ],
@@ -395,9 +432,9 @@ story.append(spec_table(
 story.append(note_box(
     "Shuffle-/Wiederholungs-Chips wirken immer auf die Geschichte, die zuletzt tatsächlich geladen "
     "wurde - auch nachdem deren eigener Story-Chip schon wieder abgenommen wurde. Ohne jemals zuvor "
-    "geladene Geschichte (z.B. direkt nach dem Systemstart) haben sie keine Wirkung. Das Memory-Spiel "
+    "geladene Geschichte (z.B. direkt nach dem Systemstart) haben sie keine Wirkung. Das Spiele-Menü "
     "ist davon unabhängig - es lässt sich unabhängig davon, ob gerade eine Geschichte läuft, jederzeit "
-    "ein-/ausschalten, und eine im Hintergrund laufende Geschichte spielt während des Spiels normal weiter."
+    "ein-/ausschalten, und eine im Hintergrund laufende Geschichte spielt währenddessen normal weiter."
 ))
 
 h2("9.3 Story-Chips (Übersicht)")
@@ -533,22 +570,41 @@ story.append(note_box(
 
 h2("10.5 Spiel")
 p(
-    "Verwaltet den Bilderpool für das Memory-Spiel (Kapitel 4, 9.2) - die einzige Bildschirmansicht "
-    "im gesamten Kiosk, auf der die Touch-Hardware des Displays tatsächlich etwas bewirkt."
+    "Verwaltet die drei Inhalte-Pools für das Spiele-Menü (Kapitel 4.1, 9.2) - die einzige "
+    "Bildschirmansicht im gesamten Kiosk, auf der die Touch-Hardware des Displays tatsächlich etwas "
+    "bewirkt."
 )
+
+h3("Bilder (Memory & Schiebe-Puzzle)")
 ctrl("Bilder hochladen", "Datei-Auswahl (Mehrfachauswahl möglich) + „Hochladen“-Button",
      "Lädt eigene Bilder (JPG/PNG/WebP) in den gemeinsamen Bilderpool hoch - keine Begrenzung der "
-     "Gesamtzahl. Auf dem Kiosk-Display wird vor jeder Runde ein Schwierigkeitsgrad gewählt "
-     "(Leicht/Mittel/Schwer = 4/8/12 Bildpaare), der bestimmt, wie viele Paare eine Runde zufällig "
-     "aus dem Pool zieht.")
+     "Gesamtzahl. Wird von zwei Spielen geteilt: Memory zieht daraus Bildpaare (Schwierigkeitsgrad "
+     "Leicht/Mittel/Schwer = 4/8/12 Paare), Schiebe-Puzzle zerschneidet jeweils ein zufälliges Bild "
+     "daraus in Teile.")
 ctrl("Bilder-Übersicht", "Miniaturbild-Raster mit Papierkorb-Symbol je Bild", "Löscht ein einzelnes Bild "
      "endgültig aus dem Pool (Datei und Datenbankeintrag) - laufende oder künftige Spielrunden ziehen "
      "dann nur noch aus den verbliebenen Bildern.")
+
+h3("Klänge (Sound-Memory)")
+ctrl("Klänge hochladen", "Datei-Auswahl (Mehrfachauswahl möglich) + „Hochladen“-Button",
+     "Lädt kurze Klangschnipsel (gängige Audioformate) in den Klang-Pool für Sound-Memory hoch - "
+     "dort werden statt Bildpaaren Klangpaare per Gehör gesucht.")
+ctrl("Klänge-Übersicht", "Liste mit eingebettetem Audio-Player und Papierkorb-Symbol je Klang",
+     "Zum Probehören direkt hier sowie zum endgültigen Löschen eines Klangs.")
+
+h3("Rätsel (Tier-Sound-Quiz)")
+ctrl("Bild + Ton + Bezeichnung (optional)", "Zwei Datei-Auswahlfelder + Textfeld + „Hinzufügen“-Button",
+     "Legt ein neues Bild+Ton-Paar an, z.B. ein Kuh-Foto plus eine Muh-Aufnahme. Die Bezeichnung "
+     "dient nur der eigenen Übersicht hier in der Liste - im Spiel selbst wird sie nie angezeigt.")
+ctrl("Rätsel-Übersicht", "Liste mit Bild-Miniatur, Audio-Player, Bezeichnung und Papierkorb-Symbol "
+     "je Rätsel", "Zum Probehören/-ansehen sowie zum endgültigen Löschen eines Rätsels.")
+
 story.append(note_box(
-    "Mit weniger als zwei hochgeladenen Bildern zeigt die Spielansicht auf dem Kiosk-Display "
-    "stattdessen einen Hinweis, dass noch Bilder fehlen, statt eines leeren oder unvollständigen "
-    "Spielfelds. Reichen die hochgeladenen Bilder nicht für den gewählten Schwierigkeitsgrad, wird "
-    "die Runde einfach entsprechend kleiner, statt einen Fehler zu zeigen."
+    "Mit zu wenig Inhalten zeigt die jeweilige Spielansicht auf dem Kiosk-Display einen Hinweis, "
+    "was noch fehlt, statt eines leeren oder unvollständigen Spielfelds (Memory/Schiebe-Puzzle/"
+    "Sound-Memory brauchen mindestens 2 Bilder bzw. Klänge, Tier-Sound-Quiz mindestens 2 Rätsel). "
+    "Reichen die hochgeladenen Bilder/Klänge nicht für den gewählten Schwierigkeitsgrad, wird die "
+    "Runde einfach entsprechend kleiner, statt einen Fehler zu zeigen."
 ))
 
 h2("10.6 Netzwerk (WLAN)")

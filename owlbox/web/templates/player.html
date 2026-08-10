@@ -115,33 +115,184 @@
 
 <!-- The one screen where touch actually does something (see docs/hardware.md) -
      everywhere else on the kiosk is look-only, physical buttons/encoder/RFID
-     only. Populated and driven entirely by game.js. -->
+     only. Menu + mini-game switching is owned by game.js; each mini-game's
+     own screen is owned by its own game-<name>.js (see comments there). -->
 <div id="game-mode" class="game-mode" hidden>
-  <!-- Shown first on every game-mode activation (see game.js's start()) -
-       picking a difficulty is what actually starts the first round. -->
-  <div id="game-difficulty" class="game-difficulty" hidden>
-    <div class="game-difficulty-owl">🦉🧩</div>
-    <p class="game-difficulty-title">Wie schwer soll's werden?</p>
-    <div class="game-difficulty-buttons">
-      <button type="button" class="btn game-difficulty-btn" data-difficulty="leicht">Leicht</button>
-      <button type="button" class="btn game-difficulty-btn" data-difficulty="mittel">Mittel</button>
-      <button type="button" class="btn game-difficulty-btn" data-difficulty="schwer">Schwer</button>
+  <button type="button" id="game-back-btn" class="btn secondary game-back-btn" hidden>← Menü</button>
+
+  <div id="game-menu" class="game-screen">
+    <div class="game-menu-title">🎮 Spiele-Menü</div>
+    <div class="game-menu-grid">
+      <button type="button" class="game-menu-tile" data-game="memory">
+        <span class="game-menu-tile-icon">🧠</span>
+        <span class="game-menu-tile-label">Memory</span>
+      </button>
+      <button type="button" class="game-menu-tile" data-game="simon">
+        <span class="game-menu-tile-icon">🎵</span>
+        <span class="game-menu-tile-label">Simon Sagt</span>
+      </button>
+      <button type="button" class="game-menu-tile" data-game="puzzle">
+        <span class="game-menu-tile-icon">🧩</span>
+        <span class="game-menu-tile-label">Schiebe-Puzzle</span>
+      </button>
+      <button type="button" class="game-menu-tile" data-game="reaction">
+        <span class="game-menu-tile-icon">⚡</span>
+        <span class="game-menu-tile-label">Reaktion</span>
+      </button>
+      <button type="button" class="game-menu-tile" data-game="quiz">
+        <span class="game-menu-tile-icon">🐄</span>
+        <span class="game-menu-tile-label">Tier-Sound-Quiz</span>
+      </button>
+      <button type="button" class="game-menu-tile" data-game="soundmemory">
+        <span class="game-menu-tile-icon">🔊</span>
+        <span class="game-menu-tile-label">Sound-Memory</span>
+      </button>
     </div>
   </div>
-  <div id="game-grid" class="game-grid" hidden></div>
-  <div id="game-empty-hint" class="game-empty-hint" hidden>
-    <div class="game-empty-owl">🦉🧩</div>
-    <p>Noch keine Bilder für das Memory-Spiel hochgeladen.</p>
-    <p class="game-empty-subhint">Unter Einstellungen → Spiel lassen sich eigene Bilder hinzufügen.</p>
+
+  <div id="game-memory" class="game-screen game-sub" hidden>
+    <!-- Shown first on every Memory activation (see game-memory.js's start()) -
+         picking a difficulty is what actually starts the first round. -->
+    <div id="game-difficulty" class="game-difficulty" hidden>
+      <div class="game-difficulty-owl">🦉🧩</div>
+      <p class="game-difficulty-title">Wie schwer soll's werden?</p>
+      <div class="game-difficulty-buttons">
+        <button type="button" class="btn game-difficulty-btn" data-difficulty="leicht">Leicht</button>
+        <button type="button" class="btn game-difficulty-btn" data-difficulty="mittel">Mittel</button>
+        <button type="button" class="btn game-difficulty-btn" data-difficulty="schwer">Schwer</button>
+      </div>
+    </div>
+    <div id="game-grid" class="game-grid" hidden></div>
+    <div id="game-empty-hint" class="game-empty-hint" hidden>
+      <div class="game-empty-owl">🦉🧩</div>
+      <p>Noch keine Bilder für das Memory-Spiel hochgeladen.</p>
+      <p class="game-empty-subhint">Unter Einstellungen → Spiel lassen sich eigene Bilder hinzufügen.</p>
+    </div>
+    <div id="game-win-banner" class="game-win-banner" hidden>
+      🎉 Geschafft! <span id="game-win-moves"></span>
+      <div class="game-win-buttons">
+        <button type="button" id="game-again-btn" class="btn">Nochmal spielen</button>
+        <button type="button" id="game-change-difficulty-btn" class="btn secondary">Schwierigkeit ändern</button>
+      </div>
+    </div>
   </div>
-  <div id="game-win-banner" class="game-win-banner" hidden>
-    🎉 Geschafft! <span id="game-win-moves"></span>
-    <div class="game-win-buttons">
-      <button type="button" id="game-again-btn" class="btn">Nochmal spielen</button>
-      <button type="button" id="game-change-difficulty-btn" class="btn secondary">Schwierigkeit ändern</button>
+
+  <div id="game-simon" class="game-screen game-sub" hidden>
+    <div class="game-simon-status" id="game-simon-status">Level <span id="game-simon-level">1</span></div>
+    <div class="game-simon-pad-grid">
+      <button type="button" class="game-simon-pad" data-pad="0" style="--pad-color: #2ecc71;"></button>
+      <button type="button" class="game-simon-pad" data-pad="1" style="--pad-color: #e74c3c;"></button>
+      <button type="button" class="game-simon-pad" data-pad="2" style="--pad-color: #f1c40f;"></button>
+      <button type="button" class="game-simon-pad" data-pad="3" style="--pad-color: #3498db;"></button>
+    </div>
+    <button type="button" id="game-simon-start-btn" class="btn">Los geht's</button>
+    <div id="game-simon-gameover" class="game-simon-gameover" hidden>
+      <p>🙈 Daneben! Level <span id="game-simon-final-level"></span> geschafft.</p>
+      <button type="button" id="game-simon-again-btn" class="btn">Nochmal spielen</button>
+    </div>
+  </div>
+
+  <div id="game-puzzle" class="game-screen game-sub" hidden>
+    <div id="game-puzzle-difficulty" class="game-difficulty" hidden>
+      <div class="game-difficulty-owl">🦉🧩</div>
+      <p class="game-difficulty-title">Wie schwer soll's werden?</p>
+      <div class="game-difficulty-buttons">
+        <button type="button" class="btn game-puzzle-difficulty-btn" data-difficulty="leicht">Leicht</button>
+        <button type="button" class="btn game-puzzle-difficulty-btn" data-difficulty="mittel">Mittel</button>
+        <button type="button" class="btn game-puzzle-difficulty-btn" data-difficulty="schwer">Schwer</button>
+      </div>
+    </div>
+    <div id="game-puzzle-board-wrap" class="game-puzzle-board-wrap" hidden>
+      <img id="game-puzzle-reference" class="game-puzzle-reference" alt="Vorschau">
+      <div id="game-puzzle-grid" class="game-puzzle-grid"></div>
+    </div>
+    <div id="game-puzzle-empty-hint" class="game-empty-hint" hidden>
+      <div class="game-empty-owl">🦉🧩</div>
+      <p>Noch keine Bilder hochgeladen.</p>
+      <p class="game-empty-subhint">Unter Einstellungen → Spiel lassen sich eigene Bilder hinzufügen.</p>
+    </div>
+    <div id="game-puzzle-win-banner" class="game-win-banner" hidden>
+      🎉 Geschafft! <span id="game-puzzle-win-moves"></span>
+      <div class="game-win-buttons">
+        <button type="button" id="game-puzzle-again-btn" class="btn">Nochmal spielen</button>
+        <button type="button" id="game-puzzle-change-difficulty-btn" class="btn secondary">Schwierigkeit ändern</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-reaction" class="game-screen game-sub" hidden>
+    <div id="game-reaction-difficulty" class="game-difficulty" hidden>
+      <div class="game-difficulty-owl">🦉⚡</div>
+      <p class="game-difficulty-title">Wie schnell soll's werden?</p>
+      <div class="game-difficulty-buttons">
+        <button type="button" class="btn game-reaction-difficulty-btn" data-difficulty="leicht">Leicht</button>
+        <button type="button" class="btn game-reaction-difficulty-btn" data-difficulty="mittel">Mittel</button>
+        <button type="button" class="btn game-reaction-difficulty-btn" data-difficulty="schwer">Schwer</button>
+      </div>
+    </div>
+    <div id="game-reaction-board-wrap" class="game-reaction-board-wrap" hidden>
+      <div class="game-reaction-status">🎯 <span id="game-reaction-score">0</span> / <span id="game-reaction-total">15</span></div>
+      <div id="game-reaction-grid" class="game-reaction-grid"></div>
+    </div>
+    <div id="game-reaction-win-banner" class="game-win-banner" hidden>
+      🎉 Fertig! <span id="game-reaction-final-score"></span>
+      <div class="game-win-buttons">
+        <button type="button" id="game-reaction-again-btn" class="btn">Nochmal spielen</button>
+        <button type="button" id="game-reaction-change-difficulty-btn" class="btn secondary">Schwierigkeit ändern</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-quiz" class="game-screen game-sub" hidden>
+    <div id="game-quiz-board-wrap" class="game-quiz-board-wrap" hidden>
+      <div class="game-quiz-status">🎯 Punkte: <span id="game-quiz-score">0</span> · Runde <span id="game-quiz-round">1</span>/<span id="game-quiz-total">8</span></div>
+      <button type="button" id="game-quiz-replay-btn" class="btn secondary game-quiz-replay-btn">🔊 Nochmal anhören</button>
+      <div id="game-quiz-grid" class="game-quiz-grid"></div>
+    </div>
+    <div id="game-quiz-empty-hint" class="game-empty-hint" hidden>
+      <div class="game-empty-owl">🦉🐄</div>
+      <p>Noch keine Rätsel für das Tier-Sound-Quiz hochgeladen.</p>
+      <p class="game-empty-subhint">Unter Einstellungen → Spiel lassen sich Bild+Ton-Paare hinzufügen.</p>
+    </div>
+    <div id="game-quiz-win-banner" class="game-win-banner" hidden>
+      🎉 Fertig! <span id="game-quiz-final-score"></span>
+      <div class="game-win-buttons">
+        <button type="button" id="game-quiz-again-btn" class="btn">Nochmal spielen</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-soundmemory" class="game-screen game-sub" hidden>
+    <div id="game-soundmemory-difficulty" class="game-difficulty" hidden>
+      <div class="game-difficulty-owl">🦉🔊</div>
+      <p class="game-difficulty-title">Wie schwer soll's werden?</p>
+      <div class="game-difficulty-buttons">
+        <button type="button" class="btn game-soundmemory-difficulty-btn" data-difficulty="leicht">Leicht</button>
+        <button type="button" class="btn game-soundmemory-difficulty-btn" data-difficulty="mittel">Mittel</button>
+        <button type="button" class="btn game-soundmemory-difficulty-btn" data-difficulty="schwer">Schwer</button>
+      </div>
+    </div>
+    <div id="game-soundmemory-grid" class="game-grid" hidden></div>
+    <div id="game-soundmemory-empty-hint" class="game-empty-hint" hidden>
+      <div class="game-empty-owl">🦉🔊</div>
+      <p>Noch keine Klänge für das Sound-Memory hochgeladen.</p>
+      <p class="game-empty-subhint">Unter Einstellungen → Spiel lassen sich eigene Klänge hinzufügen.</p>
+    </div>
+    <div id="game-soundmemory-win-banner" class="game-win-banner" hidden>
+      🎉 Geschafft! <span id="game-soundmemory-win-moves"></span>
+      <div class="game-win-buttons">
+        <button type="button" id="game-soundmemory-again-btn" class="btn">Nochmal spielen</button>
+        <button type="button" id="game-soundmemory-change-difficulty-btn" class="btn secondary">Schwierigkeit ändern</button>
+      </div>
     </div>
   </div>
 </div>
+<script src="{{ url_for('static', filename='js/game-memory.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-simon.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-puzzle.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-reaction.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-quiz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game-soundmemory.js') }}"></script>
 <script src="{{ url_for('static', filename='js/game.js') }}"></script>
 <script src="{{ url_for('static', filename='js/player.js') }}"></script>
 {% endblock %}
