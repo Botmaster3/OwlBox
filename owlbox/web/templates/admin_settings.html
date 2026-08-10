@@ -4,15 +4,16 @@
 <div class="admin" id="app">
   {% include "_admin_nav.html" %}
 
-  <nav class="jump-nav">
-    <a href="#section-konto">Konto</a>
-    <a href="#section-design">Design</a>
-    <a href="#section-audio">Audio</a>
-    <a href="#section-anzeige">Anzeige</a>
-    <a href="#section-netzwerk">Netzwerk</a>
-    <a href="#section-system">System</a>
+  <nav class="settings-tabs" role="tablist">
+    <button type="button" class="settings-tab" data-panel="konto" role="tab">Konto</button>
+    <button type="button" class="settings-tab" data-panel="design" role="tab">Design</button>
+    <button type="button" class="settings-tab" data-panel="audio" role="tab">Audio</button>
+    <button type="button" class="settings-tab" data-panel="anzeige" role="tab">Anzeige</button>
+    <button type="button" class="settings-tab" data-panel="netzwerk" role="tab">Netzwerk</button>
+    <button type="button" class="settings-tab" data-panel="system" role="tab">System</button>
   </nav>
 
+  <div class="settings-panel" data-panel="konto">
   <h2 class="settings-section-heading" id="section-konto">Konto</h2>
 
   <div class="card">
@@ -46,6 +47,9 @@
     </form>
   </div>
 
+  </div>
+
+  <div class="settings-panel" data-panel="design" hidden>
   <h2 class="settings-section-heading" id="section-design">Design</h2>
 
   <div class="card">
@@ -146,6 +150,9 @@
     <button class="btn" type="button" id="custom-theme-save-btn">Eigenes Design speichern &amp; aktivieren</button>
   </div>
 
+  </div>
+
+  <div class="settings-panel" data-panel="audio" hidden>
   <h2 class="settings-section-heading" id="section-audio">Audio</h2>
 
   <div class="card">
@@ -267,6 +274,9 @@
       Wiedergabe zu beenden.</p>
   </div>
 
+  </div>
+
+  <div class="settings-panel" data-panel="anzeige" hidden>
   <h2 class="settings-section-heading" id="section-anzeige">Anzeige</h2>
 
   <div class="card">
@@ -301,6 +311,9 @@
     </p>
   </div>
 
+  </div>
+
+  <div class="settings-panel" data-panel="netzwerk" hidden>
   <h2 class="settings-section-heading" id="section-netzwerk">Netzwerk</h2>
 
   <div class="card">
@@ -332,6 +345,9 @@
     <div id="wifi-known-list"></div>
   </div>
 
+  </div>
+
+  <div class="settings-panel" data-panel="system" hidden>
   <h2 class="settings-section-heading" id="section-system">System</h2>
 
   <div class="card">
@@ -343,6 +359,8 @@
       sicher aus - danach muss die Stromversorgung manuell wieder getrennt und verbunden werden, um
       ihn erneut zu starten.</p>
     <span id="system-status" class="hint"></span>
+  </div>
+
   </div>
 </div>
 

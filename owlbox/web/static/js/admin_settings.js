@@ -21,6 +21,34 @@
     return body;
   }
 
+  // -- tabs ---------------------------------------------------------------
+  // Real tabs, not anchor-jump-to-scroll: exactly one .settings-panel is
+  // ever in the visible flow (the rest sit behind [hidden]), so switching
+  // never scrolls the page. Still reads/writes the #section-<name> hash so
+  // an existing bookmark/link opens on the right tab, it just no longer
+  // relies on native anchor-scroll to get there.
+
+  (function () {
+    const tabs = Array.from(document.querySelectorAll(".settings-tab"));
+    const panels = Array.from(document.querySelectorAll(".settings-panel"));
+    const names = panels.map((panel) => panel.dataset.panel);
+
+    function activate(name) {
+      tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.panel === name));
+      panels.forEach((panel) => { panel.hidden = panel.dataset.panel !== name; });
+    }
+
+    const fromHash = location.hash.replace(/^#section-/, "");
+    activate(names.includes(fromHash) ? fromHash : names[0]);
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        activate(tab.dataset.panel);
+        history.replaceState(null, "", "#section-" + tab.dataset.panel);
+      });
+    });
+  })();
+
   // -- system (restart/shutdown) ---------------------------------------------
 
   const systemStatus = document.getElementById("system-status");

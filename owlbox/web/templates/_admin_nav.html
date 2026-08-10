@@ -2,6 +2,15 @@
   <div class="nav-actions">
     <button class="btn secondary" id="help-mode-toggle" type="button"
       title="Erklärungen zu jedem Regler und Eingabefeld dauerhaft ein-/ausblenden">❓ Hilfe</button>
+    <div class="power-menu">
+      <button class="btn secondary" id="power-menu-toggle" type="button"
+        title="Pi neu starten oder herunterfahren" aria-haspopup="true" aria-expanded="false">⏻</button>
+      <div class="power-menu-dropdown" id="power-menu-dropdown" hidden>
+        <button class="btn secondary small" id="nav-restart-btn" type="button">🔄 Neu starten</button>
+        <button class="btn danger small" id="nav-shutdown-btn" type="button">⏻ Herunterfahren</button>
+        <span id="nav-power-status" class="hint"></span>
+      </div>
+    </div>
     <form action="{{ url_for('pages.logout') }}" method="post" class="logout">
       <button class="btn secondary" type="submit">Abmelden</button>
     </form>
@@ -31,5 +40,54 @@
       localStorage.setItem(KEY, enabled ? "1" : "0");
       apply(enabled);
     });
+  })();
+
+  // Power menu (restart/shutdown) - same /api/system/* endpoints the
+  // dedicated Einstellungen > System card uses, just reachable from every
+  // admin page instead of only from Einstellungen.
+  (function () {
+    var toggle = document.getElementById("power-menu-toggle");
+    var dropdown = document.getElementById("power-menu-dropdown");
+    var status = document.getElementById("nav-power-status");
+
+    function closeMenu() {
+      dropdown.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+    }
+    function openMenu() {
+      dropdown.hidden = false;
+      toggle.setAttribute("aria-expanded", "true");
+    }
+
+    toggle.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (dropdown.hidden) openMenu(); else closeMenu();
+    });
+    document.addEventListener("click", function (event) {
+      if (!dropdown.hidden && !dropdown.contains(event.target) && event.target !== toggle) {
+        closeMenu();
+      }
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeMenu();
+    });
+
+    function trigger(id, url, confirmText, statusText) {
+      document.getElementById(id).addEventListener("click", async function () {
+        if (!confirm(confirmText)) return;
+        status.textContent = statusText;
+        try {
+          var res = await fetch(url, { method: "POST" });
+          var body = await res.json().catch(function () { return {}; });
+          if (!res.ok) throw new Error(body.error || ("HTTP " + res.status));
+        } catch (err) {
+          status.textContent = err.message;
+        }
+      });
+    }
+    trigger("nav-restart-btn", "/api/system/restart", "Pi jetzt neu starten?", "Startet neu…");
+    trigger("nav-shutdown-btn", "/api/system/shutdown",
+      "Pi jetzt herunterfahren? Danach muss er per Stecker/Schalter wieder eingeschaltet werden.",
+      "Fährt herunter…");
   })();
 </script>
