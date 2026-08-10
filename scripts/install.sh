@@ -4,11 +4,12 @@
 #
 # Targets the project's standard hardware (see docs/hardware.md): Pi 3B+, HiFiBerry
 # Amp2 (TAS5756M chip - the PCM512x family, same codec as the DAC+ Pro; NOT the
-# older Amp/Amp+'s TAS5713, a different chip needing a different overlay), the
-# official 7" Raspberry Pi Touch Display (DSI ribbon cable + 4 jumper wires for
-# power/I2C touch - see docs/hardware.md), RC522 on the Pi's real hardware
-# SPI0 bus (free since the display doesn't use SPI at all), buttons/encoders
-# on the documented default pins.
+# older Amp/Amp+'s TAS5713, a different chip needing a different overlay), a
+# 5" Waveshare DSI touch display (5-DSI-TOUCH-A, 720x1280, DSI ribbon cable +
+# I2C touch - see docs/hardware.md; replaced the project's earlier official
+# 7" Raspberry Pi Touch Display), RC522 on the Pi's real hardware SPI0 bus
+# (free since the display doesn't use SPI at all), buttons/encoders on the
+# documented default pins.
 #
 # STAGED INSTALL - the real point of this script's structure. Four independent
 # stages, each installing only the OS packages/config.txt lines that ONE piece
@@ -16,7 +17,7 @@
 # <name>`, see docs/staged-setup.md) before moving on to the next:
 #
 #   sudo ./scripts/install.sh sound      # nur HiFiBerry Amp2
-#   sudo ./scripts/install.sh display    # + 7"-Touch-Display (DSI)
+#   sudo ./scripts/install.sh display    # + 5"-Touch-Display (DSI)
 #   sudo ./scripts/install.sh rfid       # + RC522-Leser
 #   sudo ./scripts/install.sh controls   # + Taster/Encoder
 #   sudo ./scripts/install.sh            # alle vier zusammen (Kurzform: "all")
@@ -384,9 +385,9 @@ cp "$INSTALL_DIR/systemd/owlbox.service" /etc/systemd/system/owlbox.service
 systemctl daemon-reload
 
 # ============================================================ SOUND
-# The official 7" DSI Touch Display needs NO config.txt entry at all - it's
-# auto-detected over the DSI ribbon cable by the Pi's own firmware (handled
-# under DISPLAY below regardless). All that's needed here is the audio path.
+# The display's own config.txt overlay is handled entirely under DISPLAY
+# below, regardless of stage ordering - nothing needed here for it. All
+# that's needed in this stage is the audio path.
 if [ "$DO_SOUND" -eq 1 ]; then
   echo "==> [Sound] Installing packages (mpv, ALSA)"
   apt-get install -y mpv alsa-utils || true
@@ -457,9 +458,9 @@ if [ "$DO_DISPLAY" -eq 1 ]; then
   # start X without a display manager; matchbox-window-manager is tiny but
   # keeps things well-behaved if a stray JS alert()/confirm() window ever
   # pops up in Chromium. No fbdev/legacy GL driver package needed here: the
-  # official DSI touch display works with the modern KMS driver
-  # (vc4-kms-v3d, the Bookworm default) active, so X's own default
-  # "modesetting" driver finds /dev/dri/card0 and just works.
+  # DSI touch display works with the modern KMS driver (vc4-kms-v3d, the
+  # Bookworm default) active, so X's own default "modesetting" driver finds
+  # /dev/dri/card0 and just works.
   apt-get install -y xserver-xorg xserver-xorg-legacy xinit x11-xserver-utils matchbox-window-manager || true
 
   # Belt-and-suspenders against the "German/English" translate bar Chromium
@@ -479,42 +480,35 @@ EOF
   done
 
   if [ -n "$CONFIG_TXT" ]; then
-    echo "==> [Display] Configuring 7\" DSI Touch Display in $CONFIG_TXT"
-    # dtoverlay=vc4-kms-dsi-7inch: THE actual, official overlay for this
-    # display under KMS - confirmed on real hardware that without it, the
-    # DSI panel node/bridge never gets instantiated at all ("[drm] Cannot
-    # find any crtc or sizes" in dmesg, screen stays black) - vc4-kms-v3d
-    # alone (see SOUND above) only enables the base KMS driver, it doesn't
-    # know this specific panel's timings on its own. Also covers the touch
-    # controller (ft5406-family) itself, no separate rpi-ft5406 overlay line
-    # needed. dtparam=i2c_arm=on: the display's touch controller needs I2C.
+    echo "==> [Display] Configuring 5\" Waveshare DSI Touch Display in $CONFIG_TXT"
+    # dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a: the overlay
+    # Waveshare's own wiki documents for this exact model (5-DSI-TOUCH-A,
+    # 720x1280, aluminium case) - NOT the vc4-kms-dsi-7inch overlay used by
+    # the previous official 7" display, and NOT the plain
+    # "vc4-kms-dsi-waveshare-panel" (no "-v2"/"_a") name some *other*
+    # Waveshare 5" DSI panels use - different panel, different overlay.
+    # Not yet confirmed on real hardware - verify against
+    # https://www.waveshare.com/wiki/5-DSI-TOUCH-A before flashing, this
+    # repo's sandbox couldn't reach waveshare.com to check the primary
+    # source directly. dtparam=i2c_arm=on: the display's touch controller
+    # needs I2C, same as the previous display.
     write_stage_block "$CONFIG_TXT" display \
       "dtparam=i2c_arm=on" \
-      "dtoverlay=vc4-kms-dsi-7inch"
+      "dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a"
   else
     echo "WARNUNG: config.txt nicht gefunden - Display-Overlay konnte nicht automatisch gesetzt werden." >&2
   fi
 
-  # The 180° *video* flip for the physically upside-down 7" Touch Display has
-  # to be a kernel command-line parameter, not anything in config.txt - the
-  # vc4-kms-dsi-7inch overlay has no "rotate=" param at all (confirmed
-  # against /boot/firmware/overlays/README: only sizex/sizey/invx/invy/
-  # swapxy/disable_touch/dsi0 exist), and xrandr/display_lcd_rotate are both
-  # confirmed ineffective under KMS. No touch params (invx/invy/swapxy) added
-  # on top: confirmed on real hardware that once the video itself is rotated
-  # via this cmdline.txt parameter, touch input already tracks correctly on
-  # its own (X11/libinput applies its own coordinate transform to match the
-  # rotated output) - adding invx+invy here on top double-corrected it.
-  if [ -n "$CMDLINE_TXT" ]; then
-    if ! grep -q "video=DSI-1" "$CMDLINE_TXT"; then
-      echo "==> [Display] Adding 180° video rotation to $CMDLINE_TXT"
-      CMDLINE_BEFORE="$(cat "$CMDLINE_TXT")"
-      printf '%s %s\n' "$CMDLINE_BEFORE" "video=DSI-1:800x480@60,rotate=180" > "$CMDLINE_TXT"
-      CMDLINE_ADDED=1
-    fi
-  else
-    echo "WARNUNG: cmdline.txt nicht gefunden - Bild-Rotation konnte nicht automatisch gesetzt werden." >&2
-  fi
+  # No video=DSI-1 cmdline rotation added (unlike the previous 7" display,
+  # which needed one because it sat physically upside-down in this box's
+  # case) - this panel's native mode is 720x1280 portrait, and by explicit
+  # request orientation is handled by physically mounting the panel itself,
+  # not in software. If a software rotation does turn out to be needed once
+  # it's actually mounted, add "video=DSI-1:<mode>,rotate=<deg>" to
+  # cmdline.txt by hand - see the git history of this file for how the old
+  # 180°-flip line was structured, and docs/hardware.md's troubleshooting
+  # notes on why xrandr/display_lcd_rotate don't work under KMS for a DSI
+  # panel like this.
 
   echo "==> [Display] Setting up kiosk autostart (minimal X, no desktop environment)"
   cat > /etc/X11/Xwrapper.config <<'EOF'

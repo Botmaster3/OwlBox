@@ -111,7 +111,8 @@ bullets([
     "Passendes Netzteil (5V/2,5A für den Pi selbst; bei aktivem HiFiBerry-Verstärker eher 5V/3A)",
     "HiFiBerry Amp2 (I2S-Verstärker-HAT) + Lautsprecher",
     "RC522 RFID-Modul + mindestens ein RFID-Chip/-Karte (13,56 MHz, MIFARE-kompatibel)",
-    "Offizielles Raspberry Pi 7″ Touch Display (DSI, erste Generation)",
+    "Waveshare 5″ DSI Touch Display (5-DSI-TOUCH-A, 720×1280) - noch nicht an echter "
+    "Hardware verifiziert, siehe OwlBox-Verkabelung.pdf Kapitel 1.1",
     "2 Taster, 2 Dreh-Encoder (KY-040) - siehe OwlBox-Verkabelung.pdf für die genaue Bauteilliste",
     "PC oder Laptop mit SD-Kartenleser (zum Beschreiben der SD-Karte) - Windows, macOS oder Linux",
     "Netzwerkkabel oder WLAN-Zugang für den Pi",
@@ -267,7 +268,7 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     p(
         "Jetzt den Pi <b>vom Strom trennen</b> und die komplette restliche Hardware verkabeln: "
         "HiFiBerry Amp2 (direkt aufgesteckt), RC522-RFID-Leser, beide Taster, beide "
-        "Dreh-Encoder sowie das 7″-Touch-Display - per DSI-Flachbandkabel am eigenen "
+        "Dreh-Encoder sowie das 5″-Waveshare-Touch-Display - per DSI-Flachbandkabel am eigenen "
         "DSI-Steckplatz (kein Konflikt mit dem HiFiBerry, keine Steckplatzkollision) plus 4 "
         "Jumperkabel für Strom und Touch-I2C."
     )
@@ -302,8 +303,8 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     p("Zum Abtippen bzw. Kopieren:")
     code(["sudo ./scripts/install.sh"])
     p(
-        "Für die in Kapitel 1 gelistete Standardhardware (HiFiBerry Amp2, offizielles "
-        "7″-Touch-Display) automatisiert das Skript inzwischen praktisch alles, was früher von "
+        "Für die in Kapitel 1 gelistete Standardhardware (HiFiBerry Amp2, Waveshare-"
+        "Touch-Display) automatisiert das Skript inzwischen praktisch alles, was früher von "
         "Hand nachgetragen werden musste. Im ersten Durchlauf erledigt es:"
     )
     bullets([
@@ -317,9 +318,10 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         mono("config/config.yaml") + " aus der Vorlage anlegen, falls noch nicht vorhanden",
         "HiFiBerry-Overlay (" + mono("dtoverlay=hifiberry-dacplus") + ", passend zum "
         "TAS5756M-Chip des Amp2) sowie den Grafiktreiber-Overlay (" +
-        mono("dtoverlay=vc4-kms-v3d,noaudio") + " plus " + mono("dtoverlay=vc4-kms-dsi-7inch") +
-        " fürs Display) in config.txt eintragen - das Display selbst braucht keinen separaten "
-        "Treiber-Installer",
+        mono("dtoverlay=vc4-kms-v3d,noaudio") + " plus " +
+        mono("dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a") +
+        " fürs Display, noch nicht an echter Hardware verifiziert) in config.txt eintragen - "
+        "das Display selbst braucht keinen separaten Treiber-Installer",
         "Den Pi am Ende automatisch neu starten",
     ])
     story.append(note_box(
@@ -568,10 +570,13 @@ story.append(spec_table(
          "sudo owlbox-install erneut ausführen (entfernt vorbestehende dtparam=audio=on-Zeilen "
          "automatisch) und neu starten."],
         ["Display bleibt schwarz", "dmesg | grep -i drm prüfen - „Cannot find any crtc or "
-         "sizes“ bedeutet, dass in config.txt der displayspezifische Overlay fehlt: neben "
-         "dtoverlay=vc4-kms-v3d,noaudio wird zusätzlich dtoverlay=vc4-kms-dsi-7inch gebraucht "
-         "(siehe OwlBox-Verkabelung.pdf, Kapitel 8); sudo owlbox-install noch einmal ausführen, "
-         "falls das noch nicht eingetragen ist (Abschnitt „OwlBox-Software installieren“)."],
+         "sizes“ bedeutet, dass in config.txt der displayspezifische Overlay fehlt oder falsch "
+         "ist: neben dtoverlay=vc4-kms-v3d,noaudio wird zusätzlich "
+         "dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a gebraucht (siehe "
+         "OwlBox-Verkabelung.pdf, Kapitel 8, dort auch der Hinweis, dass der genaue Overlay-Name "
+         "noch nicht an echter Hardware verifiziert ist); sudo owlbox-install noch einmal "
+         "ausführen, falls das noch nicht eingetragen ist (Abschnitt "
+         "„OwlBox-Software installieren“)."],
         ["Display zeigt nur einen Textcursor/Login, kein Chromium",
          "sudo systemctl status owlbox-kiosk prüfen; journalctl -u owlbox-kiosk zeigt bei einem "
          "X-Absturz meist nur „status=1“ ohne echten Grund - die eigentliche Fehlermeldung steht "

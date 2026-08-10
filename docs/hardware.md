@@ -14,16 +14,17 @@ Zielhardware:
 - Raspberry Pi 3B+
 - HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip)
 - RC522 RFID-Modul (SPI, 13.56 MHz)
-- **Offizielles Raspberry Pi 7" Touch Display** (erste Generation - DSI-
-  Flachbandkabel für Bild und Touch, plus 4 Jumperkabel für Strom/I2C, siehe
-  unten). Ersetzt das früher hier dokumentierte 3,5"-SPI-Display
-  (tft35a/MHS-35-Klon) - dessen Anleitung ist noch in der Git-Historie
-  dieser Datei zu finden, falls je wieder gebraucht.
+- **Waveshare 5" DSI Capacitive Touch Display** (Modell 5-DSI-TOUCH-A,
+  720×1280, DSI-Flachbandkabel für Bild und Touch, plus 4 Jumperkabel für
+  Strom/I2C, siehe unten). Ersetzt das früher hier dokumentierte offizielle
+  Raspberry-Pi-7"-Touch-Display (800×480) - dessen Anleitung ist noch in
+  der Git-Historie dieser Datei zu finden, falls je wieder gebraucht. Noch
+  **nicht an echter Hardware verifiziert**, siehe Anschluss-Abschnitt
+  unten. Davor stand hier ein 3,5"-SPI-Display (tft35a/MHS-35-Klon), auch
+  dessen Anleitung ist noch in der Historie zu finden.
 - 2 Taster (vor/zurück)
 - 1 Dreh-Encoder mit Druckschalter (Lautstärke / Pause)
 - 1 weiterer Dreh-Encoder ohne Taster (Helligkeit, s.u.)
-- 1 NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET, für dimmbares
-  Backlight (s.u.)
 
 Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 `config/config.example.yaml`. Wer andere Pins verdrahtet, passt einfach die
@@ -31,15 +32,19 @@ Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 
 **GPIO-Pinbelegung als Grafik**: `docs/owlbox-gpio-pinout.svg` zeigt den
 kompletten 40-Pin-Header (physische Nummerierung wie auf der Pi-Platine) mit
-Zielgerät pro Pin - aktuell (Hardware-SPI0 für den RC522, 7"-DSI-Display),
-direkte Verkabelung per Jumperkabel wie in diesem Dokument beschrieben.
+Zielgerät pro Pin - aktuell für RC522 (Hardware-SPI0), direkte Verkabelung
+per Jumperkabel wie in diesem Dokument beschrieben. Die Display-Zeilen dort
+zeigen weiterhin nur die generische DSI-Display-Stromversorgung/-I2C-Adern
+(5V/GND/SDA/SCL) - die exakte Overlay-/Auflösungs-Konfiguration für das
+aktuelle Waveshare-Display steht ausschließlich hier im Text, nicht in der
+Grafik.
 
 **Für den Aufbau mit eigener Adapter-Platine:** `docs/owlbox-wiring-diagram.svg`
 (Gesamtaufbau), `docs/owlbox-adapter-layout.svg` (Platinenlayout-Vorschlag) und
 `docs/hat-wiring.html` (kompletter Schaltplan, im Browser öffnen) zeigen eine
 Bauvariante, die RC522, Taster und beide Encoder statt per direktem
 Jumperkabel über eine eigene, separat verdrahtete Adapter-Platine anschließt
-- aktuell (RC522 auf Hardware-SPI0/CE0, 7"-DSI-Display). Das Display selbst
+- aktuell für RC522 (Hardware-SPI0/CE0). Das Display selbst
 hängt dabei weiterhin über sein eigenes DSI-Kabel direkt am Pi, nicht an der
 Adapter-Platine - nur seine vier Strom-/I2C-Adern lassen sich optional mit
 über die Adapter-Platine führen. Nur relevant, wer tatsächlich eine eigene
@@ -47,18 +52,22 @@ Adapter-Platine bauen will; für den normalen Aufbau (direkte Jumperkabel,
 kein eigenes Board) sind `docs/owlbox-gpio-pinout.svg` und die Tabellen
 unten die maßgebliche Referenz.
 
-## Anschluss: offizielles 7" Touch Display (DSI)
+## Anschluss: 5" Waveshare DSI Touch Display
 
-Anders als das frühere 3,5"-SPI-Display sitzt dieses Display **nicht** auf
-dem 40-Pin-Header - Bild und Touch laufen komplett über das mitgelieferte
-DSI-Flachbandkabel (eigener Steckplatz auf dem Pi, neben den HDMI-Buchsen).
-**Damit entfällt die frühere Steckplatz-Kollision mit dem HiFiBerry
-komplett** - der HiFiBerry sitzt normal direkt auf dem 40-Pin-Header, das
-Display hängt separat am DSI-Steckplatz.
+**Dieser Abschnitt ist noch nicht an echter Hardware verifiziert** - anders
+als der Rest dieser Datei. Das Display (Waveshare 5-DSI-TOUCH-A, 720×1280,
+kapazitiver Touch, Aluminiumgehäuse) löst das bisherige offizielle
+7"-Touch-Display (800×480) ab; dessen vollständig verifizierte Anleitung
+bleibt in der Git-Historie dieser Datei erhalten, falls je wieder gebraucht.
 
-Die kleine Adapter-/Power-Platine auf der Rückseite des Displays braucht
-trotzdem 4 Jumper-/Dupont-Kabel zum Pi, weil DSI selbst weder Strom noch die
-I2C-Leitung fürs Touch mitführt:
+Wie beim bisherigen Display sitzt es **nicht** auf dem 40-Pin-Header - Bild
+und Touch laufen über das DSI-Flachbandkabel (eigener Steckplatz auf dem
+Pi, neben den HDMI-Buchsen), keine Steckplatz-Kollision mit dem HiFiBerry,
+der normal direkt auf dem 40-Pin-Header sitzt.
+
+Die Adapter-/Power-Platine des Displays braucht vermutlich weiterhin 4
+Jumper-/Dupont-Kabel zum Pi (Strom + I2C für den Touch-Controller), analog
+zum bisherigen Display:
 
 | Display-Adapterplatine | Pi-Pin (BCM) | Zweck |
 |---|---|---|
@@ -67,75 +76,54 @@ I2C-Leitung fürs Touch mitführt:
 | SDA | Pin 3 (GPIO2) | I2C-Datenleitung (Touch-Controller) |
 | SCL | Pin 5 (GPIO3) | I2C-Taktleitung (Touch-Controller) |
 
-**Kein Konflikt mit dem HiFiBerry, obwohl GPIO2/3 dieselben Pins sind, die
-er für seine eigene I2C-Steuerung nutzt**: I2C ist ein echter
-Mehrgeräte-Bus, mehrere Chips teilen sich Takt-/Datenleitung problemlos,
-solange sie unterschiedliche Adressen haben - der Touch-Controller des
-Displays und der HiFiBerry-Chip (Adresse `0x4d`, per `i2cdetect -y 1`
-bestätigt) sitzen auf unterschiedlichen Adressen.
+**Bitte gegen das Waveshare-eigene Handbuch/Wiki prüfen, sobald das Display
+da ist** - dieses Sandbox-Netzwerk konnte waveshare.com nicht direkt
+erreichen, die obige Tabelle ist aus dem bisherigen Display übernommen
+(gleiches Funktionsprinzip: DSI + separate Stromversorgung + I2C-Touch),
+aber nicht produktspezifisch bestätigt. Der I2C-Konflikt mit dem HiFiBerry
+bleibt aus demselben Grund wie bisher unkritisch (Mehrgeräte-Bus,
+unterschiedliche Adressen) - vorausgesetzt, der Touch-Controller dieses
+Displays sitzt tatsächlich auch auf I2C.
 
-**Falls der HiFiBerry bereits vollflächig auf dem 40-Pin-Header aufgesteckt
-ist** und die Pins dadurch von oben nicht mehr mit Dupont-Kabeln erreichbar
-sind: ein GPIO-Stacking-Header (Extra-Höhe, mit durchgeführten Pins) zwischen
-Pi und HiFiBerry löst das, ohne den HiFiBerry selbst umverkabeln zu müssen.
+**Overlay**: Laut [Waveshare-Wiki](https://www.waveshare.com/wiki/5-DSI-TOUCH-A)
+(nicht direkt erreichbar, nur über Suchergebnisse geprüft - bitte
+gegenlesen):
 
-**Kein Treiber-Installer nötig, aber ein eigener Overlay ist Pflicht**: Anders
-als zuerst angenommen reicht `dtoverlay=vc4-kms-v3d` (Standard seit Bookworm)
-allein **nicht** - das aktiviert nur den generellen KMS-Grafiktreiber, kennt
-aber die Timings/das Panel dieses konkreten Displays nicht. An echter
-Hardware bestätigt: ohne einen zusätzlichen, displayspezifischen Overlay
-bindet der Treiber gar kein Panel (`dmesg` zeigt `[drm] Cannot find any crtc
-or sizes`, Bildschirm bleibt komplett schwarz, kein Fehler sonst irgendwo
-sichtbar). Der nötige Overlay: **`dtoverlay=vc4-kms-dsi-7inch`**
-([Raspberry-Pi-Doku](https://www.raspberrypi.com/documentation/accessories/display.html),
-[Overlay-Quelltext](https://github.com/raspberrypi/linux/blob/rpi-6.12.y/arch/arm/boot/dts/overlays/vc4-kms-dsi-7inch-overlay.dts)) -
-`install.sh` trägt ihn automatisch mit ein. Kein separater Treiber-Installer
-nötig (im Gegensatz zum alten SPI-Display) - nur genau diese eine Zeile.
+```
+dtparam=i2c_arm=on
+dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a
+```
 
-**Drehung um 180° (falls das Display auf dem Kopf verbaut ist) - zwei
-verschiedene Stellschrauben für zwei verschiedene Dinge, an echter Hardware
-mühsam herausgefunden:**
+**Nicht** der bisherige `dtoverlay=vc4-kms-dsi-7inch` - das war spezifisch
+für das alte offizielle Display, dieses Panel braucht einen eigenen,
+produktspezifischen Overlay-Namen (auch **nicht** zu verwechseln mit dem
+ähnlich klingenden `vc4-kms-dsi-waveshare-panel,5_0_inch` ohne `-v2`/`_a`,
+den *andere* Waveshare-5"-DSI-Modelle verwenden - falsches Overlay dürfte
+sich vermutlich genauso wie beim alten Display als komplett schwarzer
+Bildschirm äußern). `install.sh` trägt das automatisch ein.
 
-- **Bild selbst**: Der `vc4-kms-dsi-7inch`-Overlay hat **keinen**
-  `rotate=`-Parameter (`/boot/firmware/overlays/README` listet nur
-  `sizex`/`sizey`/`invx`/`invy`/`swapxy`/`disable_touch`/`dsi0` - ein
-  versuchsweise angehängtes `rotate=180` wird einfach stillschweigend
-  ignoriert, keine Fehlermeldung, keine Wirkung). Die Bild-Rotation läuft
-  stattdessen über einen **Kernel-Boot-Parameter in `cmdline.txt`** (nicht
-  `config.txt`!): ans Ende der (einzeiligen) Datei anhängen:
-  ```
-  video=DSI-1:800x480@60,rotate=180
-  ```
-  `install.sh` macht das automatisch. **Wichtig: nicht über `xrandr` oder
-  `display_lcd_rotate` versuchen** - an echter Hardware bestätigt:
-  `xrandr --output DSI-1 --rotate inverted` wird zwar anstandslos
-  angenommen (`xrandr --query` zeigt danach "inverted"), das Panel
-  zeichnet aber nie tatsächlich neu, selbst nach einem erzwungenen
-  `--off`/`--auto`-Modeset. Der ältere Parameter
-  `display_lcd_rotate`/`lcd_rotate` ist unter KMS ebenfalls wirkungslos.
+**Drehung/Rotation bewusst nicht konfiguriert.** Das Panel ist nativ
+720×1280 (Hochformat) - anders als das bisherige, physisch auf dem Kopf
+verbaute 800×480-Display wird die Ausrichtung hier über den physischen
+Einbau gelöst, nicht per Software. Falls sich das nach dem Einbau doch
+als nötig herausstellt: die Bild-Rotation gehört in `cmdline.txt` als
+`video=DSI-1:<Modus>,rotate=<Grad>` (siehe Git-Historie dieser Datei für
+das exakte Vorgehen beim alten Display) - **nicht** über `xrandr` oder
+`display_lcd_rotate` versuchen, beide waren beim alten Display unter KMS
+bestätigt wirkungslos (`xrandr --rotate` wird zwar anstandslos angenommen,
+das Panel zeichnet aber nie tatsächlich neu). Bei einer 90°/270°-Drehung
+zusätzlich beachten: anders als bei den bisherigen 180°, die Touch-Achsen
+X/Y vertauschen - ob X11/libinput das wie beim alten Display automatisch
+mitkorrigiert oder ob `invx`/`invy`/`swapxy` von Hand nötig sind, ist für
+dieses Display noch nicht getestet.
 
-- **Touch-Koordinaten**: **keine** zusätzlichen `invx`/`invy`-Parameter am
-  Overlay setzen. An echter Hardware bestätigt: Sobald das Bild selbst über
-  den `cmdline.txt`-Parameter gedreht ist, korrigiert X11/libinput die
-  Touch-Koordinaten am gedrehten Ausgang bereits von sich aus passend mit -
-  zusätzlich gesetztes `invx,invy` dreht dann **nochmal drüber** und zeigt
-  sich als auf beiden Achsen spiegelverkehrter Touch relativ zum (korrekt
-  gedrehten) Bild. Einfach `dtoverlay=vc4-kms-dsi-7inch` ohne weitere
-  Parameter reicht, der Touch-Controller ist ohnehin Teil desselben
-  Overlays, kein separater `rpi-ft5406`-Eintrag nötig.
-
-**Zur Hintergrundbeleuchtung - wichtiger Unterschied zum alten Display:**
-Dieses Display hat **keine** per GPIO/PWM ansteuerbare LED-Leitung wie das
-alte SPI-Display - die Helligkeit wird stattdessen intern über eine
-Linux-Backlight-Sysfs-Schnittstelle geregelt (`/sys/class/backlight/.../brightness`),
-angesteuert vom Power-Chip auf der Display-Adapterplatine selbst. Die
-GPIO13-Transistor-Schaltung und `gpio.backlight_pin` aus der alten
-Verkabelung entfallen damit ersatzlos - **das Backlight-Dimmen über den
-zweiten Dreh-Encoder ist auf dieser Hardware aktuell nicht angeschlossen**,
-das müsste in `owlbox/controls/gpio_controls.py` erst auf die
-Sysfs-Schnittstelle umgestellt werden. Sag Bescheid, falls das als
-nächstes drankommen soll - der zweite Encoder selbst kann so lange
-unverdrahtet bleiben.
+**Zur Hintergrundbeleuchtung:** Noch nicht bekannt, ob dieses Display eine
+per GPIO/PWM ansteuerbare LED-Leitung hat oder die Helligkeit wie das
+bisherige Display intern über eine Linux-Backlight-Sysfs-Schnittstelle
+regelt. Für die bisherige Hardware gilt: keine GPIO13-Transistor-Schaltung
+mehr nötig, `gpio.backlight_pin` bleibt `null`. Das Backlight-Dimmen über
+den zweiten Dreh-Encoder ist damit weiterhin nicht angeschlossen - der
+zweite Encoder kann so lange unverdrahtet bleiben.
 
 ## GPIO-Belegung im Überblick
 
@@ -470,27 +458,28 @@ Repo und ist damit öffentlich bekannt - für den Einsatz in einer Umgebung,
 in der Fremde in Funkreichweite kommen könnten, unbedingt in
 `config.yaml` ein eigenes Passwort setzen.
 
-## 7" Touch Display: kein Treiber-Setup nötig
+## DSI-Display: kein separater Treiber-Installer nötig
 
 Im Gegensatz zum früheren 3,5"-SPI-Display (das einen virtuellen-HDMI-Trick,
 `fbcp` und den alten Legacy-Grafiktreiber brauchte, um überhaupt ein Bild zu
-zeigen) ist das offizielle 7"-Display an einem normalen Raspberry Pi OS
-Bookworm-Image **komplett plug-and-play**: Firmware erkennt es automatisch
-über das DSI-Kabel, keine `dtoverlay=`-Zeile, kein Treiber-Installer, kein
-extra Paket. Empfohlenes Basis-Image bleibt trotzdem **Raspberry Pi OS Lite,
-64-bit** (ohne Desktop-Umgebung) - der Kiosk startet X selbst nur für
-Chromium (siehe unten), eine mitinstallierte Desktop-Umgebung (lightdm,
-LXDE) würde beim Boot nur unnötig Zeit kosten, ohne dass sie je zu sehen
-wäre. Wichtig ist nur: der moderne KMS-Grafiktreiber (`vc4-kms-v3d`) bleibt
-**aktiv** (Bookworm-Standard) - er wurde beim alten Display extra
-deaktiviert, das ist mit diesem Display nicht mehr nötig und würde die GPU-
-Beschleunigung sogar wieder kosten.
+zeigen) kommt das aktuelle DSI-Display an einem normalen Raspberry Pi OS
+Bookworm-Image **ohne Treiber-Installer, ohne extra Paket** aus - nur die
+eine `dtoverlay=`-Zeile aus dem Anschluss-Abschnitt oben ist nötig, sonst
+nichts. Empfohlenes Basis-Image bleibt **Raspberry Pi OS Lite, 64-bit**
+(ohne Desktop-Umgebung) - der Kiosk startet X selbst nur für Chromium
+(siehe unten), eine mitinstallierte Desktop-Umgebung (lightdm, LXDE) würde
+beim Boot nur unnötig Zeit kosten, ohne dass sie je zu sehen wäre. Wichtig
+ist nur: der moderne KMS-Grafiktreiber (`vc4-kms-v3d`) bleibt **aktiv**
+(Bookworm-Standard) - er wurde beim alten SPI-Display extra deaktiviert,
+das ist mit einem DSI-Display nicht mehr nötig und würde die
+GPU-Beschleunigung sogar wieder kosten.
 
 ### Falls es doch ein anderes Board ist
 
-Sollte es sich um die neuere "Touch Display 2"-Generation oder ein anderes
-DSI-Board handeln: gerne kurz Bescheid geben, falls sich an der Verkabelung
-oder Konfiguration etwas unterscheidet - dann passe ich diese Seite an.
+Sollte es ein anderes DSI-Board als das oben genannte Waveshare-Modell
+sein, oder falls Waveshare für dieses Modell zwischenzeitlich ein anderes
+Vorgehen dokumentiert als oben angenommen: gerne kurz Bescheid geben, dann
+passe ich diese Seite an.
 
 ## Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)
 

@@ -86,7 +86,7 @@ bullets([
 h1("In 6 Schritten startklar")
 
 step(1, "Box einschalten",
-     "Netzteil anschließen. Auf dem 7″-Display erscheint kurz ein Eulen-Startbildschirm, "
+     "Netzteil anschließen. Auf dem Display erscheint kurz ein Eulen-Startbildschirm, "
      "danach die Anzeige „Kein Chip aufgelegt“ - die Box ist betriebsbereit.")
 
 step(2, "Verwaltung im Browser öffnen",

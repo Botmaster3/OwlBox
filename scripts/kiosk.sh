@@ -18,14 +18,14 @@ URL="http://localhost:5000/"
 # the display is meant to always show the now-playing screen.
 command -v xset >/dev/null 2>&1 && { xset s off; xset s noblank; xset -dpms; } || true
 
-# The 180° flip for the physically upside-down 7" Touch Display is NOT done
-# here via xrandr - confirmed on real hardware that xrandr accepts the
-# --rotate request (shows up in `xrandr --query` as "inverted") but the
-# panel's actual scanout never visually updates, even after forcing a
-# modeset with --off/--auto. This DSI panel just doesn't honor RandR
-# transforms under the KMS driver. See install.sh's config.txt
-# "display_lcd_rotate=2" line instead - that's a firmware-level rotation
-# the panel driver itself applies before X ever starts.
+# No software rotation here: the current 5" Waveshare display's orientation
+# is handled by how it's physically mounted, not a video flip. (The earlier
+# 7" display needed a 180° flip - see git history of this file/install.sh
+# for that - because xrandr's --rotate request never actually took effect
+# on real hardware for a DSI panel under the KMS driver, only a
+# cmdline.txt "video=DSI-1:<mode>,rotate=<deg>" parameter did. If this
+# display ever needs a software rotation after all, that's the mechanism
+# to reach for, not xrandr.)
 
 # Minimal window manager: not strictly required for a single fullscreen kiosk
 # window, but negligible overhead and keeps things well-behaved if a stray JS

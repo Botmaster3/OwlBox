@@ -79,10 +79,11 @@ bullets([
     "Raspberry Pi 3B+",
     "HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip)",
     "RC522 RFID-Modul (SPI, 13,56 MHz)",
-    "Offizielles Raspberry Pi 7″ Touch Display (erste Generation - DSI-Flachbandkabel für Bild "
-    "und Touch, plus 4 Jumperkabel für Strom/I2C, siehe unten). Ersetzt das früher hier "
-    "dokumentierte 3,5″-SPI-Display (tft35a/MHS-35-Klon); dessen Anleitung ist noch in der "
-    "Git-Historie dieser Datei zu finden, falls je wieder gebraucht.",
+    "Waveshare 5″ DSI Capacitive Touch Display (Modell 5-DSI-TOUCH-A, 720×1280, DSI-Flachbandkabel "
+    "für Bild und Touch, plus 4 Jumperkabel für Strom/I2C, siehe unten). Ersetzt das früher hier "
+    "dokumentierte offizielle Raspberry-Pi-7″-Touch-Display (800×480); dessen Anleitung ist noch "
+    "in der Git-Historie dieser Datei zu finden, falls je wieder gebraucht. Noch NICHT an echter "
+    "Hardware verifiziert, siehe Kapitel 1.1.",
     "2 Taster (vor/zurück)",
     "1 Dreh-Encoder mit Druckschalter (Lautstärke/Play-Pause)",
     "1 weiterer Dreh-Encoder ohne Taster (Helligkeit, s.u. - auf dieser Hardware aktuell ohne "
@@ -97,22 +98,27 @@ story.append(note_box(
     "verdrahtete Adapter-Platine statt direkter Jumperkabel (optional, nicht Teil des "
     "Standardaufbaus): docs/owlbox-wiring-diagram.svg (Gesamtaufbau), "
     "docs/owlbox-adapter-layout.svg (Platinenlayout-Vorschlag) und docs/hat-wiring.html "
-    "(kompletter Schaltplan, im Browser öffnen) - alle drei aktuell (RC522 auf Hardware-SPI0/CE0, "
-    "7″-DSI-Display)."
+    "(kompletter Schaltplan, im Browser öffnen) - alle drei aktuell für RC522 auf "
+    "Hardware-SPI0/CE0; die Display-Zeilen zeigen nur die generischen Strom-/I2C-Adern, nicht die "
+    "produktspezifische Overlay-/Auflösungs-Konfiguration (siehe unten)."
 ))
 
-h2("Anschluss: offizielles 7″ Touch Display (DSI)")
+h2("Anschluss: 5″ Waveshare DSI Touch Display")
+story.append(note_box(
+    "Dieser Abschnitt ist noch NICHT an echter Hardware verifiziert - anders als der Rest dieser "
+    "PDF. Das Display (Waveshare 5-DSI-TOUCH-A, 720×1280, kapazitiver Touch, Aluminiumgehäuse) "
+    "löst das bisherige offizielle 7″-Touch-Display (800×480) ab; dessen vollständig verifizierte "
+    "Anleitung bleibt in der Git-Historie dieser Datei erhalten.",
+    kind="warn",
+))
 p(
-    "Anders als das frühere 3,5″-SPI-Display sitzt dieses Display <b>nicht</b> auf dem 40-Pin-"
-    "Header - Bild und Touch laufen komplett über das mitgelieferte DSI-Flachbandkabel (eigener "
-    "Steckplatz auf dem Pi, neben den HDMI-Buchsen). <b>Damit entfällt die frühere "
-    "Steckplatz-Kollision mit dem HiFiBerry komplett</b> - der HiFiBerry sitzt normal direkt auf "
-    "dem 40-Pin-Header, das Display hängt separat am DSI-Steckplatz."
+    "Wie beim bisherigen Display sitzt es <b>nicht</b> auf dem 40-Pin-Header - Bild und Touch "
+    "laufen über das DSI-Flachbandkabel (eigener Steckplatz auf dem Pi, neben den HDMI-Buchsen), "
+    "keine Steckplatz-Kollision mit dem HiFiBerry, der normal direkt auf dem 40-Pin-Header sitzt."
 )
 p(
-    "Die kleine Adapter-/Power-Platine auf der Rückseite des Displays braucht trotzdem 4 "
-    "Jumper-/Dupont-Kabel zum Pi, weil DSI selbst weder Strom noch die I2C-Leitung fürs Touch "
-    "mitführt:"
+    "Die Adapter-/Power-Platine des Displays braucht vermutlich weiterhin 4 Jumper-/Dupont-Kabel "
+    "zum Pi (Strom + I2C für den Touch-Controller), analog zum bisherigen Display:"
 )
 story.append(spec_table(
     [
@@ -125,11 +131,16 @@ story.append(spec_table(
     col_widths=[55 * mm, 55 * mm, 50 * mm],
 ))
 story.append(note_box(
+    "Bitte gegen das Waveshare-eigene Handbuch/Wiki prüfen, sobald das Display da ist - diese "
+    "Tabelle ist vom bisherigen Display übernommen (gleiches Funktionsprinzip: DSI + separate "
+    "Stromversorgung + I2C-Touch), aber nicht produktspezifisch bestätigt.",
+    kind="warn",
+))
+story.append(note_box(
     "Kein Konflikt mit dem HiFiBerry, obwohl GPIO2/3 dieselben Pins sind, die er für seine eigene "
     "I2C-Steuerung nutzt: I2C ist ein echter Mehrgeräte-Bus, mehrere Chips teilen sich Takt-/"
-    "Datenleitung problemlos, solange sie unterschiedliche Adressen haben - der Touch-Controller "
-    "des Displays und der HiFiBerry-Chip (Adresse 0x4d, per i2cdetect -y 1 bestätigt) sitzen auf "
-    "unterschiedlichen Adressen."
+    "Datenleitung problemlos, solange sie unterschiedliche Adressen haben - vorausgesetzt, der "
+    "Touch-Controller dieses Displays sitzt tatsächlich auch auf I2C."
 ))
 p(
     "Falls der HiFiBerry bereits vollflächig auf dem 40-Pin-Header aufgesteckt ist und die Pins "
@@ -138,12 +149,15 @@ p(
     "selbst umverkabeln zu müssen."
 )
 story.append(note_box(
-    "Kein Treiber-Installer nötig, aber ein eigener Overlay ist Pflicht: dtoverlay=vc4-kms-v3d "
-    "allein (Standard seit Bookworm) reicht nicht - das aktiviert nur den generellen "
-    "KMS-Grafiktreiber, kennt aber die Timings/das Panel dieses konkreten Displays nicht. Ohne "
-    "den zusätzlichen, displayspezifischen Overlay dtoverlay=vc4-kms-dsi-7inch bindet der Treiber "
-    "gar kein Panel, Bildschirm bleibt komplett schwarz. Details und Bild-/Touch-Rotation siehe "
-    "Kapitel 8; install.sh trägt den Overlay automatisch ein."
+    "Overlay laut Waveshare-Wiki (waveshare.com/wiki/5-DSI-TOUCH-A - nicht direkt erreichbar "
+    "geprüft, nur über Suchergebnisse, bitte gegenlesen): dtparam=i2c_arm=on plus "
+    "dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a. NICHT der bisherige "
+    "dtoverlay=vc4-kms-dsi-7inch (spezifisch fürs alte Display) und NICHT das ähnlich klingende "
+    "vc4-kms-dsi-waveshare-panel,5_0_inch ohne \"-v2\"/\"_a\" (andere Waveshare-5″-Modelle). "
+    "install.sh trägt den Overlay automatisch ein. Rotation/Ausrichtung bewusst nicht "
+    "konfiguriert - wird laut Auftraggeber beim physischen Einbau gelöst, nicht per Software; "
+    "Details siehe Kapitel 8.",
+    kind="warn",
 ))
 
 h2("GPIO-Belegung im Überblick")
@@ -285,7 +299,7 @@ h1("3. RC522 RFID-Leser (Hardware-SPI0)")
 story.append(note_box(
     "Der RC522 hängt an SPI0, dem Hardware-SPI-Bus des Pi (/dev/spidev0.0, CE0). Grund, warum das "
     "möglich ist: SPI1 liegt auf GPIO18-21, exakt den Pins, die der HiFiBerry für I2S-Ton braucht "
-    "- SPI0 ist mit dem offiziellen 7″-DSI-Touch-Display aber frei (anders als beim früheren "
+    "- SPI0 ist mit dem aktuellen DSI-Touch-Display aber frei (anders als beim früheren "
     "SPI-Display, dessen Overlay beide Chip-Selects von SPI0 belegte)."
 ))
 story.append(spec_table(
@@ -448,59 +462,54 @@ story.append(note_box(
 ))
 
 # ============================================================ 8. Display-Treiber
-h1("8. 7″ Touch Display: kein Treiber-Setup nötig")
+h1("8. DSI-Display: kein separater Treiber-Installer nötig")
 p(
     "Im Gegensatz zum früheren 3,5″-SPI-Display (das einen virtuellen-HDMI-Trick, fbcp und den "
-    "alten Legacy-Grafiktreiber brauchte, um überhaupt ein Bild zu zeigen) ist das offizielle "
-    "7″-Display an einem normalen Raspberry Pi OS Bookworm-Image komplett plug-and-play: Firmware "
-    "erkennt es automatisch über das DSI-Kabel, keine dtoverlay=-Zeile, kein Treiber-Installer, "
-    "kein Extra-Paket. Empfohlenes Basis-Image bleibt trotzdem Raspberry Pi OS Lite, 64-bit (ohne "
-    "Desktop-Umgebung) - der Kiosk startet X selbst nur für Chromium (siehe Kapitel 9), eine "
-    "mitinstallierte Desktop-Umgebung (lightdm, LXDE) würde beim Boot nur unnötig Zeit kosten. "
-    "Wichtig ist nur: der moderne KMS-Grafiktreiber (vc4-kms-v3d) bleibt aktiv (Bookworm-Standard) "
-    "- er wurde beim alten Display extra deaktiviert, das ist mit diesem Display nicht mehr nötig "
-    "und würde die GPU-Beschleunigung sogar wieder kosten."
+    "alten Legacy-Grafiktreiber brauchte, um überhaupt ein Bild zu zeigen) kommt das aktuelle "
+    "DSI-Display an einem normalen Raspberry Pi OS Bookworm-Image ohne Treiber-Installer, ohne "
+    "Extra-Paket aus - nur die eine dtoverlay=-Zeile unten ist nötig, sonst nichts. Empfohlenes "
+    "Basis-Image bleibt Raspberry Pi OS Lite, 64-bit (ohne Desktop-Umgebung) - der Kiosk startet X "
+    "selbst nur für Chromium (siehe Kapitel 9), eine mitinstallierte Desktop-Umgebung (lightdm, "
+    "LXDE) würde beim Boot nur unnötig Zeit kosten. Wichtig ist nur: der moderne KMS-Grafiktreiber "
+    "(vc4-kms-v3d) bleibt aktiv (Bookworm-Standard) - er wurde beim alten SPI-Display extra "
+    "deaktiviert, das ist mit einem DSI-Display nicht mehr nötig und würde die GPU-Beschleunigung "
+    "sogar wieder kosten."
 )
 story.append(note_box(
-    "Ein eigener Overlay ist trotzdem Pflicht: dtoverlay=vc4-kms-v3d,noaudio allein aktiviert nur "
-    "den generellen KMS-Treiber, kennt aber die Timings dieses konkreten Panels nicht - "
-    "zusätzlich braucht es dtoverlay=vc4-kms-dsi-7inch. Ohne diesen zweiten Overlay bindet der "
-    "Treiber gar kein Panel (dmesg zeigt „[drm] Cannot find any crtc or sizes“, Bildschirm bleibt "
-    "komplett schwarz, kein Fehler sonst irgendwo sichtbar). install.sh trägt beide Zeilen "
-    "automatisch in /boot/firmware/config.txt ein:"
-))
-code(["dtoverlay=vc4-kms-v3d,noaudio", "dtoverlay=vc4-kms-dsi-7inch"])
-
-h2("Drehung um 180° (falls das Display auf dem Kopf verbaut ist)")
-p(
-    "Zwei verschiedene Stellschrauben für zwei verschiedene Dinge, an echter Hardware mühsam "
-    "herausgefunden:"
-)
-bullets([
-    "<b>Bild selbst:</b> Der vc4-kms-dsi-7inch-Overlay hat KEINEN rotate=-Parameter "
-    "(/boot/firmware/overlays/README listet nur sizex/sizey/invx/invy/swapxy/disable_touch/dsi0 - "
-    "ein versuchsweise angehängtes rotate=180 wird stillschweigend ignoriert). Die Bild-Rotation "
-    "läuft stattdessen über einen Kernel-Boot-Parameter in cmdline.txt (nicht config.txt!): ans "
-    "Ende der einzeiligen Datei anhängen.",
-    "<b>Touch-Koordinaten:</b> KEINE zusätzlichen invx/invy-Parameter am Overlay setzen. Sobald "
-    "das Bild über den cmdline.txt-Parameter gedreht ist, korrigiert X11/libinput die "
-    "Touch-Koordinaten am gedrehten Ausgang bereits von sich aus passend mit - zusätzlich "
-    "gesetztes invx,invy dreht dann nochmal drüber und zeigt sich als auf beiden Achsen "
-    "spiegelverkehrter Touch relativ zum (korrekt gedrehten) Bild.",
-])
-code(["video=DSI-1:800x480@60,rotate=180"])
-story.append(note_box(
-    "install.sh trägt das automatisch ein. Wichtig: nicht über xrandr oder display_lcd_rotate "
-    "versuchen - an echter Hardware bestätigt: xrandr --output DSI-1 --rotate inverted wird zwar "
-    "anstandslos angenommen (xrandr --query zeigt danach „inverted“), das Panel zeichnet aber nie "
-    "tatsächlich neu, selbst nach einem erzwungenen --off/--auto-Modeset. Der ältere Parameter "
-    "display_lcd_rotate/lcd_rotate ist unter KMS ebenfalls wirkungslos.",
+    "Noch NICHT an echter Hardware verifiziert. Laut Waveshare-Wiki "
+    "(waveshare.com/wiki/5-DSI-TOUCH-A): dtoverlay=vc4-kms-v3d,noaudio allein aktiviert nur den "
+    "generellen KMS-Treiber, kennt aber die Timings dieses konkreten Panels nicht - zusätzlich "
+    "braucht es dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a (NICHT das bisherige "
+    "dtoverlay=vc4-kms-dsi-7inch, das war spezifisch für das alte offizielle Display). Beim alten "
+    "Display äußerte sich ein fehlender displayspezifischer Overlay als komplett schwarzer "
+    "Bildschirm (dmesg: „[drm] Cannot find any crtc or sizes“) - für dieses Display noch nicht "
+    "bestätigt, aber vermutlich vergleichbar. install.sh trägt beide Zeilen automatisch in "
+    "/boot/firmware/config.txt ein:",
     kind="warn",
 ))
+code(["dtparam=i2c_arm=on", "dtoverlay=vc4-kms-v3d,noaudio",
+      "dtoverlay=vc4-kms-dsi-waveshare-panel-v2,5_0_inch_a"])
+
+h2("Drehung/Ausrichtung: bewusst nicht konfiguriert")
 p(
-    "Einfach dtoverlay=vc4-kms-dsi-7inch ohne weitere Parameter reicht, der Touch-Controller ist "
-    "ohnehin Teil desselben Overlays, kein separater rpi-ft5406-Eintrag nötig."
+    "Das Panel ist nativ 720×1280 (Hochformat) - anders als das bisherige, physisch auf dem Kopf "
+    "verbaute 800×480-Display wird die Ausrichtung hier über den physischen Einbau gelöst, nicht "
+    "per Software. Falls sich das nach dem Einbau doch als nötig herausstellt, zwei Dinge, die "
+    "beim alten Display an echter Hardware mühsam herausgefunden wurden und vermutlich weiter "
+    "gelten:"
 )
+bullets([
+    "<b>Bild selbst:</b> gehört als Kernel-Boot-Parameter in cmdline.txt (nicht config.txt!): "
+    "video=DSI-1:&lt;Modus&gt;,rotate=&lt;Grad&gt;. NICHT über xrandr oder display_lcd_rotate "
+    "versuchen - an echter Hardware bestätigt (beim alten Display): xrandr --output DSI-1 --rotate "
+    "wird zwar anstandslos angenommen, das Panel zeichnet aber nie tatsächlich neu, selbst nach "
+    "einem erzwungenen Modeset. display_lcd_rotate/lcd_rotate ist unter KMS ebenfalls wirkungslos.",
+    "<b>Touch-Koordinaten:</b> bei 180° hat sich beim alten Display gezeigt, dass X11/libinput die "
+    "Touch-Koordinaten am gedrehten Ausgang automatisch mitkorrigiert, zusätzlich gesetztes "
+    "invx/invy hat das nochmal drübergedreht. Bei 90°/270° ist das noch nicht getestet - anders "
+    "als bei 180° vertauschen 90°/270° die X/Y-Achsen, ob das automatisch mitkorrigiert wird oder "
+    "invx/invy/swapxy von Hand nötig sind, muss an echter Hardware geprüft werden.",
+])
 
 # ============================================================ 9. Kiosk-Autostart
 h1("9. Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)")
@@ -600,7 +609,7 @@ on_cover = partial(
     cover_page,
     kicker="OWLBOX",
     title=["Verkabelung"],
-    subtitle=["Vollständige Hardware-Referenz:", "Pinbelegung, 7″-DSI-Display, HiFiBerry, Netzwerk-Fallback."],
+    subtitle=["Vollständige Hardware-Referenz:", "Pinbelegung, DSI-Display, HiFiBerry, Netzwerk-Fallback."],
     meta_lines=["Hardware-Aufbau Raspberry Pi 3B+", "Schnelleinstieg: OwlBox-Schnellstart.pdf"],
 )
 on_page = partial(draw_header_footer, title=TITLE)
