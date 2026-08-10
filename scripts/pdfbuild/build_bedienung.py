@@ -154,9 +154,9 @@ story.append(note_box(
 h1("4. Kiosk-Display (5″ Waveshare Touch Display)")
 p(
     "Die unauthentifizierte „Jetzt läuft“-Anzeige, die im Vollbild-Kiosk-Modus permanent auf dem "
-    "am Gerät verbauten Display läuft. Die Touch-Hardware ist zwar vorhanden, wird von der "
-    "Oberfläche aktuell aber nicht ausgewertet (siehe OwlBox-Verkabelung.pdf) - die Anzeige ist "
-    "reine Information, bedient wird über die physischen Elemente aus Kapitel 3 oder über die "
+    "am Gerät verbauten Display läuft. Die Touch-Hardware wird von der Oberfläche einzig in der "
+    "Memory-Spielansicht ausgewertet (siehe unten sowie Kapitel 9.2, 10.5) - überall sonst ist die "
+    "Anzeige reine Information, bedient wird über die physischen Elemente aus Kapitel 3 oder über die "
     "Web-Verwaltung."
 )
 story.append(spec_table(
@@ -172,7 +172,7 @@ story.append(spec_table(
          "wenn er in Richtung der automatischen Drosselschwelle (ca. 80°C) läuft"],
         ["Helligkeits-Overlay", "Kurz nach jeder Änderung am Helligkeits-Encoder/Nachtmodus-Umschaltung", "Sonnen- bzw. Mondsymbol (je nach Tag-/Nachtmodus), Balken und aktueller Prozentwert"],
         ["Nachtmodus-Anzeige (unten links)", "Solange der Nachtmodus aktiv ist (s. Kapitel 3)", "„🌙 Nachtmodus“ - bleibt dauerhaft sichtbar, anders als das kurze Helligkeits-Overlay oben"],
-        ["Hotspot-Banner", "Solange der Notfall-Hotspot aktiv ist (siehe Kapitel 10.5)", "SSID, Passwort und die Verwaltungs-URL im Hotspot"],
+        ["Hotspot-Banner", "Solange der Notfall-Hotspot aktiv ist (siehe Kapitel 10.6)", "SSID, Passwort und die Verwaltungs-URL im Hotspot"],
         ["„Jetzt läuft“-Ansicht", "Sobald ein Story-Chip aufliegt bzw. weiterläuft", "Cover, Titel, aktueller Track, VU-Meter-Animation, "
          "Fortschritt, Lautstärkebalken, die nächsten 3 kommenden Tracks"],
         ["Shuffle-/Wiederholungs-Anzeige", "Solange Shuffle bzw. Ordner-/Track-Wiederholung für die laufende "
@@ -182,6 +182,10 @@ story.append(spec_table(
         ["„Unbekannter Chip“-Banner", "Nach dem Auflegen eines nicht zugewiesenen Chips", "Hinweis, den Chip im Admin-Bereich zuzuweisen"],
         ["Schlafmodus-Anzeige", "Nach der eingestellten Pause-Dauer im automatischen Ruhemodus (Kapitel 10.3)", "Schlafende Eule + Hinweis, wie man sie weckt"],
         ["Eltern-Modus / QR-Code", "Solange ein Eltern-Chip aufliegt", "QR-Code zur Login-Seite, damit sich Eltern per Handy einloggen können"],
+        ["Memory-Spielansicht", "Solange das Memory-Spiel per Funktions-Chip aktiv ist (Kapitel 9.2)",
+         "Kartenraster zum Antippen (einzige Ansicht mit Touch-Bedienung), Zug-Zähler und "
+         "Gewinn-Anzeige nach vollständig aufgedecktem Feld - eine im Hintergrund laufende "
+         "Geschichte spielt dabei normal weiter"],
     ],
     col_widths=[42 * mm, 58 * mm, 60 * mm],
 ))
@@ -194,7 +198,7 @@ bullets([
     "<b>Bibliothek</b> - alle Geschichten verwalten, Chips zuweisen, Hörstatistik (Kapitel 7).",
     "<b>Hinzufügen</b> - neue Geschichten/Livestreams anlegen (Kapitel 8).",
     "<b>RFID-Tags</b> - Eltern-Chips und Funktions-Chips verwalten (Kapitel 9).",
-    "<b>Einstellungen</b> - Konto, Design, Audio, Anzeige, Netzwerk, System (Kapitel 10).",
+    "<b>Einstellungen</b> - Konto, Design, Audio, Anzeige, Spiel, Netzwerk, System (Kapitel 10).",
     "<b>Info</b> - Systeminfos, Bibliotheks-Statistik, Backup, Update (Kapitel 11).",
 ])
 p("Der Button „Abmelden“ rechts oben in der Kopfzeile beendet die angemeldete Sitzung sofort.")
@@ -380,6 +384,8 @@ story.append(spec_table(
         ["Einschlaf-Timer 15/30/45/60 Min", "Startet einen Einschlaf-Timer mit der jeweiligen Dauer "
          "(siehe Kapitel 10.3)."],
         ["Einschlaf-Timer abbrechen", "Bricht einen laufenden Einschlaf-Timer sofort ab."],
+        ["Memory-Spiel an/aus", "Blendet die Memory-Spielansicht auf dem Kiosk-Display ein/aus - "
+         "gleiches Ein-/Aus-Prinzip wie Shuffle oben (siehe Kapitel 10.5)."],
         ["Pi neu starten / Pi herunterfahren", "Fährt den Raspberry Pi neu bzw. sicher herunter - die "
          "aktuelle Wiedergabeposition wird vorher gespeichert."],
     ],
@@ -388,7 +394,9 @@ story.append(spec_table(
 story.append(note_box(
     "Shuffle-/Wiederholungs-Chips wirken immer auf die Geschichte, die zuletzt tatsächlich geladen "
     "wurde - auch nachdem deren eigener Story-Chip schon wieder abgenommen wurde. Ohne jemals zuvor "
-    "geladene Geschichte (z.B. direkt nach dem Systemstart) haben sie keine Wirkung."
+    "geladene Geschichte (z.B. direkt nach dem Systemstart) haben sie keine Wirkung. Das Memory-Spiel "
+    "ist davon unabhängig - es lässt sich unabhängig davon, ob gerade eine Geschichte läuft, jederzeit "
+    "ein-/ausschalten, und eine im Hintergrund laufende Geschichte spielt während des Spiels normal weiter."
 ))
 
 h2("9.3 Story-Chips (Übersicht)")
@@ -522,7 +530,24 @@ story.append(note_box(
     "automatisch - der neu eingestellte Wert gilt dann als neuer Tag-Wert."
 ))
 
-h2("10.5 Netzwerk (WLAN)")
+h2("10.5 Spiel")
+p(
+    "Verwaltet den Bilderpool für das Memory-Spiel (Kapitel 4, 9.2) - die einzige Bildschirmansicht "
+    "im gesamten Kiosk, auf der die Touch-Hardware des Displays tatsächlich etwas bewirkt."
+)
+ctrl("Bilder hochladen", "Datei-Auswahl (Mehrfachauswahl möglich) + „Hochladen“-Button",
+     "Lädt eigene Bilder (JPG/PNG/WebP) in den gemeinsamen Bilderpool hoch - keine Begrenzung der "
+     "Gesamtzahl, eine Spielrunde zieht daraus zufällig bis zu 8 Bildpaare.")
+ctrl("Bilder-Übersicht", "Miniaturbild-Raster mit Papierkorb-Symbol je Bild", "Löscht ein einzelnes Bild "
+     "endgültig aus dem Pool (Datei und Datenbankeintrag) - laufende oder künftige Spielrunden ziehen "
+     "dann nur noch aus den verbliebenen Bildern.")
+story.append(note_box(
+    "Mit weniger als zwei hochgeladenen Bildern zeigt die Spielansicht auf dem Kiosk-Display "
+    "stattdessen einen Hinweis, dass noch Bilder fehlen, statt eines leeren oder unvollständigen "
+    "Spielfelds."
+))
+
+h2("10.6 Netzwerk (WLAN)")
 ctrl("WLAN an/aus", "Umschalter-Button", "Schaltet das WLAN-Funkmodul komplett ein/aus.")
 ctrl("„Netzwerke suchen“", "Button", "Scannt nach WLAN-Netzwerken in Reichweite und zeigt sie als Liste "
      "zur Auswahl an.")
@@ -544,7 +569,7 @@ story.append(note_box(
     kind="warn",
 ))
 
-h2("10.6 System")
+h2("10.7 System")
 ctrl("„Pi neu starten“", "Button", "Startet den Raspberry Pi neu - die aktuelle Wiedergabeposition wird "
      "vorher automatisch gespeichert.")
 ctrl("„Pi herunterfahren“", "Button", "Fährt den Raspberry Pi sicher herunter.")
@@ -593,7 +618,7 @@ story.append(spec_table(
          "„Cannot find any crtc or sizes“, wenn er fehlt oder falsch ist); Kiosk-Dienst prüfen "
          "(systemctl status owlbox-kiosk). Siehe OwlBox-Verkabelung.pdf."],
         ["Verwaltung im Browser nicht erreichbar", "IP-Adresse erneut prüfen; auf dem Kiosk-Display "
-         "nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Kapitel 10.5)."],
+         "nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Kapitel 10.6)."],
         ["Helligkeitsregler ohne Wirkung", "Aktuell erwartbar: das Backlight-Dimmen ist beim "
          "derzeitigen Display nicht angeschlossen (gpio.backlight_pin bleibt null) - siehe "
          "OwlBox-Verkabelung.pdf, Abschnitt Hintergrundbeleuchtung."],

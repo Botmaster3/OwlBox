@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import tempfile
+import uuid
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -811,3 +812,51 @@ def system_info_route():
             },
         }
     )
+
+
+# -- Memory-game image pool ---------------------------------------------------
+
+
+def _game_image_to_dict(image: repository.GameImage) -> dict:
+    return {"id": image.id, "url": f"/media/game/{image.filename}"}
+
+
+@api_bp.route("/game/images")
+def list_game_images():
+    # No @admin_required - the kiosk page (not logged in) needs this to
+    # actually render the game once game mode is on, same reasoning as
+    # /api/state and /media/... being public.
+    return jsonify([_game_image_to_dict(img) for img in repository.list_game_images()])
+
+
+@api_bp.route("/game/images", methods=["POST"])
+@admin_required
+def upload_game_images():
+    files = [f for f in request.files.getlist("images") if f and f.filename]
+    if not files:
+        return jsonify({"error": "at least one image is required"}), 400
+    for f in files:
+        if not is_allowed_image(f.filename):
+            return jsonify({"error": f"unsupported image: {f.filename}"}), 400
+
+    game_dir = _config().media_dir / "game"
+    game_dir.mkdir(parents=True, exist_ok=True)
+    for f in files:
+        # Flat shared folder (unlike per-story cover images) - a random
+        # filename sidesteps collisions between two different uploads that
+        # happen to share a name, without needing the DB row's id up front.
+        filename = f"{uuid.uuid4().hex}{Path(secure_filename(f.filename)).suffix.lower()}"
+        f.save(game_dir / filename)
+        repository.add_game_image(filename)
+
+    return jsonify([_game_image_to_dict(img) for img in repository.list_game_images()]), 201
+
+
+@api_bp.route("/game/images/<int:image_id>", methods=["DELETE"])
+@admin_required
+def delete_game_image(image_id):
+    filename = repository.delete_game_image(image_id)
+    if filename is None:
+        return jsonify({"error": "not found"}), 404
+    (_config().media_dir / "game" / filename).unlink(missing_ok=True)
+    return jsonify({"ok": True})

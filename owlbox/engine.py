@@ -42,6 +42,7 @@ FUNCTION_ACTIONS = [
     ("sleep_timer_cancel", "Einschlaf-Timer abbrechen"),
     ("restart", "Pi neu starten"),
     ("shutdown", "Pi herunterfahren"),
+    ("game_toggle", "Memory-Spiel an/aus"),
 ]
 FUNCTION_ACTION_VALUES = {value for value, _label in FUNCTION_ACTIONS}
 
@@ -124,6 +125,14 @@ class Engine:
         )
         self._paused_since: Optional[float] = None
         self._sleep_mode_active = False
+
+        # Memory game (Einstellungen -> Spiel): toggled on/off by a dedicated
+        # RFID function tag ("game_toggle" - see FUNCTION_ACTIONS/_execute_
+        # function_action), same momentary-scan-toggles-state pattern as
+        # shuffle_toggle. Never persisted - always starts off after a
+        # restart, same reasoning as night mode above: physical state (is
+        # the box currently in game mode) shouldn't outlive a reboot.
+        self._game_mode_active = False
 
         self._backlight = create_backlight(config)
         self._min_brightness = repository.get_int_setting("min_brightness", 0)
@@ -412,6 +421,8 @@ class Engine:
             self.request_restart()
         elif action == "shutdown":
             self.request_shutdown()
+        elif action == "game_toggle":
+            self.toggle_game_mode()
         else:
             logger.warning("unknown function tag action: %s", action)
 
@@ -974,6 +985,19 @@ class Engine:
             else:
                 self._restore_volume_after_fade_locked()
 
+    # -- Memory game ------------------------------------------------------------
+    # Purely a display-mode flag - which images to show and the actual matching
+    # logic live entirely client-side (owlbox/web/static/js/game.js), fed by
+    # /api/game/images. Independent of playback: toggling it doesn't
+    # pause/resume anything, a story can keep playing in the background while
+    # the kiosk shows the game screen instead of the now-playing view.
+
+    def toggle_game_mode(self) -> None:
+        with self._lock:
+            self._game_mode_active = not self._game_mode_active
+            active = self._game_mode_active
+        logger.info("game mode %s", "activated" if active else "deactivated")
+
     # -- auto-sleep (sleeping-owl screen) --------------------------------------
 
     def set_auto_sleep_minutes(self, minutes: int) -> None:
@@ -1073,6 +1097,7 @@ class Engine:
             sleep_timer_minutes = self._sleep_timer_minutes
             auto_sleep_minutes = self._auto_sleep_minutes
             sleep_mode_active = self._sleep_mode_active
+            game_mode_active = self._game_mode_active
             brightness = self._brightness
             min_brightness = self._min_brightness
             max_brightness = self._max_brightness
@@ -1185,6 +1210,7 @@ class Engine:
                 "hotspot_ip": hotspot_ip if hotspot_active else None,
             },
             "parent_mode": {"active": parent_label is not None, "label": parent_label},
+            "game_mode": {"active": game_mode_active},
             # A plain sysfs read (see system_info.get_cpu_temperature_celsius),
             # not a subprocess call like the WiFi signal above - cheap enough
             # to do inline on every poll instead of needing the same

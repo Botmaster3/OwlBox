@@ -52,4 +52,10 @@ def create_app(engine, config) -> Flask:
         directory = config.media_dir / str(story_id)
         return send_from_directory(directory, filename)
 
+    @app.route("/media/game/<path:filename>")
+    def game_media(filename: str):
+        # Flat pool, not per-story like the route above - see
+        # repository.game_images / api.py's /api/game/images.
+        return send_from_directory(config.media_dir / "game", filename)
+
     return app

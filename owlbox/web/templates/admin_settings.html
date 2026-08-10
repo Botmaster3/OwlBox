@@ -9,6 +9,7 @@
     <button type="button" class="settings-tab" data-panel="design" role="tab">Design</button>
     <button type="button" class="settings-tab" data-panel="audio" role="tab">Audio</button>
     <button type="button" class="settings-tab" data-panel="anzeige" role="tab">Anzeige</button>
+    <button type="button" class="settings-tab" data-panel="spiel" role="tab">Spiel</button>
     <button type="button" class="settings-tab" data-panel="netzwerk" role="tab">Netzwerk</button>
     <button type="button" class="settings-tab" data-panel="system" role="tab">System</button>
   </nav>
@@ -338,6 +339,40 @@
       werden. Braucht den Taster des Helligkeits-Encoders verkabelt
       (<code>gpio.brightness_encoder_switch</code>, siehe docs/hardware.md) - ohne den ist der
       Knopf hier trotzdem nutzbar, nur der physische Encoder am Gerät nicht.
+    </p>
+  </div>
+
+  </div>
+
+  <div class="settings-panel" data-panel="spiel" hidden>
+  <h2 class="settings-section-heading" id="section-spiel">Spiel</h2>
+
+  <div class="card">
+    <h2>Memory-Spiel: Bilder</h2>
+    <p class="field-help">
+      Diese Bilder werden für das Memory-Spiel auf dem Kiosk-Display verwendet - je zwei Karten
+      pro Bild, gemischt. Mindestens 2 Bilder nötig, damit überhaupt ein Paar zum Finden da ist;
+      mehr als 8 werden für eine Runde nicht gebraucht (der Rest bleibt trotzdem in der Sammlung
+      und kann bei der nächsten Runde mit dabei sein).
+    </p>
+    <div class="field">
+      <label for="game-image-upload">Neue Bilder hochladen</label>
+      <input type="file" id="game-image-upload" accept="image/*" multiple>
+    </div>
+    <button class="btn" id="game-image-upload-btn" type="button">Hochladen</button>
+    <div id="game-image-grid" class="game-image-grid"></div>
+    <p class="hint" id="game-image-empty-hint">Noch keine Bilder hochgeladen.</p>
+  </div>
+
+  <div class="card">
+    <h2>Aktivierung per RFID-Chip</h2>
+    <p class="field-help">
+      Das Memory-Spiel selbst wird nicht hier gestartet, sondern über einen dafür angelegten
+      Funktions-Chip: Unter „RFID-Tags“ einen Chip mit der Aktion „Memory-Spiel an/aus“ anlegen.
+      Erstes Auflegen zeigt das Spiel auf dem Kiosk-Display an (dort ist dann auch als einzige
+      Stelle in OwlBox der Touchscreen aktiv), erneutes Auflegen desselben Chips blendet es wieder
+      aus und zeigt wieder die normale „Jetzt läuft“-Ansicht. Eine laufende Geschichte spielt im
+      Hintergrund einfach weiter.
     </p>
   </div>
 

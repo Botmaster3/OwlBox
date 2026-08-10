@@ -97,3 +97,16 @@ CREATE TABLE IF NOT EXISTS daily_listening (
     plays INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (date, story_id)
 );
+
+-- Uploaded picture pool for the Memory game (Einstellungen -> Spiel) - the
+-- kiosk's one deliberate use of the display's touch hardware (otherwise
+-- unused, see docs/hardware.md), unlocked by a dedicated "game_toggle"
+-- function tag (see Engine.FUNCTION_ACTIONS). Flat list, no per-story
+-- grouping needed - position is just upload order, shown/shuffled into
+-- pairs client-side (owlbox/web/static/js/game.js).
+CREATE TABLE IF NOT EXISTS game_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

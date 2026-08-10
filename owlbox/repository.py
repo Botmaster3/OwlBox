@@ -520,3 +520,38 @@ def set_setting(key: str, value: str) -> None:
             """,
             (key, str(value)),
         )
+
+
+# -- Memory-game image pool ---------------------------------------------------
+
+
+@dataclass
+class GameImage:
+    id: int
+    filename: str
+    position: int
+
+
+def list_game_images() -> list[GameImage]:
+    rows = get_connection().execute("SELECT id, filename, position FROM game_images ORDER BY position ASC").fetchall()
+    return [GameImage(id=r["id"], filename=r["filename"], position=r["position"]) for r in rows]
+
+
+def add_game_image(filename: str) -> GameImage:
+    with write_cursor() as cur:
+        next_position = cur.execute("SELECT COALESCE(MAX(position), -1) + 1 AS n FROM game_images").fetchone()["n"]
+        cur.execute("INSERT INTO game_images (filename, position) VALUES (?, ?)", (filename, next_position))
+        image_id = cur.lastrowid
+    return GameImage(id=image_id, filename=filename, position=next_position)
+
+
+def delete_game_image(image_id: int) -> Optional[str]:
+    """Returns the deleted row's filename (so the caller can also remove the
+    file from disk - this only touches the DB row) or None if it didn't exist."""
+    conn = get_connection()
+    row = conn.execute("SELECT filename FROM game_images WHERE id = ?", (image_id,)).fetchone()
+    if row is None:
+        return None
+    with write_cursor() as cur:
+        cur.execute("DELETE FROM game_images WHERE id = ?", (image_id,))
+    return row["filename"]

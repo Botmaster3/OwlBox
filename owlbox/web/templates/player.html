@@ -112,5 +112,22 @@
   <img id="parent-mode-qr" class="parent-mode-qr" alt="QR-Code zur Login-Seite">
   <div class="parent-mode-hint">Mit dem Handy scannen, um sich einzuloggen.</div>
 </div>
+
+<!-- The one screen where touch actually does something (see docs/hardware.md) -
+     everywhere else on the kiosk is look-only, physical buttons/encoder/RFID
+     only. Populated and driven entirely by game.js. -->
+<div id="game-mode" class="game-mode" hidden>
+  <div id="game-grid" class="game-grid"></div>
+  <div id="game-empty-hint" class="game-empty-hint" hidden>
+    <div class="game-empty-owl">🦉🧩</div>
+    <p>Noch keine Bilder für das Memory-Spiel hochgeladen.</p>
+    <p class="game-empty-subhint">Unter Einstellungen → Spiel lassen sich eigene Bilder hinzufügen.</p>
+  </div>
+  <div id="game-win-banner" class="game-win-banner" hidden>
+    🎉 Geschafft! <span id="game-win-moves"></span>
+    <button type="button" id="game-again-btn" class="btn">Nochmal spielen</button>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
 <script src="{{ url_for('static', filename='js/player.js') }}"></script>
 {% endblock %}

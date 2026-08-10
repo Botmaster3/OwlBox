@@ -407,6 +407,63 @@
     }
   });
 
+  // -- Memory game: image pool --------------------------------------------
+
+  const gameImageUpload = document.getElementById("game-image-upload");
+  const gameImageUploadBtn = document.getElementById("game-image-upload-btn");
+  const gameImageGrid = document.getElementById("game-image-grid");
+  const gameImageEmptyHint = document.getElementById("game-image-empty-hint");
+
+  function renderGameImages(images) {
+    gameImageGrid.innerHTML = "";
+    gameImageEmptyHint.hidden = images.length > 0;
+    for (const img of images) {
+      const cell = document.createElement("div");
+      cell.className = "game-image-cell";
+      cell.innerHTML = `
+        <img src="${img.url}" alt="">
+        <button type="button" class="btn danger small" data-delete-image="${img.id}">🗑</button>
+      `;
+      cell.querySelector("[data-delete-image]").addEventListener("click", async () => {
+        try {
+          await api(`/api/game/images/${img.id}`, { method: "DELETE" });
+          loadGameImages();
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      });
+      gameImageGrid.appendChild(cell);
+    }
+  }
+
+  async function loadGameImages() {
+    try {
+      renderGameImages(await api("/api/game/images"));
+    } catch (err) {
+      // ignore - tab may just not be visible yet on first load
+    }
+  }
+
+  gameImageUploadBtn.addEventListener("click", async () => {
+    const files = Array.from(gameImageUpload.files || []);
+    if (files.length === 0) {
+      showToast("Bitte zuerst Bilder auswählen.", true);
+      return;
+    }
+    const formData = new FormData();
+    files.forEach((f) => formData.append("images", f));
+    try {
+      const images = await api("/api/game/images", { method: "POST", body: formData });
+      renderGameImages(images);
+      gameImageUpload.value = "";
+      showToast(`${files.length} Bild(er) hochgeladen.`);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  loadGameImages();
+
   // -- auto-sleep (sleeping-owl screen) ----------------------------------
 
   const autoSleepStatus = document.getElementById("auto-sleep-status");

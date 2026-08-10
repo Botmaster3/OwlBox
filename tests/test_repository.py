@@ -414,3 +414,28 @@ def test_get_weekly_review_excludes_older_days(config):
     assert review["top_stories"] == []
     # All-time total on the story itself is unaffected by the backdate.
     assert repository.get_story(story.id).total_seconds == 90
+
+
+def test_game_images_crud_and_ordering(config):
+    assert repository.list_game_images() == []
+
+    first = repository.add_game_image("aaa.png")
+    second = repository.add_game_image("bbb.png")
+    third = repository.add_game_image("ccc.png")
+    assert first.position == 0
+    assert second.position == 1
+    assert third.position == 2
+
+    images = repository.list_game_images()
+    assert [img.filename for img in images] == ["aaa.png", "bbb.png", "ccc.png"]
+
+    deleted_filename = repository.delete_game_image(second.id)
+    assert deleted_filename == "bbb.png"
+    assert [img.filename for img in repository.list_game_images()] == ["aaa.png", "ccc.png"]
+
+    # A new upload after a deletion keeps climbing rather than reusing the
+    # freed position, same as the id counter - order is upload order only.
+    fourth = repository.add_game_image("ddd.png")
+    assert fourth.position == 3
+
+    assert repository.delete_game_image(999999) is None

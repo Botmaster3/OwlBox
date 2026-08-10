@@ -19,11 +19,12 @@ den Pi geladen und einem Chip zugewiesen.
   auslösen - Play/Pause, Weiter/Zurück, Lauter/Leiser, WLAN an/aus, Shuffle
   an/aus, Wiederholung Ordner an/aus, Wiederholung Track an/aus,
   Einschlaf-Timer starten (15/30/45/60 Min., blendet die Lautstärke in den
-  letzten 60s sanft aus statt hart abzuschneiden) oder abbrechen, Pi neu
-  starten/herunterfahren. Praktisch als "Bedienkarten" ohne Taster anfassen zu
-  müssen. Die Shuffle-/Wiederholungs-Chips wirken auf die zuletzt geladene
-  Geschichte, auch nachdem deren eigener Chip schon wieder abgenommen wurde,
-  und schalten beim ersten Auflegen ein und beim erneuten Auflegen wieder aus.
+  letzten 60s sanft aus statt hart abzuschneiden) oder abbrechen,
+  Memory-Spiel an/aus (siehe unten), Pi neu starten/herunterfahren. Praktisch
+  als "Bedienkarten" ohne Taster anfassen zu müssen. Die
+  Shuffle-/Wiederholungs-/Memory-Chips wirken auch nachdem der jeweils
+  auslösende Chip schon wieder abgenommen wurde, und schalten beim ersten
+  Auflegen ein und beim erneuten Auflegen wieder aus.
 - **Akustisches Feedback**: kurzer, unterschiedlicher Ton für Chip erkannt /
   unbekannter Chip / Funktions-Chip sowie beim Hochfahren und beim
   Herunterfahren/Neustart - läuft über `aplay` parallel zur laufenden
@@ -34,14 +35,24 @@ den Pi geladen und einem Chip zugewiesen.
   Geschichte, aktueller Kapitel-/Track-Titel, verbleibende Zeit im Track,
   Track-Liste der Geschichte mit hervorgehobenem aktuellen Titel, Lautstärke,
   WLAN-Empfang - Bedienung läuft primär über Taster/Encoder/Funktions-Chips
-  (siehe docs/hardware.md); die Touch-Hardware ist zwar vorhanden, wird von
-  der Oberfläche aktuell aber nicht ausgewertet (geplant: nur im künftigen
-  Spielmodus aktiv). Helligkeit ausschließlich manuell regelbar (Regler unter
-  Einstellungen/Home oder ein zweiter Dreh-Encoder am Gerät) - kein
+  (siehe docs/hardware.md); die Touch-Hardware wird von der Oberfläche einzig
+  im Memory-Spiel ausgewertet (siehe unten) - überall sonst bleibt der Kiosk
+  reines Anzeige-Display. Helligkeit ausschließlich manuell regelbar (Regler
+  unter Einstellungen/Home oder ein zweiter Dreh-Encoder am Gerät) - kein
   automatisches Dimmen; jede Änderung blendet den neuen Wert kurz auf dem
   Display ein, **die eigentliche Backlight-Steuerung ist auf dieser Hardware
   aber noch nicht angeschlossen** (das Display regelt seine Helligkeit über
   eine Linux-Sysfs-Schnittstelle statt über GPIO/PWM, siehe docs/hardware.md).
+- **Memory-Spiel**: per Funktions-Chip "Memory-Spiel an/aus" freigeschaltete
+  Bildschirmansicht - die einzige Stelle im ganzen Kiosk, an der Touch
+  tatsächlich etwas bewirkt (Karten antippen zum Umdrehen). Die Bildpaare
+  stammen aus frei unter Einstellungen → Spiel hochladbaren eigenen Bildern
+  (JPG/PNG/WebP); eine Runde nutzt bis zu 8 zufällig aus dem Bilderpool
+  gezogene Paare, mit Zug-Zähler und Gewinn-Anzeige. Läuft unabhängig von der
+  Wiedergabe - eine Geschichte spielt im Hintergrund weiter. Denselben Chip
+  erneut auflegen deaktiviert die Spielansicht wieder und zeigt die normale
+  Now-Playing-Anzeige. **Touch-Bedienung noch nicht an echter Hardware
+  verifiziert** (siehe docs/hardware.md).
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,
@@ -98,7 +109,8 @@ den Pi geladen und einem Chip zugewiesen.
     einstellbarer Minimal-/Maximalwert, der den Schieberegler hier und den Helligkeits-Encoder am
     Gerät begrenzt); Automatischer Ruhemodus (Minuten bis zur schlafenden Eule nach dem Pausieren,
     0 = aus); Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert
-    automatisch nach Ablauf, mit sanftem Ausblenden); WLAN (Status, an/aus, nach Netzwerken suchen
+    automatisch nach Ablauf, mit sanftem Ausblenden); Spiel (eigene Bilder für das Memory-Spiel
+    hochladen/löschen, siehe oben); WLAN (Status, an/aus, nach Netzwerken suchen
     und verbinden); Pi neu starten/herunterfahren.
   - **Info** - Systeminfos: Hardware-Modell, Betriebssystem, Laufzeit, CPU-Temperatur,
     Speicher-/RAM-Belegung, Bibliotheks-Statistik, OwlBox-Version; Wochenrückblick (Hördauer und

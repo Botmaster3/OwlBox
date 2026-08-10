@@ -1953,3 +1953,66 @@ def test_stop_playback_then_play_story_resumes_where_it_left_off(config):
         assert engine.get_state()["player"]["time_pos"] == 17.0
     finally:
         engine.stop()
+
+
+def test_toggle_game_mode_flips_state_and_is_reflected_in_get_state(config):
+    engine = Engine(config)
+    engine.start()
+    try:
+        assert engine.get_state()["game_mode"]["active"] is False
+
+        engine.toggle_game_mode()
+        assert engine.get_state()["game_mode"]["active"] is True
+
+        engine.toggle_game_mode()
+        assert engine.get_state()["game_mode"]["active"] is False
+    finally:
+        engine.stop()
+
+
+def test_game_toggle_function_tag_toggles_on_then_off_across_two_placements(config):
+    config.rfid.poll_interval = 0.01
+    config.rfid.missing_reads_to_remove = 2
+    repository.set_function_tag("GAMECARD", "game_toggle")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("GAMECARD")
+        time.sleep(0.15)
+        state = engine.get_state()
+        assert state["function_tag"] == "game_toggle"
+        assert state["game_mode"]["active"] is True
+
+        # Lifting the chip must not undo the toggle - game mode is a display
+        # state independent of whether the triggering chip is still present,
+        # same as shuffle/night mode.
+        engine.simulate_remove()
+        time.sleep(0.15)
+        assert engine.get_state()["game_mode"]["active"] is True
+
+        engine.simulate_scan("GAMECARD")
+        time.sleep(0.15)
+        assert engine.get_state()["game_mode"]["active"] is False
+    finally:
+        engine.stop()
+
+
+def test_game_mode_does_not_pause_a_story_playing_in_the_background(config):
+    config.rfid.poll_interval = 0.01
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.start()
+    try:
+        engine.simulate_scan("AABBCC")
+        time.sleep(0.15)
+        assert engine.get_state()["player"]["playing"] is True
+
+        engine.toggle_game_mode()
+        state = engine.get_state()
+        assert state["game_mode"]["active"] is True
+        assert state["player"]["playing"] is True
+        assert state["story"]["id"] == story.id
+    finally:
+        engine.stop()

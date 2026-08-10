@@ -900,6 +900,95 @@ html[data-theme="weihnachten"] .advent-wreath {
 .sleep-label { font-size: clamp(1.2rem, 3.2vw, 2rem); font-weight: 700; }
 .sleep-hint { color: var(--text-dim); font-size: clamp(0.9rem, 2vw, 1.1rem); max-width: 60ch; }
 
+/* Memory game (game.js) - the kiosk's one touch-interactive screen, see
+   docs/hardware.md. Full-viewport like .sleep-mode/.parent-mode above. */
+.game-mode {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3vh 3vw;
+  box-sizing: border-box;
+}
+.game-grid {
+  display: grid;
+  gap: 2vw;
+  width: 100%;
+  max-width: 100vh; /* keeps cards roughly square-ish even in portrait */
+}
+.game-card {
+  aspect-ratio: 1;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  perspective: 800px;
+  /* Large enough tap target on a 5" panel even with 4-5 columns - a small
+     touch target is the classic "looks fine on a dev monitor, unusable with
+     an actual finger" mistake. */
+  min-width: 44px;
+  min-height: 44px;
+}
+.game-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform-style: preserve-3d;
+  transition: transform 0.4s;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.game-card.flipped .game-card-inner, .game-card.matched .game-card-inner { transform: rotateY(180deg); }
+.game-card-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.game-card-back {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  font-size: clamp(1.4rem, 5vw, 2.4rem);
+}
+.game-card-front {
+  background: var(--panel);
+  transform: rotateY(180deg);
+}
+.game-card-front img { width: 100%; height: 100%; object-fit: cover; }
+.game-card.matched .game-card-front { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+.game-empty-hint { text-align: center; color: var(--text-dim); max-width: 60ch; }
+.game-empty-owl { font-size: clamp(3rem, 16vw, 6rem); }
+.game-empty-subhint { font-size: 0.9rem; }
+
+.game-win-banner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 95;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 4vh 5vw;
+  text-align: center;
+  font-size: clamp(1.2rem, 4vw, 2rem);
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+#game-win-moves { font-size: 0.6em; font-weight: 400; color: var(--text-dim); }
+
 /* Temporary on-screen readout, shown on the kiosk display for a couple of
    seconds whenever the brightness changes (encoder turn or web slider). */
 .osd {
@@ -1165,6 +1254,27 @@ a.btn { display: inline-block; text-decoration: none; }
 }
 .theme-group-label:first-of-type { margin-top: 0; }
 .theme-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 6px; }
+
+/* Memory-game image pool (Einstellungen -> Spiel). */
+.game-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.game-image-cell {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  aspect-ratio: 1;
+}
+.game-image-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.game-image-cell .btn {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+}
 .theme-swatch {
   display: block;
   width: 100%;

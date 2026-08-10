@@ -42,6 +42,7 @@
   let lastCoverUrl = null;
   let lastStoryTitle = null;
   let parentModeActive = false;
+  let gameModeActive = false;
   let hasScannedTag = false;
   let lastBrightness = null;
   let lastNightModeActive = null;
@@ -297,6 +298,26 @@
     playerEl.hidden = parentModeActive;
     if (parentModeActive) {
       parentModeLabelEl.textContent = `Eltern-Modus: ${parentMode.label}`;
+      return;
+    }
+
+    // Memory game (a dedicated function-chip toggles this - see Kapitel
+    // "Spiel" in Einstellungen): takes over the whole display until toggled
+    // off again, but doesn't touch playback - a story can keep playing in
+    // the background. Takes priority over auto-sleep below on purpose: a
+    // paused story shouldn't put the kiosk to sleep while a kid is actively
+    // playing. window.OwlBoxGame comes from game.js, loaded before this file.
+    const gameMode = state.game_mode || { active: false };
+    if (gameMode.active !== gameModeActive) {
+      gameModeActive = gameMode.active;
+      if (window.OwlBoxGame) {
+        if (gameModeActive) window.OwlBoxGame.start();
+        else window.OwlBoxGame.stop();
+      }
+    }
+    if (gameModeActive) {
+      playerEl.hidden = true;
+      sleepModeEl.hidden = true;
       return;
     }
 
