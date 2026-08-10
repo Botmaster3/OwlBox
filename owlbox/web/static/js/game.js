@@ -5,18 +5,23 @@
 // see docs/hardware.md.
 (function () {
   const gameModeEl = document.getElementById("game-mode");
+  const difficultyEl = document.getElementById("game-difficulty");
+  const difficultyBtns = document.querySelectorAll(".game-difficulty-btn");
   const gridEl = document.getElementById("game-grid");
   const emptyHintEl = document.getElementById("game-empty-hint");
   const winBannerEl = document.getElementById("game-win-banner");
   const winMovesEl = document.getElementById("game-win-moves");
   const againBtn = document.getElementById("game-again-btn");
+  const changeDifficultyBtn = document.getElementById("game-change-difficulty-btn");
 
   // Cards auto-size to fit however many pairs a round has (see layoutGrid()
-  // below) - this just caps how many pairs one round pulls out of the pool,
-  // so the board doesn't become impossible to scan on a 5" display. Extra
-  // uploaded images beyond this just widen the pool a new round can draw
-  // from instead.
-  const MAX_PAIRS = 12;
+  // below) - the actual cap on how many pairs one round pulls out of the
+  // pool is picked by the player via the difficulty screen shown on every
+  // game-mode activation. Extra uploaded images beyond a given difficulty's
+  // count just widen the pool a new round can draw from instead. Fewer
+  // uploaded images than the chosen difficulty asks for is fine too -
+  // newRound() below just uses however many are actually available.
+  const PAIRS_BY_DIFFICULTY = { leicht: 4, mittel: 8, schwer: 12 };
   // How long a non-matching pair stays face-up before flipping back, so
   // there's actually time to see what was wrong.
   const MISMATCH_DELAY_MS = 900;
@@ -27,6 +32,7 @@
   let moves = 0;
   let boardLocked = false;
   let lastImages = null;
+  let lastPairCount = PAIRS_BY_DIFFICULTY.mittel;
 
   function shuffled(array) {
     const copy = array.slice();
@@ -95,7 +101,10 @@
     gridEl.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
   }
 
-  function newRound(images) {
+  function newRound(images, pairCount) {
+    lastPairCount = pairCount;
+    difficultyEl.hidden = true;
+    gridEl.hidden = false;
     winBannerEl.hidden = true;
     boardLocked = false;
     flippedCards = [];
@@ -103,7 +112,9 @@
     moves = 0;
     gridEl.innerHTML = "";
 
-    const pool = shuffled(images).slice(0, MAX_PAIRS);
+    // Fewer uploaded images than the chosen difficulty just means a smaller
+    // round than requested, not an error - see PAIRS_BY_DIFFICULTY above.
+    const pool = shuffled(images).slice(0, pairCount);
     totalPairs = pool.length;
     layoutGrid(totalPairs * 2);
 
@@ -111,33 +122,54 @@
     cards.forEach((card) => gridEl.appendChild(card));
   }
 
+  function showDifficultyScreen() {
+    gridEl.hidden = true;
+    winBannerEl.hidden = true;
+    difficultyEl.hidden = false;
+  }
+
+  difficultyBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pairCount = PAIRS_BY_DIFFICULTY[btn.dataset.difficulty] || PAIRS_BY_DIFFICULTY.mittel;
+      if (lastImages) newRound(lastImages, pairCount);
+    });
+  });
+
   againBtn.addEventListener("click", () => {
-    if (lastImages) newRound(lastImages);
+    if (lastImages) newRound(lastImages, lastPairCount);
+  });
+
+  changeDifficultyBtn.addEventListener("click", () => {
+    showDifficultyScreen();
   });
 
   async function start() {
     gameModeEl.hidden = false;
+    difficultyEl.hidden = true;
+    gridEl.hidden = true;
     winBannerEl.hidden = true;
     try {
       const res = await fetch("/api/game/images");
       const images = await res.json();
       lastImages = images;
       if (!Array.isArray(images) || images.length < 2) {
-        gridEl.hidden = true;
         emptyHintEl.hidden = false;
         return;
       }
-      gridEl.hidden = false;
       emptyHintEl.hidden = true;
-      newRound(images);
+      // Fresh activation - always ask for a difficulty again rather than
+      // silently reusing the last one, same "starts clean every time"
+      // principle as the round shuffle itself (see player.js).
+      showDifficultyScreen();
     } catch (err) {
-      gridEl.hidden = true;
       emptyHintEl.hidden = false;
     }
   }
 
   function stop() {
     gameModeEl.hidden = true;
+    difficultyEl.hidden = true;
+    winBannerEl.hidden = true;
   }
 
   window.OwlBoxGame = { start, stop };

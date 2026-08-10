@@ -968,6 +968,18 @@ html[data-theme="weihnachten"] .advent-wreath {
 .game-empty-owl { font-size: clamp(3rem, 16vw, 6rem); }
 .game-empty-subhint { font-size: 0.9rem; }
 
+/* Shown first on every game-mode activation - see game.js's start(). */
+.game-difficulty { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2vh; }
+.game-difficulty-owl { font-size: clamp(3rem, 16vw, 6rem); }
+.game-difficulty-title { font-size: clamp(1.1rem, 3.5vw, 1.6rem); font-weight: 700; margin: 0; }
+.game-difficulty-buttons { display: flex; gap: 3vw; flex-wrap: wrap; justify-content: center; }
+.game-difficulty-btn {
+  min-width: 96px;
+  min-height: 44px; /* same tap-target floor as the memory cards themselves */
+  padding: 1.2vh 4vw;
+  font-size: clamp(1rem, 2.6vw, 1.3rem);
+}
+
 .game-win-banner {
   position: fixed;
   top: 50%;
@@ -988,6 +1000,7 @@ html[data-theme="weihnachten"] .advent-wreath {
   gap: 12px;
 }
 #game-win-moves { font-size: 0.6em; font-weight: 400; color: var(--text-dim); }
+.game-win-buttons { display: flex; gap: 3vw; flex-wrap: wrap; justify-content: center; }
 
 /* Temporary on-screen readout, shown on the kiosk display for a couple of
    seconds whenever the brightness changes (encoder turn or web slider). */

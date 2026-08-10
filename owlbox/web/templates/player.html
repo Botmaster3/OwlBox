@@ -117,7 +117,18 @@
      everywhere else on the kiosk is look-only, physical buttons/encoder/RFID
      only. Populated and driven entirely by game.js. -->
 <div id="game-mode" class="game-mode" hidden>
-  <div id="game-grid" class="game-grid"></div>
+  <!-- Shown first on every game-mode activation (see game.js's start()) -
+       picking a difficulty is what actually starts the first round. -->
+  <div id="game-difficulty" class="game-difficulty" hidden>
+    <div class="game-difficulty-owl">🦉🧩</div>
+    <p class="game-difficulty-title">Wie schwer soll's werden?</p>
+    <div class="game-difficulty-buttons">
+      <button type="button" class="btn game-difficulty-btn" data-difficulty="leicht">Leicht</button>
+      <button type="button" class="btn game-difficulty-btn" data-difficulty="mittel">Mittel</button>
+      <button type="button" class="btn game-difficulty-btn" data-difficulty="schwer">Schwer</button>
+    </div>
+  </div>
+  <div id="game-grid" class="game-grid" hidden></div>
   <div id="game-empty-hint" class="game-empty-hint" hidden>
     <div class="game-empty-owl">🦉🧩</div>
     <p>Noch keine Bilder für das Memory-Spiel hochgeladen.</p>
@@ -125,7 +136,10 @@
   </div>
   <div id="game-win-banner" class="game-win-banner" hidden>
     🎉 Geschafft! <span id="game-win-moves"></span>
-    <button type="button" id="game-again-btn" class="btn">Nochmal spielen</button>
+    <div class="game-win-buttons">
+      <button type="button" id="game-again-btn" class="btn">Nochmal spielen</button>
+      <button type="button" id="game-change-difficulty-btn" class="btn secondary">Schwierigkeit ändern</button>
+    </div>
   </div>
 </div>
 <script src="{{ url_for('static', filename='js/game.js') }}"></script>

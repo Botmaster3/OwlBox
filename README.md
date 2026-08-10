@@ -45,14 +45,19 @@ den Pi geladen und einem Chip zugewiesen.
   eine Linux-Sysfs-Schnittstelle statt über GPIO/PWM, siehe docs/hardware.md).
 - **Memory-Spiel**: per Funktions-Chip "Memory-Spiel an/aus" freigeschaltete
   Bildschirmansicht - die einzige Stelle im ganzen Kiosk, an der Touch
-  tatsächlich etwas bewirkt (Karten antippen zum Umdrehen). Die Bildpaare
-  stammen aus frei unter Einstellungen → Spiel hochladbaren eigenen Bildern
-  (JPG/PNG/WebP); eine Runde nutzt bis zu 8 zufällig aus dem Bilderpool
-  gezogene Paare, mit Zug-Zähler und Gewinn-Anzeige. Läuft unabhängig von der
-  Wiedergabe - eine Geschichte spielt im Hintergrund weiter. Denselben Chip
-  erneut auflegen deaktiviert die Spielansicht wieder und zeigt die normale
-  Now-Playing-Anzeige. **Touch-Bedienung noch nicht an echter Hardware
-  verifiziert** (siehe docs/hardware.md).
+  tatsächlich etwas bewirkt (Karten antippen zum Umdrehen). Jede Aktivierung
+  fragt zuerst den Schwierigkeitsgrad ab (Leicht/Mittel/Schwer = 4/8/12
+  Bildpaare, per Antippen wählbar), danach zufällig aus dem Bilderpool
+  gezogene Paare für eine Runde, mit Zug-Zähler und Gewinn-Anzeige samt
+  "Nochmal spielen" und "Schwierigkeit ändern". Die Bildpaare stammen aus
+  frei unter Einstellungen → Spiel hochladbaren eigenen Bildern
+  (JPG/PNG/WebP); mit weniger hochgeladenen Bildern als der gewählte
+  Schwierigkeitsgrad verlangt wird die Runde einfach entsprechend kleiner.
+  Läuft unabhängig von der Wiedergabe - eine Geschichte spielt im
+  Hintergrund weiter. Denselben Chip erneut auflegen deaktiviert die
+  Spielansicht wieder und zeigt die normale Now-Playing-Anzeige.
+  **Touch-Bedienung noch nicht an echter Hardware verifiziert** (siehe
+  docs/hardware.md).
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum
   nächsten/vorherigen Track, gedrückt halten spult stattdessen im aktuellen
   Track vor/zurück) + Dreh-Encoder (drehen = Lautstärke, drücken = Play/Pause,

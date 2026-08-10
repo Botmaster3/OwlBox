@@ -183,8 +183,9 @@ story.append(spec_table(
         ["Schlafmodus-Anzeige", "Nach der eingestellten Pause-Dauer im automatischen Ruhemodus (Kapitel 10.3)", "Schlafende Eule + Hinweis, wie man sie weckt"],
         ["Eltern-Modus / QR-Code", "Solange ein Eltern-Chip aufliegt", "QR-Code zur Login-Seite, damit sich Eltern per Handy einloggen können"],
         ["Memory-Spielansicht", "Solange das Memory-Spiel per Funktions-Chip aktiv ist (Kapitel 9.2)",
-         "Kartenraster zum Antippen (einzige Ansicht mit Touch-Bedienung), Zug-Zähler und "
-         "Gewinn-Anzeige nach vollständig aufgedecktem Feld - eine im Hintergrund laufende "
+         "Zunächst Schwierigkeitsauswahl (Leicht/Mittel/Schwer), danach Kartenraster zum Antippen "
+         "(einzige Ansicht mit Touch-Bedienung), Zug-Zähler und Gewinn-Anzeige mit „Nochmal spielen“/"
+         "„Schwierigkeit ändern“ nach vollständig aufgedecktem Feld - eine im Hintergrund laufende "
          "Geschichte spielt dabei normal weiter"],
     ],
     col_widths=[42 * mm, 58 * mm, 60 * mm],
@@ -537,14 +538,17 @@ p(
 )
 ctrl("Bilder hochladen", "Datei-Auswahl (Mehrfachauswahl möglich) + „Hochladen“-Button",
      "Lädt eigene Bilder (JPG/PNG/WebP) in den gemeinsamen Bilderpool hoch - keine Begrenzung der "
-     "Gesamtzahl, eine Spielrunde zieht daraus zufällig bis zu 8 Bildpaare.")
+     "Gesamtzahl. Auf dem Kiosk-Display wird vor jeder Runde ein Schwierigkeitsgrad gewählt "
+     "(Leicht/Mittel/Schwer = 4/8/12 Bildpaare), der bestimmt, wie viele Paare eine Runde zufällig "
+     "aus dem Pool zieht.")
 ctrl("Bilder-Übersicht", "Miniaturbild-Raster mit Papierkorb-Symbol je Bild", "Löscht ein einzelnes Bild "
      "endgültig aus dem Pool (Datei und Datenbankeintrag) - laufende oder künftige Spielrunden ziehen "
      "dann nur noch aus den verbliebenen Bildern.")
 story.append(note_box(
     "Mit weniger als zwei hochgeladenen Bildern zeigt die Spielansicht auf dem Kiosk-Display "
     "stattdessen einen Hinweis, dass noch Bilder fehlen, statt eines leeren oder unvollständigen "
-    "Spielfelds."
+    "Spielfelds. Reichen die hochgeladenen Bilder nicht für den gewählten Schwierigkeitsgrad, wird "
+    "die Runde einfach entsprechend kleiner, statt einen Fehler zu zeigen."
 ))
 
 h2("10.6 Netzwerk (WLAN)")
