@@ -392,12 +392,15 @@
 <main>
   <header class="page-head">
     <p class="eyebrow">Wiring Reference · OwlBox Adapter-Platine</p>
-    <h1>Adapter-Platine per Kabel: RC522, Taster, Encoder, Display, Backlight</h1>
+    <h1>Adapter-Platine per Kabel: RC522, Taster, Encoder, Display (optional)</h1>
     <p class="lede">
       Pi und HiFiBerry bleiben unverändert direkt gestapelt. Eine separate Lochraster-Platine
       (keine HAT-Form nötig) hängt per Flachbandkabel am Pass-Through-Header des HiFiBerry und
-      nimmt alle übrigen Komponenten auf - inklusive dimmbarem Backlight und dem zweiten
-      Dreh-Encoder für die Helligkeit, beides Teil des Standardaufbaus.
+      nimmt RC522, Taster und beide Dreh-Encoder auf. Der RC522 läuft auf echtem Hardware-SPI0
+      (nicht mehr geteilt mit dem Display), das 7"-DSI-Display braucht dagegen gar kein SPI mehr -
+      seine vier Adern (5V/GND/I2C) können entweder direkt zum Pi-Header oder optional mit über
+      diese Adapter-Platine geführt werden. Kein Backlight-Transistor mehr nötig - die
+      Display-Helligkeit läuft intern über die Display-Adapterplatine, s. hardware.md.
     </p>
   </header>
 
@@ -423,7 +426,7 @@
       <div class="material-card">
         <div class="qty">6×</div>
         <div class="name">Stiftleisten/JST-Stecker</div>
-        <div class="note">Für RC522 (7-pol.), Taster (2× 2-pol.), Encoder Lautstärke (5-pol.), Encoder Helligkeit (4-pol.), Display (8-pol.)</div>
+        <div class="note">Für RC522 (7-pol.), Taster (2× 2-pol.), Encoder Lautstärke (5-pol.), Encoder Helligkeit (4-pol.), Display (4-pol., optional)</div>
       </div>
       <div class="material-card">
         <div class="qty">–</div>
@@ -433,12 +436,7 @@
       <div class="material-card">
         <div class="qty">1×</div>
         <div class="name">2. KY-040-Encoder (4-polig, kein Taster)</div>
-        <div class="note">Für die Helligkeits-Regelung per Dreh-Encoder, zusätzlich zum Schieberegler in den Einstellungen</div>
-      </div>
-      <div class="material-card">
-        <div class="qty">1×</div>
-        <div class="name">NPN-Transistor (z.B. BC547) oder Logic-Level-N-MOSFET + ~1kΩ Widerstand</div>
-        <div class="note">Für dimmbares Backlight - schaltet die LED-Leitung per Software-PWM statt fest an 3.3V</div>
+        <div class="note">Für die Helligkeits-Regelung per Dreh-Encoder - auf dieser Hardware aktuell ohne Wirkung (Display-Helligkeit läuft intern, s. hardware.md), Verkabelung bleibt trotzdem dokumentiert</div>
       </div>
     </div>
   </section>
@@ -472,8 +470,8 @@
     <div class="stack">
       <div class="stack-board custom">
         <div class="label">Adapter-Platine (separates Board)</div>
-        <div class="sub">zapft: SPI-Bus + CE1 (RC522), CE0/DC/RST (Display), GPIO5/6 (Taster), GPIO17/22/27
-          (Lautstärke-Encoder), GPIO13 (Backlight), GPIO23/12 (Helligkeits-Encoder)</div>
+        <div class="sub">zapft: SPI0-Bus + CE0 (RC522, exklusiv), GPIO5/6 (Taster), GPIO1/22/27
+          (Lautstärke-Encoder), GPIO23/12 (Helligkeits-Encoder), optional I2C SDA/SCL + 5V (Display)</div>
       </div>
     </div>
     <p class="fanout-note">Auf der Adapter-Platine sitzen 6 Steckverbinder für die einzelnen Module → siehe unten</p>
@@ -497,8 +495,10 @@
       <div class="item"><span class="dot" style="--dot: var(--sage-line)"></span> frei / reserviert</div>
     </div>
     <div class="warn">
-      GPIO18/19/20/21 sowie GPIO2/3 gehören dem HiFiBerry (I2S + I2C) - diese Adern bewusst
-      nicht ins Kabel zur Adapter-Platine mit aufnehmen.
+      GPIO18/19/20/21 sowie GPIO2/3 gehören dem HiFiBerry (I2S + I2C, letzteres auch vom
+      Display-Touch-Controller mitgenutzt, andere Adresse) - diese Adern bewusst nicht ins Kabel
+      zur Adapter-Platine mit aufnehmen (außer man führt das Display bewusst mit über die
+      Adapter-Platine, s.o.).
     </div>
   </section>
 
@@ -507,8 +507,8 @@
     <p class="section-note">
       Was an welchen physischen Pin geht, pro Modul - dieselben Pin-Nummern wie am
       HiFiBerry-Pass-Through-Header, nur jetzt auf der Adapter-Platine verkabelt. „Bus“ markiert
-      die drei SPI-Leitungen (SCK/MOSI/MISO), die sich RC522 und Display teilen - getrennt bleiben
-      nur die Chipselect-Leitungen (CE1 bzw. CE0).
+      die drei SPI0-Leitungen (SCK/MOSI/MISO) samt CE0 - die gehören jetzt ausschließlich dem
+      RC522, das Display braucht kein SPI mehr (I2C statt SPI, s.u.).
     </p>
     <div class="connectors" id="connectors"></div>
   </section>
@@ -520,17 +520,19 @@
       <li><div class="step-body">Auf der Adapter-Platine eine 2×20-Buchsenleiste (oder einen IDC-Steckverbinder) für das
         Flachbandkabel platzieren, plus sechs Stiftleisten/JST-Buchsen am Rand: RC522 (7-pol.),
         je einen 2-poligen für die beiden Taster, Encoder Lautstärke (5-pol.), Encoder Helligkeit
-        (4-pol.), Display (8-pol.).</div></li>
+        (4-pol.), optional Display (4-pol.).</div></li>
       <li><div class="step-body">Jeden Steckverbinder-Pin per Litzendraht punktweise mit dem passenden Pin der
         Kabel-Buchsenleiste verbinden (Tabellen oben) - Drahtführung ist unkritisch, es gibt keine
-        Hochfrequenzsignale außer dem SPI-Bus, der ohnehin kurz bleibt.</div></li>
-      <li><div class="step-body">SPI-Bus-Pins (SCK/MOSI/MISO, physische Pins 23/19/21) sind Sternpunkte: RC522 und Display
-        hängen beide daran, aber mit getrennten CE-Leitungen (CE1 bzw. CE0).</div></li>
+        Hochfrequenzsignale außer dem SPI0-Bus, der ohnehin kurz bleibt.</div></li>
+      <li><div class="step-body">SPI0-Bus-Pins (SCK/MOSI/MISO/CE0, physische Pins 23/19/21/24) gehören jetzt exklusiv dem
+        RC522 - keine geteilte Chipselect-Leitung mehr wie beim früheren SPI-Display nötig.</div></li>
       <li><div class="step-body">Vor dem ersten Anschließen: Durchgangsprüfung mit Multimeter, dass keine zwei Pins der
         Buchsenleiste versehentlich kurzgeschlossen sind (typischer Lochraster-Fehler).</div></li>
       <li><div class="step-body">Flachbandkabel vom Pass-Through-Header des HiFiBerry zur Adapter-Platine stecken, dann
-        RC522/Taster/Encoder/Display an ihre Steckverbinder - Display-Verkabelung selbst siehe
-        <span class="mono">docs/hardware.md</span> im Repo (Touch-Leitungen bewusst nicht verbunden).</div></li>
+        RC522/Taster/Encoder an ihre Steckverbinder. Das Display hängt über sein eigenes DSI-Kabel
+        direkt am Pi (nicht an der Adapter-Platine) - nur seine vier Strom-/I2C-Adern können
+        optional mit über die Adapter-Platine geführt werden, siehe
+        <span class="mono">docs/hardware.md</span> im Repo.</div></li>
     </ol>
   </section>
 
@@ -543,38 +545,38 @@
 <script>
   const PINS = [
     [1, "3V3", "pwr", "Stromversorgung"],
-    [2, "5V", "free", "nicht verwendet (Module sind 3.3V)"],
-    [3, "GPIO2", "hifi", "I2C SDA · HiFiBerry"],
+    [2, "5V", "free", "frei, oder Display-VCC falls über die Adapter-Platine geführt"],
+    [3, "GPIO2", "hifi", "I2C SDA · HiFiBerry + Display-Touch-Controller"],
     [4, "5V", "free", "nicht verwendet"],
-    [5, "GPIO3", "hifi", "I2C SCL · HiFiBerry"],
+    [5, "GPIO3", "hifi", "I2C SCL · HiFiBerry + Display-Touch-Controller"],
     [6, "GND", "gnd", ""],
     [7, "GPIO4", "free", "frei"],
     [8, "GPIO14", "free", "frei (TXD)"],
     [9, "GND", "gnd", ""],
     [10, "GPIO15", "free", "frei (RXD)"],
-    [11, "GPIO17", "ours", "Encoder CLK"],
+    [11, "GPIO17", "free", "frei (Encoder-CLK-Default ist GPIO1, s.u.)"],
     [12, "GPIO18", "hifi", "I2S BCLK · HiFiBerry"],
     [13, "GPIO27", "ours", "Encoder DT"],
     [14, "GND", "gnd", ""],
     [15, "GPIO22", "ours", "Encoder SW"],
     [16, "GPIO23", "ours", "Helligkeits-Encoder CLK"],
     [17, "3V3", "pwr", "Stromversorgung"],
-    [18, "GPIO24", "ours", "Display DC"],
-    [19, "GPIO10", "ours", "SPI MOSI (Bus)"],
+    [18, "GPIO24", "free", "frei"],
+    [19, "GPIO10", "ours", "SPI0 MOSI (RC522)"],
     [20, "GND", "gnd", ""],
-    [21, "GPIO9", "ours", "SPI MISO (Bus)"],
-    [22, "GPIO25", "ours", "Display RST"],
-    [23, "GPIO11", "ours", "SPI SCLK (Bus)"],
-    [24, "GPIO8", "ours", "Display CS (CE0)"],
+    [21, "GPIO9", "ours", "SPI0 MISO (RC522)"],
+    [22, "GPIO25", "free", "frei"],
+    [23, "GPIO11", "ours", "SPI0 SCLK (RC522)"],
+    [24, "GPIO8", "ours", "RC522 CS (SPI0 CE0)"],
     [25, "GND", "gnd", ""],
-    [26, "GPIO7", "ours", "RC522 CS (CE1)"],
+    [26, "GPIO7", "free", "frei (SPI0 CE1, ungenutzt)"],
     [27, "ID_SD", "free", "reserviert (HAT-EEPROM)"],
-    [28, "ID_SC", "free", "reserviert (HAT-EEPROM)"],
+    [28, "ID_SC", "ours", "Encoder CLK (GPIO1, s. hardware.md)"],
     [29, "GPIO5", "ours", "Taster Weiter"],
     [30, "GND", "gnd", ""],
     [31, "GPIO6", "ours", "Taster Zurück"],
     [32, "GPIO12", "ours", "Helligkeits-Encoder DT"],
-    [33, "GPIO13", "ours", "Display-Backlight, dimmbar"],
+    [33, "GPIO13", "free", "frei (kein Backlight-GPIO mehr, s. hardware.md)"],
     [34, "GND", "gnd", ""],
     [35, "GPIO19", "hifi", "I2S LRCLK · HiFiBerry"],
     [36, "GPIO16", "free", "frei"],
@@ -604,12 +606,12 @@
 
   const CONNECTORS = [
     {
-      title: "RC522 (RFID, SPI CE1, 7-polig)",
+      title: "RC522 (RFID, Hardware-SPI0/CE0, 7-polig)",
       rows: [
         ["3V3", "Pin 1/17", "nicht 5V!"],
         ["GND", "beliebig", "z.B. Pin 6"],
         ["RST", "Pin 37 · GPIO26", ""],
-        ["SDA/CS", "Pin 26 · GPIO7", ""],
+        ["SDA/CS", "Pin 24 · GPIO8", "CE0"],
         ["SCK", "Pin 23 · GPIO11", "Bus"],
         ["MOSI", "Pin 19 · GPIO10", "Bus"],
         ["MISO", "Pin 21 · GPIO9", "Bus"],
@@ -630,9 +632,9 @@
       ],
     },
     {
-      title: "Dreh-Encoder KY-040 (5-polig)",
+      title: "Dreh-Encoder KY-040, Lautstärke (5-polig)",
       rows: [
-        ["CLK", "Pin 11 · GPIO17", ""],
+        ["CLK", "Pin 28 · GPIO1", ""],
         ["DT", "Pin 13 · GPIO27", ""],
         ["SW", "Pin 15 · GPIO22", ""],
         ["+", "Pin 1/17 · 3V3", ""],
@@ -640,34 +642,21 @@
       ],
     },
     {
-      title: "3.5\" Display (SPI CE0, 8-polig, kein Touch)",
+      title: "7\" DSI-Display, Strom/I2C (4-polig, optional)",
       rows: [
-        ["VCC", "Pin 17 · 3V3", ""],
-        ["GND", "Pin 20 · GND", ""],
-        ["SCK", "Pin 23 · GPIO11", "Bus"],
-        ["MOSI", "Pin 19 · GPIO10", "Bus"],
-        ["MISO", "Pin 21 · GPIO9", "Bus"],
-        ["CS", "Pin 24 · GPIO8", ""],
-        ["DC", "Pin 18 · GPIO24", ""],
-        ["RST", "Pin 22 · GPIO25", ""],
+        ["VCC", "Pin 2/4 · 5V", "nicht 3.3V!"],
+        ["GND", "Pin 6 · GND", ""],
+        ["SDA", "Pin 3 · GPIO2", "geteilt"],
+        ["SCL", "Pin 5 · GPIO3", "geteilt"],
       ],
     },
     {
-      title: "Helligkeits-Encoder KY-040 (4-polig, kein Taster)",
+      title: "Helligkeits-Encoder KY-040 (4-polig, kein Taster, aktuell ohne Wirkung)",
       rows: [
         ["CLK", "Pin 16 · GPIO23", ""],
         ["DT", "Pin 32 · GPIO12", ""],
         ["+", "Pin 1/17 · 3V3", ""],
         ["GND", "beliebig", "z.B. Pin 34"],
-      ],
-    },
-    {
-      title: "Backlight-Dimmen: Transistor-Schalter",
-      rows: [
-        ["GPIO13", "Basis/Gate", "über ~1kΩ Vorwiderstand (BJT)"],
-        ["Kollektor/Drain", "LED-Kathode", "statt LED-Kathode an GND"],
-        ["Emitter/Source", "GND", ""],
-        ["LED-Anode", "3.3V", "unverändert, wie Standardverdrahtung"],
       ],
     },
   ];

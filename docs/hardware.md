@@ -34,18 +34,18 @@ kompletten 40-Pin-Header (physische Nummerierung wie auf der Pi-Platine) mit
 Zielgerät pro Pin - aktuell (Hardware-SPI0 für den RC522, 7"-DSI-Display),
 direkte Verkabelung per Jumperkabel wie in diesem Dokument beschrieben.
 
-**Veraltet, für den früheren Aufbau mit eigener Adapter-Platine:**
-`docs/owlbox-wiring-diagram.svg`, `docs/owlbox-adapter-layout.svg` und
-`docs/hat-wiring.html` stammen aus einer älteren Bauvariante, die RC522,
-Taster, Encoder und Display statt per direktem Jumperkabel über eine
-eigene, separat verdrahtete Adapter-Platine anschließt - und zeigen dabei
-noch das frühere 3,5"-SPI-Display (CE0/DC/RST-Pinout) sowie den RC522 auf
-Software-SPI/CE1, nicht die aktuelle Standardverkabelung (7"-DSI-Display,
-RC522 auf Hardware-SPI0/CE0) aus diesem Dokument. Nur relevant, wer
-tatsächlich eine eigene Adapter-Platine bauen will und die Pin-Zuordnung
-selbst an die aktuelle Hardware anpasst - für den normalen Aufbau (direkte
-Jumperkabel, kein eigenes Board) sind `docs/owlbox-gpio-pinout.svg` und die
-Tabellen unten die maßgebliche, aktuelle Referenz.
+**Für den Aufbau mit eigener Adapter-Platine:** `docs/owlbox-wiring-diagram.svg`
+(Gesamtaufbau), `docs/owlbox-adapter-layout.svg` (Platinenlayout-Vorschlag) und
+`docs/hat-wiring.html` (kompletter Schaltplan, im Browser öffnen) zeigen eine
+Bauvariante, die RC522, Taster und beide Encoder statt per direktem
+Jumperkabel über eine eigene, separat verdrahtete Adapter-Platine anschließt
+- aktuell (RC522 auf Hardware-SPI0/CE0, 7"-DSI-Display). Das Display selbst
+hängt dabei weiterhin über sein eigenes DSI-Kabel direkt am Pi, nicht an der
+Adapter-Platine - nur seine vier Strom-/I2C-Adern lassen sich optional mit
+über die Adapter-Platine führen. Nur relevant, wer tatsächlich eine eigene
+Adapter-Platine bauen will; für den normalen Aufbau (direkte Jumperkabel,
+kein eigenes Board) sind `docs/owlbox-gpio-pinout.svg` und die Tabellen
+unten die maßgebliche Referenz.
 
 ## Anschluss: offizielles 7" Touch Display (DSI)
 

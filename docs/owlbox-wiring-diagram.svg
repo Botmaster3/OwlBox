@@ -8,7 +8,7 @@
 <line x1="1260" y1="49" x2="1288" y2="49" stroke="#33362f" stroke-width="3.4"/>
 <text x="1298" y="53" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">GND</text>
 <line x1="1260" y1="68" x2="1288" y2="68" stroke="#2e5f8a" stroke-width="3.4"/>
-<text x="1298" y="72" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">SPI-Bus (SCK/MOSI/MISO, geteilt)</text>
+<text x="1298" y="72" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">SPI0-Bus (RC522, exklusiv)</text>
 <line x1="1260" y1="87" x2="1288" y2="87" stroke="#2f6f4e" stroke-width="3.4"/>
 <text x="1298" y="91" font-size="12.5" fill="#1c231e" font-family="Arial, sans-serif">GPIO-Signal(e) (Standard)</text>
 <line x1="1260" y1="106" x2="1288" y2="106" stroke="#4c6478" stroke-width="3.4"/>
@@ -73,42 +73,33 @@
 <text x="678" y="953" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">eigenes Board - verkabelt alle übrigen Komponenten (siehe unten)</text>
 <rect x="60" y="900" width="300" height="230" rx="14" fill="#ffffff" stroke="#c9c2af" stroke-width="2"/>
 <text x="78" y="932" font-size="19" font-weight="700" fill="#1c231e" font-family="Arial, sans-serif">RC522 RFID-Modul</text>
-<text x="78" y="953" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">SPI, 13.56 MHz, teilt den Bus mit dem Display</text>
+<text x="78" y="953" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">SPI, 13.56 MHz, Hardware-SPI0 (eigener Bus)</text>
 <text x="78" y="976" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">VCC / GND</text>
 <text x="342" y="976" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">3.3V (!) / GND</text>
 <text x="78" y="997" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">SCK/MOSI/MISO</text>
 <text x="342" y="997" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">Bus</text>
 <text x="78" y="1018" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">SDA/CS</text>
-<text x="342" y="1018" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO7</text>
+<text x="342" y="1018" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO8</text>
 <text x="78" y="1039" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">RST</text>
 <text x="342" y="1039" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO26</text>
 <rect x="1240" y="820" width="400" height="300" rx="14" fill="#ffffff" stroke="#c9c2af" stroke-width="2"/>
-<text x="1258" y="852" font-size="19" font-weight="700" fill="#1c231e" font-family="Arial, sans-serif">3.5" SPI-Display</text>
-<text x="1258" y="873" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">ILI9486, Touch bewusst nicht verdrahtet</text>
-<text x="1258" y="896" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">VCC / GND</text>
-<text x="1622" y="896" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">3.3V / GND</text>
-<text x="1258" y="917" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">SCK/MOSI/MISO</text>
-<text x="1622" y="917" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">Bus</text>
-<text x="1258" y="938" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">CS</text>
-<text x="1622" y="938" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO8</text>
-<text x="1258" y="959" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">DC</text>
-<text x="1622" y="959" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO24</text>
-<text x="1258" y="980" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">RST</text>
-<text x="1622" y="980" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO25</text>
-<text x="1258" y="1001" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">LED (dimmbar)</text>
-<text x="1622" y="1001" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">s. Backlight</text>
-<rect x="1240" y="1170" width="360" height="210" rx="14" fill="#ffffff" stroke="#c9c2af" stroke-width="2"/>
-<text x="1258" y="1202" font-size="19" font-weight="700" fill="#1c231e" font-family="Arial, sans-serif">Backlight-Dimmen</text>
-<text x="1258" y="1223" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">NPN/MOSFET-Schalter, statt LED fest an 3.3V</text>
-<text x="1258" y="1246" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">Basis/Gate</text>
-<text x="1582" y="1246" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO13</text>
-<text x="1258" y="1267" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">Kollektor/Drain</text>
-<text x="1582" y="1267" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">an Display-LED</text>
-<text x="1258" y="1288" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">Emitter/Source</text>
-<text x="1582" y="1288" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GND</text>
+<text x="1258" y="852" font-size="19" font-weight="700" fill="#1c231e" font-family="Arial, sans-serif">7" DSI-Display (Adapterplatine)</text>
+<text x="1258" y="873" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">Bild+Touch über eigenes DSI-Kabel (nicht hier) - nur</text>
+<text x="1258" y="891" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">Strom/I2C der Display-Adapterplatine unten, optional</text>
+<text x="1258" y="909" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">über die Adapter-Platine geführt</text>
+<text x="1258" y="936" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">VCC / GND</text>
+<text x="1622" y="936" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">5V (!) / GND</text>
+<text x="1258" y="957" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">SDA</text>
+<text x="1622" y="957" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO2 (I2C)</text>
+<text x="1258" y="978" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">SCL</text>
+<text x="1622" y="978" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO3 (I2C)</text>
+<text x="1258" y="1005" font-size="11.5" fill="#6d7669" font-family="Arial, sans-serif" opacity="0.85">GPIO2/3 teilt sich der Touch-Controller mit dem</text>
+<text x="1258" y="1023" font-size="11.5" fill="#6d7669" font-family="Arial, sans-serif" opacity="0.85">HiFiBerry (I2C-Mehrgerätebus, andere Adresse) - kein</text>
+<text x="1258" y="1041" font-size="11.5" fill="#6d7669" font-family="Arial, sans-serif" opacity="0.85">Backlight-GPIO mehr: Helligkeit läuft intern über die</text>
+<text x="1258" y="1059" font-size="11.5" fill="#6d7669" font-family="Arial, sans-serif" opacity="0.85">Display-Adapterplatine, s. hardware.md</text>
 <rect x="1240" y="1420" width="360" height="190" rx="14" fill="#ffffff" stroke="#c9c2af" stroke-width="2"/>
 <text x="1258" y="1452" font-size="19" font-weight="700" fill="#1c231e" font-family="Arial, sans-serif">Dreh-Encoder KY-040</text>
-<text x="1258" y="1473" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">Helligkeit (drehen) - kein Taster, sitzt neben Display</text>
+<text x="1258" y="1473" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">Helligkeit (drehen), kein Taster - aktuell ohne Wirkung</text>
 <text x="1258" y="1496" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">CLK / DT</text>
 <text x="1582" y="1496" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO23 / 12</text>
 <text x="1258" y="1517" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">+ / GND</text>
@@ -127,7 +118,7 @@
 <text x="698" y="1322" font-size="19" font-weight="700" fill="#1c231e" font-family="Arial, sans-serif">Dreh-Encoder KY-040</text>
 <text x="698" y="1343" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">Lautstärke (drehen), Play/Pause (drücken), Shutdown (lang)</text>
 <text x="698" y="1366" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">CLK / DT</text>
-<text x="962" y="1366" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO17 / 27</text>
+<text x="962" y="1366" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO1 / 27</text>
 <text x="698" y="1387" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">SW</text>
 <text x="962" y="1387" font-size="12.5" fill="#1c231e" text-anchor="end" font-family="ui-monospace, Consolas, monospace" font-weight="600">GPIO22</text>
 <text x="698" y="1408" font-size="12.5" fill="#6d7669" font-family="Arial, sans-serif">+ / GND</text>
@@ -155,42 +146,33 @@
 <line x1="1100" y1="925" x2="1240" y2="910" stroke="#2e5f8a" stroke-width="3"/>
 <circle cx="1100" cy="925" r="4" fill="#2e5f8a"/>
 <circle cx="1240" cy="910" r="4" fill="#2e5f8a"/>
-<rect x="1092.7" y="895.5" width="154.7" height="18" rx="9" fill="#f5f2ea" stroke="#2e5f8a" stroke-width="1" opacity="0.97"/>
-<text x="1170.0" y="909.5" font-size="12.5" fill="#2e5f8a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">SPI-Bus + CS/DC/RST</text>
+<rect x="1102.7" y="895.5" width="94.7" height="18" rx="9" fill="#f5f2ea" stroke="#2e5f8a" stroke-width="1" opacity="0.97"/>
+<text x="1150.0" y="909.5" font-size="12.5" fill="#2e5f8a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">I2C SDA/SCL</text>
 <line x1="1100" y1="955" x2="1310" y2="1120" stroke="#b5732a" stroke-width="3"/>
 <circle cx="1100" cy="955" r="4" fill="#b5732a"/>
 <circle cx="1310" cy="1120" r="4" fill="#b5732a"/>
-<rect x="1182.4" y="1015.5" width="45.2" height="18" rx="9" fill="#f5f2ea" stroke="#b5732a" stroke-width="1" opacity="0.97"/>
-<text x="1205.0" y="1029.5" font-size="12.5" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">3.3V</text>
+<rect x="1177.4" y="1015.5" width="55.2" height="18" rx="9" fill="#f5f2ea" stroke="#b5732a" stroke-width="1" opacity="0.97"/>
+<text x="1205.0" y="1029.5" font-size="12.5" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">5V (!)</text>
 <line x1="1100" y1="985" x2="1360" y2="1120" stroke="#33362f" stroke-width="3"/>
 <circle cx="1100" cy="985" r="4" fill="#33362f"/>
 <circle cx="1360" cy="1120" r="4" fill="#33362f"/>
 <rect x="1211.0" y="1030.5" width="37.9" height="18" rx="9" fill="#f5f2ea" stroke="#33362f" stroke-width="1" opacity="0.97"/>
 <text x="1230.0" y="1044.5" font-size="12.5" fill="#33362f" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">GND</text>
-<line x1="1100" y1="1005" x2="1240" y2="1200" stroke="#2f6f4e" stroke-width="3"/>
+<line x1="1100" y1="1005" x2="1300" y2="1420" stroke="#2f6f4e" stroke-width="3"/>
 <circle cx="1100" cy="1005" r="4" fill="#2f6f4e"/>
-<circle cx="1240" cy="1200" r="4" fill="#2f6f4e"/>
-<rect x="1140.1" y="1080.5" width="59.8" height="18" rx="9" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1" opacity="0.97"/>
-<text x="1170.0" y="1094.5" font-size="12.5" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">GPIO13</text>
-<line x1="1640" y1="1090" x2="1280" y2="1170" stroke="#2f6f4e" stroke-width="3"/>
-<circle cx="1640" cy="1090" r="4" fill="#2f6f4e"/>
-<circle cx="1280" cy="1170" r="4" fill="#2f6f4e"/>
-<rect x="1411.8" y="1108.0" width="96.3" height="18" rx="9" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1" opacity="0.97"/>
-<text x="1460.0" y="1122.0" font-size="12.5" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">LED-Kathode</text>
-<line x1="1300" y1="1380" x2="1300" y2="1420" stroke="#2f6f4e" stroke-width="3"/>
-<circle cx="1300" cy="1380" r="4" fill="#2f6f4e"/>
 <circle cx="1300" cy="1420" r="4" fill="#2f6f4e"/>
-<rect x="1270.1" y="1378.0" width="59.8" height="18" rx="9" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1" opacity="0.97"/>
-<text x="1300.0" y="1392.0" font-size="12.5" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">CLK/DT</text>
-<line x1="1420" y1="1380" x2="1420" y2="1420" stroke="#b5732a" stroke-width="3"/>
-<circle cx="1420" cy="1380" r="4" fill="#b5732a"/>
+<rect x="1130.1" y="1120.5" width="59.8" height="18" rx="9" fill="#f5f2ea" stroke="#2f6f4e" stroke-width="1" opacity="0.97"/>
+<text x="1160.0" y="1134.5" font-size="12.5" fill="#2f6f4e" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">CLK/DT</text>
+<line x1="1100" y1="1020" x2="1420" y2="1420" stroke="#b5732a" stroke-width="3"/>
+<circle cx="1100" cy="1020" r="4" fill="#b5732a"/>
 <circle cx="1420" cy="1420" r="4" fill="#b5732a"/>
-<rect x="1397.4" y="1378.0" width="45.2" height="18" rx="9" fill="#f5f2ea" stroke="#b5732a" stroke-width="1" opacity="0.97"/>
-<text x="1420.0" y="1392.0" font-size="12.5" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">3.3V</text>
-<line x1="1540" y1="1380" x2="1540" y2="1420" stroke="#33362f" stroke-width="3"/>
-<circle cx="1540" cy="1380" r="4" fill="#33362f"/>
+<rect x="1237.4" y="1211.0" width="45.2" height="18" rx="9" fill="#f5f2ea" stroke="#b5732a" stroke-width="1" opacity="0.97"/>
+<text x="1260.0" y="1225.0" font-size="12.5" fill="#b5732a" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">3.3V</text>
+<line x1="1100" y1="1035" x2="1540" y2="1420" stroke="#33362f" stroke-width="3"/>
+<circle cx="1100" cy="1035" r="4" fill="#33362f"/>
 <circle cx="1540" cy="1420" r="4" fill="#33362f"/>
-<rect x="1521.0" y="1378.0" width="37.9" height="18" rx="9" fill="#f5f2ea" stroke="#33362f" stroke-width="1" opacity="0.97"/>
+<rect x="1381.1" y="1305.0" width="37.9" height="18" rx="9" fill="#f5f2ea" stroke="#33362f" stroke-width="1" opacity="0.97"/>
+<text x="1400.0" y="1319.0" font-size="12.5" fill="#33362f" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">GND</text>
 <text x="1540.0" y="1392.0" font-size="12.5" fill="#33362f" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-weight="700">GND</text>
 <line x1="660" y1="1000" x2="320" y2="1267.5" stroke="#2f6f4e" stroke-width="3"/>
 <circle cx="660" cy="1000" r="4" fill="#2f6f4e"/>
