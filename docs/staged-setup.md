@@ -137,6 +137,34 @@ Reihenfolge durchlaufen lassen konvergiert auf eine feste, duplikatfreie
 `config.txt` - kein Wildwuchs an doppelten Zeilen oder Leerzeilen, egal wie
 oft oder in welcher Kombination man es laufen lässt.
 
+## Boot-Fortschrittsbalken (Plymouth) statt roher Boot-Textausgabe
+
+Ab der ersten Stufe ("sound", weil das Teil von BASE ist, das jede Stufe
+mitinstalliert) richtet `owlbox-install` einen eigenen, minimalen
+Plymouth-Splash ein: "OwlBox" plus ein schmaler Fortschrittsbalken in den
+Farben des App-Standard-Themes (`owlbox/themes.py`), statt der rohen
+Kernel-/systemd-Textmeldungen, die vorher beim Hochfahren durchliefen. Der
+Balken verschwindet automatisch, sobald `owlbox-kiosk.service` startet -
+dessen Unit hat dafür schon länger `After=... plymouth-quit.service`
+(`systemd/owlbox-kiosk.service`).
+
+**Nicht an echter Hardware verifiziert** - anders als der Rest dieses
+Dokuments. Falls es nach der Installation nicht sauber aussieht (Balken
+hängt fest, springt nicht mit, oder der Bildschirm bleibt schwarz länger
+als erwartet), zurückrollen mit:
+
+```bash
+sudo plymouth-set-default-theme -R pix   # oder: -l zeigt alle installierten Themes
+sudo sed -i -E 's/ ?quiet splash plymouth\.ignore-serial-consoles//' /boot/firmware/cmdline.txt
+sudo reboot
+```
+
+(`pix` ist Debian/Raspberry-Pi-OS-Standardtheme, falls installiert -
+alternativ tut es auch `plymouth-set-default-theme text` oder komplett
+`apt-get remove plymouth`.) Bitte kurz Rückmeldung geben, wie es aussieht -
+das ist der einzige Teil dieser Sitzung, der noch keine echte
+Hardware-Bestätigung hat.
+
 ## Warum die Hörprobe ab Stufe 2 den Dienst kurz anhält
 
 Ab "display" läuft `owlbox.service` durchgehend (davor, bei "sound", ist es

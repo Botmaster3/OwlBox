@@ -6,10 +6,9 @@
 # Amp2 (TAS5756M chip - the PCM512x family, same codec as the DAC+ Pro; NOT the
 # older Amp/Amp+'s TAS5713, a different chip needing a different overlay), the
 # official 7" Raspberry Pi Touch Display (DSI ribbon cable + 4 jumper wires for
-# power/I2C touch - see docs/hardware.md), RC522 on software SPI (GPIOs
-# 4/14/15/16 - SPI0 is free since the display no longer uses it, but the RC522
-# stays on software SPI regardless, see docs/hardware.md for why), buttons/
-# encoders on the documented default pins.
+# power/I2C touch - see docs/hardware.md), RC522 on the Pi's real hardware
+# SPI0 bus (free since the display doesn't use SPI at all), buttons/encoders
+# on the documented default pins.
 #
 # STAGED INSTALL - the real point of this script's structure. Four independent
 # stages, each installing only the OS packages/config.txt lines that ONE piece
@@ -153,10 +152,114 @@ if [ -n "$CONFIG_TXT" ]; then
   # trying to init display hardware that's no longer physically connected.
   # General hygiene, not tied to any one stage, so it lives here in BASE.
   sed -i -E '/^dtoverlay=mhs35/d; /^dtoverlay=tft35a/d; /^dtoverlay=ads7846/d; /^hdmi_force_hotplug=/d; /^hdmi_group=/d; /^hdmi_mode=/d; /^hdmi_cvt=/d; /^hdmi_drive=/d' "$CONFIG_TXT"
+  # disable_splash=1 only turns off the firmware-level rainbow-square splash
+  # (VideoCore, before the kernel even starts) - unrelated to Plymouth below,
+  # which takes over once the kernel/systemd are running. No conflict between
+  # the two.
   write_stage_block "$CONFIG_TXT" base "disable_splash=1" "boot_delay=0"
 fi
 systemctl disable --now owlbox-fbcp.service >/dev/null 2>&1 || true
 rm -f /etc/systemd/system/owlbox-fbcp.service /usr/local/bin/fbcp /etc/X11/xorg.conf.d/99-owlbox-fbdev.conf
+
+echo "==> [Basis] Boot-Fortschrittsbalken (Plymouth) statt roher Boot-Textausgabe"
+# Not verified on real hardware yet - see docs/staged-setup.md. Minimal custom
+# theme (own script + two tiny solid-colour PNGs, no external assets) instead
+# of relying on whatever theme happens to ship in plymouth-themes, so this
+# doesn't depend on an optional package's exact theme selection. Matches the
+# app's own default colour theme (owlbox/themes.py: bg #12141c, accent
+# #f2a93c, text #f5f2ea). owlbox-kiosk.service already has
+# `After=... plymouth-quit.service` (see systemd/owlbox-kiosk.service) - the
+# kiosk only grabs tty1 once Plymouth has quit, so no extra ordering work
+# needed here beyond actually installing and enabling Plymouth itself.
+apt-get install -y plymouth || true
+if command -v plymouth-set-default-theme >/dev/null 2>&1; then
+  THEME_DIR=/usr/share/plymouth/themes/owlbox
+  mkdir -p "$THEME_DIR"
+  cat > "$THEME_DIR/owlbox.plymouth" <<'EOF'
+[Plymouth Theme]
+Name=OwlBox
+Description=OwlBox boot splash - progress bar in the app's own colours
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/owlbox
+ScriptFile=/usr/share/plymouth/themes/owlbox/owlbox.script
+EOF
+  cat > "$THEME_DIR/owlbox.script" <<'EOF'
+# OwlBox Plymouth theme - title + a progress bar, nothing else. Colours match
+# owlbox/themes.py's default theme (bg #12141c, text #f5f2ea); the bar's fill
+# colour (#f2a93c, the accent colour) is baked into fill.png directly since
+# Plymouth script has no fill-rectangle primitive - a solid-colour source
+# image scaled to the target width is the standard way to draw a bar.
+
+Window.SetBackgroundTopColor(0.070588, 0.078431, 0.109804);
+Window.SetBackgroundBottomColor(0.070588, 0.078431, 0.109804);
+
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+title_image = Image.Text("OwlBox", 0.960784, 0.949020, 0.917647, 1, "Sans 28");
+title_sprite = Sprite(title_image);
+title_sprite.SetX(screen_width / 2 - title_image.GetWidth() / 2);
+title_sprite.SetY(screen_height / 2 - 40);
+title_sprite.SetZ(10);
+
+bar_width = 320;
+bar_height = 6;
+bar_x = screen_width / 2 - bar_width / 2;
+bar_y = screen_height / 2 + 20;
+
+track_sprite = Sprite(Image("track.png").Scale(bar_width, bar_height));
+track_sprite.SetX(bar_x);
+track_sprite.SetY(bar_y);
+track_sprite.SetZ(10);
+
+fill_image = Image("fill.png");
+fill_sprite = Sprite();
+fill_sprite.SetX(bar_x);
+fill_sprite.SetY(bar_y);
+fill_sprite.SetZ(11);
+
+fun owlbox_progress_callback(duration, progress) {
+  width = Math.Int(bar_width * progress);
+  if (width < 2) {
+    width = 2;
+  }
+  fill_sprite.SetImage(fill_image.Scale(width, bar_height));
+}
+Plymouth.SetBootProgressFunction(owlbox_progress_callback);
+
+fun owlbox_quit_callback() {
+  title_sprite.SetOpacity(0);
+  track_sprite.SetOpacity(0);
+  fill_sprite.SetOpacity(0);
+}
+Plymouth.SetQuitFunction(owlbox_quit_callback);
+EOF
+  # Two 4x4 solid-colour PNGs (78 bytes each) - accent (#f2a93c) for the
+  # filled part of the bar, panel (#1c2030) for the empty track behind it.
+  base64 -d > "$THEME_DIR/fill.png" <<'EOF'
+iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAFUlEQVR42mP8tNLmPwMSYGJAA4QFALs4At5FX0S0AAAAAElFTkSuQmCC
+EOF
+  base64 -d > "$THEME_DIR/track.png" <<'EOF'
+iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAFUlEQVR42mOUUTD4z4AEmBjQAGEBAFzYAXNp7vV+AAAAAElFTkSuQmCC
+EOF
+  # -R also rebuilds the initramfs (needed so the theme is actually picked up
+  # at boot on systems that boot through one) - falls back to a plain
+  # set-default-theme if this Pi's plymouth build doesn't support -R.
+  plymouth-set-default-theme -R owlbox 2>/dev/null || plymouth-set-default-theme owlbox || true
+  if command -v update-initramfs >/dev/null 2>&1; then
+    update-initramfs -u || true
+  fi
+  if [ -n "$CMDLINE_TXT" ] && ! grep -q 'splash' "$CMDLINE_TXT"; then
+    echo "==> [Basis] Adding quiet splash to $CMDLINE_TXT"
+    CMDLINE_BEFORE="$(cat "$CMDLINE_TXT")"
+    printf '%s %s\n' "$CMDLINE_BEFORE" "quiet splash plymouth.ignore-serial-consoles" > "$CMDLINE_TXT"
+    CMDLINE_ADDED=1
+  fi
+else
+  echo "WARNUNG: plymouth-set-default-theme nicht gefunden - Boot-Fortschrittsbalken uebersprungen." >&2
+fi
 
 echo "==> [Basis] Creating service user '$SERVICE_USER'"
 if ! id "$SERVICE_USER" >/dev/null 2>&1; then
