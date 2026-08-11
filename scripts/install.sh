@@ -32,6 +32,10 @@
 #   sudo ./scripts/install.sh controls   # + Taster/Encoder
 #   sudo ./scripts/install.sh            # alle vier zusammen (Kurzform: "all")
 #
+#   sudo ./scripts/install.sh airplay    # optional, NICHT in "all" enthalten:
+#                                         # AirPlay-Empfang (shairport-sync),
+#                                         # siehe AIRPLAY-Stufe weiter unten
+#
 # Every stage always applies the same small BASE step first (system user,
 # Python venv, app code, systemd unit files, sudoers, boot-speed trims) -
 # cheap and fully idempotent, so it's safe as a shared prerequisite no matter
@@ -49,25 +53,29 @@
 set -euo pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
-  echo "Please run as root: sudo ./scripts/install.sh [sound|display|rfid|controls]" >&2
+  echo "Please run as root: sudo ./scripts/install.sh [sound|display|rfid|controls|airplay]" >&2
   exit 1
 fi
 
 STAGE="${1:-all}"
 case "$STAGE" in
-  all|sound|display|rfid|controls) ;;
+  all|sound|display|rfid|controls|airplay) ;;
   *)
-    echo "Unbekannte Stufe: $STAGE (erlaubt: sound display rfid controls, oder ohne Argument = alle)" >&2
+    echo "Unbekannte Stufe: $STAGE (erlaubt: sound display rfid controls airplay, oder ohne Argument = alle)" >&2
     exit 1
     ;;
 esac
-DO_SOUND=0; DO_DISPLAY=0; DO_RFID=0; DO_CONTROLS=0
+# airplay is deliberately NOT part of "all" - unlike the other four, it's an
+# optional add-on rather than core hardware every box needs (see AIRPLAY
+# stage below), so it only ever runs when explicitly requested by name.
+DO_SOUND=0; DO_DISPLAY=0; DO_RFID=0; DO_CONTROLS=0; DO_AIRPLAY=0
 case "$STAGE" in
   all)      DO_SOUND=1; DO_DISPLAY=1; DO_RFID=1; DO_CONTROLS=1 ;;
   sound)    DO_SOUND=1 ;;
   display)  DO_DISPLAY=1 ;;
   rfid)     DO_RFID=1 ;;
   controls) DO_CONTROLS=1 ;;
+  airplay)  DO_AIRPLAY=1 ;;
 esac
 
 # readlink -f matters here: this script can be reached through the
@@ -619,6 +627,58 @@ if [ "$DO_CONTROLS" -eq 1 ]; then
   echo "==> [Taster/Encoder] Nichts zu installieren (gpiozero ist Teil der Basis) - direkt testen mit: sudo owlbox-stage controls"
 fi
 
+# ============================================================ AIRPLAY
+# Optional add-on, deliberately NOT part of "all" (see STAGE parsing above) -
+# lets a phone/tablet/Mac stream its own audio to the same HiFiBerry speaker
+# via AirPlay, alongside OwlBox's own RFID-driven playback (owlbox.service
+# pauses/resumes automatically around an AirPlay session - see
+# Engine.airplay_session_started/_ended and docs/hardware.md). Unlike the
+# four stages above, this one both installs AND enables/starts its systemd
+# service itself: shairport-sync isn't part of OwlBox's own staged hardware
+# bring-up narrative (docs/staged-setup.md) - there's no physical wiring step
+# to guide here, just "is this optional package installed and running".
+if [ "$DO_AIRPLAY" -eq 1 ]; then
+  echo "==> [AirPlay] Installing shairport-sync"
+  # The Raspberry Pi OS/Debian package supports AirPlay 1 - still accepted by
+  # essentially every AirPlay source app as of this writing, just without
+  # AirPlay 2's multi-room/"Now Playing" extras. AirPlay 2 needs a from-source
+  # build (extra deps: nqptp, libplist, libsodium, libavahi-client) that's too
+  # fragile to script blindly without real hardware to verify it against -
+  # see docs/hardware.md for pointers if that's ever wanted later.
+  apt-get install -y shairport-sync || true
+
+  echo "==> [AirPlay] Writing /etc/shairport-sync.conf"
+  # Fully owned by this installer (same idea as write_stage_block's config.txt
+  # blocks above) - shairport-sync.conf is a dedicated config file for
+  # exactly this one purpose, not something a user is expected to hand-edit
+  # around unrelated settings, so overwriting it whole on every re-run is
+  # fine and keeps this idempotent. alsa.output_device matches this project's
+  # standard audio.alsa_device (config.example.yaml) - if that's ever changed
+  # for non-standard hardware, update this too. wait_for_completion = "yes"
+  # so shairport-sync actually waits for the pause to land before AirPlay
+  # audio starts, instead of racing it.
+  cat > /etc/shairport-sync.conf <<CONF
+general = {
+  name = "OwlBox";
+};
+alsa = {
+  output_device = "hw:0,0";
+};
+sessioncontrol = {
+  run_this_before_play_begins = "$INSTALL_DIR/scripts/airplay-session-start.sh";
+  run_this_after_play_ends = "$INSTALL_DIR/scripts/airplay-session-end.sh";
+  wait_for_completion = "yes";
+};
+CONF
+  # Belt-and-braces - git preserves the executable bit these were committed
+  # with, but re-asserting it here costs nothing and survives a checkout that
+  # somehow didn't.
+  chmod +x "$INSTALL_DIR/scripts/airplay-session-start.sh" "$INSTALL_DIR/scripts/airplay-session-end.sh"
+
+  echo "==> [AirPlay] Enabling shairport-sync"
+  systemctl enable --now shairport-sync || true
+fi
+
 # -- summary -----------------------------------------------------------------
 
 if [ -n "$CONFIG_TXT" ]; then
@@ -658,6 +718,7 @@ EOF
     display)  echo "    Jetzt testen: sudo owlbox-stage display" ;;
     rfid)     echo "    Jetzt testen: sudo owlbox-stage rfid" ;;
     controls) echo "    Jetzt testen: sudo owlbox-stage controls" ;;
+    airplay)  echo "    Jetzt testen: auf einem iPhone/iPad/Mac im selben WLAN AirPlay öffnen - \"OwlBox\" sollte als Ziel auftauchen." ;;
     all)      cat <<'EOF'
     Jetzt Stück für Stück in Betrieb nehmen (jede Stufe einzeln testbar,
     siehe docs/staged-setup.md):

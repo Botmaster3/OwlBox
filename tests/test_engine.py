@@ -2141,3 +2141,48 @@ def test_alarm_fades_volume_in_gradually(config, monkeypatch):
     # Past the fade window - back to the real target volume.
     engine._check_alarm(trigger_time + 61)
     assert engine.get_state()["player"]["volume"] == engine._volume
+
+
+def test_airplay_session_pauses_and_resumes_a_playing_story(config):
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    assert engine.play_story(story.id) is True
+    assert engine.get_state()["player"]["playing"] is True
+
+    engine.airplay_session_started()
+    state = engine.get_state()
+    assert state["airplay"]["active"] is True
+    assert state["player"]["playing"] is False
+
+    engine.airplay_session_ended()
+    state = engine.get_state()
+    assert state["airplay"]["active"] is False
+    assert state["player"]["playing"] is True
+
+
+def test_airplay_session_on_an_idle_box_does_not_start_playback(config):
+    engine = Engine(config)
+    assert engine.get_state()["player"]["playing"] is False
+
+    engine.airplay_session_started()
+    assert engine.get_state()["player"]["playing"] is False
+
+    engine.airplay_session_ended()
+    # Nothing was ever playing - ending the session must not suddenly start
+    # something that wasn't running before.
+    assert engine.get_state()["player"]["playing"] is False
+
+
+def test_airplay_session_does_not_resume_a_story_that_was_already_paused(config):
+    story = _make_story_with_file(config, "AABBCC")
+
+    engine = Engine(config)
+    engine.play_story(story.id)
+    engine.manual_pause()
+    assert engine.get_state()["player"]["playing"] is False
+
+    engine.airplay_session_started()
+    engine.airplay_session_ended()
+    # AirPlay didn't cause the pause, so it must not cause a resume either.
+    assert engine.get_state()["player"]["playing"] is False

@@ -166,6 +166,15 @@ den Pi geladen und einem Chip zugewiesen.
   Handy scannen und einloggen, ohne dass Kinder je einen QR-Code oder eine
   Login-Seite zu sehen bekommen. Story- und Funktions-Chips zeigen davon
   nichts an.
+- **AirPlay (optional)**: `sudo ./scripts/install.sh airplay` installiert
+  [shairport-sync](https://github.com/mikebrady/shairport-sync) als eigenen
+  Dienst, damit ein iPhone/iPad/Mac eigene Musik über denselben HiFiBerry-
+  Lautsprecher abspielen kann, ganz ohne Chip aufzulegen. Eine laufende
+  Geschichte wird für die Dauer der AirPlay-Wiedergabe automatisch pausiert
+  und danach wieder fortgesetzt (nie umgekehrt gestartet); auf dem
+  Kiosk-Display erscheint währenddessen unten rechts ein „📡 AirPlay“-
+  Abzeichen. Bewusst kein Kernbestandteil der Installation - siehe
+  docs/hardware.md.
 - **Simulationsmodus**: läuft ohne echte Hardware (RFID/GPIO/mpv) für
   Entwicklung und Tests - die Admin-UI bekommt dann einen "Chip simulieren"-
   Knopf.

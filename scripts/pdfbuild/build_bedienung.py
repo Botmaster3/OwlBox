@@ -172,6 +172,7 @@ story.append(spec_table(
          "wenn er in Richtung der automatischen Drosselschwelle (ca. 80°C) läuft"],
         ["Helligkeits-Overlay", "Kurz nach jeder Änderung am Helligkeits-Encoder/Nachtmodus-Umschaltung", "Sonnen- bzw. Mondsymbol (je nach Tag-/Nachtmodus), Balken und aktueller Prozentwert"],
         ["Nachtmodus-Anzeige (unten links)", "Solange der Nachtmodus aktiv ist (s. Kapitel 3)", "„🌙 Nachtmodus“ - bleibt dauerhaft sichtbar, anders als das kurze Helligkeits-Overlay oben"],
+        ["AirPlay-Anzeige (unten rechts)", "Solange eine AirPlay-Wiedergabe läuft (optionales Extra, siehe Kapitel 12)", "„📡 AirPlay“ - eine laufende Geschichte pausiert währenddessen automatisch und läuft danach von selbst weiter"],
         ["Hotspot-Banner", "Solange der Notfall-Hotspot aktiv ist (siehe Kapitel 10.6)", "SSID, Passwort und die Verwaltungs-URL im Hotspot"],
         ["„Jetzt läuft“-Ansicht", "Sobald ein Story-Chip aufliegt bzw. weiterläuft", "Cover, Titel, aktueller Track, VU-Meter-Animation, "
          "Fortschritt, Lautstärkebalken, die nächsten 3 kommenden Tracks"],
@@ -700,6 +701,10 @@ story.append(spec_table(
          "OwlBox-Verkabelung.pdf, Abschnitt Hintergrundbeleuchtung."],
         ["Passwort vergessen", "Auf dem Pi direkt: Datenbankdatei (data/owlbox.db) sichern, Tabelle "
          "admin_user leeren und den Server neu starten - der Setup-Assistent (Kapitel 2.1) erscheint dann erneut."],
+        ["AirPlay-Abzeichen erscheint nie", "AirPlay ist ein optionales Extra, nicht Teil der "
+         "Standardinstallation - erst nach sudo ./scripts/install.sh airplay auf dem Pi (siehe "
+         "OwlBox-Verkabelung.pdf) verfügbar. Danach als AirPlay-Ziel „OwlBox“ von einem "
+         "iPhone/iPad/Mac im selben WLAN aus antippen."],
     ],
     col_widths=[52 * mm, 108 * mm],
 ))

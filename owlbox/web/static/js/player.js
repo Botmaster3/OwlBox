@@ -28,6 +28,7 @@
   const brightnessOsdValue = document.getElementById("brightness-osd-value");
   const brightnessOsdFill = document.getElementById("brightness-osd-fill");
   const nightModeBadge = document.getElementById("night-mode-badge");
+  const airplayBadge = document.getElementById("airplay-badge");
   const wifiBars = document.querySelectorAll("#wifi-bars .wifi-bar");
   const wifiLabel = document.getElementById("wifi-label");
   const statusBarEl = document.getElementById("status-bar");
@@ -262,6 +263,7 @@
       lastNightModeActive = nightModeActive;
       nightModeBadge.hidden = !nightModeActive;
     }
+    airplayBadge.hidden = !state.airplay.active;
     applyWifi(state.wifi);
     applyHotspotBanner(state.wifi);
     applyCpuTemp(state.system);

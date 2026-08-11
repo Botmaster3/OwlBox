@@ -92,7 +92,7 @@ bullets([
     "2 Taster (vor/zurück)",
     "1 Dreh-Encoder mit Druckschalter (Lautstärke/Play-Pause)",
     "1 weiterer Dreh-Encoder ohne Taster (Helligkeit, s.u. - auf dieser Hardware aktuell ohne "
-    "Wirkung, s. Kapitel 6)",
+    "Wirkung, s. Kapitel 7)",
 ])
 p("Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Standardwerten in "
   "config/config.example.yaml. Wer andere Pins verdrahtet, passt einfach die gpio:/rfid:-Sektion "
@@ -163,7 +163,7 @@ story.append(note_box(
     "vc4-kms-dsi-waveshare-panel,5_0_inch ohne \"-v2\"/\"_a\" (andere Waveshare-5″-Modelle). "
     "install.sh trägt den Overlay automatisch ein. Rotation/Ausrichtung bewusst nicht "
     "konfiguriert - wird laut Auftraggeber beim physischen Einbau gelöst, nicht per Software; "
-    "Details siehe Kapitel 8.",
+    "Details siehe Kapitel 9.",
     kind="warn",
 ))
 
@@ -178,7 +178,7 @@ story.append(spec_table(
         ["I2C SDA", "2", "HiFiBerry (Amp-Steuerung) und Display-Touch-Controller - gemeinsam am "
          "selben I2C-Bus, kein Konflikt (unterschiedliche Adressen), s.o."],
         ["I2C SCL", "3", "HiFiBerry (Amp-Steuerung) und Display-Touch-Controller, s.o."],
-        ["SPI0 SCLK/MOSI/MISO/CE0", "11 / 10 / 9 / 8", "RC522 (Hardware-SPI, s. Kapitel 3)"],
+        ["SPI0 SCLK/MOSI/MISO/CE0", "11 / 10 / 9 / 8", "RC522 (Hardware-SPI, s. Kapitel 4)"],
         ["SPI0 CE1", "7", "frei (nicht genutzt - der RC522 braucht nur CE0)"],
         ["RC522 RST", "26", "RC522 (rfid.reset_pin)"],
         ["Taster Weiter", "5", "Taster"],
@@ -187,7 +187,7 @@ story.append(spec_table(
         ["Encoder DT", "27", "Lautstärke-Encoder"],
         ["Encoder SW", "22", "Lautstärke-Encoder"],
         ["Display-Backlight", "-", "läuft über Sysfs, kein GPIO mehr - ob eine Helligkeitsänderung "
-         "per Encoder unten physisch etwas bewirkt, ist noch offen, s. Kapitel 6"],
+         "per Encoder unten physisch etwas bewirkt, ist noch offen, s. Kapitel 7"],
         ["Helligkeits-Encoder CLK", "23", "Helligkeits-Encoder"],
         ["Helligkeits-Encoder DT", "12", "Helligkeits-Encoder"],
         ["Helligkeits-Encoder SW", "17", "Helligkeits-Encoder - Nachtmodus-Umschalter "
@@ -391,8 +391,55 @@ story.append(note_box(
     kind="warn",
 ))
 
-# ============================================================ 3. RC522
-h1("3. RC522 RFID-Leser (Hardware-SPI0)")
+# ============================================================ 3. AirPlay
+h1("3. AirPlay (optional, shairport-sync)")
+p(
+    "Kein zusätzliches Kabel, kein zusätzlicher Chip - AirPlay läuft komplett über WLAN und "
+    "dieselbe HiFiBerry-Ausgabe, die OwlBox ohnehin schon nutzt. Ein optionales Software-Add-on: "
+    "sudo ./scripts/install.sh airplay installiert shairport-sync "
+    "(github.com/mikebrady/shairport-sync), den etablierten Open-Source-AirPlay-Empfänger für "
+    "Linux, als eigenen systemd-Dienst - bewusst NICHT Teil von sudo ./scripts/install.sh (bzw. "
+    "\"all\") ohne Argument, da es kein Kernbestandteil der Box ist."
+)
+story.append(note_box(
+    "Zusammenspiel mit der eigentlichen Wiedergabe: mpv (für Geschichten) und shairport-sync (für "
+    "AirPlay) würden sich sonst dasselbe ALSA-Gerät streitig machen bzw. beide gleichzeitig hörbar "
+    "übereinanderlaufen. Gelöst über automatisches Ducking statt gemeinsamer ALSA-Nutzung: "
+    "shairport-sync ruft über seine sessioncontrol-Hooks (run_this_before_play_begins/"
+    "run_this_after_play_ends in /etc/shairport-sync.conf, vom Installer geschrieben) zwei kleine "
+    "Skripte auf (scripts/airplay-session-start.sh/-end.sh, per curl gegen 127.0.0.1:5000), die "
+    "Engine.airplay_session_started()/_ended() antriggern: läuft gerade eine Geschichte, wird sie "
+    "pausiert (Position gespeichert wie gewohnt); nur falls der Start-Hook tatsächlich pausiert "
+    "hat, wird beim Session-Ende wieder fortgesetzt. Eine Geschichte, die schon vorher aus einem "
+    "anderen Grund pausiert war, bleibt pausiert."
+))
+p(
+    "Auf dem Kiosk-Display erscheint währenddessen unten rechts ein kleines „📡 AirPlay“-Abzeichen "
+    "(owlbox/web/static/js/player.js, gespeist aus state.airplay.active), damit auf einen Blick "
+    "klar ist, warum eine Geschichte gerade pausiert wirkt. Die beiden "
+    "/api/airplay/session-start/-end-Endpunkte (owlbox/web/api.py) sind bewusst NICHT "
+    "@admin_required - ein headless laufendes Systemd-Skript kann keinen Login-Flow durchlaufen - "
+    "stattdessen auf lokale Aufrufe beschränkt (request.remote_addr gegen 127.0.0.1/::1 geprüft, "
+    "nicht spoofbar wie ein Header)."
+)
+p(
+    "AirPlay-Version: das Debian/Raspberry-Pi-OS-Paket unterstützt AirPlay 1 (von praktisch jeder "
+    "AirPlay-Quell-App weiterhin akzeptiert, nur ohne AirPlay 2s Mehrraum-/„Gerade läuft“-"
+    "Zusatzfunktionen). AirPlay 2 bräuchte einen Build aus dem Quellcode mit zusätzlichen "
+    "Abhängigkeiten (nqptp, libplist, libsodium, libavahi-client) - zu fehleranfällig, um das "
+    "blind ohne echte Hardware zum Gegenprüfen zu skripten."
+)
+story.append(note_box(
+    "Noch NICHT an echter Hardware verifiziert - weder der apt install shairport-sync-Ablauf noch "
+    "das tatsächliche Ducking-Verhalten (Pause/Fortsetzen im richtigen Moment, kein hörbares "
+    "Überlappen) wurden bisher an einem echten Gerät gegengeprüft, nur die OwlBox-eigene Seite "
+    "(Engine-Methoden, API-Endpunkte, Kiosk-Abzeichen) über die Testsuite bzw. den "
+    "Simulationsmodus.",
+    kind="warn",
+))
+
+# ============================================================ 4. RC522
+h1("4. RC522 RFID-Leser (Hardware-SPI0)")
 story.append(note_box(
     "Der RC522 hängt an SPI0, dem Hardware-SPI-Bus des Pi (/dev/spidev0.0, CE0). Grund, warum das "
     "möglich ist: SPI1 liegt auf GPIO18-21, exakt den Pins, die der HiFiBerry für I2S-Ton braucht "
@@ -442,8 +489,8 @@ p(
     "RPi.GPIO."
 )
 
-# ============================================================ 4. Taster
-h1("4. Taster (vor/zurück)")
+# ============================================================ 5. Taster
+h1("5. Taster (vor/zurück)")
 p(
     "Als Taster kommen Cherry-MX-Switches (3-Pin-Variante) zum Einsatz - elektrisch ganz normale "
     "Momentary-Schalter (schließt nur beim Drücken, öffnet sonst)."
@@ -467,10 +514,10 @@ p(
     "Schritten von gpio.seek_step_seconds (Standard 10s) - kein Trackwechsel, solange gehalten wird."
 )
 
-# ============================================================ 5. Encoder
-h1("5. Dreh-Encoder mit Taster (KY-040)")
+# ============================================================ 6. Encoder
+h1("6. Dreh-Encoder mit Taster (KY-040)")
 story.append(spec_table(
-    [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO1 (nicht 17, siehe Kapitel 3)"], ["DT", "GPIO27"],
+    [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO1 (nicht 17, siehe Kapitel 4)"], ["DT", "GPIO27"],
      ["SW", "GPIO22"], ["+", "3.3V"], ["GND", "GND"]],
     col_widths=[100 * mm, 60 * mm],
 ))
@@ -503,7 +550,7 @@ p("Drehen ändert die Helligkeit (Schrittweite gpio.brightness_step, Standard 5%
   "ausschließlich Encoder und Web-UI.")
 story.append(note_box(
     "Noch nicht an echter Hardware verifiziert: ob eine Helligkeitsänderung per Encoder/Software "
-    "auf diesem Display überhaupt sichtbar etwas bewirkt - siehe Kapitel 6, Status dort schon "
+    "auf diesem Display überhaupt sichtbar etwas bewirkt - siehe Kapitel 7, Status dort schon "
     "länger unklar, unabhängig vom Nachtmodus-Feature hier.",
     kind="warn",
 ))
@@ -533,30 +580,30 @@ story.append(note_box(
     kind="warn",
 ))
 
-# ============================================================ 6. Backlight
-h1("6. Display-Hintergrundbeleuchtung")
+# ============================================================ 7. Backlight
+h1("7. Display-Hintergrundbeleuchtung")
 story.append(note_box(
     "Noch nicht an echter Hardware verifiziert, welchen Mechanismus dieses Display für die "
     "Helligkeit anbietet: eine per GPIO/PWM ansteuerbare LED-Leitung wie beim alten SPI-Display, "
     "eine interne Linux-Backlight-Sysfs-Schnittstelle (/sys/class/backlight/.../brightness, "
     "angesteuert vom Power-Chip auf der Display-Adapterplatine) - oder nur die eigene, laut "
     "Auftraggeber vorhandene Touch-Helligkeitsregelung des Displays, die diese Box bewusst nicht "
-    "verwendet (siehe Kapitel 5). Falls es tatsächlich Sysfs ist: kein gpio.backlight_pin, kein "
+    "verwendet (siehe Kapitel 6). Falls es tatsächlich Sysfs ist: kein gpio.backlight_pin, kein "
     "Transistor/MOSFET nötig, aber owlbox/backlight.py müsste dafür erst auf die Sysfs-"
     "Schnittstelle umgestellt werden - aktuell nutzt es noch GPIO-PWM.",
     kind="warn",
 ))
 p(
     "Software-seitig ist der zweite Encoder trotzdem vollständig verdrahtet und angebunden (CLK/DT "
-    "fürs Drehen, SW für den Nachtmodus-Taster, siehe Kapitel 5) - jede Helligkeitsänderung über "
+    "fürs Drehen, SW für den Nachtmodus-Taster, siehe Kapitel 6) - jede Helligkeitsänderung über "
     "Encoder, Web-Oberfläche oder Nachtmodus-Taster ändert den intern gespeicherten "
     "brightness-Wert zuverlässig und blendet ihn kurz auf dem Display ein. Ob sich davon auch die "
     "tatsächliche Display-Helligkeit sichtbar ändert, hängt vom oben noch offenen Mechanismus ab "
     "und ist erst an echter Hardware zu klären."
 )
 
-# ============================================================ 7. Fallback-Hotspot
-h1("7. Fallback-Hotspot (WLAN-Recovery)")
+# ============================================================ 8. Fallback-Hotspot
+h1("8. Fallback-Hotspot (WLAN-Recovery)")
 p(
     "Ist WLAN eingeschaltet, aber für network.hotspot_after_seconds (Standard 60s) mit keinem "
     "Netzwerk verbunden - z.B. weil das Heimnetz sein Passwort geändert hat oder der Pi an einen "
@@ -581,15 +628,15 @@ story.append(note_box(
     kind="warn",
 ))
 
-# ============================================================ 8. Display-Treiber
-h1("8. DSI-Display: kein separater Treiber-Installer nötig")
+# ============================================================ 9. Display-Treiber
+h1("9. DSI-Display: kein separater Treiber-Installer nötig")
 p(
     "Im Gegensatz zum früheren 3,5″-SPI-Display (das einen virtuellen-HDMI-Trick, fbcp und den "
     "alten Legacy-Grafiktreiber brauchte, um überhaupt ein Bild zu zeigen) kommt das aktuelle "
     "DSI-Display an einem normalen Raspberry Pi OS Bookworm-Image ohne Treiber-Installer, ohne "
     "Extra-Paket aus - nur die eine dtoverlay=-Zeile unten ist nötig, sonst nichts. Empfohlenes "
     "Basis-Image bleibt Raspberry Pi OS Lite, 64-bit (ohne Desktop-Umgebung) - der Kiosk startet X "
-    "selbst nur für Chromium (siehe Kapitel 9), eine mitinstallierte Desktop-Umgebung (lightdm, "
+    "selbst nur für Chromium (siehe Kapitel 10), eine mitinstallierte Desktop-Umgebung (lightdm, "
     "LXDE) würde beim Boot nur unnötig Zeit kosten. Wichtig ist nur: der moderne KMS-Grafiktreiber "
     "(vc4-kms-v3d) bleibt aktiv (Bookworm-Standard) - er wurde beim alten SPI-Display extra "
     "deaktiviert, das ist mit einem DSI-Display nicht mehr nötig und würde die GPU-Beschleunigung "
@@ -631,8 +678,8 @@ bullets([
     "invx/invy/swapxy von Hand nötig sind, muss an echter Hardware geprüft werden.",
 ])
 
-# ============================================================ 9. Kiosk-Autostart
-h1("9. Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)")
+# ============================================================ 10. Kiosk-Autostart
+h1("10. Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)")
 p(
     "Da die Basis „Lite“ keine Desktop-Umgebung mitbringt, gibt es auch kein lightdm/LXDE, in das "
     "sich der Kiosk einhängen könnte. Stattdessen startet ein eigener systemd-Dienst "
@@ -702,8 +749,8 @@ story.append(note_box(
     kind="warn",
 ))
 
-# ============================================================ 10. Konfiguration
-h1("10. Konfigurationsdatei (config.yaml)")
+# ============================================================ 11. Konfiguration
+h1("11. Konfigurationsdatei (config.yaml)")
 p(
     "Alle in dieser Anleitung genannten Werte (Pins, Schrittweiten, Zeiten) stehen gesammelt in "
     "config/config.yaml (aus config/config.example.yaml kopieren). Die wichtigsten Abschnitte:"

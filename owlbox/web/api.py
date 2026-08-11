@@ -31,6 +31,17 @@ def _config():
     return current_app.config["OWLBOX_CONFIG"]
 
 
+def _is_loopback_request() -> bool:
+    # Deliberately request.remote_addr (the actual TCP peer address the WSGI
+    # server saw), not any client-supplied header - those can be spoofed by
+    # anyone on the LAN, remote_addr can't. Good enough to trust a caller as
+    # "running on this same Pi" without needing a shared secret in
+    # config.yaml or an admin login flow a headless system script has no way
+    # to complete - see /api/airplay/session-* below, the one place this is
+    # used.
+    return request.remote_addr in ("127.0.0.1", "::1")
+
+
 def _story_to_dict(story: repository.Story) -> dict:
     tracks = [] if story.stream_url else repository.get_tracks(story.id)
     return {
@@ -980,4 +991,33 @@ def delete_quiz_item(item_id):
     quiz_dir = _config().media_dir / "quiz"
     (quiz_dir / image_filename).unlink(missing_ok=True)
     (quiz_dir / sound_filename).unlink(missing_ok=True)
+    return jsonify({"ok": True})
+
+
+# -- AirPlay (shairport-sync, optional OS-level add-on) -----------------------
+# shairport-sync isn't started/managed by this Python process at all (see
+# docs/hardware.md) - it's a separate systemd service. These two routes exist
+# purely so its own session hook scripts (run_this_before_play_begins/
+# run_this_after_play_ends in shairport-sync.conf) can tell OwlBox "AirPlay
+# audio just started/stopped flowing", so a story already playing gets ducked
+# for the duration instead of the two audio sources talking over each other.
+# No @admin_required - a headless system hook script has no way to complete
+# a login flow - restricted to loopback callers instead (see
+# _is_loopback_request above), which is exactly what shairport-sync's hook
+# will always be: a `curl` from the same Pi.
+
+
+@api_bp.route("/airplay/session-start", methods=["POST"])
+def airplay_session_start():
+    if not _is_loopback_request():
+        return jsonify({"error": "forbidden"}), 403
+    _engine().airplay_session_started()
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/airplay/session-end", methods=["POST"])
+def airplay_session_end():
+    if not _is_loopback_request():
+        return jsonify({"error": "forbidden"}), 403
+    _engine().airplay_session_ended()
     return jsonify({"ok": True})

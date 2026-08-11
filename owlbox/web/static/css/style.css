@@ -626,6 +626,19 @@ body.kiosk { height: 100vh; overflow: hidden; }
   font-size: 0.85rem;
 }
 
+/* Same "always on" corner-readout as .night-mode-badge, opposite corner -
+   shown for the duration of an AirPlay session (see docs/hardware.md and
+   owlbox/web/api.py's /api/airplay/session-*), so it's obvious from across
+   the room why a story got ducked/paused instead of it looking broken. */
+.airplay-badge {
+  position: fixed;
+  bottom: 2.5vh;
+  right: 3vw;
+  z-index: 90;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
 /* Recovery-hotspot notice - shown across splash/parent-mode/now-playing alike
    whenever no real WiFi has been reachable for a while (see docs/hardware.md),
    so the credentials to join it are never hidden behind whatever else the

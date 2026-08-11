@@ -155,6 +155,17 @@ class Engine:
         self._alarm_fading = False
         self._alarm_fade_start = 0.0
 
+        # AirPlay (optional OS-level add-on, shairport-sync - see
+        # docs/hardware.md; not managed by this process at all, just ducked
+        # around). shairport-sync's own before/after-play hook scripts call
+        # airplay_session_started()/_ended() below over local HTTP. Purely a
+        # live flag, never persisted - "is AirPlay audio flowing right now"
+        # can't meaningfully outlive a restart anyway (shairport-sync would
+        # have to open a whole new session against a freshly restarted
+        # process regardless).
+        self._airplay_active = False
+        self._airplay_paused_our_playback = False
+
         # Spiele-Menü (Einstellungen -> Spiel): toggled on/off by a dedicated
         # RFID function tag ("game_toggle" - see FUNCTION_ACTIONS/_execute_
         # function_action), same momentary-scan-toggles-state pattern as
@@ -1138,6 +1149,39 @@ class Engine:
             else:
                 logger.warning("alarm: configured story id=%s no longer exists", trigger_story_id)
 
+    # -- AirPlay --------------------------------------------------------------
+    # Called by shairport-sync's own session hook scripts (run_this_before_
+    # play_begins/run_this_after_play_ends in its config, POSTing to
+    # /api/airplay/session-{start,end} - see owlbox/web/api.py) rather than
+    # from anywhere inside this process: shairport-sync is an entirely
+    # separate OS-level service, not something this codebase starts/stops or
+    # even knows how to talk to except over that one local HTTP round-trip.
+
+    def airplay_session_started(self) -> None:
+        with self._lock:
+            self._airplay_active = True
+            # Only duck (and later resume) if OwlBox itself was actually
+            # playing - never start playback that wasn't already happening
+            # just because an AirPlay session began.
+            if self._player.get_status().get("playing"):
+                self._persist_position_locked()
+                self._player.pause()
+                self._airplay_paused_our_playback = True
+            else:
+                self._airplay_paused_our_playback = False
+        logger.info(
+            "AirPlay session started%s", " (paused OwlBox playback)" if self._airplay_paused_our_playback else ""
+        )
+
+    def airplay_session_ended(self) -> None:
+        with self._lock:
+            self._airplay_active = False
+            resume = self._airplay_paused_our_playback
+            self._airplay_paused_our_playback = False
+        if resume:
+            self._player.play()
+        logger.info("AirPlay session ended%s", " (resumed OwlBox playback)" if resume else "")
+
     def _handle_shutdown(self) -> None:
         logger.warning("shutdown requested via encoder long-press")
         self.request_shutdown()
@@ -1208,6 +1252,7 @@ class Engine:
             alarm_time = self._alarm_time
             alarm_story_id = self._alarm_story_id
             alarm_fade_seconds = self._alarm_fade_seconds
+            airplay_active = self._airplay_active
         alarm_story_title = None
         if alarm_story_id is not None:
             alarm_story = repository.get_story(alarm_story_id)
@@ -1322,6 +1367,7 @@ class Engine:
                 "story_title": alarm_story_title,
                 "fade_seconds": alarm_fade_seconds,
             },
+            "airplay": {"active": airplay_active},
             # A plain sysfs read (see system_info.get_cpu_temperature_celsius),
             # not a subprocess call like the WiFi signal above - cheap enough
             # to do inline on every poll instead of needing the same

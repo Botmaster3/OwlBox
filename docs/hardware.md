@@ -457,6 +457,62 @@ Die genaue Stromaufnahme steht im Datenblatt des Amp2 (HiFiBerry-eigene
 Seite) - vor dem endgültigen Verkabeln dort noch einmal gegenprüfen, welcher
 Peak-Strom bei voller Lautstärke/4-Ω-Last tatsächlich zu erwarten ist.
 
+## AirPlay (optional, shairport-sync)
+
+**Kein zusätzliches Kabel, kein zusätzlicher Chip** - AirPlay läuft komplett
+über WLAN und dieselbe HiFiBerry-Ausgabe, die OwlBox ohnehin schon nutzt.
+Ein optionales Software-Add-on: `sudo ./scripts/install.sh airplay`
+installiert [shairport-sync](https://github.com/mikebrady/shairport-sync),
+den etablierten Open-Source-AirPlay-Empfänger für Linux, als eigenen
+systemd-Dienst - **bewusst nicht** Teil von `sudo ./scripts/install.sh`
+(bzw. `all`) ohne Argument, da es kein Kernbestandteil der Box ist, sondern
+ein optionales Extra für Eltern, die vom Handy/Mac aus eigene Musik über
+denselben Lautsprecher abspielen wollen, ohne einen Chip aufzulegen.
+
+**Zusammenspiel mit der eigentlichen Wiedergabe:** mpv (für Geschichten) und
+shairport-sync (für AirPlay) würden sich sonst dasselbe ALSA-Gerät streitig
+machen bzw. - schlimmer - beide gleichzeitig hörbar übereinanderlaufen.
+Gelöst über automatisches Ducking statt gemeinsamer ALSA-Nutzung:
+shairport-sync ruft über seine `sessioncontrol`-Hooks
+(`run_this_before_play_begins`/`run_this_after_play_ends`, siehe
+`/etc/shairport-sync.conf`, geschrieben vom Installer) zwei kleine Skripte
+auf (`scripts/airplay-session-start.sh`/`-end.sh`, per `curl` gegen
+`127.0.0.1:5000`), die wiederum `Engine.airplay_session_started()`/
+`_ended()` antriggern:
+
+- **Session-Start**: läuft gerade eine Geschichte, wird sie pausiert
+  (Position wie gewohnt gespeichert) - lief nichts, passiert nichts.
+- **Session-Ende**: nur falls der Start-Hook tatsächlich pausiert hat, wird
+  die Geschichte wieder fortgesetzt. Eine Geschichte, die schon vorher aus
+  einem anderen Grund pausiert war (z.B. Einschlaf-Timer), bleibt pausiert.
+
+Auf dem Kiosk-Display erscheint währenddessen unten rechts ein kleines
+„📡 AirPlay"-Abzeichen (`owlbox/web/static/js/player.js`, gespeist aus
+`state.airplay.active`), damit auf einen Blick klar ist, warum eine
+Geschichte gerade pausiert wirkt.
+
+Die beiden `/api/airplay/session-start`/`-end`-Endpunkte (siehe
+`owlbox/web/api.py`) sind bewusst **nicht** `@admin_required` - ein
+headless laufendes Systemd-Skript kann keinen Login-Flow durchlaufen -
+stattdessen auf lokale Aufrufe beschränkt (`request.remote_addr` gegen
+`127.0.0.1`/`::1` geprüft, nicht spoofbar wie ein Header). Genau das ist
+shairport-sync als lokal laufender Dienst auf demselben Pi immer.
+
+**AirPlay-Version:** das Debian/Raspberry-Pi-OS-Paket unterstützt AirPlay 1
+(von praktisch jeder AirPlay-Quell-App weiterhin akzeptiert, nur ohne
+AirPlay 2s Mehrraum-/„Gerade läuft"-Zusatzfunktionen). AirPlay 2 bräuchte
+einen Build aus dem Quellcode mit zusätzlichen Abhängigkeiten (`nqptp`,
+`libplist`, `libsodium`, `libavahi-client`) - zu fehleranfällig, um das
+blind ohne echte Hardware zum Gegenprüfen zu skripten; bei Bedarf siehe
+shairport-sync-eigene Doku.
+
+**Noch nicht an echter Hardware verifiziert** - wie der Rest dieser Datei
+für die aktuelle Pi-5-Ausbaustufe: weder der `apt install shairport-sync`-
+Ablauf noch das tatsächliche Ducking-Verhalten (Pause/Fortsetzen im
+richtigen Moment, kein hörbares Überlappen) wurden bisher an einem echten
+Gerät gegengeprüft, nur die OwlBox-eigene Seite (Engine-Methoden, API-
+Endpunkte, Kiosk-Abzeichen) über die Testsuite bzw. den Simulationsmodus.
+
 ## RC522 RFID-Leser (Hardware-SPI0)
 
 Der RC522 hängt an SPI0, dem Hardware-SPI-Bus des Pi (`/dev/spidev0.0`,
