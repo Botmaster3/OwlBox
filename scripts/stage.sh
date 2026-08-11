@@ -388,6 +388,15 @@ case "$STAGE" in
     run_test_tool test_controls.py "Taster/Encoder"
     apply mfrc522 true 13
     svc enable owlbox.service || true
+    # owlbox-kiosk.service was only ever `svc restart`ed by every stage
+    # above, never enabled - install.sh deliberately copies the unit file
+    # but leaves enabling it to this guided tool (see its comment next to
+    # `cp .../owlbox-kiosk.service`), and until now nothing here actually
+    # did that. Result: the kiosk display ran fine right after staging but
+    # never came back on its own after the next reboot, since its
+    # `WantedBy=multi-user.target` was never activated. Confirmed as the
+    # real-world symptom, not just a theoretical gap.
+    svc enable owlbox-kiosk.service || true
     svc restart owlbox.service
     svc restart owlbox-kiosk.service
     if [ "$DRYRUN" != "1" ] && [ -f "$STAGED_MARKER" ]; then

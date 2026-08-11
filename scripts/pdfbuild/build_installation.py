@@ -375,11 +375,12 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
     bullets([
         "Das aktive ALSA-Gerät und den passenden Mixer-Namen automatisch erkennen (aplay -l / "
         "amixer scontrols) und in config.yaml eintragen",
-        "Den Kiosk-Autostart einrichten und aktivieren: ein eigener systemd-Dienst "
-        "(" + mono("owlbox-kiosk.service") + ") startet X direkt (kein Desktop, kein "
-        "Login-Bildschirm) und darin Chromium im Vollbild",
-        "Den systemd-Dienst " + mono("owlbox.service") + " installieren, aktivieren und "
-        "starten",
+        "Den Kiosk-Autostart vorbereiten: ein eigener systemd-Dienst "
+        "(" + mono("owlbox-kiosk.service") + "), der X direkt startet (kein Desktop, kein "
+        "Login-Bildschirm) und darin Chromium im Vollbild - noch nicht aktiviert, siehe "
+        f"nächster Schritt ({n}.6.4)",
+        "Den systemd-Dienst " + mono("owlbox.service") + " installieren - ebenfalls noch "
+        "nicht aktiviert oder gestartet",
     ])
     p(
         "Ist alles fertig, meldet das Skript das explizit. Bleibt danach noch eine Meldung zu "
@@ -392,6 +393,31 @@ def install_section(n, os_name, imager_steps, shortcut, terminal_name, terminal_
         "bitte OwlBox-Verkabelung.pdf zurate ziehen - dort steht jeder Schritt, den das Skript "
         "für die Standardhardware automatisch erledigt, einzeln zum manuellen Nachvollziehen "
         "und Anpassen."
+    ))
+
+    h3(f"{n}.6.4 Autostart aktivieren")
+    p(
+        "Bewusst getrennt vom Installationsskript: " + mono("owlbox.service") + " und " +
+        mono("owlbox-kiosk.service") + " werden erst durch das separate, geführte Werkzeug " +
+        mono("owlbox-stage") + " dauerhaft aktiviert (siehe OwlBox-Verkabelung.pdf, Kapitel "
+        "„Gestaffelte Einrichtung“) - so startet nach der Installation nichts von "
+        "selbst, bevor nicht mindestens einmal bestätigt wurde, dass die Hardware tatsächlich "
+        "sauber läuft. Bei bereits vollständig verkabelter Standardhardware genügt es, alle "
+        "vier Stufen direkt nacheinander durchzugehen (jede davon fragt nur kurz nach "
+        "Bestätigung per Tastendruck, keine weitere Verkabelung nötig):"
+    )
+    code([
+        "sudo owlbox-stage sound",
+        "sudo owlbox-stage display",
+        "sudo owlbox-stage rfid",
+        "sudo owlbox-stage controls",
+    ])
+    story.append(note_box(
+        "Wird dieser Schritt übersprungen, läuft OwlBox zwar sofort nach der Installation, "
+        "aber der Kiosk-Bildschirm bleibt nach dem nächsten Neustart schwarz (weder " +
+        mono("owlbox.service") + " noch " + mono("owlbox-kiosk.service") + " sind dann "
+        "dauerhaft aktiviert). Direkt nachholen ohne die geführten Testschritte: " +
+        mono("sudo systemctl enable --now owlbox.service owlbox-kiosk.service") + "."
     ))
     story.append(note_box(
         "Mit " + mono("sudo systemctl status owlbox") + " lässt sich jederzeit prüfen, ob der "

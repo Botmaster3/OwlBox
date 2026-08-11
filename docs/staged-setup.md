@@ -118,9 +118,9 @@ sudo owlbox-stage controls     # startet ein eigenstaendiges Tasten-Testwerkzeug
 
 Genauso wie bei RFID: ein Testwerkzeug zeigt jeden Tastendruck/jede
 Drehung direkt im Terminal. Strg+C zum Beenden - das ist gleichzeitig die
-letzte Stufe, danach läuft die Box im vollständigen Normalbetrieb, und
-`owlbox.service` wird dauerhaft aktiviert (startet ab jetzt auch nach einem
-Neustart automatisch).
+letzte Stufe, danach läuft die Box im vollständigen Normalbetrieb, und sowohl
+`owlbox.service` als auch `owlbox-kiosk.service` werden dauerhaft aktiviert
+(starten ab jetzt auch nach einem Neustart automatisch).
 
 `sudo owlbox-stage status` zeigt jederzeit den aktuellen Stand, ohne etwas
 zu verändern.

@@ -280,13 +280,20 @@ anschließen, `sudo owlbox-install rfid`, `sudo owlbox-stage rfid` (startet
 ein eigenständiges Scan-Testwerkzeug, kein Browser nötig). Zuletzt Taster/
 Encoder anschließen, `sudo owlbox-install controls`, `sudo owlbox-stage
 controls` (eigenes Tastendruck-Testwerkzeug) - das ist gleichzeitig die
-letzte Stufe und aktiviert `owlbox.service` dauerhaft. Komplette Anleitung
-inkl. was bei jeder Stufe schiefgehen kann:
-[docs/staged-setup.md](docs/staged-setup.md).
+letzte Stufe und aktiviert sowohl `owlbox.service` als auch
+`owlbox-kiosk.service` dauerhaft (der Kiosk-Bildschirm startet ab jetzt auch
+nach einem Neustart automatisch). Komplette Anleitung inkl. was bei jeder
+Stufe schiefgehen kann: [docs/staged-setup.md](docs/staged-setup.md).
 
 Wer nicht stufenweise vorgehen will: `sudo ./scripts/install.sh` bzw. `sudo
 owlbox-install` ganz ohne Stufenname macht alle vier auf einmal - die
-klassische Ein-Kommando-Installation.
+klassische Ein-Kommando-Installation. **Wichtig:** auch das startet/aktiviert
+`owlbox.service`/`owlbox-kiosk.service` bewusst noch nicht (gleicher Grund
+wie oben) - `sudo owlbox-stage sound && sudo owlbox-stage display && sudo
+owlbox-stage rfid && sudo owlbox-stage controls` (bei schon komplett
+verkabelter Standardhardware ohne weitere Wartezeit direkt hintereinander
+ausführbar) muss auch bei der Ein-Kommando-Variante noch einmal folgen, sonst
+bleibt der Kiosk nach dem nächsten Neustart schwarz.
 
 > **Hinweis:** `cd owlbox` von *innerhalb* eines bereits ausgecheckten Repos
 > landet nicht wieder im Repo-Root, sondern eine Ebene zu tief im
