@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 
 from owlbox import repository
@@ -414,6 +416,72 @@ def test_get_weekly_review_excludes_older_days(config):
     assert review["top_stories"] == []
     # All-time total on the story itself is unaffected by the backdate.
     assert repository.get_story(story.id).total_seconds == 90
+
+
+def test_get_daily_listening_breakdown_is_zero_filled(config):
+    # Fresh DB, nothing listened to at all - still one entry per day, oldest
+    # first, not an empty list (the Info page chart needs a bar per day
+    # regardless of whether anything happened that day).
+    breakdown = repository.get_daily_listening_breakdown(days=5)
+    assert len(breakdown) == 5
+    assert all(d["seconds"] == 0 and d["plays"] == 0 for d in breakdown)
+    today = datetime.now(timezone.utc).date().isoformat()
+    assert breakdown[-1]["date"] == today
+    # Strictly ascending dates, oldest to newest.
+    assert [d["date"] for d in breakdown] == sorted(d["date"] for d in breakdown)
+
+
+def test_get_daily_listening_breakdown_reflects_todays_listening(config):
+    story = repository.create_story(title="Today Story")
+    repository.increment_play_count(story.id)
+    repository.add_listening_seconds(story.id, 42)
+
+    breakdown = repository.get_daily_listening_breakdown(days=3)
+    assert breakdown[-1]["seconds"] == 42
+    assert breakdown[-1]["plays"] == 1
+    # The other two (older) days stay zero.
+    assert breakdown[0]["seconds"] == 0
+    assert breakdown[1]["seconds"] == 0
+
+
+def test_get_daily_listening_breakdown_excludes_days_outside_window(config):
+    from owlbox.db import write_cursor
+
+    story = repository.create_story(title="Old Story")
+    repository.add_listening_seconds(story.id, 90)
+    with write_cursor() as cur:
+        cur.execute("UPDATE daily_listening SET date = date('now', '-10 days') WHERE story_id = ?", (story.id,))
+
+    breakdown = repository.get_daily_listening_breakdown(days=7)
+    assert all(d["seconds"] == 0 for d in breakdown)
+
+
+def test_get_listening_trend_compares_current_and_previous_window(config):
+    from owlbox.db import write_cursor
+
+    recent = repository.create_story(title="Recent")
+    older = repository.create_story(title="Older")
+    repository.add_listening_seconds(recent.id, 100)
+    repository.add_listening_seconds(older.id, 40)
+    # Push "older"'s listening into the window directly before the current
+    # 7-day one (8-14 days ago), matching get_listening_trend's own window math.
+    with write_cursor() as cur:
+        cur.execute("UPDATE daily_listening SET date = date('now', '-10 days') WHERE story_id = ?", (older.id,))
+
+    trend = repository.get_listening_trend(days=7)
+    assert trend == {"days": 7, "current_seconds": 100, "previous_seconds": 40}
+
+
+def test_get_listening_trend_excludes_too_old_days(config):
+    from owlbox.db import write_cursor
+
+    story = repository.create_story(title="Ancient")
+    repository.add_listening_seconds(story.id, 90)
+    with write_cursor() as cur:
+        cur.execute("UPDATE daily_listening SET date = date('now', '-30 days') WHERE story_id = ?", (story.id,))
+
+    trend = repository.get_listening_trend(days=7)
+    assert trend == {"days": 7, "current_seconds": 0, "previous_seconds": 0}
 
 
 def test_game_images_crud_and_ordering(config):

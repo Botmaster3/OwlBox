@@ -75,23 +75,6 @@
       document.getElementById("memory-text").textContent = "nicht verfügbar";
     }
 
-    const weekly = info.weekly_review;
-    if (weekly) {
-      const summaryEl = document.getElementById("weekly-review-summary");
-      const topEl = document.getElementById("weekly-review-top");
-      if (weekly.total_seconds > 0) {
-        summaryEl.textContent =
-          `Letzte ${weekly.days} Tage: ${formatListeningDuration(weekly.total_seconds)} gehört, ` +
-          `${weekly.total_plays}x eine Geschichte gestartet.`;
-        topEl.innerHTML = weekly.top_stories
-          .map((s) => `<li>${s.title}${s.is_stream ? " (Livestream)" : ""} - ${formatListeningDuration(s.seconds)}</li>`)
-          .join("");
-      } else {
-        summaryEl.textContent = `In den letzten ${weekly.days} Tagen wurde noch nichts gehört.`;
-        topEl.innerHTML = "";
-      }
-    }
-
     document.getElementById("info-story-count").textContent = info.library.story_count;
     document.getElementById("info-track-count").textContent = info.library.track_count;
     document.getElementById("info-assigned-count").textContent = info.library.assigned_count;
@@ -101,6 +84,88 @@
     document.getElementById("info-mode").textContent = info.app.simulate ? "Simulation" : "Hardware";
     appVersionText = info.app.version_date ? `${info.app.version} vom ${info.app.version_date}` : info.app.version;
   }
+
+  // -- Höraktivität: daily bar chart + trend + top stories for a selectable
+  // period (7/14/30 Tage) - its own endpoint (/api/stats/period) rather than
+  // bundled into /api/system/info above, since changing the period re-fetches
+  // just this card instead of the whole info bundle (uptime, disk, ...).
+  const WEEKDAY_SHORT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+
+  function formatStatsDate(isoDate) {
+    // isoDate is a plain "YYYY-MM-DD" (UTC calendar day, see
+    // repository.get_daily_listening_breakdown) - Date treats a bare date
+    // string as UTC midnight, which matches here, no "Z" needed.
+    const d = new Date(isoDate);
+    return `${WEEKDAY_SHORT[d.getUTCDay()]}, ${String(d.getUTCDate()).padStart(2, "0")}.${String(d.getUTCMonth() + 1).padStart(2, "0")}.`;
+  }
+
+  function renderStatsChart(daily) {
+    const svg = document.getElementById("stats-chart");
+    const days = daily.length;
+    const maxSeconds = Math.max(1, ...daily.map((d) => d.seconds));
+    const slot = 100 / days;
+    const barWidth = slot * 0.68;
+    // Every bar gets a visible sliver even at 0 (0.6 of 40 viewBox units)
+    // instead of vanishing completely - a day with genuinely no listening
+    // should still read as "a day", not as a gap in the chart.
+    const bars = daily
+      .map((d, i) => {
+        const height = Math.max(0.6, (d.seconds / maxSeconds) * 40);
+        const x = i * slot + (slot - barWidth) / 2;
+        const y = 40 - height;
+        const title = `${formatStatsDate(d.date)}: ${formatListeningDuration(d.seconds)}`;
+        return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${height.toFixed(2)}" rx="0.6"><title>${title}</title></rect>`;
+      })
+      .join("");
+    svg.innerHTML = bars;
+  }
+
+  function renderStatsPeriod(review) {
+    const summaryEl = document.getElementById("weekly-review-summary");
+    const topEl = document.getElementById("weekly-review-top");
+
+    renderStatsChart(review.daily);
+
+    if (review.total_seconds > 0) {
+      let trendText = "";
+      const trend = review.trend;
+      if (trend && trend.previous_seconds > 0) {
+        const pct = Math.round((trend.current_seconds - trend.previous_seconds) / trend.previous_seconds * 100);
+        if (pct > 0) trendText = ` (+${pct}% zum vorherigen Zeitraum)`;
+        else if (pct < 0) trendText = ` (${pct}% zum vorherigen Zeitraum)`;
+        else trendText = " (unverändert zum vorherigen Zeitraum)";
+      } else if (trend && trend.current_seconds > 0) {
+        trendText = " (im Zeitraum davor wurde noch nichts gehört)";
+      }
+      summaryEl.textContent =
+        `Letzte ${review.days} Tage: ${formatListeningDuration(review.total_seconds)} gehört, ` +
+        `${review.total_plays}x eine Geschichte gestartet.${trendText}`;
+      topEl.innerHTML = review.top_stories
+        .map((s) => `<li>${s.title}${s.is_stream ? " (Livestream)" : ""} - ${formatListeningDuration(s.seconds)}</li>`)
+        .join("");
+    } else {
+      summaryEl.textContent = `In den letzten ${review.days} Tagen wurde noch nichts gehört.`;
+      topEl.innerHTML = "";
+    }
+  }
+
+  async function loadStatsPeriod(days) {
+    document.querySelectorAll("#stats-period-toggle button").forEach((btn) => {
+      btn.classList.toggle("active", Number(btn.dataset.days) === days);
+    });
+    try {
+      const res = await fetch(`/api/stats/period?days=${days}`);
+      renderStatsPeriod(await res.json());
+    } catch (err) {
+      document.getElementById("weekly-review-summary").textContent = "Konnte Höraktivität nicht laden.";
+    }
+  }
+
+  document.querySelectorAll("#stats-period-toggle button").forEach((btn) => {
+    btn.addEventListener("click", () => loadStatsPeriod(Number(btn.dataset.days)));
+  });
+
+  loadStatsPeriod(7);
 
   // Set once load() has filled it in, so the "already up to date" message below
   // can name the version instead of just saying "some current version".

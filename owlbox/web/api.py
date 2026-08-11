@@ -834,7 +834,6 @@ def system_info_route():
             "memory": system_info.get_memory_info(),
             "disk": system_info.get_disk_usage(config.media_dir),
             "library": repository.get_library_stats(),
-            "weekly_review": repository.get_weekly_review(),
             "app": {
                 "version": version_info["version"],
                 "version_date": version_info["date"],
@@ -842,6 +841,25 @@ def system_info_route():
             },
         }
     )
+
+
+# -- Höraktivität (daily-breakdown chart + trend behind the Info page) ------
+
+# Only these three - a period selector isn't a free-text field, and every
+# value the Info page's buttons can send is one of them (see admin_info.js).
+_STATS_PERIOD_DAYS = (7, 14, 30)
+
+
+@api_bp.route("/stats/period")
+@admin_required
+def stats_period():
+    days = request.args.get("days", 7, type=int)
+    if days not in _STATS_PERIOD_DAYS:
+        days = 7
+    review = repository.get_weekly_review(days)
+    review["trend"] = repository.get_listening_trend(days)
+    review["daily"] = repository.get_daily_listening_breakdown(days)
+    return jsonify(review)
 
 
 # -- Memory-game image pool ---------------------------------------------------

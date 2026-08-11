@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from .db import get_connection, write_cursor
@@ -217,6 +218,50 @@ def get_weekly_review(days: int = 7) -> dict:
             for r in top_rows
         ],
     }
+
+
+def get_daily_listening_breakdown(days: int = 14) -> list[dict]:
+    """Per-day totals (seconds, plays) for the last `days` UTC calendar days
+    (today included), oldest first, zero-filled for days with no listening at
+    all - the Info page's Höraktivität chart needs exactly one bar per day,
+    not just the days that happen to already have a daily_listening row.
+    Uses Python's own UTC date arithmetic rather than a second SQL query per
+    day so the zero-fill is a single round trip regardless of `days`."""
+    conn = get_connection()
+    cutoff = f"-{days - 1} days"
+    rows = conn.execute(
+        "SELECT date, COALESCE(SUM(seconds), 0) AS seconds, COALESCE(SUM(plays), 0) AS plays "
+        "FROM daily_listening WHERE date >= date('now', ?) GROUP BY date",
+        (cutoff,),
+    ).fetchall()
+    by_date = {r["date"]: {"seconds": r["seconds"], "plays": r["plays"]} for r in rows}
+    # date('now') in the query above is UTC with no timezone conversion (see
+    # _bump_daily_listening) - datetime.now(timezone.utc) is the matching
+    # Python-side "today" so the zero-filled dates line up with it exactly.
+    today = datetime.now(timezone.utc).date()
+    result = []
+    for offset in range(days - 1, -1, -1):
+        d = (today - timedelta(days=offset)).isoformat()
+        entry = by_date.get(d, {"seconds": 0, "plays": 0})
+        result.append({"date": d, "seconds": entry["seconds"], "plays": entry["plays"]})
+    return result
+
+
+def get_listening_trend(days: int = 7) -> dict:
+    """Total listening seconds in the last `days` days versus the `days` days
+    directly before that - lets the Info page say something like "+18% zur
+    Vorwoche" instead of just a bare total with no sense of direction."""
+    conn = get_connection()
+    current = conn.execute(
+        "SELECT COALESCE(SUM(seconds), 0) AS seconds FROM daily_listening WHERE date >= date('now', ?)",
+        (f"-{days - 1} days",),
+    ).fetchone()["seconds"]
+    previous = conn.execute(
+        "SELECT COALESCE(SUM(seconds), 0) AS seconds FROM daily_listening "
+        "WHERE date >= date('now', ?) AND date < date('now', ?)",
+        (f"-{2 * days - 1} days", f"-{days - 1} days"),
+    ).fetchone()["seconds"]
+    return {"days": days, "current_seconds": current, "previous_seconds": previous}
 
 
 def get_tracks(story_id: int) -> list[Track]:

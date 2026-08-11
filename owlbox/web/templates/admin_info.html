@@ -53,7 +53,16 @@
   </div>
 
   <div class="card">
-    <h2>Wochenrückblick</h2>
+    <h2>Höraktivität</h2>
+    <div class="stats-period-toggle" id="stats-period-toggle" role="group" aria-label="Zeitraum">
+      <button class="btn secondary small" type="button" data-days="7">7 Tage</button>
+      <button class="btn secondary small" type="button" data-days="14">14 Tage</button>
+      <button class="btn secondary small" type="button" data-days="30">30 Tage</button>
+    </div>
+    <div class="stats-chart-wrap">
+      <svg id="stats-chart" class="stats-chart" viewBox="0 0 100 40" preserveAspectRatio="none"
+           role="img" aria-label="Hörzeit pro Tag"></svg>
+    </div>
     <p class="hint" id="weekly-review-summary">Lädt…</p>
     <ol id="weekly-review-top" class="np-upcoming-list"></ol>
   </div>
