@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 # The X "client" started by `startx` from owlbox-kiosk.service - this is the only
 # thing that ever runs in the X session, there is no desktop environment around
-# it (see systemd/owlbox-kiosk.service for why). Launches Chromium in kiosk mode,
-# first against a local loading page (see owlbox/web/static/boot-loading.html)
-# that shows a progress bar and polls the real OwlBox web server itself,
-# navigating there the moment it responds - replaces an earlier version that
-# waited silently (curl loop, no visual feedback at all) before launching
-# Chromium in the first place, which on real hardware just left the display
-# dead/backlit for however long owlbox.service took to come up.
+# it (see systemd/owlbox-kiosk.service for why). Launches Chromium in kiosk mode
+# directly against the real OwlBox web server - by the time this script runs,
+# owlbox-kiosk.service's own ExecStartPre has already waited for that server
+# to actually respond and only then handed off from the OS-level Plymouth boot
+# splash (see scripts/install.sh's "Boot-Fortschrittsbalken" section), so
+# there's nothing left to wait for here and no need for a second, kiosk-side
+# loading page - one boot progress bar, not two.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOADING_FILE="$SCRIPT_DIR/../owlbox/web/static/boot-loading.html"
 URL="http://localhost:5000/"
 
 # No desktop environment means nothing else turns off the screensaver/DPMS -
@@ -41,13 +39,6 @@ fi
 # Hide the mouse cursor if unclutter is installed (nice on a touchscreen-only kiosk).
 command -v unclutter >/dev/null 2>&1 && unclutter -idle 0.5 -root &
 
-START_URL="$URL"
-if [ -f "$LOADING_FILE" ]; then
-  START_URL="file://$LOADING_FILE"
-else
-  echo "boot-loading.html not found at $LOADING_FILE, launching $URL directly" >&2
-fi
-
 exec "$CHROMIUM_BIN" \
   --kiosk \
   --noerrdialogs \
@@ -58,4 +49,4 @@ exec "$CHROMIUM_BIN" \
   --check-for-update-interval=31536000 \
   --disable-features=Translate \
   --lang=de \
-  --app="$START_URL"
+  --app="$URL"

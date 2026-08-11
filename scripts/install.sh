@@ -209,11 +209,19 @@ echo "==> [Basis] Boot-Fortschrittsbalken (Plymouth) statt roher Boot-Textausgab
 # of relying on whatever theme happens to ship in plymouth-themes, so this
 # doesn't depend on an optional package's exact theme selection. Matches the
 # app's own default colour theme (owlbox/themes.py: bg #12141c, accent
-# #f2a93c, text #f5f2ea). owlbox-kiosk.service already has
-# `After=... plymouth-quit.service` (see systemd/owlbox-kiosk.service) - the
-# kiosk only grabs tty1 once Plymouth has quit, so no extra ordering work
-# needed here beyond actually installing and enabling Plymouth itself.
+# #f2a93c, text #f5f2ea).
+#
+# One boot progress bar, not two: this Plymouth splash is meant to stay up
+# for the *entire* wait, from power-on until the OwlBox app itself actually
+# answers - not just until systemd considers the general boot sequence
+# "done" (which the stock plymouth-quit(-wait).service ties itself to, and
+# which has nothing to do with owlbox.service's Flask app actually being
+# ready - see systemd/owlbox-kiosk.service's comment). So that stock unit is
+# masked here, and systemd/owlbox-kiosk.service's own ExecStartPre
+# (scripts/kiosk-boot-wait.sh) calls `plymouth quit` itself, once the app is
+# confirmed responding, right before handing off to X/Chromium.
 apt-get install -y plymouth || true
+systemctl mask plymouth-quit.service plymouth-quit-wait.service >/dev/null 2>&1 || true
 if command -v plymouth-set-default-theme >/dev/null 2>&1; then
   THEME_DIR=/usr/share/plymouth/themes/owlbox
   mkdir -p "$THEME_DIR"
@@ -420,7 +428,7 @@ fi
 
 mkdir -p "$INSTALL_DIR/media" "$INSTALL_DIR/data"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
-chmod +x "$INSTALL_DIR/scripts/kiosk.sh" "$INSTALL_DIR/scripts/stage.sh" \
+chmod +x "$INSTALL_DIR/scripts/kiosk.sh" "$INSTALL_DIR/scripts/kiosk-boot-wait.sh" "$INSTALL_DIR/scripts/stage.sh" \
   "$INSTALL_DIR/scripts/test_rfid.py" "$INSTALL_DIR/scripts/test_controls.py"
 # Guided staged bring-up (sound -> display -> rfid -> controls): starts/stops/
 # tests each stage's hardware and owns config.yaml's feature toggles - see

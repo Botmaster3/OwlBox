@@ -143,10 +143,21 @@ Ab der ersten Stufe ("sound", weil das Teil von BASE ist, das jede Stufe
 mitinstalliert) richtet `owlbox-install` einen eigenen, minimalen
 Plymouth-Splash ein: "OwlBox" plus ein schmaler Fortschrittsbalken in den
 Farben des App-Standard-Themes (`owlbox/themes.py`), statt der rohen
-Kernel-/systemd-Textmeldungen, die vorher beim Hochfahren durchliefen. Der
-Balken verschwindet automatisch, sobald `owlbox-kiosk.service` startet -
-dessen Unit hat dafür schon länger `After=... plymouth-quit.service`
-(`systemd/owlbox-kiosk.service`).
+Kernel-/systemd-Textmeldungen, die vorher beim Hochfahren durchliefen.
+
+Genau ein Balken für die gesamte Wartezeit, nicht zwei: der Splash bleibt
+bewusst so lange stehen, bis die OwlBox-App selbst tatsächlich antwortet -
+nicht nur, bis systemd den allgemeinen Bootvorgang für "fertig" hält (das
+wäre deutlich früher, da `owlbox.service` als `Type=simple`-Dienst schon als
+"gestartet" gilt, sobald der Prozess läuft, nicht erst wenn Flask/DB/RFID
+intern wirklich bereit sind). Deshalb installiert `owlbox-install` das
+mitgelieferte `plymouth-quit(-wait).service` als maskiert, und
+`systemd/owlbox-kiosk.service` ruft stattdessen selbst, über
+`scripts/kiosk-boot-wait.sh` als `ExecStartPre`, `plymouth quit` erst dann
+auf, wenn `/api/state` tatsächlich antwortet (oder nach ~60s ohnehin, damit
+der Bildschirm nicht für immer hängen bleibt) - erst danach startet X/
+Chromium überhaupt. Der Kiosk selbst zeigt deshalb keine eigene
+Ladeseite mehr, sondern öffnet direkt die echte Oberfläche.
 
 **Nicht an echter Hardware verifiziert** - anders als der Rest dieses
 Dokuments. Falls es nach der Installation nicht sauber aussieht (Balken
