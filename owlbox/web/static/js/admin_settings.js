@@ -996,42 +996,36 @@
   }
 
   // -- peers (andere OwlBoxen im Netzwerk) -----------------------------------
+  // Primarily live mDNS discovery (see GET /api/peers) - the manual form
+  // below is only a fallback for when that doesn't reach a box.
 
   const peerList = document.getElementById("peer-list");
   const peerNameInput = document.getElementById("peer-name-input");
   const peerHostInput = document.getElementById("peer-host-input");
   const peerStatus = document.getElementById("peer-status");
-  const multiroomMasterSelect = document.getElementById("multiroom-master-select");
-
-  let lastLoadedPeers = [];
-
-  function renderMultiroomMasterOptions(selectedId) {
-    multiroomMasterSelect.innerHTML = lastLoadedPeers
-      .map((p) => `<option value="${p.id}">${p.name} (${p.host})</option>`)
-      .join("");
-    if (selectedId != null) multiroomMasterSelect.value = String(selectedId);
-  }
 
   async function loadPeers() {
     try {
       const peers = await api("/api/peers");
-      lastLoadedPeers = peers;
       peerList.innerHTML = "";
       if (peers.length === 0) {
-        peerList.innerHTML = '<p class="hint">Noch keine anderen Boxen eingetragen.</p>';
-      } else {
-        for (const peer of peers) {
-          const li = document.createElement("li");
-          li.className = "peer-row";
-          li.innerHTML = `
-            <span class="peer-status-dot ${peer.reachable ? "online" : "offline"}"
-              title="${peer.reachable ? "Erreichbar" : "Nicht erreichbar"}"></span>
-            <span class="peer-name">${peer.name}</span>
-            <span class="peer-host mono">${peer.host}</span>
-            <a class="btn secondary small" href="http://${peer.host}:5000/admin" target="_blank" rel="noopener">Öffnen</a>
-            <button class="btn danger small" data-action="delete">Entfernen</button>
-          `;
-          li.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+        peerList.innerHTML = '<p class="hint">Noch keine anderen Boxen im Netzwerk gefunden.</p>';
+        return;
+      }
+      for (const peer of peers) {
+        const li = document.createElement("li");
+        li.className = "peer-row";
+        li.innerHTML = `
+          <span class="peer-status-dot ${peer.reachable ? "online" : "offline"}"
+            title="${peer.reachable ? "Erreichbar" : "Nicht erreichbar"}"></span>
+          <span class="peer-name">${peer.name}${peer.master_enabled ? " 🔊 Hauptbox" : ""}</span>
+          <span class="peer-host mono">${peer.host}</span>
+          <a class="btn secondary small" href="http://${peer.host}:5000/admin" target="_blank" rel="noopener">Öffnen</a>
+          ${peer.id != null ? '<button class="btn danger small" data-action="delete">Entfernen</button>' : ""}
+        `;
+        const deleteBtn = li.querySelector('[data-action="delete"]');
+        if (deleteBtn) {
+          deleteBtn.addEventListener("click", async () => {
             if (!confirm(`"${peer.name}" aus der Liste entfernen?`)) return;
             try {
               await api(`/api/peers/${peer.id}`, { method: "DELETE" });
@@ -1040,10 +1034,9 @@
               showToast(err.message, true);
             }
           });
-          peerList.appendChild(li);
         }
+        peerList.appendChild(li);
       }
-      renderMultiroomMasterOptions(multiroomMasterSelect.dataset.selected || null);
     } catch (err) {
       peerList.innerHTML = '<p class="hint">Konnte andere Boxen nicht laden.</p>';
     }
@@ -1073,49 +1066,41 @@
   });
 
   // -- Mehrraum-Wiedergabe (Snapcast) -----------------------------------------
+  // Just the one switch ("ist diese Box die Hauptbox") - every other box
+  // figures out on its own, via the peer list above, whether to follow it
+  // (see Engine._check_multiroom). Nothing to pick here for a Slave-Box.
 
-  const multiroomRoleSelect = document.getElementById("multiroom-role-select");
-  const multiroomMasterField = document.getElementById("multiroom-master-field");
+  const multiroomMasterCheckbox = document.getElementById("multiroom-master-checkbox");
   const multiroomStatus = document.getElementById("multiroom-status");
   const multiroomSaveStatus = document.getElementById("multiroom-save-status");
 
-  const MULTIROOM_ROLE_LABELS = { off: "Aus", master: "Hauptbox", slave: "Slave-Box" };
-
   function renderMultiroomStatus(multiroom) {
-    if (multiroom.role === "off") {
-      multiroomStatus.textContent = "Mehrraum-Wiedergabe ist aus.";
-    } else if (multiroom.role === "master") {
+    if (multiroom.master_enabled) {
       multiroomStatus.textContent = "Diese Box ist die Hauptbox.";
+    } else if (multiroom.effective_role === "slave" && multiroom.following_name) {
+      multiroomStatus.textContent = `Folgt automatisch der Hauptbox „${multiroom.following_name}“.`;
+    } else if (multiroom.ambiguous) {
+      multiroomStatus.textContent = "Mehrere Hauptboxen gleichzeitig im Netzwerk erkannt - bitte nur auf einer Box aktivieren.";
     } else {
-      multiroomStatus.textContent = multiroom.master_peer_name
-        ? `Diese Box ist Slave-Box von „${multiroom.master_peer_name}“.`
-        : "Diese Box ist als Slave-Box eingerichtet, aber keine Hauptbox ausgewählt.";
+      multiroomStatus.textContent = "Mehrraum-Wiedergabe ist aus (keine Hauptbox im Netzwerk gefunden).";
+    }
+    if (multiroom.error) {
+      multiroomStatus.textContent += ` (${multiroom.error})`;
     }
   }
 
   function applyMultiroomState(multiroom) {
-    multiroomRoleSelect.value = multiroom.role;
-    multiroomMasterField.hidden = multiroom.role !== "slave";
-    if (multiroom.master_peer_id != null) {
-      multiroomMasterSelect.dataset.selected = multiroom.master_peer_id;
-      renderMultiroomMasterOptions(multiroom.master_peer_id);
-    }
+    multiroomMasterCheckbox.checked = multiroom.master_enabled;
     renderMultiroomStatus(multiroom);
   }
 
-  multiroomRoleSelect.addEventListener("change", () => {
-    multiroomMasterField.hidden = multiroomRoleSelect.value !== "slave";
-  });
-
   document.getElementById("multiroom-save-btn").addEventListener("click", async () => {
-    const role = multiroomRoleSelect.value;
-    const masterPeerId = role === "slave" ? (multiroomMasterSelect.value || null) : null;
     multiroomSaveStatus.textContent = "Speichert…";
     try {
       const result = await api("/api/multiroom", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, master_peer_id: masterPeerId }),
+        body: JSON.stringify({ master_enabled: multiroomMasterCheckbox.checked }),
       });
       renderMultiroomStatus(result.multiroom);
       multiroomSaveStatus.textContent = "Gespeichert - für volle Wirkung jetzt neu starten (Einstellungen > System).";

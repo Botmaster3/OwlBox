@@ -2188,79 +2188,191 @@ def test_airplay_session_does_not_resume_a_story_that_was_already_paused(config)
     assert engine.get_state()["player"]["playing"] is False
 
 
-# -- Mehrraum-Wiedergabe (Snapcast) -------------------------------------------
+# -- Mehrraum-Wiedergabe (Snapcast + mDNS auto-follow) ------------------------
 
 
-def test_set_multiroom_rejects_unknown_role(config):
+def test_set_multiroom_master_enabled_true_applies_master_role(config, monkeypatch):
+    captured = {}
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (captured.update(role=role, host=host), (True, "ok"))[1])
     engine = Engine(config)
-    with pytest.raises(ValueError):
-        engine.set_multiroom("banana", None)
 
-
-def test_set_multiroom_slave_without_master_fails(config, monkeypatch):
-    # multiroom.set_role must never even be reached - the missing-master
-    # check is a pure validation error, not an OS-level failure.
-    monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not be called")))
-    engine = Engine(config)
-    ok, message = engine.set_multiroom("slave", None)
-    assert ok is False
-    assert "Hauptbox" in message
-    assert engine.get_state()["multiroom"]["role"] == "off"
-
-
-def test_set_multiroom_slave_with_unknown_peer_id_fails(config, monkeypatch):
-    monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not be called")))
-    engine = Engine(config)
-    ok, message = engine.set_multiroom("slave", 999999)
-    assert ok is False
-    assert "Hauptbox" in message
-
-
-def test_set_multiroom_slave_success_persists_and_resolves_peer_name(config, monkeypatch):
-    peer = repository.create_peer("Wohnzimmer", "owlbox-wohnzimmer.local")
-    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
-
-    engine = Engine(config)
-    ok, message = engine.set_multiroom("slave", peer.id)
+    ok, message = engine.set_multiroom_master_enabled(True)
     assert ok is True
+    assert captured == {"role": "master", "host": None}
 
     state = engine.get_state()["multiroom"]
-    assert state == {"role": "slave", "master_peer_id": peer.id, "master_peer_name": "Wohnzimmer"}
-
-    # Persisted, not just in-memory - a fresh Engine reads it back the same.
-    engine2 = Engine(config)
-    assert engine2.get_state()["multiroom"] == state
+    assert state["master_enabled"] is True
+    assert state["effective_role"] == "master"
+    assert state["error"] is None
 
 
-def test_set_multiroom_master_success_has_no_master_peer(config, monkeypatch):
+def test_set_multiroom_master_enabled_persists_across_restart(config, monkeypatch):
     monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
     engine = Engine(config)
-    ok, message = engine.set_multiroom("master", None)
+    engine.set_multiroom_master_enabled(True)
+
+    engine2 = Engine(config)
+    assert engine2.get_state()["multiroom"]["master_enabled"] is True
+
+
+def test_set_multiroom_master_enabled_false_reverts_to_off_with_no_peers(config, monkeypatch):
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
+    monkeypatch.setattr(multiroom, "discover_peers", lambda **k: [])
+    engine = Engine(config)
+    engine.set_multiroom_master_enabled(True)
+
+    ok, message = engine.set_multiroom_master_enabled(False)
     assert ok is True
-    assert engine.get_state()["multiroom"] == {"role": "master", "master_peer_id": None, "master_peer_name": None}
+    state = engine.get_state()["multiroom"]
+    assert state["master_enabled"] is False
+    assert state["effective_role"] == "off"
 
 
-def test_set_multiroom_does_not_persist_when_applying_at_os_level_fails(config, monkeypatch):
-    # A role that failed to actually apply must not read back as active -
-    # same reasoning as system_info.set_hostname's identical case.
+def test_set_multiroom_master_enabled_surfaces_os_level_failure(config, monkeypatch):
+    # The toggle itself still records what was asked for (master_enabled),
+    # but the *effective* role must reflect reality, not the wish - same
+    # "don't claim success that didn't happen" reasoning as
+    # system_info.set_hostname.
     monkeypatch.setattr(multiroom, "set_role", lambda role, host: (False, "systemctl fehlgeschlagen"))
     engine = Engine(config)
-    ok, message = engine.set_multiroom("master", None)
+
+    ok, message = engine.set_multiroom_master_enabled(True)
     assert ok is False
     assert "systemctl fehlgeschlagen" in message
-    assert engine.get_state()["multiroom"]["role"] == "off"
+
+    state = engine.get_state()["multiroom"]
+    assert state["master_enabled"] is True
+    assert state["effective_role"] == "off"
+    assert state["error"] == "systemctl fehlgeschlagen"
 
 
-def test_set_multiroom_passes_resolved_peer_host_to_set_role(config, monkeypatch):
-    peer = repository.create_peer("Kinderzimmer", "192.168.1.42")
-    captured = {}
-
-    def fake_set_role(role, host):
-        captured["role"] = role
-        captured["host"] = host
-        return True, "ok"
-
-    monkeypatch.setattr(multiroom, "set_role", fake_set_role)
+def test_multiroom_candidates_merges_discovered_and_manual_peers(config, monkeypatch):
+    repository.create_peer("Manuell", "manual-box.local")
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: [{"name": "owlbox-kueche", "host": "192.168.1.43"}]
+    )
     engine = Engine(config)
-    engine.set_multiroom("slave", peer.id)
-    assert captured == {"role": "slave", "host": "192.168.1.42"}
+    candidates = engine._multiroom_candidates()
+    assert {"name": "owlbox-kueche", "host": "192.168.1.43"} in candidates
+    assert {"name": "Manuell", "host": "manual-box.local"} in candidates
+    assert len(candidates) == 2
+
+
+def test_multiroom_candidates_discovery_wins_over_manual_duplicate(config, monkeypatch):
+    # Same host known both ways (e.g. added manually before mDNS found it
+    # too) - the live-discovered name should win, not the possibly-stale
+    # manual one.
+    repository.create_peer("Stale Name", "192.168.1.43")
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: [{"name": "owlbox-kueche", "host": "192.168.1.43"}]
+    )
+    engine = Engine(config)
+    candidates = engine._multiroom_candidates()
+    assert candidates == [{"name": "owlbox-kueche", "host": "192.168.1.43"}]
+
+
+def test_check_multiroom_follows_the_one_peer_claiming_master(config, monkeypatch):
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: [{"name": "owlbox-wohnzimmer", "host": "192.168.1.42"}]
+    )
+    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: {"master_enabled": True})
+    applied = []
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (applied.append((role, host)), (True, "ok"))[1])
+
+    engine = Engine(config)
+    engine._check_multiroom(0.0)
+
+    state = engine.get_state()["multiroom"]
+    assert state["effective_role"] == "slave"
+    assert state["following_host"] == "192.168.1.42"
+    assert state["following_name"] == "owlbox-wohnzimmer"
+    assert state["ambiguous"] is False
+    assert applied == [("slave", "192.168.1.42")]
+
+
+def test_check_multiroom_stays_off_when_no_peer_claims_master(config, monkeypatch):
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: [{"name": "owlbox-wohnzimmer", "host": "192.168.1.42"}]
+    )
+    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: {"master_enabled": False})
+    monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not apply anything")))
+
+    engine = Engine(config)
+    engine._check_multiroom(0.0)
+    assert engine.get_state()["multiroom"]["effective_role"] == "off"
+
+
+def test_check_multiroom_ignores_unreachable_peers(config, monkeypatch):
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: [{"name": "offline-box", "host": "192.168.1.99"}]
+    )
+    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: None)
+    monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not apply anything")))
+
+    engine = Engine(config)
+    engine._check_multiroom(0.0)
+    assert engine.get_state()["multiroom"]["effective_role"] == "off"
+
+
+def test_check_multiroom_does_not_guess_with_two_masters_at_once(config, monkeypatch):
+    monkeypatch.setattr(
+        multiroom,
+        "discover_peers",
+        lambda **k: [
+            {"name": "owlbox-wohnzimmer", "host": "192.168.1.42"},
+            {"name": "owlbox-kueche", "host": "192.168.1.43"},
+        ],
+    )
+    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: {"master_enabled": True})
+    monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not apply anything")))
+
+    engine = Engine(config)
+    engine._check_multiroom(0.0)
+    state = engine.get_state()["multiroom"]
+    assert state["effective_role"] == "off"
+    assert state["ambiguous"] is True
+
+
+def test_check_multiroom_master_enabled_skips_peer_polling_entirely(config, monkeypatch):
+    # If this box itself is the Hauptbox, it must never even ask its peers
+    # who's master - it already knows the answer is itself.
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: (_ for _ in ()).throw(AssertionError("must not poll peers"))
+    )
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
+
+    engine = Engine(config)
+    engine.set_multiroom_master_enabled(True)
+    assert engine.get_state()["multiroom"]["effective_role"] == "master"
+
+
+def test_check_multiroom_is_throttled(config, monkeypatch):
+    calls = []
+    monkeypatch.setattr(multiroom, "discover_peers", lambda **k: (calls.append(1), [])[1])
+    engine = Engine(config)
+
+    engine._check_multiroom(100.0, interval=15.0)
+    engine._check_multiroom(101.0, interval=15.0)
+    engine._check_multiroom(114.9, interval=15.0)
+    assert len(calls) == 1
+
+    engine._check_multiroom(115.1, interval=15.0)
+    assert len(calls) == 2
+
+
+def test_set_multiroom_master_enabled_bypasses_the_throttle(config, monkeypatch):
+    # Saving in the Einstellungen UI must take effect right away, not wait
+    # up to _check_multiroom's own poll interval.
+    calls = []
+    monkeypatch.setattr(multiroom, "discover_peers", lambda **k: (calls.append(1), [])[1])
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
+    engine = Engine(config)
+
+    engine._check_multiroom(100.0, interval=15.0)
+    assert len(calls) == 1
+
+    engine.set_multiroom_master_enabled(True)  # would otherwise still be inside the 15s window
+    # master_enabled=True skips peer polling entirely (see the dedicated
+    # test above) - the throttle-bypass itself is what's under test here,
+    # confirmed instead by the role having actually applied immediately.
+    assert engine.get_state()["multiroom"]["effective_role"] == "master"

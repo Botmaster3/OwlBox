@@ -1064,32 +1064,55 @@ def airplay_session_end():
 # See owlbox/multiroom.py's module docstring for the full architecture.
 
 
-def _peer_to_dict(peer: repository.Peer, *, check_reachable: bool) -> dict:
-    d = {"id": peer.id, "name": peer.name, "host": peer.host}
-    if check_reachable:
-        # Only ever called from GET /api/peers below (an explicit page-load
-        # fetch, not the once-a-second /api/state poll) - see get_state()'s
-        # comment on why a network call has no business in there.
-        d["reachable"] = multiroom.check_peer_reachable(peer.host)
-    return d
+def _live_peer_dict(name: str, host: str, *, peer_id, discovered: bool) -> dict:
+    # One /api/state round trip per peer, serving both the "online" dot and
+    # (for the auto-follow check itself, over in Engine._check_multiroom)
+    # "does this one currently claim to be Hauptbox" - see
+    # multiroom.query_peer's own comment. Only ever called from GET
+    # /api/peers below (an explicit page-load fetch), never from the
+    # once-a-second /api/state poll - see get_state()'s comment on why a
+    # network call has no business in there.
+    status = multiroom.query_peer(host)
+    return {
+        "id": peer_id,
+        "name": name,
+        "host": host,
+        "discovered": discovered,
+        "reachable": status is not None,
+        "master_enabled": bool(status["master_enabled"]) if status else False,
+    }
 
 
 @api_bp.route("/peers", methods=["GET"])
 @admin_required
 def list_peers():
-    return jsonify([_peer_to_dict(p, check_reachable=True) for p in repository.list_peers()])
+    # Live mDNS-discovered boxes (the common case once the `multiroom`
+    # install stage is set up - no manual entry needed at all, see
+    # docs/hardware.md) plus the manual fallback list, deduplicated by host
+    # with discovery winning - it reflects who's actually online right now,
+    # a stale manual entry for the same box shouldn't shadow that.
+    discovered = multiroom.discover_peers()
+    discovered_hosts = {d["host"] for d in discovered}
+    manual = [p for p in repository.list_peers() if p.host not in discovered_hosts]
+    result = [_live_peer_dict(d["name"], d["host"], peer_id=None, discovered=True) for d in discovered]
+    result += [_live_peer_dict(p.name, p.host, peer_id=p.id, discovered=False) for p in manual]
+    result.sort(key=lambda p: p["name"].lower())
+    return jsonify(result)
 
 
 @api_bp.route("/peers", methods=["POST"])
 @admin_required
 def create_peer():
+    # The manual fallback path only - for when mDNS discovery doesn't reach
+    # a box (e.g. an isolated guest WLAN). A box already found automatically
+    # doesn't need this at all.
     data = request.get_json(silent=True) or {}
     name = str(data.get("name", "")).strip()
     host = str(data.get("host", "")).strip()
     if not name or not host:
         return jsonify({"error": "Name und Host/IP werden benötigt"}), 400
     peer = repository.create_peer(name, host)
-    return jsonify(_peer_to_dict(peer, check_reachable=False))
+    return jsonify(_live_peer_dict(peer.name, peer.host, peer_id=peer.id, discovered=False))
 
 
 @api_bp.route("/peers/<int:peer_id>", methods=["DELETE"])
@@ -1104,16 +1127,8 @@ def delete_peer(peer_id):
 @admin_required
 def set_multiroom():
     data = request.get_json(silent=True) or {}
-    role = str(data.get("role", "off"))
-    raw_peer_id = data.get("master_peer_id")
-    try:
-        master_peer_id = int(raw_peer_id) if raw_peer_id else None
-    except (TypeError, ValueError):
-        return jsonify({"error": "master_peer_id must be an integer"}), 400
-    try:
-        ok, message = _engine().set_multiroom(role, master_peer_id)
-    except ValueError as err:
-        return jsonify({"error": str(err)}), 400
+    enabled = bool(data.get("master_enabled"))
+    ok, message = _engine().set_multiroom_master_enabled(enabled)
     if not ok:
         return jsonify({"ok": False, "error": message}), 400
     return jsonify({"ok": True, "multiroom": _engine().get_state()["multiroom"]})

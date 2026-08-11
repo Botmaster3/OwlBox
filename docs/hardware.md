@@ -542,31 +542,59 @@ die passwortlose sudo-Regel aus `scripts/install.sh`.
 sudo ./scripts/install.sh multiroom
 ```
 
-Installiert `snapserver`+`snapclient`, schreibt `/etc/snapserver.conf` (Pipe-
-Quelle, `sampleformat=48000:16:2` - muss exakt zu `player.py`s eigener
-`--audio-samplerate`/`--audio-channels`/`--audio-format` passen, beide
-Seiten sind dieses Projekts eigener Code), richtet `owlbox-snapclient.service`
-ein und legt die Pipe an. **Aktiviert dabei bewusst noch nichts** - anders
-als bei AirPlay gibt es hier eine echte Rollenwahl (Aus/Hauptbox/Slave-Box),
-die erst in Einstellungen > Netzwerk getroffen wird.
+Installiert `snapserver`+`snapclient`+`avahi-utils`, schreibt
+`/etc/snapserver.conf` (Pipe-Quelle, `sampleformat=48000:16:2` - muss exakt
+zu `player.py`s eigener `--audio-samplerate`/`--audio-channels`/
+`--audio-format` passen, beide Seiten sind dieses Projekts eigener Code),
+richtet `owlbox-snapclient.service` ein und legt die Pipe an - all das
+bewusst **ohne** etwas zu aktivieren/starten, das hängt von der später
+gewählten Rolle ab. Eine Ausnahme: `owlbox-mdns.service` (Selbstankündigung
+im Netzwerk, siehe unten) läuft sofort, unabhängig von jeder Rolle - eine
+Box muss auffindbar sein, bevor irgendeine Rolle überhaupt gewählt werden
+kann.
+
+**Automatische Erkennung (kein manuelles Verknüpfen):** Jede Box mit
+installierter `multiroom`-Stufe meldet sich per mDNS im Netzwerk an
+(`avahi-publish-service`, derselbe Avahi-Dienst, der schon `<hostname>.local`
+bereitstellt - siehe `systemd/owlbox-mdns.service`) und durchsucht beim
+Laden von Einstellungen > Netzwerk automatisch das Netzwerk nach anderen
+OwlBoxen (`avahi-browse`, siehe `owlbox/multiroom.py`s `discover_peers`).
+Gefundene Boxen erscheinen unter "Andere OwlBoxen im Netzwerk" von selbst -
+nichts einzutragen, auf keiner der Boxen. Ein manuelles Eintragen per
+Name+Hostname/IP bleibt als Rückfallebene bestehen (z.B. für ein WLAN mit
+Client-Isolation, wo mDNS nicht durchkommt).
 
 **Einrichtung:**
 
-1. Auf jeder Box: `sudo ./scripts/install.sh multiroom`, dann in
-   Einstellungen > Netzwerk unter "Andere OwlBoxen im Netzwerk" die
-   jeweils anderen Boxen eintragen (Name + Hostname/IP - siehe
-   Einstellungen > System > "Gerätename" für den eigenen Hostnamen jeder
-   Box).
-2. Auf der Box, die die Hauptbox werden soll: Rolle "Hauptbox" wählen,
-   speichern, `owlbox.service` neu starten.
-3. Auf jeder Slave-Box: Rolle "Slave-Box" wählen, aus der zuvor
-   eingetragenen Liste die Hauptbox auswählen, speichern, neu starten.
+1. Auf jeder beteiligten Box: `sudo ./scripts/install.sh multiroom`.
+2. Auf **genau der einen** Box, die den Ton vorgeben soll: Einstellungen >
+   Netzwerk > "Diese Box ist die Hauptbox" aktivieren, speichern,
+   `owlbox.service` neu starten.
 
-Ein Klick auf "Öffnen" neben einem eingetragenen Peer wechselt direkt in
+Das war's - jede andere Box mit installierter `multiroom`-Stufe erkennt
+automatisch (per periodischem `/api/state`-Abruf bei jeder bekannten Box,
+`Engine._check_multiroom`, alle 15s), dass eine Hauptbox aktiv ist, und
+schaltet sich selbst als Slave-Box dazu, ganz ohne eigenen Rollen-Schalter.
+Wird der Schalter wieder ausgeschaltet oder auf eine andere Box verschoben,
+folgen alle automatisch dorthin bzw. fallen in den normalen Einzelbetrieb
+zurück. Melden sich zufällig zwei Boxen gleichzeitig als Hauptbox, tut
+keine Box automatisch etwas (kein Raten, welche "die richtige" ist) - die
+Einstellungsseite zeigt das explizit an ("Mehrere Hauptboxen gleichzeitig
+im Netzwerk erkannt").
+
+Ein Klick auf "Öffnen" neben einem gefundenen Peer wechselt direkt in
 dessen Verwaltungsoberfläche (`http://<host>:5000/admin`) - praktisch, um
 mehrere Boxen zu verwalten, ohne sich jeden Hostnamen einzeln zu merken.
 Der grüne/graue Punkt davor ist ein kurzer Erreichbarkeits-Check beim Laden
-der Seite, kein Dauer-Polling.
+der Seite, kein Dauer-Polling; ein 🔊-Symbol markiert, welche Box gerade
+die Hauptbox ist.
+
+**Sicherheit:** Die automatische Rollenübernahme fragt ausschließlich beim
+schon länger öffentlichen, unauthentifizierten `/api/state` jeder Box nach
+(genau das, was auch das Kiosk-Display selbst abfragt) - keine neuen
+Zugangsdaten, kein gemeinsames Geheimnis zwischen den Boxen, keine
+Fernsteuerung einer Box durch eine andere. Jede Box wendet eine Rolle
+ausschließlich auf sich selbst an.
 
 **Lautstärke/Hinweistöne:** Die Hauptbox steuert Lautstärke weiterhin über
 den echten Hardware-Mixer (`amixer`, siehe `player.py`s `AlsaMixer`) -
@@ -580,15 +608,18 @@ und als WARNING geloggt (siehe `owlbox/feedback.py`), exakt dasselbe
 bekannte Verhalten wie beim AirPlay-Ducking oben - keine neue Fehlerklasse.
 
 **Noch nicht an echter Mehrgeräte-Hardware verifiziert** - deutlich mehr
-noch als bei AirPlay: weder die `snapserver`/`snapclient`-Paketinstallation,
-noch die genauen Kommandozeilenflags in `systemd/owlbox-snapclient.service`,
-noch (am wichtigsten) die tatsächliche Sample-genaue Synchronisation über
-mehrere echte Geräte hinweg wurden bisher getestet - nur die OwlBox-eigene
-Seite (Rollenauswahl, Peer-Verzeichnis, Persistenz, Audio-Routing-Logik in
+noch als bei AirPlay: weder die `snapserver`/`snapclient`/`avahi-utils`-
+Paketinstallation, noch die genauen Kommandozeilenflags in
+`systemd/owlbox-snapclient.service`/`owlbox-mdns.service`, noch das
+tatsächliche mDNS-Auffinden über `avahi-browse`s Ausgabeformat, noch (am
+wichtigsten) die tatsächliche Sample-genaue Synchronisation über mehrere
+echte Geräte hinweg wurden bisher getestet - nur die OwlBox-eigene Seite
+(automatische Rollenübernahme, Peer-Erkennung, Audio-Routing-Logik in
 `player.py`) über die Testsuite und den Simulationsmodus. Vor dem
-Erstaufbau lohnt sich ein Blick in die Snapcast-eigene Dokumentation, um
-die hier getroffenen Annahmen (Paketnamen, `snapserver.conf`-Syntax,
-`snapclient`-Flags) gegenzuprüfen.
+Erstaufbau lohnt sich ein Blick in die Snapcast- und Avahi-eigene
+Dokumentation, um die hier getroffenen Annahmen (Paketnamen,
+`snapserver.conf`-Syntax, `snapclient`-Flags, `avahi-browse -p`-Format)
+gegenzuprüfen.
 
 ## RC522 RFID-Leser (Hardware-SPI0)
 

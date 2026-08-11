@@ -1,0 +1,25 @@
+[Unit]
+Description=OwlBox Mehrraum-Wiedergabe (mDNS-Selbstankündigung)
+# Lets every other OwlBox on the LAN find this one automatically (see
+# owlbox/multiroom.py's discover_peers/docs/hardware.md) - reuses the same
+# Avahi that already backs plain <hostname>.local (see system_info.py),
+# nothing new to install beyond avahi-utils for the publish/browse CLI
+# tools. Runs continuously and unconditionally once the `multiroom` install
+# stage is set up, independent of Hauptbox/Slave-Box role - a box has to be
+# discoverable before any role can ever be chosen. Not part of "all"/the
+# four mandatory hardware stages, see scripts/install.sh's MULTIROOM stage.
+After=network-online.target avahi-daemon.service
+Wants=network-online.target
+Requires=avahi-daemon.service
+
+[Service]
+Type=simple
+# The service name is read at every (re)start rather than baked in once,
+# so renaming this box (Einstellungen > System > "Gerätename") is reflected
+# here after the next restart without editing this unit.
+ExecStart=/bin/sh -c 'exec avahi-publish-service "$(hostname)" _owlbox._tcp 5000'
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

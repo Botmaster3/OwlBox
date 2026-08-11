@@ -167,16 +167,25 @@ class Engine:
         self._airplay_paused_our_playback = False
 
         # Mehrraum-Wiedergabe (optional OS-level add-on, Snapcast - see
-        # owlbox/multiroom.py and docs/hardware.md). "off"/"master"/"slave",
-        # persisted like the alarm settings above - a role set once should
-        # survive a restart, unlike the live-only AirPlay flag above it
-        # (there's no external process re-announcing this the way
-        # shairport-sync re-announces a session).
-        self._multiroom_role = repository.get_setting("multiroom_role") or "off"
-        if self._multiroom_role not in multiroom.ROLES:
-            self._multiroom_role = "off"
-        master_peer_id = repository.get_int_setting("multiroom_master_peer_id", 0)
-        self._multiroom_master_peer_id: Optional[int] = master_peer_id or None
+        # owlbox/multiroom.py and docs/hardware.md). Only one thing is ever
+        # a deliberate admin choice, persisted like the alarm settings above:
+        # "ist diese Box die Hauptbox" (master_enabled). Everything else -
+        # which role is actually applied, and who a Slave is currently
+        # following - is *derived*, live, by _check_multiroom polling known
+        # peers (mDNS-discovered + the manual fallback list) via their own
+        # public /api/state, same as _wifi_enabled/_hotspot_active above are
+        # live rather than persisted. Never persisted on purpose: it has to
+        # re-derive itself from the current state of the network on every
+        # restart anyway (a peer could have changed roles while this box was
+        # off), so persisting a stale snapshot would just be one more thing
+        # that could drift from reality.
+        self._multiroom_master_enabled = bool(repository.get_int_setting("multiroom_master_enabled", 0))
+        self._multiroom_effective_role = "off"
+        self._multiroom_following_host: Optional[str] = None
+        self._multiroom_following_name: Optional[str] = None
+        self._multiroom_ambiguous = False
+        self._multiroom_last_error: Optional[str] = None
+        self._last_multiroom_check: Optional[float] = None
 
         # Spiele-Menü (Einstellungen -> Spiel): toggled on/off by a dedicated
         # RFID function tag ("game_toggle" - see FUNCTION_ACTIONS/_execute_
@@ -227,7 +236,14 @@ class Engine:
         self._thread: Optional[threading.Thread] = None
 
     def start(self) -> None:
-        self._player.start(self._multiroom_role)
+        # Only "master" vs anything else matters to player.py's audio
+        # routing (see _audio_output_args - "off" and "slave" both mean
+        # "straight to the real ALSA device"), so the persisted toggle alone
+        # is enough to know which to pass here - _check_multiroom below
+        # reconciles the actual systemd services against this same value
+        # (or against whichever peer turns out to be the Hauptbox) once the
+        # loop starts, this is just what mpv itself launches with.
+        self._player.start("master" if self._multiroom_master_enabled else "off")
         self._apply_volume(self._volume)
         self._backlight.set_brightness(self._brightness)
         self._thread = threading.Thread(target=self._loop, daemon=True)
@@ -287,6 +303,7 @@ class Engine:
                 self._check_auto_sleep(now)
                 self._check_alarm(now)
                 self._check_wifi_status(now)
+                self._check_multiroom(now)
             except Exception:
                 logger.exception("engine loop iteration failed")
 
@@ -1196,35 +1213,87 @@ class Engine:
 
     # -- Mehrraum-Wiedergabe (Snapcast) --------------------------------------
 
-    def set_multiroom(self, role: str, master_peer_id: Optional[int]) -> tuple[bool, str]:
-        """Applies and persists a Mehrraum role. Only ever persists the new
-        role once multiroom.set_role() has actually confirmed applying it at
-        the OS level succeeded - a role that failed to apply must not read
-        back as active in the UI (see set_hostname's identical reasoning in
-        system_info.py). Restarting owlbox.service is still required
-        afterwards for player.py to pick up the new audio routing - this
-        only flips the systemd services and the persisted setting."""
-        if role not in multiroom.ROLES:
-            raise ValueError(f"Unbekannte Rolle: {role}")
-        master_host = None
-        if role == "slave":
-            if not master_peer_id:
-                return False, "Keine Hauptbox ausgewählt."
-            peer = repository.get_peer(master_peer_id)
-            if peer is None:
-                return False, "Ausgewählte Hauptbox wurde nicht gefunden - evtl. wurde sie aus der Liste gelöscht."
-            master_host = peer.host
+    def set_multiroom_master_enabled(self, enabled: bool) -> tuple[bool, str]:
+        """The one deliberate admin action for Mehrraum-Wiedergabe: "ist
+        diese Box die Hauptbox". Persists it, then applies the consequence
+        immediately (rather than waiting up to _check_multiroom's own poll
+        interval) by forcing a check right now - matches every other
+        "Speichern" button in this app taking effect right away. Returns
+        (True, "ok") once the resulting role (master, or "off" if disabling
+        this and no other box currently claims to be Hauptbox either) has
+        actually been applied at the OS level, or (False, error_message)
+        if it hasn't - see _check_multiroom for why a failure here doesn't
+        just get silently retried forever without telling anyone."""
+        with self._lock:
+            self._multiroom_master_enabled = enabled
+        repository.set_setting("multiroom_master_enabled", int(enabled))
+        self._last_multiroom_check = None  # force the check below to actually run
+        self._check_multiroom(time.monotonic())
+        with self._lock:
+            error = self._multiroom_last_error
+        return (error is None), (error or "ok")
 
-        ok, message = multiroom.set_role(role, master_host)
-        if not ok:
-            return False, message
+    def _multiroom_candidates(self) -> list[dict]:
+        """Every other OwlBox this one currently knows about, merged from
+        live mDNS discovery (the common case once the `multiroom` install
+        stage is set up - see multiroom.discover_peers) and the manual
+        "Andere OwlBoxen im Netzwerk" fallback list (repository.list_peers -
+        still useful where mDNS doesn't reach, e.g. across an isolated guest
+        WLAN). Deduplicated by host, discovery wins on a clash since it
+        reflects who's actually online right now."""
+        discovered = multiroom.discover_peers()
+        seen = {c["host"] for c in discovered}
+        manual = [{"name": p.name, "host": p.host} for p in repository.list_peers() if p.host not in seen]
+        return discovered + manual
+
+    def _check_multiroom(self, now: float, interval: float = 15.0) -> None:
+        if self._last_multiroom_check is not None and now - self._last_multiroom_check < interval:
+            return
+        self._last_multiroom_check = now
 
         with self._lock:
-            self._multiroom_role = role
-            self._multiroom_master_peer_id = master_peer_id if role == "slave" else None
-            repository.set_setting("multiroom_role", role)
-            repository.set_setting("multiroom_master_peer_id", (master_peer_id if role == "slave" else 0) or 0)
-        return True, "ok"
+            master_enabled = self._multiroom_master_enabled
+
+        ambiguous = False
+        if master_enabled:
+            desired_role, desired_host, desired_name = "master", None, None
+        else:
+            masters = []
+            for candidate in self._multiroom_candidates():
+                status = multiroom.query_peer(candidate["host"])
+                if status and status["master_enabled"]:
+                    masters.append(candidate)
+            if len(masters) == 1:
+                desired_role, desired_host, desired_name = "slave", masters[0]["host"], masters[0]["name"]
+            elif len(masters) == 0:
+                desired_role, desired_host, desired_name = "off", None, None
+            else:
+                # More than one box on the network claims to be the Hauptbox
+                # at once - refuse to just guess which one, sit this out and
+                # surface it instead (see get_state()'s "ambiguous" flag).
+                logger.warning("mehrere Hauptboxen gleichzeitig erkannt: %s", [m["name"] for m in masters])
+                desired_role, desired_host, desired_name = "off", None, None
+                ambiguous = True
+
+        with self._lock:
+            unchanged = (desired_role, desired_host) == (self._multiroom_effective_role, self._multiroom_following_host)
+            self._multiroom_ambiguous = ambiguous
+        if unchanged:
+            return
+
+        ok, message = multiroom.set_role(desired_role, desired_host)
+        with self._lock:
+            if ok:
+                self._multiroom_effective_role = desired_role
+                self._multiroom_following_host = desired_host
+                self._multiroom_following_name = desired_name
+                self._multiroom_last_error = None
+            else:
+                # Deliberately NOT updated to the desired state on failure -
+                # next tick sees the same "changed" mismatch and retries,
+                # instead of silently pretending the old role is still the
+                # (possibly stale) truth.
+                self._multiroom_last_error = message
 
     def _handle_shutdown(self) -> None:
         logger.warning("shutdown requested via encoder long-press")
@@ -1297,19 +1366,16 @@ class Engine:
             alarm_story_id = self._alarm_story_id
             alarm_fade_seconds = self._alarm_fade_seconds
             airplay_active = self._airplay_active
-            multiroom_role = self._multiroom_role
-            multiroom_master_peer_id = self._multiroom_master_peer_id
+            multiroom_master_enabled = self._multiroom_master_enabled
+            multiroom_effective_role = self._multiroom_effective_role
+            multiroom_following_host = self._multiroom_following_host
+            multiroom_following_name = self._multiroom_following_name
+            multiroom_ambiguous = self._multiroom_ambiguous
+            multiroom_error = self._multiroom_last_error
         alarm_story_title = None
         if alarm_story_id is not None:
             alarm_story = repository.get_story(alarm_story_id)
             alarm_story_title = alarm_story.title if alarm_story is not None else None
-        # Cheap local DB lookup, not a network call - a live reachability
-        # check against the peer belongs in the dedicated /api/peers
-        # endpoint only (get_state() is polled every second by every open
-        # page, see the volume-override comment below for why that matters).
-        multiroom_master_peer = None
-        if multiroom_master_peer_id is not None:
-            multiroom_master_peer = repository.get_peer(multiroom_master_peer_id)
         status = self._player.get_status()
         # Overrides player.get_status()'s own placeholder "volume" (see its
         # comment - MpvPlayer used to fill this via a live `amixer sget`
@@ -1421,10 +1487,18 @@ class Engine:
                 "fade_seconds": alarm_fade_seconds,
             },
             "airplay": {"active": airplay_active},
+            # "master_enabled" is deliberately the one flag every other
+            # OwlBox on the network reads (unauthenticated, see
+            # multiroom.query_peer) to decide whether to follow this box -
+            # renaming/nesting it differently would silently break every
+            # other box's auto-follow check, not just this one's own UI.
             "multiroom": {
-                "role": multiroom_role,
-                "master_peer_id": multiroom_master_peer_id,
-                "master_peer_name": multiroom_master_peer.name if multiroom_master_peer else None,
+                "master_enabled": multiroom_master_enabled,
+                "effective_role": multiroom_effective_role,
+                "following_host": multiroom_following_host,
+                "following_name": multiroom_following_name,
+                "ambiguous": multiroom_ambiguous,
+                "error": multiroom_error,
             },
             # A plain sysfs read (see system_info.get_cpu_temperature_celsius),
             # not a subprocess call like the WiFi signal above - cheap enough

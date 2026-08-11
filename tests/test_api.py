@@ -59,6 +59,11 @@ def test_peers_endpoints_require_admin_login(config):
 
 
 def test_peers_crud_over_http(config):
+    # GET /api/peers also always runs a live mDNS discovery pass
+    # (multiroom.discover_peers) - unmocked here on purpose, to also cover
+    # its real fallback behavior: no avahi-browse in this test environment,
+    # which must degrade to "found nothing" (see discover_peers' own
+    # OSError handling) rather than erroring the whole listing out.
     client, engine = _make_client(config)
     _login(client)
 
@@ -75,6 +80,8 @@ def test_peers_crud_over_http(config):
     assert len(listed) == 1
     assert listed[0]["name"] == "Kinderzimmer"
     assert listed[0]["reachable"] is False
+    assert listed[0]["master_enabled"] is False
+    assert listed[0]["discovered"] is False
 
     resp = client.post("/api/peers", json={"name": "", "host": ""})
     assert resp.status_code == 400
@@ -84,24 +91,25 @@ def test_peers_crud_over_http(config):
     assert client.get("/api/peers").get_json() == []
 
 
+def test_peers_endpoint_merges_discovered_boxes(config, monkeypatch):
+    from owlbox import multiroom
+
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: [{"name": "owlbox-kueche", "host": "192.168.1.43"}]
+    )
+    client, engine = _make_client(config)
+    _login(client)
+
+    listed = client.get("/api/peers").get_json()
+    assert len(listed) == 1
+    assert listed[0]["name"] == "owlbox-kueche"
+    assert listed[0]["discovered"] is True
+    assert listed[0]["id"] is None  # nothing to delete - it's not a DB row
+
+
 def test_multiroom_endpoint_requires_admin_login(config):
     client, engine = _make_client(config)
-    assert client.post("/api/multiroom", json={"role": "off"}).status_code == 401
-
-
-def test_multiroom_endpoint_rejects_unknown_role(config):
-    client, engine = _make_client(config)
-    _login(client)
-    resp = client.post("/api/multiroom", json={"role": "banana"})
-    assert resp.status_code == 400
-
-
-def test_multiroom_endpoint_slave_without_master_rejected(config):
-    client, engine = _make_client(config)
-    _login(client)
-    resp = client.post("/api/multiroom", json={"role": "slave"})
-    assert resp.status_code == 400
-    assert "Hauptbox" in resp.get_json()["error"]
+    assert client.post("/api/multiroom", json={"master_enabled": True}).status_code == 401
 
 
 def test_multiroom_endpoint_success_reflects_in_state(config, monkeypatch):
@@ -111,9 +119,22 @@ def test_multiroom_endpoint_success_reflects_in_state(config, monkeypatch):
     client, engine = _make_client(config)
     _login(client)
 
-    resp = client.post("/api/multiroom", json={"role": "master"})
+    resp = client.post("/api/multiroom", json={"master_enabled": True})
     assert resp.status_code == 200
     body = resp.get_json()
     assert body["ok"] is True
-    assert body["multiroom"]["role"] == "master"
-    assert engine.get_state()["multiroom"]["role"] == "master"
+    assert body["multiroom"]["master_enabled"] is True
+    assert body["multiroom"]["effective_role"] == "master"
+    assert engine.get_state()["multiroom"]["master_enabled"] is True
+
+
+def test_multiroom_endpoint_surfaces_os_level_failure(config, monkeypatch):
+    from owlbox import multiroom
+
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (False, "systemctl fehlgeschlagen"))
+    client, engine = _make_client(config)
+    _login(client)
+
+    resp = client.post("/api/multiroom", json={"master_enabled": True})
+    assert resp.status_code == 400
+    assert "systemctl fehlgeschlagen" in resp.get_json()["error"]

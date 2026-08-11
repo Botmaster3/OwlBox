@@ -696,20 +696,29 @@ fi
 # ============================================================ MULTIROOM
 # Optional add-on, deliberately NOT part of "all" (see STAGE parsing above) -
 # synced audio across several OwlBoxen in the same house via Snapcast, see
-# owlbox/multiroom.py's module docstring for the full architecture. Unlike
-# AIRPLAY above, this stage only PREPARES everything (packages, config
-# files, the pipe, the sudoers rules) but does NOT enable/start either
-# service - which one(s) actually run depends on a role ("Aus"/"Hauptbox"/
-# "Slave-Box") chosen later in Einstellungen > Netzwerk, not on anything
-# knowable at install time. Safe/idempotent to re-run.
+# owlbox/multiroom.py's module docstring for the full architecture. Two
+# different activation styles in one stage: the mDNS self-announcement
+# (owlbox-mdns.service) is enabled/started immediately below, since being
+# discoverable has no role to wait for - but snapserver/owlbox-snapclient
+# are only PREPARED here (packages, config files, the pipe, the sudoers
+# rules), never enabled/started, since which one(s) actually run depends on
+# a role only knowable later, via the single "Diese Box ist die Hauptbox"
+# switch in Einstellungen > Netzwerk (every other box then follows that
+# automatically - see Engine._check_multiroom - no per-box role picker at
+# all anymore). Safe/idempotent to re-run.
 if [ "$DO_MULTIROOM" -eq 1 ]; then
-  echo "==> [Multiroom] Installing snapserver + snapclient"
-  # Both packages on every box regardless of which role it'll end up
-  # playing, since the role is chosen at runtime, not install time (a box
-  # could become either, or switch later). Packaged for Debian/Raspberry Pi
-  # OS since roughly Bullseye - not yet confirmed against a real
-  # install on this project's actual target image, see docs/hardware.md.
-  apt-get install -y snapserver snapclient || true
+  echo "==> [Multiroom] Installing snapserver + snapclient + avahi-utils"
+  # snapserver/snapclient on every box regardless of which role it'll end
+  # up playing, since the role is chosen at runtime, not install time (a
+  # box could become either, or switch later - see Einstellungen >
+  # Netzwerk). avahi-utils provides avahi-publish-service/avahi-browse,
+  # the mDNS self-announcement/discovery this stage also sets up below -
+  # avahi-daemon itself (the part <hostname>.local already relies on) is
+  # standard on Raspberry Pi OS, but the CLI tools are a separate package.
+  # All packaged for Debian/Raspberry Pi OS since roughly Bullseye - not
+  # yet confirmed against a real install on this project's actual target
+  # image, see docs/hardware.md.
+  apt-get install -y snapserver snapclient avahi-utils || true
   # The stock snapclient.service (if the package ships/enables one) fights
   # over the same ALSA device and doesn't know about the host-file
   # indirection below - make sure it's not quietly running alongside the
@@ -740,6 +749,16 @@ CONF
   # picker in Einstellungen > Netzwerk (via owlbox/multiroom.py) owns that,
   # exactly like owlbox.service/owlbox-kiosk.service are left to
   # `owlbox-stage` rather than started here.
+
+  echo "==> [Multiroom] Enabling mDNS self-announcement (owlbox-mdns.service)"
+  # Unlike snapserver/owlbox-snapclient above, this one IS enabled/started
+  # immediately - being discoverable has no role/state to wait for, it's
+  # what lets every other box find this one at all (see
+  # owlbox/multiroom.py's discover_peers). Same reasoning as AirPlay's
+  # shairport-sync being enabled right away in its own stage.
+  cp "$INSTALL_DIR/systemd/owlbox-mdns.service" /etc/systemd/system/owlbox-mdns.service
+  systemctl daemon-reload
+  systemctl enable --now owlbox-mdns || true
 
   echo "==> [Multiroom] Creating the audio pipe"
   # Belt-and-braces alongside player.py's own os.mkfifo() at every start
@@ -793,7 +812,7 @@ EOF
     rfid)     echo "    Jetzt testen: sudo owlbox-stage rfid" ;;
     controls) echo "    Jetzt testen: sudo owlbox-stage controls" ;;
     airplay)  echo "    Jetzt testen: auf einem iPhone/iPad/Mac im selben WLAN AirPlay öffnen - \"OwlBox\" sollte als Ziel auftauchen." ;;
-    multiroom) echo "    Jetzt in Einstellungen > Netzwerk auf jeder Box eine Rolle wählen (eine Hauptbox, der Rest Slave-Boxen mit der Hauptbox ausgewählt), danach owlbox.service neu starten." ;;
+    multiroom) echo "    Jetzt auf genau einer Box in Einstellungen > Netzwerk \"Diese Box ist die Hauptbox\" aktivieren, danach owlbox.service neu starten - jede andere Box mit dieser Stufe installiert erkennt das von selbst." ;;
     all)      cat <<'EOF'
     Jetzt Stück für Stück in Betrieb nehmen (jede Stufe einzeln testbar,
     siehe docs/staged-setup.md):
