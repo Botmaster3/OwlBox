@@ -20,12 +20,15 @@ No manual "who is the master" wiring between boxes: every box with the
 `multiroom` install stage set up constantly announces itself on the LAN via
 mDNS (owlbox-mdns.service, a thin wrapper around `avahi-publish-service` -
 reuses the same Avahi that already backs plain <hostname>.local, see
-system_info.py/docs/hardware.md, nothing new to install there). One admin
-action, on any box, flips "Diese Box ist die Hauptbox" on
-(Engine.set_multiroom_master_enabled); every OTHER box discovers who that
-is on its own (discover_peers() + query_peer() below, both plain unauthenticated
-GETs against /api/state - already public, same as the kiosk's own polling -
-no shared secret or login between boxes needed) and applies the matching
+system_info.py/docs/hardware.md, nothing new to install there). The whole
+subsystem defaults to off (multiroom_feature_enabled) - a household that
+doesn't want any of this ticks nothing and pays nothing for it, no LAN
+scanning, no Snapcast. Once turned on somewhere, one admin action, on any
+box, flips "Diese Box ist die Hauptbox" on (Engine.set_multiroom_config);
+every OTHER box with the feature enabled discovers who that is on its own
+(discover_peers() + query_peer() below, both plain unauthenticated GETs
+against /api/state - already public, same as the kiosk's own polling - no
+shared secret or login between boxes needed) and applies the matching
 Slave role by itself, via Engine._check_multiroom's periodic background
 poll. Turn the switch off, or on on a *different* box, and every box -
 including a previous Hauptbox - re-derives the new state the same way

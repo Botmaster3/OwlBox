@@ -508,20 +508,25 @@
 
   <div class="card">
     <h2>Mehrraum-Wiedergabe (Snapcast)</h2>
-    <p class="hint" id="multiroom-status">Lädt…</p>
     <div class="field">
+      <label><input type="checkbox" id="multiroom-feature-checkbox"> Mehrraum-Wiedergabe aktivieren</label>
+    </div>
+    <div id="multiroom-master-field" class="field" hidden>
       <label><input type="checkbox" id="multiroom-master-checkbox"> Diese Box ist die Hauptbox</label>
     </div>
+    <p class="hint" id="multiroom-status">Lädt…</p>
     <button class="btn" id="multiroom-save-btn" type="button">Speichern</button>
     <span id="multiroom-save-status" class="hint"></span>
-    <p class="field-help">Nur auf genau <strong>einer</strong> Box aktivieren - die spielt Geschichten
-      wie gewohnt ab und sendet den Ton synchron mit. Jede andere Box im Netzwerk erkennt das von
-      selbst (kein Schalter dort nötig) und gibt automatisch nur noch deren Ton aus, bis der Schalter
-      hier wieder ausgeht oder auf einer anderen Box gesetzt wird. Nach dem Speichern ist ein
-      Neustart nötig, damit die neue Rolle wirksam wird (Einstellungen &gt; System). Voraussetzung:
-      <span class="mono">sudo ./scripts/install.sh multiroom</span> wurde auf jeder beteiligten Box
-      einmal ausgeführt (siehe OwlBox-Verkabelung.pdf). Noch nicht an echter Mehrgeräte-Hardware
-      verifiziert.</p>
+    <p class="field-help">Standardmäßig aus - solange der obere Schalter aus ist, bleibt diese Box
+      komplett unbeteiligt (keine Netzwerksuche nach anderen Boxen, kein Snapcast). Erst danach lässt
+      sich der Hauptbox-Schalter setzen: nur auf genau <strong>einer</strong> Box aktivieren - die
+      spielt Geschichten wie gewohnt ab und sendet den Ton synchron mit. Jede andere Box im Netzwerk
+      mit aktivierter Mehrraum-Wiedergabe erkennt das von selbst (kein Schalter dort nötig) und gibt
+      automatisch nur noch deren Ton aus, bis der Schalter hier wieder ausgeht oder auf einer anderen
+      Box gesetzt wird. Nach dem Speichern ist ein Neustart nötig, damit die neue Rolle wirksam wird
+      (Einstellungen &gt; System). Voraussetzung: <span class="mono">sudo ./scripts/install.sh
+      multiroom</span> wurde auf jeder beteiligten Box einmal ausgeführt (siehe
+      OwlBox-Verkabelung.pdf). Noch nicht an echter Mehrgeräte-Hardware verifiziert.</p>
   </div>
 
   </div>

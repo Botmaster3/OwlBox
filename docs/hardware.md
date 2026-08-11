@@ -564,20 +564,30 @@ nichts einzutragen, auf keiner der Boxen. Ein manuelles Eintragen per
 Name+Hostname/IP bleibt als Rückfallebene bestehen (z.B. für ein WLAN mit
 Client-Isolation, wo mDNS nicht durchkommt).
 
+**Komplett deaktivierbar:** Die ganze Funktion ist standardmäßig aus
+(auf jeder Box einzeln, wie jedes andere optionale Add-on in dieser App).
+Solange "Mehrraum-Wiedergabe aktivieren" nicht angehakt ist, tut die Box
+nichts dergleichen - keine mDNS-Netzwerksuche, kein Abfragen anderer Boxen,
+kein Snapcast. Wer die Funktion nie nutzen möchte, muss nichts weiter tun.
+
 **Einrichtung:**
 
 1. Auf jeder beteiligten Box: `sudo ./scripts/install.sh multiroom`.
-2. Auf **genau der einen** Box, die den Ton vorgeben soll: Einstellungen >
-   Netzwerk > "Diese Box ist die Hauptbox" aktivieren, speichern,
-   `owlbox.service` neu starten.
+2. Auf jeder beteiligten Box: Einstellungen > Netzwerk > "Mehrraum-Wiedergabe
+   aktivieren" anhaken, speichern.
+3. Auf **genau der einen** Box, die den Ton vorgeben soll: zusätzlich "Diese
+   Box ist die Hauptbox" aktivieren, speichern, `owlbox.service` neu starten.
 
-Das war's - jede andere Box mit installierter `multiroom`-Stufe erkennt
-automatisch (per periodischem `/api/state`-Abruf bei jeder bekannten Box,
-`Engine._check_multiroom`, alle 15s), dass eine Hauptbox aktiv ist, und
-schaltet sich selbst als Slave-Box dazu, ganz ohne eigenen Rollen-Schalter.
-Wird der Schalter wieder ausgeschaltet oder auf eine andere Box verschoben,
-folgen alle automatisch dorthin bzw. fallen in den normalen Einzelbetrieb
-zurück.
+Das war's - jede andere Box mit installierter `multiroom`-Stufe und
+aktivierter Mehrraum-Wiedergabe erkennt automatisch (per periodischem
+`/api/state`-Abruf bei jeder bekannten Box, `Engine._check_multiroom`, alle
+15s), dass eine Hauptbox aktiv ist, und schaltet sich selbst als Slave-Box
+dazu, ganz ohne eigenen Rollen-Schalter. Wird der Hauptbox-Schalter wieder
+ausgeschaltet oder auf eine andere Box verschoben, folgen alle automatisch
+dorthin bzw. fallen in den normalen Einzelbetrieb zurück. Wird die
+Mehrraum-Wiedergabe selbst wieder deaktiviert, schaltet sich diese Box sofort
+komplett ab (auch als Hauptbox, falls sie gerade eine war) und hört auf,
+andere Boxen abzufragen.
 
 **Hauptbox wechseln:** Einfach auf der neuen Box den Haken setzen - die
 alte schaltet sich von selbst wieder aus, kein vorheriges manuelles

@@ -168,15 +168,18 @@ class Engine:
         self._airplay_paused_our_playback = False
 
         # Mehrraum-Wiedergabe (optional OS-level add-on, Snapcast - see
-        # owlbox/multiroom.py and docs/hardware.md). Two things are ever a
+        # owlbox/multiroom.py and docs/hardware.md). Three things are ever a
         # deliberate admin choice, persisted like the alarm settings above:
-        # "ist diese Box die Hauptbox" (master_enabled) and *when* that was
-        # last turned on (master_since - a wall-clock timestamp, since it
-        # has to be comparable against other boxes' own timestamps, not just
-        # this process's monotonic clock). That timestamp is what lets two
-        # boxes both claiming "Hauptbox" resolve automatically instead of
-        # needing a person to remember to switch the old one off by hand:
-        # whichever was turned on most recently wins, the other yields (see
+        # a master on/off for the whole subsystem (feature_enabled - off by
+        # default, same as every other optional add-on in this app), "ist
+        # diese Box die Hauptbox" (master_enabled, meaningless while the
+        # feature itself is off) and *when* that was last turned on
+        # (master_since - a wall-clock timestamp, since it has to be
+        # comparable against other boxes' own timestamps, not just this
+        # process's monotonic clock). That timestamp is what lets two boxes
+        # both claiming "Hauptbox" resolve automatically instead of needing
+        # a person to remember to switch the old one off by hand: whichever
+        # was turned on most recently wins, the other yields (see
         # _check_multiroom) - deterministic, not a guess, and every box can
         # compute the same answer independently from the same public
         # information (no box ever tells another one what to do).
@@ -185,6 +188,7 @@ class Engine:
         # polling known peers (mDNS-discovered + the manual fallback list)
         # via their own public /api/state, same as _wifi_enabled/
         # _hotspot_active above are live rather than persisted.
+        self._multiroom_feature_enabled = bool(repository.get_int_setting("multiroom_feature_enabled", 0))
         self._multiroom_master_enabled = bool(repository.get_int_setting("multiroom_master_enabled", 0))
         raw_master_since = repository.get_setting("multiroom_master_since")
         try:
@@ -248,12 +252,13 @@ class Engine:
     def start(self) -> None:
         # Only "master" vs anything else matters to player.py's audio
         # routing (see _audio_output_args - "off" and "slave" both mean
-        # "straight to the real ALSA device"), so the persisted toggle alone
-        # is enough to know which to pass here - _check_multiroom below
-        # reconciles the actual systemd services against this same value
-        # (or against whichever peer turns out to be the Hauptbox) once the
-        # loop starts, this is just what mpv itself launches with.
-        self._player.start("master" if self._multiroom_master_enabled else "off")
+        # "straight to the real ALSA device"), so the two persisted toggles
+        # alone are enough to know which to pass here - _check_multiroom
+        # below reconciles the actual systemd services against the same
+        # values (or against whichever peer turns out to be the Hauptbox)
+        # once the loop starts, this is just what mpv itself launches with.
+        is_master = self._multiroom_feature_enabled and self._multiroom_master_enabled
+        self._player.start("master" if is_master else "off")
         self._apply_volume(self._volume)
         self._backlight.set_brightness(self._brightness)
         self._thread = threading.Thread(target=self._loop, daemon=True)
@@ -1223,22 +1228,34 @@ class Engine:
 
     # -- Mehrraum-Wiedergabe (Snapcast) --------------------------------------
 
-    def set_multiroom_master_enabled(self, enabled: bool) -> tuple[bool, str]:
-        """The one deliberate admin action for Mehrraum-Wiedergabe: "ist
-        diese Box die Hauptbox". Persists it (and, when turning on, *when* -
-        see __init__'s comment on why that timestamp is what lets two boxes
-        both claiming Hauptbox resolve themselves automatically), then
-        applies the consequence immediately (rather than waiting up to
-        _check_multiroom's own poll interval) by forcing a check right now -
-        matches every other "Speichern" button in this app taking effect
-        right away. Returns (True, "ok") once the resulting role has
-        actually been applied at the OS level, or (False, error_message) if
-        it hasn't - see _check_multiroom for why a failure here doesn't just
-        get silently retried forever without telling anyone."""
+    def set_multiroom_config(self, feature_enabled: bool, master_enabled: bool) -> tuple[bool, str]:
+        """The two deliberate admin actions for Mehrraum-Wiedergabe, saved
+        together: whether the whole subsystem is on at all
+        (feature_enabled - off by default, like every other optional
+        add-on in this app, and the user's explicit request was that it be
+        "komplett deaktivierbar") and, only meaningful while that's on,
+        "ist diese Box die Hauptbox" (master_enabled). If the feature
+        itself is off, master_enabled is forced to False too - there's no
+        such thing as a Hauptbox while Mehrraum-Wiedergabe is disabled, and
+        persisting a stale "yes" here would just resurface confusingly the
+        moment someone re-enables the feature later. Persists both (and,
+        when turning master on, *when* - see __init__'s comment on why that
+        timestamp is what lets two boxes both claiming Hauptbox resolve
+        themselves automatically), then applies the consequence immediately
+        (rather than waiting up to _check_multiroom's own poll interval) by
+        forcing a check right now - matches every other "Speichern" button
+        in this app taking effect right away. Returns (True, "ok") once the
+        resulting role has actually been applied at the OS level, or
+        (False, error_message) if it hasn't - see _check_multiroom for why
+        a failure here doesn't just get silently retried forever without
+        telling anyone."""
+        master_enabled = feature_enabled and master_enabled
         with self._lock:
-            self._multiroom_master_enabled = enabled
-            self._multiroom_master_since = time.time() if enabled else None
-        repository.set_setting("multiroom_master_enabled", int(enabled))
+            self._multiroom_feature_enabled = feature_enabled
+            self._multiroom_master_enabled = master_enabled
+            self._multiroom_master_since = time.time() if master_enabled else None
+        repository.set_setting("multiroom_feature_enabled", int(feature_enabled))
+        repository.set_setting("multiroom_master_enabled", int(master_enabled))
         repository.set_setting("multiroom_master_since", str(self._multiroom_master_since or ""))
         self._last_multiroom_check = None  # force the check below to actually run
         self._check_multiroom(time.monotonic())
@@ -1272,49 +1289,59 @@ class Engine:
         timestamp comparison, not a guess, and every box computes the exact
         same answer independently from the same information, so this always
         converges to exactly one winner without any box ever telling
-        another one what to do."""
+        another one what to do.
+
+        When the feature itself is switched off (multiroom_feature_enabled),
+        none of that discovery/polling happens at all - not even a wasted
+        mDNS scan - the desired role is simply "off", full stop. Households
+        that never want this feature pay nothing for it beyond the throttle
+        check itself."""
         if self._last_multiroom_check is not None and now - self._last_multiroom_check < interval:
             return
         self._last_multiroom_check = now
 
-        own_hostname = socket.gethostname()
         with self._lock:
+            feature_enabled = self._multiroom_feature_enabled
             master_enabled = self._multiroom_master_enabled
             master_since = self._multiroom_master_since
 
-        # (since, hostname, host-to-follow-if-this-wins, display-name) -
-        # "host" is None for self (we don't connect to our own network
-        # address), hostname is the tie-break key when two timestamps ever
-        # land equal (practically never with float epoch time, but keeps
-        # this a total order regardless).
-        candidates = []
-        if master_enabled:
-            candidates.append((master_since or 0.0, own_hostname, None, None))
-        for peer in self._multiroom_candidates():
-            status = multiroom.query_peer(peer["host"])
-            if status and status["master_enabled"]:
-                candidates.append((status.get("master_since") or 0.0, peer["host"], peer["host"], peer["name"]))
-
-        if not candidates:
+        if not feature_enabled:
             desired_role, desired_host, desired_name = "off", None, None
         else:
-            since, hostname, host, name = max(candidates, key=lambda c: (c[0], c[1]))
-            if host is None:
-                desired_role, desired_host, desired_name = "master", None, None
+            own_hostname = socket.gethostname()
+            # (since, hostname, host-to-follow-if-this-wins, display-name) -
+            # "host" is None for self (we don't connect to our own network
+            # address), hostname is the tie-break key when two timestamps
+            # ever land equal (practically never with float epoch time, but
+            # keeps this a total order regardless).
+            candidates = []
+            if master_enabled:
+                candidates.append((master_since or 0.0, own_hostname, None, None))
+            for peer in self._multiroom_candidates():
+                status = multiroom.query_peer(peer["host"])
+                if status and status["master_enabled"]:
+                    candidates.append((status.get("master_since") or 0.0, peer["host"], peer["host"], peer["name"]))
+
+            if not candidates:
+                desired_role, desired_host, desired_name = "off", None, None
             else:
-                desired_role, desired_host, desired_name = "slave", host, name
-                if master_enabled:
-                    # We were the Hauptbox, but a newer one just outranked
-                    # us - yield: turn our own switch back off exactly as
-                    # if an admin had unchecked it, then fall through and
-                    # apply the winning peer's role like any other Slave
-                    # would, all in this same tick.
-                    logger.info("multiroom: yielding Hauptbox-Rolle an %s (neuer aktiviert)", name or host)
-                    with self._lock:
-                        self._multiroom_master_enabled = False
-                        self._multiroom_master_since = None
-                    repository.set_setting("multiroom_master_enabled", 0)
-                    repository.set_setting("multiroom_master_since", "")
+                since, hostname, host, name = max(candidates, key=lambda c: (c[0], c[1]))
+                if host is None:
+                    desired_role, desired_host, desired_name = "master", None, None
+                else:
+                    desired_role, desired_host, desired_name = "slave", host, name
+                    if master_enabled:
+                        # We were the Hauptbox, but a newer one just outranked
+                        # us - yield: turn our own switch back off exactly as
+                        # if an admin had unchecked it, then fall through and
+                        # apply the winning peer's role like any other Slave
+                        # would, all in this same tick.
+                        logger.info("multiroom: yielding Hauptbox-Rolle an %s (neuer aktiviert)", name or host)
+                        with self._lock:
+                            self._multiroom_master_enabled = False
+                            self._multiroom_master_since = None
+                        repository.set_setting("multiroom_master_enabled", 0)
+                        repository.set_setting("multiroom_master_since", "")
 
         with self._lock:
             unchanged = (desired_role, desired_host) == (self._multiroom_effective_role, self._multiroom_following_host)
@@ -1406,6 +1433,7 @@ class Engine:
             alarm_story_id = self._alarm_story_id
             alarm_fade_seconds = self._alarm_fade_seconds
             airplay_active = self._airplay_active
+            multiroom_feature_enabled = self._multiroom_feature_enabled
             multiroom_master_enabled = self._multiroom_master_enabled
             multiroom_master_since = self._multiroom_master_since
             multiroom_effective_role = self._multiroom_effective_role
@@ -1534,6 +1562,7 @@ class Engine:
             # differently would silently break every other box's auto-follow
             # check, not just this one's own UI.
             "multiroom": {
+                "feature_enabled": multiroom_feature_enabled,
                 "master_enabled": multiroom_master_enabled,
                 "master_since": multiroom_master_since,
                 "effective_role": multiroom_effective_role,

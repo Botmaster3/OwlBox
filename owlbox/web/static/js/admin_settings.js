@@ -1077,30 +1077,42 @@
   });
 
   // -- Mehrraum-Wiedergabe (Snapcast) -----------------------------------------
-  // Just the one switch ("ist diese Box die Hauptbox") - every other box
-  // figures out on its own, via the peer list above, whether to follow it
-  // (see Engine._check_multiroom). Nothing to pick here for a Slave-Box.
+  // Two switches: a master on/off for the whole subsystem (feature_enabled -
+  // lets a household that doesn't want this at all turn it off completely,
+  // no network scanning, no Snapcast) and, only meaningful while that's on,
+  // "ist diese Box die Hauptbox". Every other box figures out on its own, via
+  // the peer list above, whether to follow it (see Engine._check_multiroom).
+  // Nothing to pick here for a Slave-Box.
 
+  const multiroomFeatureCheckbox = document.getElementById("multiroom-feature-checkbox");
   const multiroomMasterCheckbox = document.getElementById("multiroom-master-checkbox");
+  const multiroomMasterField = document.getElementById("multiroom-master-field");
   const multiroomStatus = document.getElementById("multiroom-status");
   const multiroomSaveStatus = document.getElementById("multiroom-save-status");
 
+  function updateMultiroomFieldVisibility() {
+    multiroomMasterField.hidden = !multiroomFeatureCheckbox.checked;
+  }
+  multiroomFeatureCheckbox.addEventListener("change", updateMultiroomFieldVisibility);
+
   function renderMultiroomStatus(multiroom) {
-    // master_enabled alone (not effective_role) decides this branch - the
-    // server always clears master_enabled in the very same step as handing
-    // the role to a newer peer (see Engine._check_multiroom's yield logic),
-    // so "I asked to be Hauptbox" and "a newer one outranked me" can never
-    // both be true here at once. When master_enabled is true but
-    // effective_role isn't "master" yet, that's purely an OS-level
+    // master_enabled alone (not effective_role) decides the "Hauptbox"
+    // branch - the server always clears master_enabled in the very same
+    // step as handing the role to a newer peer (see Engine._check_multiroom's
+    // yield logic), so "I asked to be Hauptbox" and "a newer one outranked
+    // me" can never both be true here at once. When master_enabled is true
+    // but effective_role isn't "master" yet, that's purely an OS-level
     // application failure (systemctl, ...) - still "Diese Box ist die
     // Hauptbox" is the honest description of what was actually asked for,
     // with the reason it hasn't taken effect appended below.
-    if (multiroom.master_enabled) {
+    if (!multiroom.feature_enabled) {
+      multiroomStatus.textContent = "Mehrraum-Wiedergabe ist deaktiviert.";
+    } else if (multiroom.master_enabled) {
       multiroomStatus.textContent = "Diese Box ist die Hauptbox.";
     } else if (multiroom.effective_role === "slave" && multiroom.following_name) {
       multiroomStatus.textContent = `Folgt automatisch der Hauptbox „${multiroom.following_name}“.`;
     } else {
-      multiroomStatus.textContent = "Mehrraum-Wiedergabe ist aus (keine Hauptbox im Netzwerk gefunden).";
+      multiroomStatus.textContent = "Mehrraum-Wiedergabe ist aktiv (keine Hauptbox im Netzwerk gefunden).";
     }
     if (multiroom.error) {
       multiroomStatus.textContent += ` (${multiroom.error})`;
@@ -1108,7 +1120,9 @@
   }
 
   function applyMultiroomState(multiroom) {
+    multiroomFeatureCheckbox.checked = multiroom.feature_enabled;
     multiroomMasterCheckbox.checked = multiroom.master_enabled;
+    updateMultiroomFieldVisibility();
     renderMultiroomStatus(multiroom);
   }
 
@@ -1118,9 +1132,12 @@
       const result = await api("/api/multiroom", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ master_enabled: multiroomMasterCheckbox.checked }),
+        body: JSON.stringify({
+          feature_enabled: multiroomFeatureCheckbox.checked,
+          master_enabled: multiroomMasterCheckbox.checked,
+        }),
       });
-      renderMultiroomStatus(result.multiroom);
+      applyMultiroomState(result.multiroom);
       multiroomSaveStatus.textContent = "Gespeichert - für volle Wirkung jetzt neu starten (Einstellungen > System).";
     } catch (err) {
       multiroomSaveStatus.textContent = err.message;

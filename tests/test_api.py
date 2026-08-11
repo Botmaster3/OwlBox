@@ -109,7 +109,7 @@ def test_peers_endpoint_merges_discovered_boxes(config, monkeypatch):
 
 def test_multiroom_endpoint_requires_admin_login(config):
     client, engine = _make_client(config)
-    assert client.post("/api/multiroom", json={"master_enabled": True}).status_code == 401
+    assert client.post("/api/multiroom", json={"feature_enabled": True, "master_enabled": True}).status_code == 401
 
 
 def test_multiroom_endpoint_success_reflects_in_state(config, monkeypatch):
@@ -119,10 +119,11 @@ def test_multiroom_endpoint_success_reflects_in_state(config, monkeypatch):
     client, engine = _make_client(config)
     _login(client)
 
-    resp = client.post("/api/multiroom", json={"master_enabled": True})
+    resp = client.post("/api/multiroom", json={"feature_enabled": True, "master_enabled": True})
     assert resp.status_code == 200
     body = resp.get_json()
     assert body["ok"] is True
+    assert body["multiroom"]["feature_enabled"] is True
     assert body["multiroom"]["master_enabled"] is True
     assert body["multiroom"]["effective_role"] == "master"
     assert engine.get_state()["multiroom"]["master_enabled"] is True
@@ -135,6 +136,21 @@ def test_multiroom_endpoint_surfaces_os_level_failure(config, monkeypatch):
     client, engine = _make_client(config)
     _login(client)
 
-    resp = client.post("/api/multiroom", json={"master_enabled": True})
+    resp = client.post("/api/multiroom", json={"feature_enabled": True, "master_enabled": True})
     assert resp.status_code == 400
     assert "systemctl fehlgeschlagen" in resp.get_json()["error"]
+
+
+def test_multiroom_endpoint_feature_disabled_forces_master_off(config, monkeypatch):
+    from owlbox import multiroom
+
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
+    client, engine = _make_client(config)
+    _login(client)
+
+    resp = client.post("/api/multiroom", json={"feature_enabled": False, "master_enabled": True})
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["multiroom"]["feature_enabled"] is False
+    assert body["multiroom"]["master_enabled"] is False
+    assert body["multiroom"]["effective_role"] == "off"

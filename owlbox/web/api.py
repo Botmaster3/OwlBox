@@ -1127,8 +1127,9 @@ def delete_peer(peer_id):
 @admin_required
 def set_multiroom():
     data = request.get_json(silent=True) or {}
-    enabled = bool(data.get("master_enabled"))
-    ok, message = _engine().set_multiroom_master_enabled(enabled)
+    feature_enabled = bool(data.get("feature_enabled"))
+    master_enabled = bool(data.get("master_enabled"))
+    ok, message = _engine().set_multiroom_config(feature_enabled, master_enabled)
     if not ok:
         return jsonify({"ok": False, "error": message}), 400
     return jsonify({"ok": True, "multiroom": _engine().get_state()["multiroom"]})
