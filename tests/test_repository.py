@@ -551,3 +551,26 @@ def test_quiz_items_crud_and_ordering(config):
     assert [item.image_filename for item in repository.list_quiz_items()] == ["dog.png"]
 
     assert repository.delete_quiz_item(999999) is None
+
+
+def test_peers_crud_and_alphabetical_ordering(config):
+    assert repository.list_peers() == []
+
+    # Added out of alphabetical order on purpose - list_peers() sorts by
+    # name, not creation order (unlike game_images/sound_clips/quiz_items,
+    # which are deliberately upload-order - peers has no such "order they
+    # were added" meaning worth preserving).
+    wohnzimmer = repository.create_peer("Wohnzimmer", "owlbox-wohnzimmer.local")
+    kinderzimmer = repository.create_peer("Kinderzimmer", "owlbox-kinderzimmer.local")
+
+    peers = repository.list_peers()
+    assert [p.name for p in peers] == ["Kinderzimmer", "Wohnzimmer"]
+    assert peers[0].host == "owlbox-kinderzimmer.local"
+
+    fetched = repository.get_peer(wohnzimmer.id)
+    assert fetched.name == "Wohnzimmer"
+    assert repository.get_peer(999999) is None
+
+    assert repository.delete_peer(kinderzimmer.id) is True
+    assert [p.name for p in repository.list_peers()] == ["Wohnzimmer"]
+    assert repository.delete_peer(999999) is False

@@ -139,3 +139,18 @@ CREATE TABLE IF NOT EXISTS quiz_items (
     position INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Other OwlBoxen this box knows about on the same network - manually
+-- registered (no mDNS-SD auto-discovery, see owlbox/multiroom.py), used both
+-- for the plain "andere Boxen"-links list in Einstellungen > Netzwerk and,
+-- when this box is a Mehrraum-Slave, as the source of which peer's host to
+-- point its snapclient at (multiroom_master_peer_id in `settings` references
+-- this table's id - no FK constraint since the referenced peer may since
+-- have been deleted, handled explicitly in multiroom.py rather than at the
+-- DB level).
+CREATE TABLE IF NOT EXISTS peers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    host TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

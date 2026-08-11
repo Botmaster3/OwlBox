@@ -1,0 +1,41 @@
+[Unit]
+Description=OwlBox Mehrraum-Wiedergabe (Snapcast client)
+# Every box that makes sound while a Mehrraum-Rolle is active runs this -
+# including the Hauptbox itself, listening to its own relayed stream via
+# 127.0.0.1 exactly like every Slave-Box listens to the Hauptbox's real
+# address (see owlbox/multiroom.py's module docstring for the full
+# architecture). Not part of "all"/the four mandatory hardware stages -
+# only installed/enabled via `sudo ./scripts/install.sh multiroom` and only
+# actually started once a role is chosen in Einstellungen > Netzwerk.
+After=network-online.target sound.target owlbox.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=owlbox
+Group=owlbox
+# The host to connect to is a plain text file the owlbox user writes
+# directly (see multiroom.HOST_FILE_PATH/set_role) - no root/sudo needed
+# for that part, only for (re)starting this unit itself. "127.0.0.1" is
+# what a Hauptbox writes for itself; falls back to it if the file is
+# missing entirely (e.g. right after the multiroom install stage, before
+# any role has ever been set).
+#
+# --mixer none: OwlBox already owns volume control end-to-end via its own
+# hardware ALSA mixer writes (see player.py's AlsaMixer) - snapclient must
+# not also apply its own volume scaling on top of that, or the two would
+# fight over what "the" volume actually is. --soundcard matches this
+# project's standard audio.alsa_device (config.example.yaml) - update this
+# line too if that's ever changed for non-standard hardware.
+#
+# Neither the exact snapclient CLI flags below nor real cross-device audio
+# sync have been exercised against real Snapcast/real hardware yet - see
+# docs/hardware.md's "Mehrraum-Wiedergabe" section.
+ExecStart=/bin/sh -c 'exec snapclient --host "$(cat /tmp/owlbox-multiroom-host.txt 2>/dev/null || echo 127.0.0.1)" --soundcard hw:0,0 --mixer none'
+Restart=on-failure
+RestartSec=3
+
+SupplementaryGroups=audio
+
+[Install]
+WantedBy=multi-user.target

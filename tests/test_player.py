@@ -98,3 +98,50 @@ def test_mpv_player_disables_auto_mute_on_the_configured_card(config, monkeypatc
     player._disable_auto_mute()
 
     assert calls == [["amixer", "-c", "2", "sset", "Auto Mute", "off"]]
+
+
+# -- Mehrraum-Wiedergabe audio routing ---------------------------------------
+
+
+def test_audio_output_args_default_role_uses_real_alsa_device(config):
+    # "off" and "slave" both take this branch (see _audio_output_args'
+    # comment) - a Slave box's own mpv never has to feed anyone else.
+    player = MpvPlayer(config)
+    assert player._audio_output_args("off") == [f"--audio-device=alsa/{config.audio.alsa_device}"]
+    assert player._audio_output_args("slave") == [f"--audio-device=alsa/{config.audio.alsa_device}"]
+
+
+def test_audio_output_args_master_role_routes_through_the_fifo(config, monkeypatch):
+    from owlbox import multiroom
+
+    monkeypatch.setattr("owlbox.player.os.mkfifo", lambda path: None)
+    player = MpvPlayer(config)
+    args = player._audio_output_args("master")
+    assert "--ao=pcm" in args
+    assert f"--ao-pcm-file={multiroom.FIFO_PATH}" in args
+    assert "--ao-pcm-waveheader=no" in args
+    # Fixed format so it matches snapserver.conf's declared sampleformat
+    # exactly (see scripts/install.sh's multiroom stage) - mpv resamples
+    # whatever the source file actually is to this on its own.
+    assert "--audio-samplerate=48000" in args
+
+
+def test_audio_output_args_master_role_creates_the_fifo_if_missing(config, monkeypatch):
+    from owlbox import multiroom
+
+    calls = []
+    monkeypatch.setattr("owlbox.player.os.mkfifo", lambda path: calls.append(path))
+    player = MpvPlayer(config)
+    player._audio_output_args("master")
+    assert calls == [multiroom.FIFO_PATH]
+
+
+def test_audio_output_args_master_role_tolerates_fifo_already_existing(config, monkeypatch):
+    def raise_exists(path):
+        raise FileExistsError()
+
+    monkeypatch.setattr("owlbox.player.os.mkfifo", raise_exists)
+    player = MpvPlayer(config)
+    # Must not raise - a FIFO surviving from a previous run is the expected,
+    # common case, not an error.
+    player._audio_output_args("master")

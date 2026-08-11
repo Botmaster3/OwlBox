@@ -680,3 +680,40 @@ def delete_quiz_item(item_id: int) -> Optional[tuple[str, str]]:
     with write_cursor() as cur:
         cur.execute("DELETE FROM quiz_items WHERE id = ?", (item_id,))
     return (row["image_filename"], row["sound_filename"])
+
+
+# -- peers (other OwlBoxen on the network, see owlbox/multiroom.py) --------
+
+
+@dataclass
+class Peer:
+    id: int
+    name: str
+    host: str
+    created_at: str
+
+
+def list_peers() -> list[Peer]:
+    rows = get_connection().execute("SELECT * FROM peers ORDER BY name COLLATE NOCASE ASC").fetchall()
+    return [Peer(id=r["id"], name=r["name"], host=r["host"], created_at=r["created_at"]) for r in rows]
+
+
+def get_peer(peer_id: int) -> Optional[Peer]:
+    row = get_connection().execute("SELECT * FROM peers WHERE id = ?", (peer_id,)).fetchone()
+    return Peer(id=row["id"], name=row["name"], host=row["host"], created_at=row["created_at"]) if row else None
+
+
+def create_peer(name: str, host: str) -> Peer:
+    with write_cursor() as cur:
+        cur.execute("INSERT INTO peers (name, host) VALUES (?, ?)", (name, host))
+        peer_id = cur.lastrowid
+    return get_peer(peer_id)
+
+
+def delete_peer(peer_id: int) -> bool:
+    conn = get_connection()
+    exists = conn.execute("SELECT 1 FROM peers WHERE id = ?", (peer_id,)).fetchone() is not None
+    if exists:
+        with write_cursor() as cur:
+            cur.execute("DELETE FROM peers WHERE id = ?", (peer_id,))
+    return exists

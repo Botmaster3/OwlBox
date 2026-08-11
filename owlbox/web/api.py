@@ -12,7 +12,7 @@ from pathlib import Path
 from flask import Blueprint, after_this_request, current_app, jsonify, request, send_file, session
 from werkzeug.utils import secure_filename
 
-from .. import network, repository, system_info
+from .. import multiroom, network, repository, system_info
 from ..db import backup_to
 from ..engine import FUNCTION_ACTION_VALUES
 from ..media_utils import is_allowed_audio, is_allowed_image, probe_audio
@@ -1058,3 +1058,62 @@ def airplay_session_end():
         return jsonify({"error": "forbidden"}), 403
     _engine().airplay_session_ended()
     return jsonify({"ok": True})
+
+
+# -- Mehrraum-Wiedergabe (Snapcast, optional OS-level add-on) ---------------
+# See owlbox/multiroom.py's module docstring for the full architecture.
+
+
+def _peer_to_dict(peer: repository.Peer, *, check_reachable: bool) -> dict:
+    d = {"id": peer.id, "name": peer.name, "host": peer.host}
+    if check_reachable:
+        # Only ever called from GET /api/peers below (an explicit page-load
+        # fetch, not the once-a-second /api/state poll) - see get_state()'s
+        # comment on why a network call has no business in there.
+        d["reachable"] = multiroom.check_peer_reachable(peer.host)
+    return d
+
+
+@api_bp.route("/peers", methods=["GET"])
+@admin_required
+def list_peers():
+    return jsonify([_peer_to_dict(p, check_reachable=True) for p in repository.list_peers()])
+
+
+@api_bp.route("/peers", methods=["POST"])
+@admin_required
+def create_peer():
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "")).strip()
+    host = str(data.get("host", "")).strip()
+    if not name or not host:
+        return jsonify({"error": "Name und Host/IP werden benötigt"}), 400
+    peer = repository.create_peer(name, host)
+    return jsonify(_peer_to_dict(peer, check_reachable=False))
+
+
+@api_bp.route("/peers/<int:peer_id>", methods=["DELETE"])
+@admin_required
+def delete_peer(peer_id):
+    if not repository.delete_peer(peer_id):
+        return jsonify({"error": "not found"}), 404
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/multiroom", methods=["POST"])
+@admin_required
+def set_multiroom():
+    data = request.get_json(silent=True) or {}
+    role = str(data.get("role", "off"))
+    raw_peer_id = data.get("master_peer_id")
+    try:
+        master_peer_id = int(raw_peer_id) if raw_peer_id else None
+    except (TypeError, ValueError):
+        return jsonify({"error": "master_peer_id must be an integer"}), 400
+    try:
+        ok, message = _engine().set_multiroom(role, master_peer_id)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    if not ok:
+        return jsonify({"ok": False, "error": message}), 400
+    return jsonify({"ok": True, "multiroom": _engine().get_state()["multiroom"]})

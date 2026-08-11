@@ -513,6 +513,83 @@ richtigen Moment, kein hörbares Überlappen) wurden bisher an einem echten
 Gerät gegengeprüft, nur die OwlBox-eigene Seite (Engine-Methoden, API-
 Endpunkte, Kiosk-Abzeichen) über die Testsuite bzw. den Simulationsmodus.
 
+## Mehrraum-Wiedergabe (optional, Snapcast)
+
+Mehrere OwlBoxen im selben Haus/WLAN können denselben Ton synchron
+wiedergeben - eine Box ist die **Hauptbox**, alle anderen **Slave-Boxen**
+geben nur deren Ton aus. Löst das über [Snapcast](https://github.com/badaix/snapcast),
+dasselbe "auf ein bewährtes, dafür gebautes externes Tool setzen statt
+selbst ein Sync-Protokoll erfinden" wie bei AirPlay/shairport-sync oben.
+
+**Architektur:** Die Hauptbox schreibt ihren Ton statt direkt auf die
+HiFiBerry-ALSA-Karte in eine benannte Pipe (`/tmp/owlbox-multiroom.fifo`,
+siehe `owlbox/player.py`s `_audio_output_args` - nur wenn eine Rolle aktiv
+ist, der Standard-Ein-Box-Betrieb bleibt komplett unverändert). `snapserver`
+liest diese Pipe und verteilt den Ton synchron an alle verbundenen
+`snapclient`-Instanzen. **Jede Box, die tatsächlich Ton macht - die
+Hauptbox eingeschlossen** - läuft dabei selbst als `snapclient`
+(`owlbox-snapclient.service`, siehe `systemd/owlbox-snapclient.service`):
+die Hauptbox hört ihren eigenen weitergereichten Stream über `127.0.0.1`
+genauso wie jede Slave-Box den echten Netzwerknamen der Hauptbox. Welchen
+Host der eigene `snapclient` ansteuert, steht in einer einfachen Textdatei
+(`/tmp/owlbox-multiroom-host.txt`), die die App selbst schreibt (kein
+sudo nötig) - nur das (Neu-)Starten des systemd-Dienstes selbst braucht
+die passwortlose sudo-Regel aus `scripts/install.sh`.
+
+**Installation:**
+
+```bash
+sudo ./scripts/install.sh multiroom
+```
+
+Installiert `snapserver`+`snapclient`, schreibt `/etc/snapserver.conf` (Pipe-
+Quelle, `sampleformat=48000:16:2` - muss exakt zu `player.py`s eigener
+`--audio-samplerate`/`--audio-channels`/`--audio-format` passen, beide
+Seiten sind dieses Projekts eigener Code), richtet `owlbox-snapclient.service`
+ein und legt die Pipe an. **Aktiviert dabei bewusst noch nichts** - anders
+als bei AirPlay gibt es hier eine echte Rollenwahl (Aus/Hauptbox/Slave-Box),
+die erst in Einstellungen > Netzwerk getroffen wird.
+
+**Einrichtung:**
+
+1. Auf jeder Box: `sudo ./scripts/install.sh multiroom`, dann in
+   Einstellungen > Netzwerk unter "Andere OwlBoxen im Netzwerk" die
+   jeweils anderen Boxen eintragen (Name + Hostname/IP - siehe
+   Einstellungen > System > "Gerätename" für den eigenen Hostnamen jeder
+   Box).
+2. Auf der Box, die die Hauptbox werden soll: Rolle "Hauptbox" wählen,
+   speichern, `owlbox.service` neu starten.
+3. Auf jeder Slave-Box: Rolle "Slave-Box" wählen, aus der zuvor
+   eingetragenen Liste die Hauptbox auswählen, speichern, neu starten.
+
+Ein Klick auf "Öffnen" neben einem eingetragenen Peer wechselt direkt in
+dessen Verwaltungsoberfläche (`http://<host>:5000/admin`) - praktisch, um
+mehrere Boxen zu verwalten, ohne sich jeden Hostnamen einzeln zu merken.
+Der grüne/graue Punkt davor ist ein kurzer Erreichbarkeits-Check beim Laden
+der Seite, kein Dauer-Polling.
+
+**Lautstärke/Hinweistöne:** Die Hauptbox steuert Lautstärke weiterhin über
+den echten Hardware-Mixer (`amixer`, siehe `player.py`s `AlsaMixer`) -
+unverändert, unabhängig davon, ob mpv gerade in die Pipe oder direkt auf
+die Karte schreibt. `owlbox-snapclient.service` läuft deshalb explizit mit
+`--mixer none`, damit Snapcast keine eigene Lautstärkeregelung obendrauf
+legt. Hinweistöne (`feedback.play_chime`) laufen weiterhin über `aplay`
+direkt auf die Karte - kollidiert das mit dem lokalen `snapclient`, der
+gerade dieselbe Karte offen hält (kein dmix), wird der Chime übersprungen
+und als WARNING geloggt (siehe `owlbox/feedback.py`), exakt dasselbe
+bekannte Verhalten wie beim AirPlay-Ducking oben - keine neue Fehlerklasse.
+
+**Noch nicht an echter Mehrgeräte-Hardware verifiziert** - deutlich mehr
+noch als bei AirPlay: weder die `snapserver`/`snapclient`-Paketinstallation,
+noch die genauen Kommandozeilenflags in `systemd/owlbox-snapclient.service`,
+noch (am wichtigsten) die tatsächliche Sample-genaue Synchronisation über
+mehrere echte Geräte hinweg wurden bisher getestet - nur die OwlBox-eigene
+Seite (Rollenauswahl, Peer-Verzeichnis, Persistenz, Audio-Routing-Logik in
+`player.py`) über die Testsuite und den Simulationsmodus. Vor dem
+Erstaufbau lohnt sich ein Blick in die Snapcast-eigene Dokumentation, um
+die hier getroffenen Annahmen (Paketnamen, `snapserver.conf`-Syntax,
+`snapclient`-Flags) gegenzuprüfen.
+
 ## RC522 RFID-Leser (Hardware-SPI0)
 
 Der RC522 hängt an SPI0, dem Hardware-SPI-Bus des Pi (`/dev/spidev0.0`,

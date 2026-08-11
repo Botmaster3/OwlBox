@@ -483,6 +483,52 @@
     <div id="wifi-known-list"></div>
   </div>
 
+  <div class="card">
+    <h2>Andere OwlBoxen im Netzwerk</h2>
+    <p class="hint">Für mehrere Boxen im selben Haus/WLAN - einmal eingetragen, per Klick direkt in
+      die Verwaltung der jeweils anderen Box wechseln, ohne Hostname/IP jedes Mal neu einzutippen.</p>
+    <ul id="peer-list" class="peer-list"></ul>
+    <div class="field">
+      <label for="peer-name-input">Name</label>
+      <input type="text" id="peer-name-input" placeholder="z.B. Kinderzimmer">
+    </div>
+    <div class="field">
+      <label for="peer-host-input">Hostname oder IP</label>
+      <input type="text" id="peer-host-input" placeholder="z.B. owlbox-kinderzimmer.local">
+    </div>
+    <button class="btn secondary" id="peer-add-btn" type="button">Hinzufügen</button>
+    <span id="peer-status" class="hint"></span>
+    <p class="field-help">Der Hostname jeder Box lässt sich unter Einstellungen &gt; System &gt;
+      „Gerätename“ ablesen bzw. ändern. Der grüne/graue Punkt zeigt, ob die andere Box gerade
+      erreichbar ist (kurzer Verbindungsversuch beim Laden dieser Seite).</p>
+  </div>
+
+  <div class="card">
+    <h2>Mehrraum-Wiedergabe (Snapcast)</h2>
+    <p class="hint" id="multiroom-status">Lädt…</p>
+    <div class="field">
+      <label for="multiroom-role-select">Rolle dieser Box</label>
+      <select id="multiroom-role-select">
+        <option value="off">Aus</option>
+        <option value="master">Hauptbox</option>
+        <option value="slave">Slave-Box</option>
+      </select>
+    </div>
+    <div class="field" id="multiroom-master-field" hidden>
+      <label for="multiroom-master-select">Hauptbox</label>
+      <select id="multiroom-master-select"></select>
+      <p class="field-help">Muss zuerst oben unter „Andere OwlBoxen im Netzwerk“ eingetragen sein.</p>
+    </div>
+    <button class="btn" id="multiroom-save-btn" type="button">Speichern</button>
+    <span id="multiroom-save-status" class="hint"></span>
+    <p class="field-help">Hauptbox: spielt Geschichten wie gewohnt ab und sendet den Ton synchron an
+      alle Slave-Boxen weiter. Slave-Box: gibt nur den Ton der gewählten Hauptbox aus, die eigene
+      Chip-/Tastenbedienung bleibt davon unberührt. Nach dem Speichern ist ein Neustart nötig, damit
+      die neue Rolle wirksam wird (Einstellungen &gt; System). Voraussetzung: <span class="mono">sudo
+      ./scripts/install.sh multiroom</span> wurde einmal ausgeführt (siehe OwlBox-Verkabelung.pdf).
+      Noch nicht an echter Mehrgeräte-Hardware verifiziert.</p>
+  </div>
+
   </div>
 
   <div class="settings-panel" data-panel="system" hidden>

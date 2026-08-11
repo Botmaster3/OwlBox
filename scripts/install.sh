@@ -36,6 +36,11 @@
 #                                         # AirPlay-Empfang (shairport-sync),
 #                                         # siehe AIRPLAY-Stufe weiter unten
 #
+#   sudo ./scripts/install.sh multiroom  # optional, NICHT in "all" enthalten:
+#                                         # Mehrraum-Wiedergabe (Snapcast) mit
+#                                         # anderen OwlBoxen, siehe MULTIROOM-
+#                                         # Stufe weiter unten
+#
 # Every stage always applies the same small BASE step first (system user,
 # Python venv, app code, systemd unit files, sudoers, boot-speed trims) -
 # cheap and fully idempotent, so it's safe as a shared prerequisite no matter
@@ -53,29 +58,31 @@
 set -euo pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
-  echo "Please run as root: sudo ./scripts/install.sh [sound|display|rfid|controls|airplay]" >&2
+  echo "Please run as root: sudo ./scripts/install.sh [sound|display|rfid|controls|airplay|multiroom]" >&2
   exit 1
 fi
 
 STAGE="${1:-all}"
 case "$STAGE" in
-  all|sound|display|rfid|controls|airplay) ;;
+  all|sound|display|rfid|controls|airplay|multiroom) ;;
   *)
-    echo "Unbekannte Stufe: $STAGE (erlaubt: sound display rfid controls airplay, oder ohne Argument = alle)" >&2
+    echo "Unbekannte Stufe: $STAGE (erlaubt: sound display rfid controls airplay multiroom, oder ohne Argument = alle)" >&2
     exit 1
     ;;
 esac
-# airplay is deliberately NOT part of "all" - unlike the other four, it's an
-# optional add-on rather than core hardware every box needs (see AIRPLAY
-# stage below), so it only ever runs when explicitly requested by name.
-DO_SOUND=0; DO_DISPLAY=0; DO_RFID=0; DO_CONTROLS=0; DO_AIRPLAY=0
+# airplay/multiroom are deliberately NOT part of "all" - unlike the other
+# four, they're optional add-ons rather than core hardware every box needs
+# (see the AIRPLAY/MULTIROOM stages below), so they only ever run when
+# explicitly requested by name.
+DO_SOUND=0; DO_DISPLAY=0; DO_RFID=0; DO_CONTROLS=0; DO_AIRPLAY=0; DO_MULTIROOM=0
 case "$STAGE" in
-  all)      DO_SOUND=1; DO_DISPLAY=1; DO_RFID=1; DO_CONTROLS=1 ;;
-  sound)    DO_SOUND=1 ;;
-  display)  DO_DISPLAY=1 ;;
-  rfid)     DO_RFID=1 ;;
-  controls) DO_CONTROLS=1 ;;
-  airplay)  DO_AIRPLAY=1 ;;
+  all)       DO_SOUND=1; DO_DISPLAY=1; DO_RFID=1; DO_CONTROLS=1 ;;
+  sound)     DO_SOUND=1 ;;
+  display)   DO_DISPLAY=1 ;;
+  rfid)      DO_RFID=1 ;;
+  controls)  DO_CONTROLS=1 ;;
+  airplay)   DO_AIRPLAY=1 ;;
+  multiroom) DO_MULTIROOM=1 ;;
 esac
 
 # readlink -f matters here: this script can be reached through the
@@ -309,25 +316,26 @@ echo "==> [Basis] Granting passwordless sudo for shutdown/WLAN/service-restart/h
 # owlbox.service runs as this user with no terminal attached, so sudo can
 # never prompt for a password here. The Update-Button (Info-Seite), WLAN
 # Ein/Aus/Hotspot (Einstellungen), "Pi neu starten"/"herunterfahren"
-# (Einstellungen bzw. Funktions-Chip), and the Gerätename-Feld (Einstellungen
+# (Einstellungen bzw. Funktions-Chip), the Gerätename-Feld (Einstellungen
 # > System, so several OwlBoxen in the same house/WLAN stay distinguishable -
-# see system_info.set_hostname) all shell out to sudo from inside
+# see system_info.set_hostname), and the Mehrraum-Rollenauswahl (Einstellungen
+# > Netzwerk - see owlbox/multiroom.py) all shell out to sudo from inside
 # owlbox.service. sudo matches the *entire* command line it's given, not
 # just the program name - these rules must stay in exact sync with what
-# owlbox/update.py, owlbox/network.py, owlbox/engine.py and
-# owlbox/system_info.py actually invoke (confirmed on real hardware: a stray
-# extra flag like --no-block that isn't also in the sudoers rule makes sudo
-# fall back to a password prompt, which then just fails outright). The
-# hostname rule's trailing "*" only ever matches a single already-normalized
-# word (see normalize_hostname - lowercase letters/digits/hyphens, no spaces),
-# never arbitrary shell content, since subprocess.run's argv list (not a
-# shell string) is what sudo actually receives. Written to a temp file and
-# syntax-checked with visudo before being installed - a broken file in
-# sudoers.d can lock out sudo entirely, so it's never written to
-# /etc/sudoers.d directly.
+# owlbox/update.py, owlbox/network.py, owlbox/engine.py, owlbox/system_info.py
+# and owlbox/multiroom.py actually invoke (confirmed on real hardware: a
+# stray extra flag like --no-block that isn't also in the sudoers rule
+# makes sudo fall back to a password prompt, which then just fails
+# outright). The hostname rule's trailing "*" only ever matches a single
+# already-normalized word (see normalize_hostname - lowercase letters/
+# digits/hyphens, no spaces), never arbitrary shell content, since
+# subprocess.run's argv list (not a shell string) is what sudo actually
+# receives. Written to a temp file and syntax-checked with visudo before
+# being installed - a broken file in sudoers.d can lock out sudo entirely,
+# so it's never written to /etc/sudoers.d directly.
 SUDOERS_TMP="$(mktemp)"
 cat > "$SUDOERS_TMP" <<EOF
-$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox, /usr/bin/hostnamectl set-hostname *
+$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox, /usr/bin/hostnamectl set-hostname *, /usr/bin/systemctl enable --now snapserver, /usr/bin/systemctl disable --now snapserver, /usr/bin/systemctl enable --now owlbox-snapclient, /usr/bin/systemctl disable --now owlbox-snapclient, /usr/bin/systemctl restart owlbox-snapclient
 EOF
 if visudo -c -f "$SUDOERS_TMP" >/dev/null 2>&1; then
   install -m 0440 -o root -g root "$SUDOERS_TMP" /etc/sudoers.d/owlbox
@@ -685,6 +693,66 @@ CONF
   systemctl enable --now shairport-sync || true
 fi
 
+# ============================================================ MULTIROOM
+# Optional add-on, deliberately NOT part of "all" (see STAGE parsing above) -
+# synced audio across several OwlBoxen in the same house via Snapcast, see
+# owlbox/multiroom.py's module docstring for the full architecture. Unlike
+# AIRPLAY above, this stage only PREPARES everything (packages, config
+# files, the pipe, the sudoers rules) but does NOT enable/start either
+# service - which one(s) actually run depends on a role ("Aus"/"Hauptbox"/
+# "Slave-Box") chosen later in Einstellungen > Netzwerk, not on anything
+# knowable at install time. Safe/idempotent to re-run.
+if [ "$DO_MULTIROOM" -eq 1 ]; then
+  echo "==> [Multiroom] Installing snapserver + snapclient"
+  # Both packages on every box regardless of which role it'll end up
+  # playing, since the role is chosen at runtime, not install time (a box
+  # could become either, or switch later). Packaged for Debian/Raspberry Pi
+  # OS since roughly Bullseye - not yet confirmed against a real
+  # install on this project's actual target image, see docs/hardware.md.
+  apt-get install -y snapserver snapclient || true
+  # The stock snapclient.service (if the package ships/enables one) fights
+  # over the same ALSA device and doesn't know about the host-file
+  # indirection below - make sure it's not quietly running alongside the
+  # owlbox-snapclient.service unit installed further down.
+  systemctl disable --now snapclient 2>/dev/null || true
+
+  echo "==> [Multiroom] Writing /etc/snapserver.conf"
+  # Only matters once this box is actually made the Hauptbox (snapserver
+  # only gets enabled then, see multiroom.set_role) - written here
+  # regardless so it's already in place either way. sampleformat must match
+  # player.py's _audio_output_args exactly (48000:16:2) - both sides are
+  # this project's own code/config, not something a user is expected to
+  # tune per story file (mpv resamples whatever the source actually is to
+  # this, same as it already silently adapts to the real ALSA device's
+  # supported format today).
+  cat > /etc/snapserver.conf <<CONF
+[stream]
+source = pipe:///tmp/owlbox-multiroom.fifo?name=OwlBox&sampleformat=48000:16:2
+
+[http]
+enabled = true
+CONF
+
+  echo "==> [Multiroom] Setting up owlbox-snapclient.service"
+  cp "$INSTALL_DIR/systemd/owlbox-snapclient.service" /etc/systemd/system/owlbox-snapclient.service
+  systemctl daemon-reload
+  # Not enabled/started here - see this stage's header comment; the role
+  # picker in Einstellungen > Netzwerk (via owlbox/multiroom.py) owns that,
+  # exactly like owlbox.service/owlbox-kiosk.service are left to
+  # `owlbox-stage` rather than started here.
+
+  echo "==> [Multiroom] Creating the audio pipe"
+  # Belt-and-braces alongside player.py's own os.mkfifo() at every start
+  # (see there for why /tmp needs this on every boot, not just once) - this
+  # makes sure it exists even before owlbox.service has run for the first
+  # time after installing this stage. World-writable/readable rather than
+  # chasing down exactly which system user the snapserver package's own
+  # service runs as - a local-only pipe on a home LAN device, same risk
+  # tradeoff already accepted for e.g. the AirPlay hook scripts above.
+  mkfifo -m 666 /tmp/owlbox-multiroom.fifo 2>/dev/null || true
+  chmod 666 /tmp/owlbox-multiroom.fifo 2>/dev/null || true
+fi
+
 # -- summary -----------------------------------------------------------------
 
 if [ -n "$CONFIG_TXT" ]; then
@@ -725,6 +793,7 @@ EOF
     rfid)     echo "    Jetzt testen: sudo owlbox-stage rfid" ;;
     controls) echo "    Jetzt testen: sudo owlbox-stage controls" ;;
     airplay)  echo "    Jetzt testen: auf einem iPhone/iPad/Mac im selben WLAN AirPlay öffnen - \"OwlBox\" sollte als Ziel auftauchen." ;;
+    multiroom) echo "    Jetzt in Einstellungen > Netzwerk auf jeder Box eine Rolle wählen (eine Hauptbox, der Rest Slave-Boxen mit der Hauptbox ausgewählt), danach owlbox.service neu starten." ;;
     all)      cat <<'EOF'
     Jetzt Stück für Stück in Betrieb nehmen (jede Stufe einzeln testbar,
     siehe docs/staged-setup.md):

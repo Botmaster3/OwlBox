@@ -5,7 +5,7 @@ from datetime import datetime
 import pytest
 
 from owlbox import engine as engine_module
-from owlbox import feedback, network, repository, system_info, themes
+from owlbox import feedback, multiroom, network, repository, system_info, themes
 from owlbox.engine import Engine
 
 
@@ -2186,3 +2186,81 @@ def test_airplay_session_does_not_resume_a_story_that_was_already_paused(config)
     engine.airplay_session_ended()
     # AirPlay didn't cause the pause, so it must not cause a resume either.
     assert engine.get_state()["player"]["playing"] is False
+
+
+# -- Mehrraum-Wiedergabe (Snapcast) -------------------------------------------
+
+
+def test_set_multiroom_rejects_unknown_role(config):
+    engine = Engine(config)
+    with pytest.raises(ValueError):
+        engine.set_multiroom("banana", None)
+
+
+def test_set_multiroom_slave_without_master_fails(config, monkeypatch):
+    # multiroom.set_role must never even be reached - the missing-master
+    # check is a pure validation error, not an OS-level failure.
+    monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not be called")))
+    engine = Engine(config)
+    ok, message = engine.set_multiroom("slave", None)
+    assert ok is False
+    assert "Hauptbox" in message
+    assert engine.get_state()["multiroom"]["role"] == "off"
+
+
+def test_set_multiroom_slave_with_unknown_peer_id_fails(config, monkeypatch):
+    monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not be called")))
+    engine = Engine(config)
+    ok, message = engine.set_multiroom("slave", 999999)
+    assert ok is False
+    assert "Hauptbox" in message
+
+
+def test_set_multiroom_slave_success_persists_and_resolves_peer_name(config, monkeypatch):
+    peer = repository.create_peer("Wohnzimmer", "owlbox-wohnzimmer.local")
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
+
+    engine = Engine(config)
+    ok, message = engine.set_multiroom("slave", peer.id)
+    assert ok is True
+
+    state = engine.get_state()["multiroom"]
+    assert state == {"role": "slave", "master_peer_id": peer.id, "master_peer_name": "Wohnzimmer"}
+
+    # Persisted, not just in-memory - a fresh Engine reads it back the same.
+    engine2 = Engine(config)
+    assert engine2.get_state()["multiroom"] == state
+
+
+def test_set_multiroom_master_success_has_no_master_peer(config, monkeypatch):
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
+    engine = Engine(config)
+    ok, message = engine.set_multiroom("master", None)
+    assert ok is True
+    assert engine.get_state()["multiroom"] == {"role": "master", "master_peer_id": None, "master_peer_name": None}
+
+
+def test_set_multiroom_does_not_persist_when_applying_at_os_level_fails(config, monkeypatch):
+    # A role that failed to actually apply must not read back as active -
+    # same reasoning as system_info.set_hostname's identical case.
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (False, "systemctl fehlgeschlagen"))
+    engine = Engine(config)
+    ok, message = engine.set_multiroom("master", None)
+    assert ok is False
+    assert "systemctl fehlgeschlagen" in message
+    assert engine.get_state()["multiroom"]["role"] == "off"
+
+
+def test_set_multiroom_passes_resolved_peer_host_to_set_role(config, monkeypatch):
+    peer = repository.create_peer("Kinderzimmer", "192.168.1.42")
+    captured = {}
+
+    def fake_set_role(role, host):
+        captured["role"] = role
+        captured["host"] = host
+        return True, "ok"
+
+    monkeypatch.setattr(multiroom, "set_role", fake_set_role)
+    engine = Engine(config)
+    engine.set_multiroom("slave", peer.id)
+    assert captured == {"role": "slave", "host": "192.168.1.42"}

@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
-from . import feedback, network, repository, system_info, themes
+from . import feedback, multiroom, network, repository, system_info, themes
 from .backlight import create_backlight
 from .controls import create_controls
 from .player import create_player
@@ -166,6 +166,18 @@ class Engine:
         self._airplay_active = False
         self._airplay_paused_our_playback = False
 
+        # Mehrraum-Wiedergabe (optional OS-level add-on, Snapcast - see
+        # owlbox/multiroom.py and docs/hardware.md). "off"/"master"/"slave",
+        # persisted like the alarm settings above - a role set once should
+        # survive a restart, unlike the live-only AirPlay flag above it
+        # (there's no external process re-announcing this the way
+        # shairport-sync re-announces a session).
+        self._multiroom_role = repository.get_setting("multiroom_role") or "off"
+        if self._multiroom_role not in multiroom.ROLES:
+            self._multiroom_role = "off"
+        master_peer_id = repository.get_int_setting("multiroom_master_peer_id", 0)
+        self._multiroom_master_peer_id: Optional[int] = master_peer_id or None
+
         # Spiele-Menü (Einstellungen -> Spiel): toggled on/off by a dedicated
         # RFID function tag ("game_toggle" - see FUNCTION_ACTIONS/_execute_
         # function_action), same momentary-scan-toggles-state pattern as
@@ -215,7 +227,7 @@ class Engine:
         self._thread: Optional[threading.Thread] = None
 
     def start(self) -> None:
-        self._player.start()
+        self._player.start(self._multiroom_role)
         self._apply_volume(self._volume)
         self._backlight.set_brightness(self._brightness)
         self._thread = threading.Thread(target=self._loop, daemon=True)
@@ -1182,6 +1194,38 @@ class Engine:
             self._player.play()
         logger.info("AirPlay session ended%s", " (resumed OwlBox playback)" if resume else "")
 
+    # -- Mehrraum-Wiedergabe (Snapcast) --------------------------------------
+
+    def set_multiroom(self, role: str, master_peer_id: Optional[int]) -> tuple[bool, str]:
+        """Applies and persists a Mehrraum role. Only ever persists the new
+        role once multiroom.set_role() has actually confirmed applying it at
+        the OS level succeeded - a role that failed to apply must not read
+        back as active in the UI (see set_hostname's identical reasoning in
+        system_info.py). Restarting owlbox.service is still required
+        afterwards for player.py to pick up the new audio routing - this
+        only flips the systemd services and the persisted setting."""
+        if role not in multiroom.ROLES:
+            raise ValueError(f"Unbekannte Rolle: {role}")
+        master_host = None
+        if role == "slave":
+            if not master_peer_id:
+                return False, "Keine Hauptbox ausgewählt."
+            peer = repository.get_peer(master_peer_id)
+            if peer is None:
+                return False, "Ausgewählte Hauptbox wurde nicht gefunden - evtl. wurde sie aus der Liste gelöscht."
+            master_host = peer.host
+
+        ok, message = multiroom.set_role(role, master_host)
+        if not ok:
+            return False, message
+
+        with self._lock:
+            self._multiroom_role = role
+            self._multiroom_master_peer_id = master_peer_id if role == "slave" else None
+            repository.set_setting("multiroom_role", role)
+            repository.set_setting("multiroom_master_peer_id", (master_peer_id if role == "slave" else 0) or 0)
+        return True, "ok"
+
     def _handle_shutdown(self) -> None:
         logger.warning("shutdown requested via encoder long-press")
         self.request_shutdown()
@@ -1253,10 +1297,19 @@ class Engine:
             alarm_story_id = self._alarm_story_id
             alarm_fade_seconds = self._alarm_fade_seconds
             airplay_active = self._airplay_active
+            multiroom_role = self._multiroom_role
+            multiroom_master_peer_id = self._multiroom_master_peer_id
         alarm_story_title = None
         if alarm_story_id is not None:
             alarm_story = repository.get_story(alarm_story_id)
             alarm_story_title = alarm_story.title if alarm_story is not None else None
+        # Cheap local DB lookup, not a network call - a live reachability
+        # check against the peer belongs in the dedicated /api/peers
+        # endpoint only (get_state() is polled every second by every open
+        # page, see the volume-override comment below for why that matters).
+        multiroom_master_peer = None
+        if multiroom_master_peer_id is not None:
+            multiroom_master_peer = repository.get_peer(multiroom_master_peer_id)
         status = self._player.get_status()
         # Overrides player.get_status()'s own placeholder "volume" (see its
         # comment - MpvPlayer used to fill this via a live `amixer sget`
@@ -1368,6 +1421,11 @@ class Engine:
                 "fade_seconds": alarm_fade_seconds,
             },
             "airplay": {"active": airplay_active},
+            "multiroom": {
+                "role": multiroom_role,
+                "master_peer_id": multiroom_master_peer_id,
+                "master_peer_name": multiroom_master_peer.name if multiroom_master_peer else None,
+            },
             # A plain sysfs read (see system_info.get_cpu_temperature_celsius),
             # not a subprocess call like the WiFi signal above - cheap enough
             # to do inline on every poll instead of needing the same

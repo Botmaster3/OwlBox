@@ -19,6 +19,8 @@ import threading
 import time
 from typing import Optional, Protocol
 
+from . import multiroom
+
 
 class PlayerError(Exception):
     pass
@@ -146,7 +148,7 @@ class _MpvIpc:
 
 
 class PlayerBase(Protocol):
-    def start(self) -> None: ...
+    def start(self, multiroom_role: str = "off") -> None: ...
     def stop(self) -> None: ...
     def load_playlist(self, filepaths: list[str], start_index: int = 0, start_seconds: float = 0.0) -> None: ...
     def set_repeat_mode(self, mode: str) -> None: ...
@@ -169,7 +171,44 @@ class MpvPlayer:
         self._ipc: Optional[_MpvIpc] = None
         self._mixer = AlsaMixer(self._config.mixer_control, self._config.mixer_card)
 
-    def start(self) -> None:
+    def _audio_output_args(self, multiroom_role: str) -> list[str]:
+        # Default (and by far the common) path: straight to the real ALSA
+        # device, completely unchanged from before Mehrraum-Wiedergabe
+        # existed - "off"/"slave" both take this branch, since a Slave
+        # box's own mpv never has to feed anyone else, only its local
+        # snapclient does (see owlbox/multiroom.py's module docstring).
+        # Only "master" changes anything: mpv writes raw PCM into the named
+        # pipe snapserver reads as its source instead, at a fixed sample
+        # format matching snapserver.conf's declared one exactly (see
+        # scripts/install.sh's multiroom stage) - mpv resamples/converts
+        # whatever the source file actually is to this on its own, same as
+        # it already silently adapts to the real ALSA device's supported
+        # format today.
+        if multiroom_role != "master":
+            return [f"--audio-device=alsa/{self._config.alsa_device}"]
+        # The FIFO is a special file (created via mknod, not just "a path
+        # that happens not to exist yet") - opening a path that isn't
+        # already one makes mpv create a perfectly ordinary regular file
+        # there instead, silently going nowhere near snapserver. /tmp is
+        # commonly a tmpfs that's empty again after every reboot, so this
+        # has to happen on every start, not just once at install time -
+        # same reasoning as the mpv IPC socket's own os.remove() just above
+        # in start(), just the opposite direction (ensure it exists here,
+        # instead of ensuring a stale one is gone).
+        try:
+            os.mkfifo(multiroom.FIFO_PATH)
+        except FileExistsError:
+            pass
+        return [
+            "--ao=pcm",
+            f"--ao-pcm-file={multiroom.FIFO_PATH}",
+            "--ao-pcm-waveheader=no",
+            "--audio-samplerate=48000",
+            "--audio-channels=stereo",
+            "--audio-format=s16",
+        ]
+
+    def start(self, multiroom_role: str = "off") -> None:
         socket_path = self._config.mpv_ipc_socket
         try:
             os.remove(socket_path)
@@ -181,7 +220,7 @@ class MpvPlayer:
             "--no-video",
             "--no-terminal",
             f"--input-ipc-server={socket_path}",
-            f"--audio-device=alsa/{self._config.alsa_device}",
+            *self._audio_output_args(multiroom_role),
             "--volume=100",
             "--volume-max=100",
             # Confirmed on real hardware: the kiosk's fully software-rendered
@@ -359,7 +398,7 @@ class StubPlayer:
         self._repeat_mode = "off"
         self._shuffle_enabled = False
 
-    def start(self) -> None:
+    def start(self, multiroom_role: str = "off") -> None:
         pass
 
     def stop(self) -> None:

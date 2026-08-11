@@ -887,6 +887,8 @@
       alarmStorySelect.value = state.alarm.story_id || "";
       alarmFadeSecondsInput.value = state.alarm.fade_seconds;
       renderAlarmStatus(state.alarm);
+
+      applyMultiroomState(state.multiroom);
     } catch (err) {
       // ignore, fields keep their HTML defaults
     }
@@ -993,8 +995,138 @@
     }
   }
 
+  // -- peers (andere OwlBoxen im Netzwerk) -----------------------------------
+
+  const peerList = document.getElementById("peer-list");
+  const peerNameInput = document.getElementById("peer-name-input");
+  const peerHostInput = document.getElementById("peer-host-input");
+  const peerStatus = document.getElementById("peer-status");
+  const multiroomMasterSelect = document.getElementById("multiroom-master-select");
+
+  let lastLoadedPeers = [];
+
+  function renderMultiroomMasterOptions(selectedId) {
+    multiroomMasterSelect.innerHTML = lastLoadedPeers
+      .map((p) => `<option value="${p.id}">${p.name} (${p.host})</option>`)
+      .join("");
+    if (selectedId != null) multiroomMasterSelect.value = String(selectedId);
+  }
+
+  async function loadPeers() {
+    try {
+      const peers = await api("/api/peers");
+      lastLoadedPeers = peers;
+      peerList.innerHTML = "";
+      if (peers.length === 0) {
+        peerList.innerHTML = '<p class="hint">Noch keine anderen Boxen eingetragen.</p>';
+      } else {
+        for (const peer of peers) {
+          const li = document.createElement("li");
+          li.className = "peer-row";
+          li.innerHTML = `
+            <span class="peer-status-dot ${peer.reachable ? "online" : "offline"}"
+              title="${peer.reachable ? "Erreichbar" : "Nicht erreichbar"}"></span>
+            <span class="peer-name">${peer.name}</span>
+            <span class="peer-host mono">${peer.host}</span>
+            <a class="btn secondary small" href="http://${peer.host}:5000/admin" target="_blank" rel="noopener">Öffnen</a>
+            <button class="btn danger small" data-action="delete">Entfernen</button>
+          `;
+          li.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+            if (!confirm(`"${peer.name}" aus der Liste entfernen?`)) return;
+            try {
+              await api(`/api/peers/${peer.id}`, { method: "DELETE" });
+              loadPeers();
+            } catch (err) {
+              showToast(err.message, true);
+            }
+          });
+          peerList.appendChild(li);
+        }
+      }
+      renderMultiroomMasterOptions(multiroomMasterSelect.dataset.selected || null);
+    } catch (err) {
+      peerList.innerHTML = '<p class="hint">Konnte andere Boxen nicht laden.</p>';
+    }
+  }
+
+  document.getElementById("peer-add-btn").addEventListener("click", async () => {
+    const name = peerNameInput.value.trim();
+    const host = peerHostInput.value.trim();
+    if (!name || !host) {
+      peerStatus.textContent = "Name und Host/IP werden benötigt.";
+      return;
+    }
+    peerStatus.textContent = "Fügt hinzu…";
+    try {
+      await api("/api/peers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, host }),
+      });
+      peerNameInput.value = "";
+      peerHostInput.value = "";
+      peerStatus.textContent = "";
+      loadPeers();
+    } catch (err) {
+      peerStatus.textContent = err.message;
+    }
+  });
+
+  // -- Mehrraum-Wiedergabe (Snapcast) -----------------------------------------
+
+  const multiroomRoleSelect = document.getElementById("multiroom-role-select");
+  const multiroomMasterField = document.getElementById("multiroom-master-field");
+  const multiroomStatus = document.getElementById("multiroom-status");
+  const multiroomSaveStatus = document.getElementById("multiroom-save-status");
+
+  const MULTIROOM_ROLE_LABELS = { off: "Aus", master: "Hauptbox", slave: "Slave-Box" };
+
+  function renderMultiroomStatus(multiroom) {
+    if (multiroom.role === "off") {
+      multiroomStatus.textContent = "Mehrraum-Wiedergabe ist aus.";
+    } else if (multiroom.role === "master") {
+      multiroomStatus.textContent = "Diese Box ist die Hauptbox.";
+    } else {
+      multiroomStatus.textContent = multiroom.master_peer_name
+        ? `Diese Box ist Slave-Box von „${multiroom.master_peer_name}“.`
+        : "Diese Box ist als Slave-Box eingerichtet, aber keine Hauptbox ausgewählt.";
+    }
+  }
+
+  function applyMultiroomState(multiroom) {
+    multiroomRoleSelect.value = multiroom.role;
+    multiroomMasterField.hidden = multiroom.role !== "slave";
+    if (multiroom.master_peer_id != null) {
+      multiroomMasterSelect.dataset.selected = multiroom.master_peer_id;
+      renderMultiroomMasterOptions(multiroom.master_peer_id);
+    }
+    renderMultiroomStatus(multiroom);
+  }
+
+  multiroomRoleSelect.addEventListener("change", () => {
+    multiroomMasterField.hidden = multiroomRoleSelect.value !== "slave";
+  });
+
+  document.getElementById("multiroom-save-btn").addEventListener("click", async () => {
+    const role = multiroomRoleSelect.value;
+    const masterPeerId = role === "slave" ? (multiroomMasterSelect.value || null) : null;
+    multiroomSaveStatus.textContent = "Speichert…";
+    try {
+      const result = await api("/api/multiroom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role, master_peer_id: masterPeerId }),
+      });
+      renderMultiroomStatus(result.multiroom);
+      multiroomSaveStatus.textContent = "Gespeichert - für volle Wirkung jetzt neu starten (Einstellungen > System).";
+    } catch (err) {
+      multiroomSaveStatus.textContent = err.message;
+    }
+  });
+
   loadVolumeSettingsOnce();
   pollState();
   refreshWifiStatus();
   loadKnownNetworks();
+  loadPeers();
 })();
