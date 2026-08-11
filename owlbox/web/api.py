@@ -677,10 +677,12 @@ def update_alarm():
         raw_story_id = data.get("alarm_story_id")
         story_id = int(raw_story_id) if raw_story_id else None
         fade_seconds = int(data.get("alarm_fade_seconds", 60))
+        raw_volume_percent = data.get("alarm_volume_percent")
+        volume_percent = int(raw_volume_percent) if raw_volume_percent is not None else None
     except (TypeError, ValueError):
-        return jsonify({"error": "alarm_story_id/alarm_fade_seconds must be integers"}), 400
+        return jsonify({"error": "alarm_story_id/alarm_fade_seconds/alarm_volume_percent must be integers"}), 400
     try:
-        _engine().set_alarm(enabled, time_str, story_id, fade_seconds)
+        _engine().set_alarm(enabled, time_str, story_id, fade_seconds, volume_percent)
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
     return jsonify(_engine().get_state()["alarm"])

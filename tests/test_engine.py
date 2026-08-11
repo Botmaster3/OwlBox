@@ -2039,7 +2039,7 @@ def test_set_alarm_persists_across_restart(config):
     story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
 
     engine = Engine(config)
-    engine.set_alarm(True, "07:30", story.id, 45)
+    engine.set_alarm(True, "07:30", story.id, 45, 55)
     alarm = engine.get_state()["alarm"]
     assert alarm == {
         "enabled": True,
@@ -2047,6 +2047,7 @@ def test_set_alarm_persists_across_restart(config):
         "story_id": story.id,
         "story_title": "Wake Story",
         "fade_seconds": 45,
+        "volume_percent": 55,
     }
 
     engine2 = Engine(config)
@@ -2055,6 +2056,29 @@ def test_set_alarm_persists_across_restart(config):
     assert alarm["time"] == "07:30"
     assert alarm["story_id"] == story.id
     assert alarm["fade_seconds"] == 45
+    assert alarm["volume_percent"] == 55
+
+
+def test_alarm_volume_percent_defaults_to_70(config):
+    # Never explicitly configured - same "off"/gentle-default philosophy as
+    # every other optional setting in this app, chosen a bit below full
+    # max_volume rather than at it (a wake-up alarm blasting in at the exact
+    # ceiling used for daytime listening would be an unpleasant surprise).
+    engine = Engine(config)
+    assert engine.get_state()["alarm"]["volume_percent"] == 70
+
+
+def test_set_alarm_omitted_volume_percent_leaves_it_unchanged(config):
+    story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
+    engine = Engine(config)
+    engine.set_alarm(True, "07:30", story.id, 45, 55)
+    assert engine.get_state()["alarm"]["volume_percent"] == 55
+
+    # Saving again without touching the volume field (volume_percent=None,
+    # matching the API route's behaviour when the field is absent) must not
+    # silently reset it back to the default.
+    engine.set_alarm(True, "08:00", story.id, 45, None)
+    assert engine.get_state()["alarm"]["volume_percent"] == 55
 
 
 def test_alarm_triggers_configured_story_at_wake_time(config, monkeypatch):
@@ -2141,6 +2165,25 @@ def test_alarm_fades_volume_in_gradually(config, monkeypatch):
     # Past the fade window - back to the real target volume.
     engine._check_alarm(trigger_time + 61)
     assert engine.get_state()["player"]["volume"] == engine._volume
+
+
+def test_alarm_wakes_at_its_own_volume_not_whatever_was_last_set(config, monkeypatch):
+    # The whole point of a dedicated alarm_volume_percent: whatever the
+    # volume happened to be before the alarm fires (here: turned all the way
+    # down, as if the box was left quiet overnight) must not matter - the
+    # alarm always wakes at its own configured percentage of max_volume.
+    story = _make_story_with_file(config, "ALARMCARD", title="Wake Story")
+    monkeypatch.setattr(engine_module, "_wall_clock_now", lambda: datetime(2026, 8, 10, 7, 0))
+
+    engine = Engine(config)
+    engine.set_max_volume(75)
+    engine.manual_set_volume(3)  # nowhere near the eventual wake volume
+    engine.set_alarm(True, "07:00", story.id, 0, 50)  # 50% of 75% max_volume
+
+    engine._check_alarm(time.monotonic())
+    state = engine.get_state()
+    assert state["player"]["volume"] == 38  # round(75 * 50 / 100)
+    assert engine._volume == 38
 
 
 def test_airplay_session_pauses_and_resumes_a_playing_story(config):

@@ -147,11 +147,24 @@ class Engine:
         # alarm firing twice within its trigger minute, and starting fresh
         # after a restart just means "hasn't fired today yet", which is
         # always a safe assumption to fall back to.
+        #
+        # _alarm_volume_percent is its own target, deliberately NOT "fade up
+        # to whatever _volume happens to be right now" (that used to be the
+        # behaviour, but it's whatever was last playing - could be a quiet
+        # late-night level, could be max_volume, entirely incidental to what
+        # makes a sensible wake-up volume) and NOT the hardware's/mixer's own
+        # ceiling either. It's a percentage *of max_volume*, same relative-
+        # to-the-configured-ceiling idea as chime_volume_percent above the
+        # story volume - e.g. max_volume 75% + alarm_volume_percent 50% wakes
+        # up at 37.5% (rounded), never louder than max_volume regardless of
+        # what percentage is configured, and independent of whatever the
+        # current/last volume happened to be before the alarm fired.
         self._alarm_enabled = bool(repository.get_int_setting("alarm_enabled", 0))
         self._alarm_time = repository.get_setting("alarm_time") or "07:00"
         alarm_story_id = repository.get_int_setting("alarm_story_id", 0)
         self._alarm_story_id: Optional[int] = alarm_story_id or None
         self._alarm_fade_seconds = repository.get_int_setting("alarm_fade_seconds", 60)
+        self._alarm_volume_percent = max(0, min(100, repository.get_int_setting("alarm_volume_percent", 70)))
         self._alarm_last_triggered_date = None
         self._alarm_fading = False
         self._alarm_fade_start = 0.0
@@ -1140,6 +1153,7 @@ class Engine:
         time_str: str,
         story_id: Optional[int],
         fade_seconds: int,
+        volume_percent: Optional[int] = None,
     ) -> None:
         if not _ALARM_TIME_RE.match(time_str):
             raise ValueError("time_str must be HH:MM")
@@ -1152,6 +1166,9 @@ class Engine:
             repository.set_setting("alarm_time", time_str)
             repository.set_setting("alarm_story_id", story_id or 0)
             repository.set_setting("alarm_fade_seconds", self._alarm_fade_seconds)
+            if volume_percent is not None:
+                self._alarm_volume_percent = max(0, min(100, volume_percent))
+                repository.set_setting("alarm_volume_percent", self._alarm_volume_percent)
 
     def _check_alarm(self, now: float) -> None:
         # Two clocks in play here on purpose: `now` (time.monotonic) paces the
@@ -1189,6 +1206,18 @@ class Engine:
                 with self._lock:
                     self._alarm_fade_start = now
                     self._alarm_fading = self._alarm_fade_seconds > 0
+                    # The wake volume becomes the new real/persisted volume
+                    # (self._volume, not just a live dip like the sleep
+                    # timer's fade-out) - once the box is awake and playing,
+                    # the volume slider/encoder should reflect and continue
+                    # adjusting from what's actually audible, not silently
+                    # snap back to whatever was set before the alarm fired.
+                    # Deliberately not routed through _set_volume_locked -
+                    # this is a fresh target, not a delta from `previous`,
+                    # and none of that method's pause-at-zero/wake-from-sleep
+                    # side effects apply to "an alarm just started playing".
+                    self._volume = round(self._max_volume * self._alarm_volume_percent / 100)
+                    repository.set_setting("volume", self._volume)
                     self._apply_volume(0 if self._alarm_fading else self._volume)
             else:
                 logger.warning("alarm: configured story id=%s no longer exists", trigger_story_id)
@@ -1432,6 +1461,7 @@ class Engine:
             alarm_time = self._alarm_time
             alarm_story_id = self._alarm_story_id
             alarm_fade_seconds = self._alarm_fade_seconds
+            alarm_volume_percent = self._alarm_volume_percent
             airplay_active = self._airplay_active
             multiroom_feature_enabled = self._multiroom_feature_enabled
             multiroom_master_enabled = self._multiroom_master_enabled
@@ -1553,6 +1583,7 @@ class Engine:
                 "story_id": alarm_story_id,
                 "story_title": alarm_story_title,
                 "fade_seconds": alarm_fade_seconds,
+                "volume_percent": alarm_volume_percent,
             },
             "airplay": {"active": airplay_active},
             # "master_enabled"/"master_since" are deliberately the two flags

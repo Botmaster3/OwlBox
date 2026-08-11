@@ -93,12 +93,14 @@ den Pi geladen und einem Chip zugewiesen.
   RFID-Chip auflegen. Dauer unter Einstellungen konfigurierbar, 0 schaltet es ab.
 - **Weckmodus**: startet täglich zur eingestellten Uhrzeit automatisch eine
   frei wählbare Geschichte - die Lautstärke steigt dabei über eine
-  einstellbare Einblendzeit sanft von 0 auf die eingestellte Lautstärke, statt
-  abrupt in voller Lautstärke loszulegen. Greift nur, wenn gerade nichts läuft
-  (z.B. über Nacht pausiert oder noch kein Chip aufgelegt) - eine bereits
-  laufende Geschichte wird dadurch nie unterbrochen. Einmal pro Tag, unter
+  einstellbare Einblendzeit sanft von 0 auf eine eigene, dafür konfigurierte
+  Weck-Lautstärke (Prozentsatz der maximalen Lautstärke, unabhängig davon, wie
+  laut zuletzt eingestellt war), statt abrupt oder bei einem zufälligen
+  Lautstärke-Stand loszulegen. Greift nur, wenn gerade nichts läuft (z.B. über
+  Nacht pausiert oder noch kein Chip aufgelegt) - eine bereits laufende
+  Geschichte wird dadurch nie unterbrochen. Einmal pro Tag, unter
   Einstellungen → Audio konfigurierbar (an/aus, Uhrzeit, Geschichte,
-  Einblendzeit).
+  Weck-Lautstärke, Einblendzeit).
 - **Web-Verwaltung** (`/admin`, mit Benutzername+Passwort **oder** einem
   hinterlegten RFID-Chip geschützt, sechs Unterseiten):
   - **Home** - "Jetzt läuft"-Anzeige (groß, wie auf dem Display, inkl. WLAN-Empfang) als erste
@@ -144,7 +146,8 @@ den Pi geladen und einem Chip zugewiesen.
     Gerät begrenzt); Automatischer Ruhemodus (Minuten bis zur schlafenden Eule nach dem Pausieren,
     0 = aus); Einschlaf-Timer (Schnellauswahl 15/30/45/60 Min. oder eigene Dauer, pausiert
     automatisch nach Ablauf, mit sanftem Ausblenden); Weckmodus (an/aus, tägliche Weckzeit,
-    Geschichte, Einblendzeit der Lautstärke, siehe oben); Spiel (Bild- und Klang-Pools fürs
+    Geschichte, eigene Weck-Lautstärke als Prozentsatz der maximalen Lautstärke, Einblendzeit,
+    siehe oben); Spiel (Bild- und Klang-Pools fürs
     Spiele-Menü hochladen/löschen, siehe oben); WLAN (Status, an/aus, nach Netzwerken suchen
     und verbinden); Pi neu starten/herunterfahren.
   - **Info** - Systeminfos: Hardware-Modell, Betriebssystem, Laufzeit, CPU-Temperatur,

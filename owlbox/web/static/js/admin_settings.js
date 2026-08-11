@@ -707,6 +707,7 @@
   const alarmTimeInput = document.getElementById("alarm-time");
   const alarmStorySelect = document.getElementById("alarm-story");
   const alarmFadeSecondsInput = document.getElementById("alarm-fade-seconds");
+  const alarmVolumePercentInput = document.getElementById("alarm-volume-percent");
   const alarmSaveBtn = document.getElementById("alarm-save-btn");
   const alarmDependentFields = document.getElementById("alarm-dependent-fields");
 
@@ -749,6 +750,7 @@
           alarm_time: alarmTimeInput.value || "07:00",
           alarm_story_id: alarmStorySelect.value || null,
           alarm_fade_seconds: parseInt(alarmFadeSecondsInput.value, 10) || 0,
+          alarm_volume_percent: parseInt(alarmVolumePercentInput.value, 10),
         }),
       });
       renderAlarmStatus(alarm);
@@ -905,6 +907,7 @@
       alarmTimeInput.value = state.alarm.time;
       alarmStorySelect.value = state.alarm.story_id || "";
       alarmFadeSecondsInput.value = state.alarm.fade_seconds;
+      alarmVolumePercentInput.value = state.alarm.volume_percent;
       updateAlarmFieldGate();
       renderAlarmStatus(state.alarm);
 
