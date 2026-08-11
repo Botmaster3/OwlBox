@@ -33,15 +33,34 @@ CHIMES = {
 
 def play_chime(name: str, alsa_device: str) -> None:
     path = CHIMES.get(name)
-    if path is None or not path.exists():
+    if path is None:
+        logger.warning("chime '%s' has no known sound file mapped", name)
+        return
+    if not path.exists():
+        logger.warning("chime '%s' sound file missing on disk: %s", name, path)
         return
     try:
-        subprocess.run(
+        result = subprocess.run(
             ["aplay", "-q", "-D", alsa_device, str(path)],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             timeout=3,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired):
-        logger.debug("chime playback unavailable (aplay missing or timed out)")
+        # Deliberately still a no-op towards the caller either way (a broken
+        # chime must never interrupt/crash playback) - but a non-zero exit
+        # almost always means aplay couldn't actually open the ALSA device
+        # (busy - mpv already has it open without dmix, see this module's
+        # docstring - or a stale/wrong audio.alsa_device in config.yaml), so
+        # it's worth a WARNING rather than the DEBUG this used to be: that
+        # made "pressed Test, heard nothing" produce literally no trace
+        # anywhere, even in the journal, since the app's default log level
+        # (see main.py) is INFO.
+        if result.returncode != 0:
+            stderr = result.stderr.decode(errors="replace").strip()
+            logger.warning(
+                "chime '%s' via aplay -D %s failed (exit %d): %s",
+                name, alsa_device, result.returncode, stderr or "(keine Fehlerausgabe)",
+            )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        logger.warning("chime '%s' playback unavailable (aplay missing or timed out): %s", name, exc)
