@@ -426,6 +426,25 @@ def system_restart():
     return jsonify({"ok": True})
 
 
+@api_bp.route("/system/hostname", methods=["GET"])
+@admin_required
+def system_get_hostname():
+    # Read on every call rather than cached anywhere - the system hostname
+    # is the single source of truth here (see system_info.py), never
+    # duplicated into a DB setting that could drift from it.
+    return jsonify({"hostname": system_info.get_hostname()})
+
+
+@api_bp.route("/system/hostname", methods=["POST"])
+@admin_required
+def system_set_hostname():
+    data = request.get_json(silent=True) or {}
+    ok, result = system_info.set_hostname(str(data.get("hostname", "")))
+    if ok:
+        return jsonify({"ok": True, "hostname": result})
+    return jsonify({"ok": False, "error": result}), 400
+
+
 @api_bp.route("/system/backup", methods=["GET"])
 @admin_required
 def system_backup():

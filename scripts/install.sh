@@ -305,23 +305,29 @@ for grp in gpio spi audio video i2c render; do
   usermod -aG "$grp" "$SERVICE_USER" || true
 done
 
-echo "==> [Basis] Granting passwordless sudo for shutdown/WLAN/service-restart"
+echo "==> [Basis] Granting passwordless sudo for shutdown/WLAN/service-restart/hostname"
 # owlbox.service runs as this user with no terminal attached, so sudo can
 # never prompt for a password here. The Update-Button (Info-Seite), WLAN
-# Ein/Aus/Hotspot (Einstellungen), and "Pi neu starten"/"herunterfahren"
-# (Einstellungen bzw. Funktions-Chip) all shell out to sudo from inside
+# Ein/Aus/Hotspot (Einstellungen), "Pi neu starten"/"herunterfahren"
+# (Einstellungen bzw. Funktions-Chip), and the Gerätename-Feld (Einstellungen
+# > System, so several OwlBoxen in the same house/WLAN stay distinguishable -
+# see system_info.set_hostname) all shell out to sudo from inside
 # owlbox.service. sudo matches the *entire* command line it's given, not
-# just the program name - these three rules must stay in exact sync with
-# what owlbox/update.py, owlbox/network.py and owlbox/engine.py actually
-# invoke (confirmed on real hardware: a stray extra flag like --no-block
-# that isn't also in the sudoers rule makes sudo fall back to a password
-# prompt, which then just fails outright). Written to a temp file and
+# just the program name - these rules must stay in exact sync with what
+# owlbox/update.py, owlbox/network.py, owlbox/engine.py and
+# owlbox/system_info.py actually invoke (confirmed on real hardware: a stray
+# extra flag like --no-block that isn't also in the sudoers rule makes sudo
+# fall back to a password prompt, which then just fails outright). The
+# hostname rule's trailing "*" only ever matches a single already-normalized
+# word (see normalize_hostname - lowercase letters/digits/hyphens, no spaces),
+# never arbitrary shell content, since subprocess.run's argv list (not a
+# shell string) is what sudo actually receives. Written to a temp file and
 # syntax-checked with visudo before being installed - a broken file in
 # sudoers.d can lock out sudo entirely, so it's never written to
 # /etc/sudoers.d directly.
 SUDOERS_TMP="$(mktemp)"
 cat > "$SUDOERS_TMP" <<EOF
-$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox
+$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox, /usr/bin/hostnamectl set-hostname *
 EOF
 if visudo -c -f "$SUDOERS_TMP" >/dev/null 2>&1; then
   install -m 0440 -o root -g root "$SUDOERS_TMP" /etc/sudoers.d/owlbox

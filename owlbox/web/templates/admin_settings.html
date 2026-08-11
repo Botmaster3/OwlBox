@@ -489,6 +489,23 @@
   <h2 class="settings-section-heading" id="section-system">System</h2>
 
   <div class="card">
+    <h2>Gerätename</h2>
+    <p class="hint">Aktuell: <span id="hostname-current">–</span></p>
+    <div class="field">
+      <label for="hostname-input">Neuer Name</label>
+      <input type="text" id="hostname-input" placeholder="z.B. owlbox-kinderzimmer" maxlength="63">
+    </div>
+    <button class="btn" id="hostname-save-btn" type="button">Speichern</button>
+    <span id="hostname-status" class="hint"></span>
+    <p class="field-help">Ändert den Netzwerknamen des Pi selbst (nicht nur eine Anzeigebezeichnung) -
+      nützlich, wenn mehrere OwlBoxen im selben WLAN laufen, um sie auseinanderzuhalten. Erscheint
+      danach oben neben „OwlBox“ auf jeder Verwaltungsseite (nicht auf dem Kiosk-Display selbst).
+      Leerzeichen/Sonderzeichen werden automatisch zu einem gültigen Namen umgewandelt (z.B. wird
+      „Kinderzimmer!“ zu „kinderzimmer“). Für Erreichbarkeit unter dem neuen
+      &lt;name&gt;.local-Namen im ganzen Netzwerk empfiehlt sich danach ein Neustart.</p>
+  </div>
+
+  <div class="card">
     <h2>System</h2>
     <p class="hint">Aktuelle Wiedergabeposition wird vor dem Herunterfahren/Neustart gespeichert.</p>
     <button class="btn secondary" id="restart-btn" type="button">Pi neu starten</button>

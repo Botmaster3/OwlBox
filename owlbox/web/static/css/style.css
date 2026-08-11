@@ -1615,6 +1615,10 @@ a.btn { display: inline-block; text-decoration: none; }
   margin: 2px 0 0;
 }
 body.help-mode .field-help { display: block; }
+/* Which OwlBox this admin panel belongs to, once there's more than one in
+   the house - muted so it doesn't compete with the "OwlBox" title itself,
+   never shown on the kiosk (player.html doesn't include this partial). */
+.nav-hostname { font-size: 0.6em; font-weight: 400; color: var(--text-dim); }
 .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 #help-mode-toggle.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 

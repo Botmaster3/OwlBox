@@ -1,4 +1,4 @@
-<h1>🦉 OwlBox
+<h1>🦉 OwlBox<span class="nav-hostname" id="nav-hostname" hidden> · <span id="nav-hostname-value"></span></span>
   <div class="nav-actions">
     <button class="btn secondary" id="help-mode-toggle" type="button"
       title="Erklärungen zu jedem Regler und Eingabefeld dauerhaft ein-/ausblenden">❓ Hilfe</button>
@@ -40,6 +40,23 @@
       localStorage.setItem(KEY, enabled ? "1" : "0");
       apply(enabled);
     });
+  })();
+
+  // Hostname badge, next to the "OwlBox" title on every admin page (but
+  // never on the kiosk - player.html doesn't include this partial at all).
+  // Only useful once a house has more than one OwlBox, hence fetched fresh
+  // per page load rather than baked into the server-rendered title block -
+  // the Einstellungen > System card is what actually changes it.
+  (function () {
+    fetch("/api/system/hostname")
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (!data.hostname) return;
+        document.getElementById("nav-hostname-value").textContent = data.hostname;
+        document.getElementById("nav-hostname").hidden = false;
+        document.title = document.title + " · " + data.hostname;
+      })
+      .catch(function () {});
   })();
 
   // Power menu (restart/shutdown) - same /api/system/* endpoints the

@@ -674,16 +674,17 @@ um den Taster unverdrahtet zu lassen und die Funktion nur über die Web-UI
 nutzbar zu machen (dort geht sie immer, unabhängig von diesem Pin).
 
 Damit Shutdown/Neustart (auch über die Web-UI unter Einstellungen bzw.
-über einen "Pi neu starten"/"WLAN aus"-Funktions-Chip, siehe unten) sowie der
+über einen "Pi neu starten"/"WLAN aus"-Funktions-Chip, siehe unten), der
 Update-Button auf der Info-Seite (startet nur den `owlbox`-Dienst neu, nicht
-den ganzen Pi) ohne Passwortabfrage funktionieren, braucht der Service-User
-`owlbox` passwortloses sudo dafür. **`scripts/install.sh` richtet das
-automatisch ein** (`/etc/sudoers.d/owlbox`, syntaxgeprüft per `visudo -c`
-vor dem Einspielen) - hier nur zur Referenz bzw. zum manuellen Nachtragen auf
-einer Installation von vor dieser Automatisierung:
+den ganzen Pi) sowie der Gerätename in Einstellungen > System (siehe unten)
+ohne Passwortabfrage funktionieren, braucht der Service-User `owlbox`
+passwortloses sudo dafür. **`scripts/install.sh` richtet das automatisch ein**
+(`/etc/sudoers.d/owlbox`, syntaxgeprüft per `visudo -c` vor dem Einspielen) -
+hier nur zur Referenz bzw. zum manuellen Nachtragen auf einer Installation von
+vor dieser Automatisierung:
 
 ```
-owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox
+owlbox ALL=(ALL) NOPASSWD: /sbin/shutdown, /usr/bin/nmcli, /usr/bin/systemctl restart --no-block owlbox, /usr/bin/hostnamectl set-hostname *
 ```
 
 **Wichtig:** Die Argumente müssen exakt so dastehen wie hier gezeigt (inklusive
@@ -695,6 +696,24 @@ einfaches `git pull` reicht auf einem Bestandssystem nicht, um eine bereits
 vorhandene `/etc/sudoers.d/owlbox` zu aktualisieren - dafür entweder
 `sudo owlbox-install` erneut laufen lassen oder die Zeile per
 `sudo visudo -f /etc/sudoers.d/owlbox` von Hand anpassen.
+
+### Gerätename (mehrere OwlBoxen im selben Haus/WLAN unterscheiden)
+
+Einstellungen > System > "Gerätename" ändert den echten Linux-Hostnamen des
+Pi selbst (`hostnamectl set-hostname`, siehe `owlbox/system_info.py`), nicht
+nur eine kosmetische Anzeigebezeichnung. Freitext wird dabei automatisch in
+einen gültigen Namen umgewandelt (Kleinbuchstaben/Ziffern/Bindestriche, siehe
+`normalize_hostname`) - "Kinderzimmer!" wird z.B. zu "kinderzimmer". Der neue
+Name erscheint sofort oben neben "OwlBox" auf jeder Verwaltungsseite (nicht
+auf dem Kiosk-Display, `player.html` bindet `_admin_nav.html` gar nicht erst
+ein) sowie im Browser-Tab-Titel - beides über `/api/system/hostname` (GET),
+live bei jedem Seitenaufruf abgefragt statt in einer eigenen DB-Spalte
+dupliziert, damit es nie mit dem echten Hostnamen auseinanderlaufen kann.
+
+Für volle Erreichbarkeit unter dem neuen `<name>.local` im ganzen Netzwerk
+(mDNS/Avahi - bei Raspberry Pi OS vorinstalliert, keine eigene Einrichtung
+nötig) empfiehlt sich danach ein Neustart, da avahi-daemon eine
+Laufzeit-Umbenennung nicht unbedingt von selbst bemerkt.
 
 ## Fallback-Hotspot (WLAN-Recovery)
 

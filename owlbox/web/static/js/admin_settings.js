@@ -73,6 +73,38 @@
     }
   });
 
+  // -- hostname -----------------------------------------------------------
+
+  const hostnameCurrent = document.getElementById("hostname-current");
+  const hostnameInput = document.getElementById("hostname-input");
+  const hostnameStatus = document.getElementById("hostname-status");
+
+  (async () => {
+    try {
+      const data = await api("/api/system/hostname");
+      hostnameCurrent.textContent = data.hostname;
+      hostnameInput.value = data.hostname;
+    } catch (err) {
+      hostnameCurrent.textContent = "unbekannt";
+    }
+  })();
+
+  document.getElementById("hostname-save-btn").addEventListener("click", async () => {
+    hostnameStatus.textContent = "Ändert…";
+    try {
+      const data = await api("/api/system/hostname", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostname: hostnameInput.value }),
+      });
+      hostnameCurrent.textContent = data.hostname;
+      hostnameInput.value = data.hostname;
+      hostnameStatus.textContent = `Gespeichert als „${data.hostname}“ - für volle Erreichbarkeit im Netzwerk jetzt neu starten.`;
+    } catch (err) {
+      hostnameStatus.textContent = err.message;
+    }
+  });
+
   // -- volume -----------------------------------------------------------------
 
   const currentVolumeInput = document.getElementById("current-volume");
