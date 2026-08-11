@@ -34,6 +34,23 @@
     return body;
   }
 
+  // Wraps an async handler body: on success nothing extra happens, on
+  // failure shows the error as a toast - the identical
+  // try { ... } catch (err) { showToast(err.message, true); } every plain
+  // "Speichern"/"Hinzufügen"/"Löschen" handler below used to repeat by hand.
+  // Only for handlers whose failure path is genuinely just "toast it" -
+  // several below do more on error (reset a checkbox, re-enable a button,
+  // write a specific status line) and keep their own try/catch for that.
+  function withErrorToast(fn) {
+    return async (...args) => {
+      try {
+        await fn(...args);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    };
+  }
+
   // -- tabs ---------------------------------------------------------------
   // Real tabs, not anchor-jump-to-scroll: exactly one .settings-panel is
   // ever in the visible flow (the rest sit behind [hidden]), so switching
@@ -145,24 +162,20 @@
     volumeSliderBeingDragged = false;
   });
 
-  volumeSaveBtn.addEventListener("click", async () => {
-    try {
-      const settings = await api("/api/settings/volume", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          max_volume: parseInt(maxVolumeInput.value, 10),
-          volume_step: parseInt(volumeStepInput.value, 10),
-        }),
-      });
-      // Reflect back the server's (clamped) values in case the input was out of range.
-      maxVolumeInput.value = settings.max_volume;
-      volumeStepInput.value = settings.volume_step;
-      showToast("Lautstärke-Einstellungen gespeichert.");
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  });
+  volumeSaveBtn.addEventListener("click", withErrorToast(async () => {
+    const settings = await api("/api/settings/volume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        max_volume: parseInt(maxVolumeInput.value, 10),
+        volume_step: parseInt(volumeStepInput.value, 10),
+      }),
+    });
+    // Reflect back the server's (clamped) values in case the input was out of range.
+    maxVolumeInput.value = settings.max_volume;
+    volumeStepInput.value = settings.volume_step;
+    showToast("Lautstärke-Einstellungen gespeichert.");
+  }));
 
   // -- design theme ---------------------------------------------------------
 
@@ -228,7 +241,7 @@
 
   if (themePicker) {
     themePicker.querySelectorAll("[data-theme-id]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", withErrorToast(async () => {
         const id = btn.dataset.themeId;
         // Apply immediately for instant feedback, persist in the background -
         // a theme choice isn't destructive, so there's nothing to gain from
@@ -237,17 +250,13 @@
         themePicker.querySelectorAll("[data-theme-id]").forEach((other) => {
           other.classList.toggle("active", other === btn);
         });
-        try {
-          const settings = await api("/api/settings/theme", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ theme: id }),
-          });
-          applyThemeSettings(settings);
-        } catch (err) {
-          showToast(err.message, true);
-        }
-      });
+        const settings = await api("/api/settings/theme", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ theme: id }),
+        });
+        applyThemeSettings(settings);
+      }));
     });
   }
 
@@ -269,24 +278,20 @@
   });
 
   if (customThemeSaveBtn) {
-    customThemeSaveBtn.addEventListener("click", async () => {
-      try {
-        const colors = {};
-        customThemeInputs.forEach((input) => {
-          colors[input.dataset.customVar] = input.value;
-        });
-        if (customBarRadiusSelect) colors.bar_radius = customBarRadiusSelect.value;
-        const settings = await api("/api/settings/theme/custom", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(colors),
-        });
-        applyThemeSettings(settings);
-        showToast("Eigenes Design gespeichert und aktiviert.");
-      } catch (err) {
-        showToast(err.message, true);
-      }
-    });
+    customThemeSaveBtn.addEventListener("click", withErrorToast(async () => {
+      const colors = {};
+      customThemeInputs.forEach((input) => {
+        colors[input.dataset.customVar] = input.value;
+      });
+      if (customBarRadiusSelect) colors.bar_radius = customBarRadiusSelect.value;
+      const settings = await api("/api/settings/theme/custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(colors),
+      });
+      applyThemeSettings(settings);
+      showToast("Eigenes Design gespeichert und aktiviert.");
+    }));
   }
 
   // -- acoustic feedback (scan chimes) -------------------------------------
@@ -301,29 +306,25 @@
   };
   const chimeSaveBtn = document.getElementById("chime-save-btn");
 
-  chimeSaveBtn.addEventListener("click", async () => {
-    try {
-      const chimeEnabled = {};
-      for (const [name, input] of Object.entries(chimeTypeInputs)) {
-        chimeEnabled[name] = input.checked;
-      }
-      const settings = await api("/api/settings/chime", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chime_volume_percent: parseInt(chimeVolumePercentInput.value, 10),
-          chime_enabled: chimeEnabled,
-        }),
-      });
-      chimeVolumePercentInput.value = settings.chime_volume_percent;
-      for (const [name, input] of Object.entries(chimeTypeInputs)) {
-        input.checked = settings.chime_enabled[name];
-      }
-      showToast("Akustisches Feedback gespeichert.");
-    } catch (err) {
-      showToast(err.message, true);
+  chimeSaveBtn.addEventListener("click", withErrorToast(async () => {
+    const chimeEnabled = {};
+    for (const [name, input] of Object.entries(chimeTypeInputs)) {
+      chimeEnabled[name] = input.checked;
     }
-  });
+    const settings = await api("/api/settings/chime", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chime_volume_percent: parseInt(chimeVolumePercentInput.value, 10),
+        chime_enabled: chimeEnabled,
+      }),
+    });
+    chimeVolumePercentInput.value = settings.chime_volume_percent;
+    for (const [name, input] of Object.entries(chimeTypeInputs)) {
+      input.checked = settings.chime_enabled[name];
+    }
+    showToast("Akustisches Feedback gespeichert.");
+  }));
 
   const chimeTestStatus = document.getElementById("chime-test-status");
 
@@ -385,30 +386,26 @@
     brightnessSliderBeingDragged = false;
   });
 
-  brightnessSaveBtn.addEventListener("click", async () => {
-    try {
-      const settings = await api("/api/settings/brightness", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          min_brightness: parseInt(minBrightnessInput.value, 10),
-          max_brightness: parseInt(maxBrightnessInput.value, 10),
-          brightness_step: parseInt(brightnessStepInput.value, 10),
-        }),
-      });
-      // Reflect back the server's (clamped) values in case the input was out of range.
-      minBrightnessInput.value = settings.min_brightness;
-      maxBrightnessInput.value = settings.max_brightness;
-      brightnessStepInput.value = settings.brightness_step;
-      currentBrightnessInput.min = settings.min_brightness;
-      currentBrightnessInput.max = settings.max_brightness;
-      currentBrightnessInput.value = settings.brightness;
-      currentBrightnessValue.textContent = settings.brightness;
-      showToast("Helligkeits-Grenzen gespeichert.");
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  });
+  brightnessSaveBtn.addEventListener("click", withErrorToast(async () => {
+    const settings = await api("/api/settings/brightness", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        min_brightness: parseInt(minBrightnessInput.value, 10),
+        max_brightness: parseInt(maxBrightnessInput.value, 10),
+        brightness_step: parseInt(brightnessStepInput.value, 10),
+      }),
+    });
+    // Reflect back the server's (clamped) values in case the input was out of range.
+    minBrightnessInput.value = settings.min_brightness;
+    maxBrightnessInput.value = settings.max_brightness;
+    brightnessStepInput.value = settings.brightness_step;
+    currentBrightnessInput.min = settings.min_brightness;
+    currentBrightnessInput.max = settings.max_brightness;
+    currentBrightnessInput.value = settings.brightness;
+    currentBrightnessValue.textContent = settings.brightness;
+    showToast("Helligkeits-Grenzen gespeichert.");
+  }));
 
   // -- night mode -----------------------------------------------------------
 
@@ -422,74 +419,73 @@
     nightModeToggleBtn.classList.toggle("active", nightModeActive);
   }
 
-  nightBrightnessSaveBtn.addEventListener("click", async () => {
-    try {
-      const settings = await api("/api/settings/brightness", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ night_brightness: parseInt(nightBrightnessInput.value, 10) }),
-      });
-      nightBrightnessInput.value = settings.night_brightness;
-      showToast("Nachtmodus-Helligkeit gespeichert.");
-    } catch (err) {
-      showToast(err.message, true);
+  nightBrightnessSaveBtn.addEventListener("click", withErrorToast(async () => {
+    const settings = await api("/api/settings/brightness", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ night_brightness: parseInt(nightBrightnessInput.value, 10) }),
+    });
+    nightBrightnessInput.value = settings.night_brightness;
+    showToast("Nachtmodus-Helligkeit gespeichert.");
+  }));
+
+  nightModeToggleBtn.addEventListener("click", withErrorToast(async () => {
+    const settings = await api("/api/settings/brightness", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ night_mode_active: !nightModeActive }),
+    });
+    nightModeActive = settings.night_mode_active;
+    renderNightModeToggle();
+    currentBrightnessInput.value = settings.brightness;
+    currentBrightnessValue.textContent = settings.brightness;
+  }));
+
+  // -- Spiel-Medien-Pools (Bilder/Klänge/Rätsel) ---------------------------
+  // Memory-Bilder, Sound-Memory-Klänge und Tier-Sound-Quiz-Rätsel sind drei
+  // unabhängige Pools, aber strukturell dasselbe: eine Liste laden, pro
+  // Eintrag eine Zeile mit eigenem Löschen-Button rendern, nach dem Löschen
+  // neu laden. Nur der Upload-Schritt unterscheidet sich genug (Dateizahl,
+  // beim Quiz ein zusätzliches Textfeld), um pro Pool eigenständig zu bleiben.
+  function createMediaPool({ listUrl, deleteUrl, container, rowClass, emptyHint, rowHtml }) {
+    function render(items) {
+      container.innerHTML = "";
+      emptyHint.hidden = items.length > 0;
+      for (const item of items) {
+        const row = document.createElement("div");
+        row.className = rowClass;
+        row.innerHTML = rowHtml(item);
+        row.querySelector("[data-delete]").addEventListener("click", withErrorToast(async () => {
+          await api(deleteUrl(item), { method: "DELETE" });
+          load();
+        }));
+        container.appendChild(row);
+      }
     }
-  });
-
-  nightModeToggleBtn.addEventListener("click", async () => {
-    try {
-      const settings = await api("/api/settings/brightness", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ night_mode_active: !nightModeActive }),
-      });
-      nightModeActive = settings.night_mode_active;
-      renderNightModeToggle();
-      currentBrightnessInput.value = settings.brightness;
-      currentBrightnessValue.textContent = settings.brightness;
-    } catch (err) {
-      showToast(err.message, true);
+    async function load() {
+      try {
+        render(await api(listUrl));
+      } catch (err) {
+        // ignore - tab may just not be visible yet on first load
+      }
     }
+    return { render, load };
+  }
+
+  // Memory game: image pool.
+  const gameImagePool = createMediaPool({
+    listUrl: "/api/game/images",
+    deleteUrl: (img) => `/api/game/images/${img.id}`,
+    container: document.getElementById("game-image-grid"),
+    rowClass: "game-image-cell",
+    emptyHint: document.getElementById("game-image-empty-hint"),
+    rowHtml: (img) => `
+      <img src="${img.url}" alt="">
+      <button type="button" class="btn danger small" data-delete>🗑</button>
+    `,
   });
-
-  // -- Memory game: image pool --------------------------------------------
-
   const gameImageUpload = document.getElementById("game-image-upload");
-  const gameImageUploadBtn = document.getElementById("game-image-upload-btn");
-  const gameImageGrid = document.getElementById("game-image-grid");
-  const gameImageEmptyHint = document.getElementById("game-image-empty-hint");
-
-  function renderGameImages(images) {
-    gameImageGrid.innerHTML = "";
-    gameImageEmptyHint.hidden = images.length > 0;
-    for (const img of images) {
-      const cell = document.createElement("div");
-      cell.className = "game-image-cell";
-      cell.innerHTML = `
-        <img src="${img.url}" alt="">
-        <button type="button" class="btn danger small" data-delete-image="${img.id}">🗑</button>
-      `;
-      cell.querySelector("[data-delete-image]").addEventListener("click", async () => {
-        try {
-          await api(`/api/game/images/${img.id}`, { method: "DELETE" });
-          loadGameImages();
-        } catch (err) {
-          showToast(err.message, true);
-        }
-      });
-      gameImageGrid.appendChild(cell);
-    }
-  }
-
-  async function loadGameImages() {
-    try {
-      renderGameImages(await api("/api/game/images"));
-    } catch (err) {
-      // ignore - tab may just not be visible yet on first load
-    }
-  }
-
-  gameImageUploadBtn.addEventListener("click", async () => {
+  document.getElementById("game-image-upload-btn").addEventListener("click", withErrorToast(async () => {
     const files = Array.from(gameImageUpload.files || []);
     if (files.length === 0) {
       showToast("Bitte zuerst Bilder auswählen.", true);
@@ -497,56 +493,27 @@
     }
     const formData = new FormData();
     files.forEach((f) => formData.append("images", f));
-    try {
-      const images = await api("/api/game/images", { method: "POST", body: formData });
-      renderGameImages(images);
-      gameImageUpload.value = "";
-      showToast(`${files.length} Bild(er) hochgeladen.`);
-    } catch (err) {
-      showToast(err.message, true);
-    }
+    const images = await api("/api/game/images", { method: "POST", body: formData });
+    gameImagePool.render(images);
+    gameImageUpload.value = "";
+    showToast(`${files.length} Bild(er) hochgeladen.`);
+  }));
+  gameImagePool.load();
+
+  // Sound-Memory: sound clip pool.
+  const soundClipPool = createMediaPool({
+    listUrl: "/api/sound/clips",
+    deleteUrl: (clip) => `/api/sound/clips/${clip.id}`,
+    container: document.getElementById("sound-clip-list"),
+    rowClass: "sound-clip-row",
+    emptyHint: document.getElementById("sound-clip-empty-hint"),
+    rowHtml: (clip) => `
+      <audio controls src="${clip.url}"></audio>
+      <button type="button" class="btn danger small" data-delete>🗑</button>
+    `,
   });
-
-  loadGameImages();
-
-  // -- Sound-Memory: sound clip pool ---------------------------------------
-
   const soundClipUpload = document.getElementById("sound-clip-upload");
-  const soundClipUploadBtn = document.getElementById("sound-clip-upload-btn");
-  const soundClipList = document.getElementById("sound-clip-list");
-  const soundClipEmptyHint = document.getElementById("sound-clip-empty-hint");
-
-  function renderSoundClips(clips) {
-    soundClipList.innerHTML = "";
-    soundClipEmptyHint.hidden = clips.length > 0;
-    for (const clip of clips) {
-      const row = document.createElement("div");
-      row.className = "sound-clip-row";
-      row.innerHTML = `
-        <audio controls src="${clip.url}"></audio>
-        <button type="button" class="btn danger small" data-delete-clip="${clip.id}">🗑</button>
-      `;
-      row.querySelector("[data-delete-clip]").addEventListener("click", async () => {
-        try {
-          await api(`/api/sound/clips/${clip.id}`, { method: "DELETE" });
-          loadSoundClips();
-        } catch (err) {
-          showToast(err.message, true);
-        }
-      });
-      soundClipList.appendChild(row);
-    }
-  }
-
-  async function loadSoundClips() {
-    try {
-      renderSoundClips(await api("/api/sound/clips"));
-    } catch (err) {
-      // ignore - tab may just not be visible yet on first load
-    }
-  }
-
-  soundClipUploadBtn.addEventListener("click", async () => {
+  document.getElementById("sound-clip-upload-btn").addEventListener("click", withErrorToast(async () => {
     const files = Array.from(soundClipUpload.files || []);
     if (files.length === 0) {
       showToast("Bitte zuerst Klänge auswählen.", true);
@@ -554,60 +521,31 @@
     }
     const formData = new FormData();
     files.forEach((f) => formData.append("sounds", f));
-    try {
-      const clips = await api("/api/sound/clips", { method: "POST", body: formData });
-      renderSoundClips(clips);
-      soundClipUpload.value = "";
-      showToast(`${files.length} Klang/Klänge hochgeladen.`);
-    } catch (err) {
-      showToast(err.message, true);
-    }
+    const clips = await api("/api/sound/clips", { method: "POST", body: formData });
+    soundClipPool.render(clips);
+    soundClipUpload.value = "";
+    showToast(`${files.length} Klang/Klänge hochgeladen.`);
+  }));
+  soundClipPool.load();
+
+  // Tier-Sound-Quiz: picture+sound item pool.
+  const quizItemPool = createMediaPool({
+    listUrl: "/api/quiz/items",
+    deleteUrl: (item) => `/api/quiz/items/${item.id}`,
+    container: document.getElementById("quiz-item-list"),
+    rowClass: "quiz-item-row",
+    emptyHint: document.getElementById("quiz-item-empty-hint"),
+    rowHtml: (item) => `
+      <img src="${item.image_url}" alt="">
+      <audio controls src="${item.sound_url}"></audio>
+      <span class="quiz-item-label">${item.label || ""}</span>
+      <button type="button" class="btn danger small" data-delete>🗑</button>
+    `,
   });
-
-  loadSoundClips();
-
-  // -- Tier-Sound-Quiz: picture+sound item pool ----------------------------
-
   const quizItemImageInput = document.getElementById("quiz-item-image");
   const quizItemSoundInput = document.getElementById("quiz-item-sound");
   const quizItemLabelInput = document.getElementById("quiz-item-label");
-  const quizItemUploadBtn = document.getElementById("quiz-item-upload-btn");
-  const quizItemList = document.getElementById("quiz-item-list");
-  const quizItemEmptyHint = document.getElementById("quiz-item-empty-hint");
-
-  function renderQuizItems(items) {
-    quizItemList.innerHTML = "";
-    quizItemEmptyHint.hidden = items.length > 0;
-    for (const item of items) {
-      const row = document.createElement("div");
-      row.className = "quiz-item-row";
-      row.innerHTML = `
-        <img src="${item.image_url}" alt="">
-        <audio controls src="${item.sound_url}"></audio>
-        <span class="quiz-item-label">${item.label || ""}</span>
-        <button type="button" class="btn danger small" data-delete-item="${item.id}">🗑</button>
-      `;
-      row.querySelector("[data-delete-item]").addEventListener("click", async () => {
-        try {
-          await api(`/api/quiz/items/${item.id}`, { method: "DELETE" });
-          loadQuizItems();
-        } catch (err) {
-          showToast(err.message, true);
-        }
-      });
-      quizItemList.appendChild(row);
-    }
-  }
-
-  async function loadQuizItems() {
-    try {
-      renderQuizItems(await api("/api/quiz/items"));
-    } catch (err) {
-      // ignore - tab may just not be visible yet on first load
-    }
-  }
-
-  quizItemUploadBtn.addEventListener("click", async () => {
+  document.getElementById("quiz-item-upload-btn").addEventListener("click", withErrorToast(async () => {
     const image = quizItemImageInput.files && quizItemImageInput.files[0];
     const sound = quizItemSoundInput.files && quizItemSoundInput.files[0];
     if (!image || !sound) {
@@ -618,19 +556,14 @@
     formData.append("image", image);
     formData.append("sound", sound);
     if (quizItemLabelInput.value.trim()) formData.append("label", quizItemLabelInput.value.trim());
-    try {
-      const items = await api("/api/quiz/items", { method: "POST", body: formData });
-      renderQuizItems(items);
-      quizItemImageInput.value = "";
-      quizItemSoundInput.value = "";
-      quizItemLabelInput.value = "";
-      showToast("Rätsel hinzugefügt.");
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  });
-
-  loadQuizItems();
+    const items = await api("/api/quiz/items", { method: "POST", body: formData });
+    quizItemPool.render(items);
+    quizItemImageInput.value = "";
+    quizItemSoundInput.value = "";
+    quizItemLabelInput.value = "";
+    showToast("Rätsel hinzugefügt.");
+  }));
+  quizItemPool.load();
 
   // -- auto-sleep (sleeping-owl screen) ----------------------------------
 
@@ -638,19 +571,15 @@
   const autoSleepMinutesInput = document.getElementById("auto-sleep-minutes");
   const autoSleepSaveBtn = document.getElementById("auto-sleep-save-btn");
 
-  autoSleepSaveBtn.addEventListener("click", async () => {
-    try {
-      const settings = await api("/api/settings/auto-sleep", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ auto_sleep_minutes: parseInt(autoSleepMinutesInput.value, 10) }),
-      });
-      autoSleepMinutesInput.value = settings.auto_sleep_minutes;
-      showToast("Automatischer Ruhemodus gespeichert.");
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  });
+  autoSleepSaveBtn.addEventListener("click", withErrorToast(async () => {
+    const settings = await api("/api/settings/auto-sleep", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ auto_sleep_minutes: parseInt(autoSleepMinutesInput.value, 10) }),
+    });
+    autoSleepMinutesInput.value = settings.auto_sleep_minutes;
+    showToast("Automatischer Ruhemodus gespeichert.");
+  }));
 
   // -- sleep timer --------------------------------------------------------
 
@@ -665,18 +594,14 @@
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
-  async function startTimer(minutes) {
-    try {
-      await api("/api/sleep-timer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ minutes }),
-      });
-      showToast(`Einschlaf-Timer über ${minutes} Minuten gestartet.`);
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  }
+  const startTimer = (minutes) => withErrorToast(async () => {
+    await api("/api/sleep-timer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ minutes }),
+    });
+    showToast(`Einschlaf-Timer über ${minutes} Minuten gestartet.`);
+  })();
 
   document.querySelectorAll("[data-minutes]").forEach((btn) => {
     btn.addEventListener("click", () => startTimer(parseFloat(btn.dataset.minutes)));
@@ -691,14 +616,10 @@
     startTimer(minutes);
   });
 
-  sleepTimerCancelBtn.addEventListener("click", async () => {
-    try {
-      await api("/api/sleep-timer", { method: "DELETE" });
-      showToast("Einschlaf-Timer abgebrochen.");
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  });
+  sleepTimerCancelBtn.addEventListener("click", withErrorToast(async () => {
+    await api("/api/sleep-timer", { method: "DELETE" });
+    showToast("Einschlaf-Timer abgebrochen.");
+  }));
 
   // -- Weckmodus (daily alarm) ---------------------------------------------
 
@@ -740,25 +661,21 @@
     }
   }
 
-  alarmSaveBtn.addEventListener("click", async () => {
-    try {
-      const alarm = await api("/api/settings/alarm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          alarm_enabled: alarmEnabledInput.checked,
-          alarm_time: alarmTimeInput.value || "07:00",
-          alarm_story_id: alarmStorySelect.value || null,
-          alarm_fade_seconds: parseInt(alarmFadeSecondsInput.value, 10) || 0,
-          alarm_volume_percent: parseInt(alarmVolumePercentInput.value, 10),
-        }),
-      });
-      renderAlarmStatus(alarm);
-      showToast("Weckmodus gespeichert.");
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  });
+  alarmSaveBtn.addEventListener("click", withErrorToast(async () => {
+    const alarm = await api("/api/settings/alarm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        alarm_enabled: alarmEnabledInput.checked,
+        alarm_time: alarmTimeInput.value || "07:00",
+        alarm_story_id: alarmStorySelect.value || null,
+        alarm_fade_seconds: parseInt(alarmFadeSecondsInput.value, 10) || 0,
+        alarm_volume_percent: parseInt(alarmVolumePercentInput.value, 10),
+      }),
+    });
+    renderAlarmStatus(alarm);
+    showToast("Weckmodus gespeichert.");
+  }));
 
   // -- wifi ---------------------------------------------------------------
 
@@ -810,18 +727,14 @@
     }
   }
 
-  wifiToggleBtn.addEventListener("click", async () => {
-    try {
-      await api("/api/network/wifi-power", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: !wifiEnabled }),
-      });
-      setTimeout(refreshWifiStatus, 1500);
-    } catch (err) {
-      showToast(err.message, true);
-    }
-  });
+  wifiToggleBtn.addEventListener("click", withErrorToast(async () => {
+    await api("/api/network/wifi-power", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: !wifiEnabled }),
+    });
+    setTimeout(refreshWifiStatus, 1500);
+  }));
 
   wifiScanBtn.addEventListener("click", async () => {
     wifiNetworks.innerHTML = '<p class="hint">Suche…</p>';
@@ -1012,16 +925,12 @@
             }
           });
         }
-        row.querySelector('[data-action="forget"]').addEventListener("click", async () => {
+        row.querySelector('[data-action="forget"]').addEventListener("click", withErrorToast(async () => {
           if (!confirm(`Netzwerk "${net.name}" wirklich entfernen?`)) return;
-          try {
-            await api(`/api/network/known/${encodeURIComponent(net.name)}`, { method: "DELETE" });
-            showToast("Netzwerk entfernt.");
-            loadKnownNetworks();
-          } catch (err) {
-            showToast(err.message, true);
-          }
-        });
+          await api(`/api/network/known/${encodeURIComponent(net.name)}`, { method: "DELETE" });
+          showToast("Netzwerk entfernt.");
+          loadKnownNetworks();
+        }));
         wifiKnownList.appendChild(row);
       }
     } catch (err) {
@@ -1059,15 +968,11 @@
         `;
         const deleteBtn = li.querySelector('[data-action="delete"]');
         if (deleteBtn) {
-          deleteBtn.addEventListener("click", async () => {
+          deleteBtn.addEventListener("click", withErrorToast(async () => {
             if (!confirm(`"${peer.name}" aus der Liste entfernen?`)) return;
-            try {
-              await api(`/api/peers/${peer.id}`, { method: "DELETE" });
-              loadPeers();
-            } catch (err) {
-              showToast(err.message, true);
-            }
-          });
+            await api(`/api/peers/${peer.id}`, { method: "DELETE" });
+            loadPeers();
+          }));
         }
         peerList.appendChild(li);
       }

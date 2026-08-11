@@ -567,6 +567,16 @@ def set_setting(key: str, value: str) -> None:
         )
 
 
+def _next_position(cur, table: str) -> int:
+    """Auto-incrementing manual ordering position for the three Spiel-Menü
+    media pools below (game_images/sound_clips/quiz_items) - none of them
+    use their AUTOINCREMENT id for display order (that would jump around
+    once something in the middle is deleted), so a new row always simply
+    goes at the end instead. table is always one of this module's own
+    hardcoded table names, never external input."""
+    return cur.execute(f"SELECT COALESCE(MAX(position), -1) + 1 AS n FROM {table}").fetchone()["n"]
+
+
 # -- Memory-game image pool ---------------------------------------------------
 
 
@@ -584,7 +594,7 @@ def list_game_images() -> list[GameImage]:
 
 def add_game_image(filename: str) -> GameImage:
     with write_cursor() as cur:
-        next_position = cur.execute("SELECT COALESCE(MAX(position), -1) + 1 AS n FROM game_images").fetchone()["n"]
+        next_position = _next_position(cur, "game_images")
         cur.execute("INSERT INTO game_images (filename, position) VALUES (?, ?)", (filename, next_position))
         image_id = cur.lastrowid
     return GameImage(id=image_id, filename=filename, position=next_position)
@@ -618,7 +628,7 @@ def list_sound_clips() -> list[SoundClip]:
 
 def add_sound_clip(filename: str) -> SoundClip:
     with write_cursor() as cur:
-        next_position = cur.execute("SELECT COALESCE(MAX(position), -1) + 1 AS n FROM sound_clips").fetchone()["n"]
+        next_position = _next_position(cur, "sound_clips")
         cur.execute("INSERT INTO sound_clips (filename, position) VALUES (?, ?)", (filename, next_position))
         clip_id = cur.lastrowid
     return SoundClip(id=clip_id, filename=filename, position=next_position)
@@ -660,7 +670,7 @@ def list_quiz_items() -> list[QuizItem]:
 
 def add_quiz_item(image_filename: str, sound_filename: str, label: Optional[str] = None) -> QuizItem:
     with write_cursor() as cur:
-        next_position = cur.execute("SELECT COALESCE(MAX(position), -1) + 1 AS n FROM quiz_items").fetchone()["n"]
+        next_position = _next_position(cur, "quiz_items")
         cur.execute(
             "INSERT INTO quiz_items (image_filename, sound_filename, label, position) VALUES (?, ?, ?, ?)",
             (image_filename, sound_filename, label, next_position),
