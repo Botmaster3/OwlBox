@@ -1391,7 +1391,7 @@ html[data-theme="weihnachten"] .advent-wreath {
 .library-toolbar .field:first-child { flex: 1 1 240px; }
 .checkbox-list { display: flex; flex-direction: column; gap: 8px; }
 .checkbox-list .checkbox-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.checkbox-list label { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; color: var(--text); }
+.checkbox-row-controls { display: flex; align-items: center; gap: 12px; }
 input[type="text"], input[type="password"], select {
   background: var(--input-bg);
   border: 1px solid var(--border);
@@ -1555,7 +1555,81 @@ a.btn { display: inline-block; text-decoration: none; }
    onto multiple lines rather than a grid since each label's length varies a
    lot (theme name + parenthesized date window). */
 .theme-auto-list { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 6px; }
-.theme-auto-list .checkbox-inline { gap: 6px; }
+.theme-auto-row { flex: 1 1 220px; min-width: 220px; }
+
+/* iOS-style toggle switch - every on/off "Funktion" in Einstellungen
+   (Weckmodus, Mehrraum-Wiedergabe, Hinweiston-Typen, automatische
+   Design-Auswahl) uses this instead of a plain checkbox, for an
+   unmistakably tappable on/off control on a touchscreen. The checkbox
+   itself stays a real, fully functional <input type="checkbox"> - only
+   invisible (opacity 0, but still in the tab order and still what every
+   existing bit of JS reads/sets via .checked) - .switch-slider is a
+   sibling built purely from CSS to *look* like the pill+knob, so no
+   markup change is needed anywhere JS already wires up a checkbox by id. */
+.switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 48px;
+  height: 28px;
+  cursor: pointer;
+}
+.switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.switch-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
+  pointer-events: none;
+}
+.switch-slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+.switch input:checked + .switch-slider { background: var(--accent); }
+.switch input:checked + .switch-slider::before { transform: translateX(20px); }
+.switch input:focus-visible + .switch-slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switch input:disabled + .switch-slider { opacity: 0.5; }
+.switch input:disabled { cursor: not-allowed; }
+.switch input:disabled ~ * { cursor: not-allowed; }
+
+/* A row pairing a label with a trailing .switch, iPhone Settings-style
+   (text left, switch right) - used both standalone (Weckmodus aktiv,
+   Mehrraum-Wiedergabe aktivieren) and repeated in a list (Hinweiston-Typen,
+   automatische Design-Auswahl). */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.theme-auto-row.switch-row { margin-bottom: 0; }
+.switch-row-label { font-size: 0.95rem; color: var(--text); }
+
+/* Wraps the settings that only take effect while their governing switch
+   above is on (e.g. Weckzeit/-Geschichte under "Weckmodus aktiv", "Diese
+   Box ist die Hauptbox" under "Mehrraum-Wiedergabe aktivieren"). Dimmed
+   and inert rather than hidden outright, so it stays visible *that* there's
+   more to configure here - it's just inactive until the switch above is
+   flipped on (see admin_settings.js's applyFeatureGate). */
+.feature-gated { transition: opacity 0.15s ease; }
+.feature-gated.feature-off { opacity: 0.4; filter: grayscale(0.5); pointer-events: none; }
 
 /* Eigenes Design (Einstellungen > Design) - one color swatch per CSS
    variable, small enough that a plain auto-fill grid reads fine even for

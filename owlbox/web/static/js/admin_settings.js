@@ -14,6 +14,19 @@
     toast._hideTimeout = setTimeout(() => toast.classList.remove("show"), 2500);
   }
 
+  // Dims (rather than hides) the settings that only matter while their
+  // governing switch is on - e.g. Weckzeit/-Geschichte under "Weckmodus
+  // aktiv", "Diese Box ist die Hauptbox" under "Mehrraum-Wiedergabe
+  // aktivieren". Also actually disables every control inside, not just a
+  // visual dim - a dimmed-but-still-clickable field would be confusing
+  // (see style.css's .feature-gated for the look).
+  function applyFeatureGate(container, active) {
+    container.classList.toggle("feature-off", !active);
+    container.querySelectorAll("input, select, button, textarea").forEach((el) => {
+      el.disabled = !active;
+    });
+  }
+
   async function api(url, options) {
     const res = await fetch(url, options);
     const body = await res.json().catch(() => ({}));
@@ -695,6 +708,12 @@
   const alarmStorySelect = document.getElementById("alarm-story");
   const alarmFadeSecondsInput = document.getElementById("alarm-fade-seconds");
   const alarmSaveBtn = document.getElementById("alarm-save-btn");
+  const alarmDependentFields = document.getElementById("alarm-dependent-fields");
+
+  function updateAlarmFieldGate() {
+    applyFeatureGate(alarmDependentFields, alarmEnabledInput.checked);
+  }
+  alarmEnabledInput.addEventListener("change", updateAlarmFieldGate);
 
   async function loadAlarmStoryOptions() {
     try {
@@ -886,6 +905,7 @@
       alarmTimeInput.value = state.alarm.time;
       alarmStorySelect.value = state.alarm.story_id || "";
       alarmFadeSecondsInput.value = state.alarm.fade_seconds;
+      updateAlarmFieldGate();
       renderAlarmStatus(state.alarm);
 
       applyMultiroomState(state.multiroom);
@@ -1091,7 +1111,7 @@
   const multiroomSaveStatus = document.getElementById("multiroom-save-status");
 
   function updateMultiroomFieldVisibility() {
-    multiroomMasterField.hidden = !multiroomFeatureCheckbox.checked;
+    applyFeatureGate(multiroomMasterField, multiroomFeatureCheckbox.checked);
   }
   multiroomFeatureCheckbox.addEventListener("change", updateMultiroomFieldVisibility);
 

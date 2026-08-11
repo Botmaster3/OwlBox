@@ -75,11 +75,15 @@
       <p class="hint">Für jedes Design einzeln abschaltbar - ein deaktiviertes Design wird nie automatisch ausgewählt, bleibt aber weiter oben in der Liste manuell wählbar.</p>
       <div id="theme-auto-list" class="theme-auto-list">
         {% for id in auto_themeable_ids %}
-        <label class="checkbox-inline">
-          <input type="checkbox" class="theme-auto-checkbox" data-theme-id="{{ id }}" {{ 'checked' if auto_theme_enabled[id] else '' }}>
-          {{ theme_catalog[id].label }}
-          <span class="hint">({{ theme_catalog[id].season_label }})</span>
-        </label>
+        <div class="switch-row theme-auto-row">
+          <span class="switch-row-label">{{ theme_catalog[id].label }}
+            <span class="hint">({{ theme_catalog[id].season_label }})</span>
+          </span>
+          <label class="switch">
+            <input type="checkbox" class="theme-auto-checkbox" data-theme-id="{{ id }}" {{ 'checked' if auto_theme_enabled[id] else '' }}>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
         {% endfor %}
       </div>
     </div>
@@ -198,24 +202,39 @@
         beeinflussen. „▶ Testen“ spielt den jeweiligen Ton sofort ab, unabhängig vom Häkchen.</p>
       <div class="checkbox-list">
         <div class="checkbox-row">
-          <label><input type="checkbox" id="chime-type-known" checked> Chip erkannt</label>
-          <button class="btn secondary small" type="button" data-chime-test="known">▶ Testen</button>
+          <span class="switch-row-label">Chip erkannt</span>
+          <div class="checkbox-row-controls">
+            <button class="btn secondary small" type="button" data-chime-test="known">▶ Testen</button>
+            <label class="switch"><input type="checkbox" id="chime-type-known" checked><span class="switch-slider"></span></label>
+          </div>
         </div>
         <div class="checkbox-row">
-          <label><input type="checkbox" id="chime-type-unknown" checked> Unbekannter Chip</label>
-          <button class="btn secondary small" type="button" data-chime-test="unknown">▶ Testen</button>
+          <span class="switch-row-label">Unbekannter Chip</span>
+          <div class="checkbox-row-controls">
+            <button class="btn secondary small" type="button" data-chime-test="unknown">▶ Testen</button>
+            <label class="switch"><input type="checkbox" id="chime-type-unknown" checked><span class="switch-slider"></span></label>
+          </div>
         </div>
         <div class="checkbox-row">
-          <label><input type="checkbox" id="chime-type-function" checked> Funktions-Chip</label>
-          <button class="btn secondary small" type="button" data-chime-test="function">▶ Testen</button>
+          <span class="switch-row-label">Funktions-Chip</span>
+          <div class="checkbox-row-controls">
+            <button class="btn secondary small" type="button" data-chime-test="function">▶ Testen</button>
+            <label class="switch"><input type="checkbox" id="chime-type-function" checked><span class="switch-slider"></span></label>
+          </div>
         </div>
         <div class="checkbox-row">
-          <label><input type="checkbox" id="chime-type-startup" checked> Hochfahren</label>
-          <button class="btn secondary small" type="button" data-chime-test="startup">▶ Testen</button>
+          <span class="switch-row-label">Hochfahren</span>
+          <div class="checkbox-row-controls">
+            <button class="btn secondary small" type="button" data-chime-test="startup">▶ Testen</button>
+            <label class="switch"><input type="checkbox" id="chime-type-startup" checked><span class="switch-slider"></span></label>
+          </div>
         </div>
         <div class="checkbox-row">
-          <label><input type="checkbox" id="chime-type-shutdown" checked> Herunterfahren/Neustart</label>
-          <button class="btn secondary small" type="button" data-chime-test="shutdown">▶ Testen</button>
+          <span class="switch-row-label">Herunterfahren/Neustart</span>
+          <div class="checkbox-row-controls">
+            <button class="btn secondary small" type="button" data-chime-test="shutdown">▶ Testen</button>
+            <label class="switch"><input type="checkbox" id="chime-type-shutdown" checked><span class="switch-slider"></span></label>
+          </div>
         </div>
       </div>
     </div>
@@ -278,24 +297,27 @@
   <div class="card">
     <h2>Weckmodus</h2>
     <p class="hint" id="alarm-status">Weckmodus aus.</p>
-    <div class="field">
-      <label><input type="checkbox" id="alarm-enabled"> Weckmodus aktiv</label>
+    <div class="switch-row">
+      <span class="switch-row-label">Weckmodus aktiv</span>
+      <label class="switch"><input type="checkbox" id="alarm-enabled"><span class="switch-slider"></span></label>
     </div>
-    <div class="field">
-      <label for="alarm-time">Weckzeit</label>
-      <input type="time" id="alarm-time" value="07:00">
-    </div>
-    <div class="field">
-      <label for="alarm-story">Weck-Geschichte</label>
-      <select id="alarm-story">
-        <option value="">– Geschichte wählen –</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="alarm-fade-seconds">Einblendzeit (Sekunden, 0 = sofort volle Lautstärke)</label>
-      <input type="number" id="alarm-fade-seconds" min="0" max="600" value="60">
-      <p class="field-help">Die Lautstärke steigt über diese Zeit sanft von 0 auf die aktuell
-        eingestellte Lautstärke, statt die Geschichte sofort in voller Lautstärke zu starten.</p>
+    <div id="alarm-dependent-fields" class="feature-gated">
+      <div class="field">
+        <label for="alarm-time">Weckzeit</label>
+        <input type="time" id="alarm-time" value="07:00">
+      </div>
+      <div class="field">
+        <label for="alarm-story">Weck-Geschichte</label>
+        <select id="alarm-story">
+          <option value="">– Geschichte wählen –</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="alarm-fade-seconds">Einblendzeit (Sekunden, 0 = sofort volle Lautstärke)</label>
+        <input type="number" id="alarm-fade-seconds" min="0" max="600" value="60">
+        <p class="field-help">Die Lautstärke steigt über diese Zeit sanft von 0 auf die aktuell
+          eingestellte Lautstärke, statt die Geschichte sofort in voller Lautstärke zu starten.</p>
+      </div>
     </div>
     <button class="btn" id="alarm-save-btn" type="button">Speichern</button>
     <p class="hint">
@@ -508,11 +530,15 @@
 
   <div class="card">
     <h2>Mehrraum-Wiedergabe (Snapcast)</h2>
-    <div class="field">
-      <label><input type="checkbox" id="multiroom-feature-checkbox"> Mehrraum-Wiedergabe aktivieren</label>
+    <div class="switch-row">
+      <span class="switch-row-label">Mehrraum-Wiedergabe aktivieren</span>
+      <label class="switch"><input type="checkbox" id="multiroom-feature-checkbox"><span class="switch-slider"></span></label>
     </div>
-    <div id="multiroom-master-field" class="field" hidden>
-      <label><input type="checkbox" id="multiroom-master-checkbox"> Diese Box ist die Hauptbox</label>
+    <div id="multiroom-master-field" class="feature-gated">
+      <div class="switch-row">
+        <span class="switch-row-label">Diese Box ist die Hauptbox</span>
+        <label class="switch"><input type="checkbox" id="multiroom-master-checkbox"><span class="switch-slider"></span></label>
+      </div>
     </div>
     <p class="hint" id="multiroom-status">Lädt…</p>
     <button class="btn" id="multiroom-save-btn" type="button">Speichern</button>
