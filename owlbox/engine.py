@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import socket
 import subprocess
 import threading
 import time
@@ -167,23 +168,32 @@ class Engine:
         self._airplay_paused_our_playback = False
 
         # Mehrraum-Wiedergabe (optional OS-level add-on, Snapcast - see
-        # owlbox/multiroom.py and docs/hardware.md). Only one thing is ever
-        # a deliberate admin choice, persisted like the alarm settings above:
-        # "ist diese Box die Hauptbox" (master_enabled). Everything else -
-        # which role is actually applied, and who a Slave is currently
-        # following - is *derived*, live, by _check_multiroom polling known
-        # peers (mDNS-discovered + the manual fallback list) via their own
-        # public /api/state, same as _wifi_enabled/_hotspot_active above are
-        # live rather than persisted. Never persisted on purpose: it has to
-        # re-derive itself from the current state of the network on every
-        # restart anyway (a peer could have changed roles while this box was
-        # off), so persisting a stale snapshot would just be one more thing
-        # that could drift from reality.
+        # owlbox/multiroom.py and docs/hardware.md). Two things are ever a
+        # deliberate admin choice, persisted like the alarm settings above:
+        # "ist diese Box die Hauptbox" (master_enabled) and *when* that was
+        # last turned on (master_since - a wall-clock timestamp, since it
+        # has to be comparable against other boxes' own timestamps, not just
+        # this process's monotonic clock). That timestamp is what lets two
+        # boxes both claiming "Hauptbox" resolve automatically instead of
+        # needing a person to remember to switch the old one off by hand:
+        # whichever was turned on most recently wins, the other yields (see
+        # _check_multiroom) - deterministic, not a guess, and every box can
+        # compute the same answer independently from the same public
+        # information (no box ever tells another one what to do).
+        # Everything else - which role is actually applied, and who a Slave
+        # is currently following - is *derived*, live, by _check_multiroom
+        # polling known peers (mDNS-discovered + the manual fallback list)
+        # via their own public /api/state, same as _wifi_enabled/
+        # _hotspot_active above are live rather than persisted.
         self._multiroom_master_enabled = bool(repository.get_int_setting("multiroom_master_enabled", 0))
+        raw_master_since = repository.get_setting("multiroom_master_since")
+        try:
+            self._multiroom_master_since: Optional[float] = float(raw_master_since) if raw_master_since else None
+        except ValueError:
+            self._multiroom_master_since = None
         self._multiroom_effective_role = "off"
         self._multiroom_following_host: Optional[str] = None
         self._multiroom_following_name: Optional[str] = None
-        self._multiroom_ambiguous = False
         self._multiroom_last_error: Optional[str] = None
         self._last_multiroom_check: Optional[float] = None
 
@@ -1215,18 +1225,21 @@ class Engine:
 
     def set_multiroom_master_enabled(self, enabled: bool) -> tuple[bool, str]:
         """The one deliberate admin action for Mehrraum-Wiedergabe: "ist
-        diese Box die Hauptbox". Persists it, then applies the consequence
-        immediately (rather than waiting up to _check_multiroom's own poll
-        interval) by forcing a check right now - matches every other
-        "Speichern" button in this app taking effect right away. Returns
-        (True, "ok") once the resulting role (master, or "off" if disabling
-        this and no other box currently claims to be Hauptbox either) has
-        actually been applied at the OS level, or (False, error_message)
-        if it hasn't - see _check_multiroom for why a failure here doesn't
-        just get silently retried forever without telling anyone."""
+        diese Box die Hauptbox". Persists it (and, when turning on, *when* -
+        see __init__'s comment on why that timestamp is what lets two boxes
+        both claiming Hauptbox resolve themselves automatically), then
+        applies the consequence immediately (rather than waiting up to
+        _check_multiroom's own poll interval) by forcing a check right now -
+        matches every other "Speichern" button in this app taking effect
+        right away. Returns (True, "ok") once the resulting role has
+        actually been applied at the OS level, or (False, error_message) if
+        it hasn't - see _check_multiroom for why a failure here doesn't just
+        get silently retried forever without telling anyone."""
         with self._lock:
             self._multiroom_master_enabled = enabled
+            self._multiroom_master_since = time.time() if enabled else None
         repository.set_setting("multiroom_master_enabled", int(enabled))
+        repository.set_setting("multiroom_master_since", str(self._multiroom_master_since or ""))
         self._last_multiroom_check = None  # force the check below to actually run
         self._check_multiroom(time.monotonic())
         with self._lock:
@@ -1247,37 +1260,64 @@ class Engine:
         return discovered + manual
 
     def _check_multiroom(self, now: float, interval: float = 15.0) -> None:
+        """Figures out - and, if it changed, applies - this box's actual
+        role. Always polls every known peer (via the already-public
+        /api/state, see multiroom.query_peer), even while this box itself
+        is the Hauptbox: that's what lets it notice a *newer* Hauptbox
+        showing up elsewhere and yield to it automatically (turning its own
+        switch back off) instead of needing a person to remember to flip it
+        off by hand on the old box. The winner among every box currently
+        claiming Hauptbox (this one included, if its own switch is on) is
+        simply whichever has the higher (since, hostname) - a real
+        timestamp comparison, not a guess, and every box computes the exact
+        same answer independently from the same information, so this always
+        converges to exactly one winner without any box ever telling
+        another one what to do."""
         if self._last_multiroom_check is not None and now - self._last_multiroom_check < interval:
             return
         self._last_multiroom_check = now
 
+        own_hostname = socket.gethostname()
         with self._lock:
             master_enabled = self._multiroom_master_enabled
+            master_since = self._multiroom_master_since
 
-        ambiguous = False
+        # (since, hostname, host-to-follow-if-this-wins, display-name) -
+        # "host" is None for self (we don't connect to our own network
+        # address), hostname is the tie-break key when two timestamps ever
+        # land equal (practically never with float epoch time, but keeps
+        # this a total order regardless).
+        candidates = []
         if master_enabled:
-            desired_role, desired_host, desired_name = "master", None, None
+            candidates.append((master_since or 0.0, own_hostname, None, None))
+        for peer in self._multiroom_candidates():
+            status = multiroom.query_peer(peer["host"])
+            if status and status["master_enabled"]:
+                candidates.append((status.get("master_since") or 0.0, peer["host"], peer["host"], peer["name"]))
+
+        if not candidates:
+            desired_role, desired_host, desired_name = "off", None, None
         else:
-            masters = []
-            for candidate in self._multiroom_candidates():
-                status = multiroom.query_peer(candidate["host"])
-                if status and status["master_enabled"]:
-                    masters.append(candidate)
-            if len(masters) == 1:
-                desired_role, desired_host, desired_name = "slave", masters[0]["host"], masters[0]["name"]
-            elif len(masters) == 0:
-                desired_role, desired_host, desired_name = "off", None, None
+            since, hostname, host, name = max(candidates, key=lambda c: (c[0], c[1]))
+            if host is None:
+                desired_role, desired_host, desired_name = "master", None, None
             else:
-                # More than one box on the network claims to be the Hauptbox
-                # at once - refuse to just guess which one, sit this out and
-                # surface it instead (see get_state()'s "ambiguous" flag).
-                logger.warning("mehrere Hauptboxen gleichzeitig erkannt: %s", [m["name"] for m in masters])
-                desired_role, desired_host, desired_name = "off", None, None
-                ambiguous = True
+                desired_role, desired_host, desired_name = "slave", host, name
+                if master_enabled:
+                    # We were the Hauptbox, but a newer one just outranked
+                    # us - yield: turn our own switch back off exactly as
+                    # if an admin had unchecked it, then fall through and
+                    # apply the winning peer's role like any other Slave
+                    # would, all in this same tick.
+                    logger.info("multiroom: yielding Hauptbox-Rolle an %s (neuer aktiviert)", name or host)
+                    with self._lock:
+                        self._multiroom_master_enabled = False
+                        self._multiroom_master_since = None
+                    repository.set_setting("multiroom_master_enabled", 0)
+                    repository.set_setting("multiroom_master_since", "")
 
         with self._lock:
             unchanged = (desired_role, desired_host) == (self._multiroom_effective_role, self._multiroom_following_host)
-            self._multiroom_ambiguous = ambiguous
         if unchanged:
             return
 
@@ -1367,10 +1407,10 @@ class Engine:
             alarm_fade_seconds = self._alarm_fade_seconds
             airplay_active = self._airplay_active
             multiroom_master_enabled = self._multiroom_master_enabled
+            multiroom_master_since = self._multiroom_master_since
             multiroom_effective_role = self._multiroom_effective_role
             multiroom_following_host = self._multiroom_following_host
             multiroom_following_name = self._multiroom_following_name
-            multiroom_ambiguous = self._multiroom_ambiguous
             multiroom_error = self._multiroom_last_error
         alarm_story_title = None
         if alarm_story_id is not None:
@@ -1487,17 +1527,18 @@ class Engine:
                 "fade_seconds": alarm_fade_seconds,
             },
             "airplay": {"active": airplay_active},
-            # "master_enabled" is deliberately the one flag every other
-            # OwlBox on the network reads (unauthenticated, see
-            # multiroom.query_peer) to decide whether to follow this box -
-            # renaming/nesting it differently would silently break every
-            # other box's auto-follow check, not just this one's own UI.
+            # "master_enabled"/"master_since" are deliberately the two flags
+            # every other OwlBox on the network reads (unauthenticated, see
+            # multiroom.query_peer) to decide whether - and, once two boxes
+            # both claim it, which one - to follow. Renaming/nesting them
+            # differently would silently break every other box's auto-follow
+            # check, not just this one's own UI.
             "multiroom": {
                 "master_enabled": multiroom_master_enabled,
+                "master_since": multiroom_master_since,
                 "effective_role": multiroom_effective_role,
                 "following_host": multiroom_following_host,
                 "following_name": multiroom_following_name,
-                "ambiguous": multiroom_ambiguous,
                 "error": multiroom_error,
             },
             # A plain sysfs read (see system_info.get_cpu_temperature_celsius),

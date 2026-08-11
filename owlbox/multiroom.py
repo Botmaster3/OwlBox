@@ -21,14 +21,19 @@ No manual "who is the master" wiring between boxes: every box with the
 mDNS (owlbox-mdns.service, a thin wrapper around `avahi-publish-service` -
 reuses the same Avahi that already backs plain <hostname>.local, see
 system_info.py/docs/hardware.md, nothing new to install there). One admin
-action, on exactly one box, flips "Diese Box ist die Hauptbox" on
+action, on any box, flips "Diese Box ist die Hauptbox" on
 (Engine.set_multiroom_master_enabled); every OTHER box discovers who that
 is on its own (discover_peers() + query_peer() below, both plain unauthenticated
 GETs against /api/state - already public, same as the kiosk's own polling -
 no shared secret or login between boxes needed) and applies the matching
 Slave role by itself, via Engine._check_multiroom's periodic background
-poll. Turn the switch off, or move it to a different box, and every
-follower re-derives the new state the same way within one poll interval.
+poll. Turn the switch off, or on on a *different* box, and every box -
+including a previous Hauptbox - re-derives the new state the same way
+within one poll interval: two boxes both claiming Hauptbox at once resolve
+by timestamp (whichever was switched on more recently wins, the older one
+yields and becomes that Slave itself - see Engine._check_multiroom), so
+switching it on on box B is by itself enough to take box A back out of the
+Hauptbox role, no need to remember to flip A off by hand first.
 
 Nothing here has been exercised against real Snapcast/Avahi mDNS discovery
 on real hardware or across multiple real devices - see the "Noch nicht an
@@ -181,14 +186,18 @@ def discover_peers(timeout: float = 3.0) -> list[dict]:
 def query_peer(host: str, timeout: float = 1.5) -> Optional[dict]:
     """Single unauthenticated GET against a peer's own /api/state (already
     public - same endpoint the kiosk itself polls, no login/shared secret
-    between boxes needed) - serves both the peer list's online/offline dot
-    and Engine._check_multiroom's "who currently claims to be Hauptbox"
-    question from the one HTTP round trip, rather than two separate ones.
-    None means unreachable/malformed response ("don't know"), never raises -
-    a peer being temporarily offline must never crash the poll loop."""
+    between boxes needed) - serves the peer list's online/offline dot, and
+    both halves of Engine._check_multiroom's "who currently claims to be
+    Hauptbox, and since when" question (the "since" half is what lets two
+    boxes that both claim it resolve automatically - whichever is newer
+    wins, see Engine.__init__'s comment), from the one HTTP round trip
+    rather than two separate ones. None means unreachable/malformed
+    response ("don't know"), never raises - a peer being temporarily
+    offline must never crash the poll loop."""
     try:
         with urllib.request.urlopen(f"http://{host}:5000/api/state", timeout=timeout) as resp:
             data = json.loads(resp.read())
     except (urllib.error.URLError, OSError, ValueError):
         return None
-    return {"master_enabled": bool(data.get("multiroom", {}).get("master_enabled"))}
+    m = data.get("multiroom", {})
+    return {"master_enabled": bool(m.get("master_enabled")), "master_since": m.get("master_since")}

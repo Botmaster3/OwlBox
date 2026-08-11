@@ -577,10 +577,20 @@ automatisch (per periodischem `/api/state`-Abruf bei jeder bekannten Box,
 schaltet sich selbst als Slave-Box dazu, ganz ohne eigenen Rollen-Schalter.
 Wird der Schalter wieder ausgeschaltet oder auf eine andere Box verschoben,
 folgen alle automatisch dorthin bzw. fallen in den normalen Einzelbetrieb
-zurück. Melden sich zufällig zwei Boxen gleichzeitig als Hauptbox, tut
-keine Box automatisch etwas (kein Raten, welche "die richtige" ist) - die
-Einstellungsseite zeigt das explizit an ("Mehrere Hauptboxen gleichzeitig
-im Netzwerk erkannt").
+zurück.
+
+**Hauptbox wechseln:** Einfach auf der neuen Box den Haken setzen - die
+alte schaltet sich von selbst wieder aus, kein vorheriges manuelles
+Deaktivieren nötig. Dahinter steckt kein Raten: jede Box merkt sich beim
+Aktivieren einen Zeitstempel ("seit wann bin ich Hauptbox") und meldet ihn
+über dasselbe `/api/state` mit. Beanspruchen zwei Boxen die Rolle
+gleichzeitig, gewinnt schlicht die mit dem späteren Zeitstempel - die
+ältere erkennt das bei ihrem eigenen nächsten Check (auch eine Hauptbox
+fragt weiterhin regelmäßig bei ihren bekannten Boxen nach, gerade um genau
+das zu bemerken), schaltet ihren eigenen Haken automatisch aus und wird
+selbst zur Slave-Box der neuen Hauptbox. Jede Box kommt dabei unabhängig
+zum exakt gleichen Ergebnis, ohne dass eine Box einer anderen einen Befehl
+schickt.
 
 Ein Klick auf "Öffnen" neben einem gefundenen Peer wechselt direkt in
 dessen Verwaltungsoberfläche (`http://<host>:5000/admin`) - praktisch, um

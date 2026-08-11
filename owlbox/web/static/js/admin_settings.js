@@ -930,6 +930,17 @@
       autoSleepStatus.textContent = state.auto_sleep.active
         ? "😴 Die Eule schläft gerade - aufwecken per Lautstärke, Play/Pause oder RFID-Tag."
         : "Wache Eule.";
+
+      // Live, not edit-and-save - a newer Hauptbox showing up elsewhere on
+      // the network can flip this box back off automatically at any moment
+      // (see Engine._check_multiroom), independent of anything happening on
+      // this page. Only touches the checkbox when the persisted value
+      // actually changed, so it never fights an in-progress, not-yet-saved
+      // click the same tick it happens.
+      if (state.multiroom.master_enabled !== multiroomMasterCheckbox.checked) {
+        multiroomMasterCheckbox.checked = state.multiroom.master_enabled;
+      }
+      renderMultiroomStatus(state.multiroom);
     } catch (err) {
       // ignore, try again next tick
     } finally {
@@ -1075,12 +1086,19 @@
   const multiroomSaveStatus = document.getElementById("multiroom-save-status");
 
   function renderMultiroomStatus(multiroom) {
+    // master_enabled alone (not effective_role) decides this branch - the
+    // server always clears master_enabled in the very same step as handing
+    // the role to a newer peer (see Engine._check_multiroom's yield logic),
+    // so "I asked to be Hauptbox" and "a newer one outranked me" can never
+    // both be true here at once. When master_enabled is true but
+    // effective_role isn't "master" yet, that's purely an OS-level
+    // application failure (systemctl, ...) - still "Diese Box ist die
+    // Hauptbox" is the honest description of what was actually asked for,
+    // with the reason it hasn't taken effect appended below.
     if (multiroom.master_enabled) {
       multiroomStatus.textContent = "Diese Box ist die Hauptbox.";
     } else if (multiroom.effective_role === "slave" && multiroom.following_name) {
       multiroomStatus.textContent = `Folgt automatisch der Hauptbox „${multiroom.following_name}“.`;
-    } else if (multiroom.ambiguous) {
-      multiroomStatus.textContent = "Mehrere Hauptboxen gleichzeitig im Netzwerk erkannt - bitte nur auf einer Box aktivieren.";
     } else {
       multiroomStatus.textContent = "Mehrraum-Wiedergabe ist aus (keine Hauptbox im Netzwerk gefunden).";
     }

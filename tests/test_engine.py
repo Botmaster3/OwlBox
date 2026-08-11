@@ -2275,7 +2275,7 @@ def test_check_multiroom_follows_the_one_peer_claiming_master(config, monkeypatc
     monkeypatch.setattr(
         multiroom, "discover_peers", lambda **k: [{"name": "owlbox-wohnzimmer", "host": "192.168.1.42"}]
     )
-    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: {"master_enabled": True})
+    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: {"master_enabled": True, "master_since": 1000.0})
     applied = []
     monkeypatch.setattr(multiroom, "set_role", lambda role, host: (applied.append((role, host)), (True, "ok"))[1])
 
@@ -2286,7 +2286,6 @@ def test_check_multiroom_follows_the_one_peer_claiming_master(config, monkeypatc
     assert state["effective_role"] == "slave"
     assert state["following_host"] == "192.168.1.42"
     assert state["following_name"] == "owlbox-wohnzimmer"
-    assert state["ambiguous"] is False
     assert applied == [("slave", "192.168.1.42")]
 
 
@@ -2294,7 +2293,7 @@ def test_check_multiroom_stays_off_when_no_peer_claims_master(config, monkeypatc
     monkeypatch.setattr(
         multiroom, "discover_peers", lambda **k: [{"name": "owlbox-wohnzimmer", "host": "192.168.1.42"}]
     )
-    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: {"master_enabled": False})
+    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: {"master_enabled": False, "master_since": None})
     monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not apply anything")))
 
     engine = Engine(config)
@@ -2314,7 +2313,9 @@ def test_check_multiroom_ignores_unreachable_peers(config, monkeypatch):
     assert engine.get_state()["multiroom"]["effective_role"] == "off"
 
 
-def test_check_multiroom_does_not_guess_with_two_masters_at_once(config, monkeypatch):
+def test_check_multiroom_follows_the_peer_with_the_newer_master_since(config, monkeypatch):
+    # Two boxes both claim Hauptbox at once - no guessing, the one with the
+    # later timestamp wins deterministically (see Engine.__init__'s comment).
     monkeypatch.setattr(
         multiroom,
         "discover_peers",
@@ -2323,27 +2324,74 @@ def test_check_multiroom_does_not_guess_with_two_masters_at_once(config, monkeyp
             {"name": "owlbox-kueche", "host": "192.168.1.43"},
         ],
     )
-    monkeypatch.setattr(multiroom, "query_peer", lambda host, **k: {"master_enabled": True})
-    monkeypatch.setattr(multiroom, "set_role", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not apply anything")))
+
+    def fake_query_peer(host, **k):
+        since = 1000.0 if host == "192.168.1.42" else 2000.0  # Küche activated later
+        return {"master_enabled": True, "master_since": since}
+
+    monkeypatch.setattr(multiroom, "query_peer", fake_query_peer)
+    applied = []
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (applied.append((role, host)), (True, "ok"))[1])
 
     engine = Engine(config)
     engine._check_multiroom(0.0)
     state = engine.get_state()["multiroom"]
-    assert state["effective_role"] == "off"
-    assert state["ambiguous"] is True
+    assert state["effective_role"] == "slave"
+    assert state["following_host"] == "192.168.1.43"
+    assert state["following_name"] == "owlbox-kueche"
+    assert applied == [("slave", "192.168.1.43")]
 
 
-def test_check_multiroom_master_enabled_skips_peer_polling_entirely(config, monkeypatch):
-    # If this box itself is the Hauptbox, it must never even ask its peers
-    # who's master - it already knows the answer is itself.
-    monkeypatch.setattr(
-        multiroom, "discover_peers", lambda **k: (_ for _ in ()).throw(AssertionError("must not poll peers"))
-    )
+def test_check_multiroom_yields_when_a_newer_peer_becomes_master(config, monkeypatch):
+    # This box turned its own switch on first (older timestamp) - a peer
+    # then also turns theirs on later. This box must notice on its own next
+    # check and switch itself back off + become that peer's Slave, without
+    # needing anyone to touch this box's own setting by hand.
+    monkeypatch.setattr(multiroom, "discover_peers", lambda **k: [])
     monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
-
     engine = Engine(config)
     engine.set_multiroom_master_enabled(True)
     assert engine.get_state()["multiroom"]["effective_role"] == "master"
+    own_since = engine.get_state()["multiroom"]["master_since"]
+
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: [{"name": "owlbox-kueche", "host": "192.168.1.43"}]
+    )
+    monkeypatch.setattr(
+        multiroom, "query_peer", lambda host, **k: {"master_enabled": True, "master_since": own_since + 1000}
+    )
+
+    engine._last_multiroom_check = None  # bypass the throttle for the test
+    engine._check_multiroom(0.0)
+
+    state = engine.get_state()["multiroom"]
+    assert state["master_enabled"] is False  # own switch auto-cleared
+    assert state["master_since"] is None
+    assert state["effective_role"] == "slave"
+    assert state["following_host"] == "192.168.1.43"
+    assert state["following_name"] == "owlbox-kueche"
+
+
+def test_check_multiroom_stays_master_when_peer_is_older(config, monkeypatch):
+    monkeypatch.setattr(multiroom, "discover_peers", lambda **k: [])
+    monkeypatch.setattr(multiroom, "set_role", lambda role, host: (True, "ok"))
+    engine = Engine(config)
+    engine.set_multiroom_master_enabled(True)
+    own_since = engine.get_state()["multiroom"]["master_since"]
+
+    monkeypatch.setattr(
+        multiroom, "discover_peers", lambda **k: [{"name": "owlbox-kueche", "host": "192.168.1.43"}]
+    )
+    monkeypatch.setattr(
+        multiroom, "query_peer", lambda host, **k: {"master_enabled": True, "master_since": own_since - 1000}
+    )
+
+    engine._last_multiroom_check = None
+    engine._check_multiroom(0.0)
+
+    state = engine.get_state()["multiroom"]
+    assert state["master_enabled"] is True
+    assert state["effective_role"] == "master"
 
 
 def test_check_multiroom_is_throttled(config, monkeypatch):
@@ -2372,7 +2420,5 @@ def test_set_multiroom_master_enabled_bypasses_the_throttle(config, monkeypatch)
     assert len(calls) == 1
 
     engine.set_multiroom_master_enabled(True)  # would otherwise still be inside the 15s window
-    # master_enabled=True skips peer polling entirely (see the dedicated
-    # test above) - the throttle-bypass itself is what's under test here,
-    # confirmed instead by the role having actually applied immediately.
+    assert len(calls) == 2  # the bypass actually ran a fresh check, not throttled away
     assert engine.get_state()["multiroom"]["effective_role"] == "master"

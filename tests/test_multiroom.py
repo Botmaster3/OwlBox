@@ -171,10 +171,10 @@ def test_query_peer_returns_master_status_on_success(monkeypatch):
             return False
 
         def read(self):
-            return json.dumps({"multiroom": {"master_enabled": True}}).encode()
+            return json.dumps({"multiroom": {"master_enabled": True, "master_since": 1000.5}}).encode()
 
     monkeypatch.setattr("owlbox.multiroom.urllib.request.urlopen", lambda *a, **k: FakeResponse())
-    assert multiroom.query_peer("owlbox-wohnzimmer.local") == {"master_enabled": True}
+    assert multiroom.query_peer("owlbox-wohnzimmer.local") == {"master_enabled": True, "master_since": 1000.5}
 
 
 def test_query_peer_false_when_peer_is_not_master(monkeypatch):
@@ -186,10 +186,10 @@ def test_query_peer_false_when_peer_is_not_master(monkeypatch):
             return False
 
         def read(self):
-            return json.dumps({"multiroom": {"master_enabled": False}}).encode()
+            return json.dumps({"multiroom": {"master_enabled": False, "master_since": None}}).encode()
 
     monkeypatch.setattr("owlbox.multiroom.urllib.request.urlopen", lambda *a, **k: FakeResponse())
-    assert multiroom.query_peer("owlbox-kueche.local") == {"master_enabled": False}
+    assert multiroom.query_peer("owlbox-kueche.local") == {"master_enabled": False, "master_since": None}
 
 
 def test_query_peer_none_on_connection_error(monkeypatch):
