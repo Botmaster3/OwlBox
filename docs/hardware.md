@@ -406,13 +406,29 @@ zwei 2-polige Federklemmen direkt auf der Platine (eine pro Kanal, jeweils
 
 **Dieser Abschnitt ist noch nicht an echter Hardware verifiziert.** Wegen
 des Kühlkörpers auf dem Pi 5 sitzt der Amp2 nicht mehr direkt gestapelt auf
-dem 40-Pin-Header, sondern hängt über Jumperkabel an einer eigenen,
-separat verdrahteten Adapter-Platine - genau demselben Eigenbau-Muster
-(Lochraster + Jumperkabel), das dieses Projekt für RC522/Taster/Encoder
-schon einsetzt (`docs/hat-wiring.html`). Der Amp2 selbst bleibt dabei
-unverändert - es ändert sich nur, *wie* seine Pins den Pi erreichen.
+dem Pi-eigenen 40-Pin-Header, sondern auf einem eigenen, auf der
+Adapter-Platine aufgelöteten 40-Pin-Stecker. Wichtig: Der Amp2 ist ein
+**HAT** und hat - anders als RC522/Taster/Encoder - keine einzelnen
+Lötpads für BCLK/LRCLK/SDA/etc., sondern ausschließlich diesen einen
+kompletten 40-Pin-Header als Schnittstelle. Er kann also nicht wie die
+übrigen Bauteile per Einzel-Jumperkabel angeschlossen werden.
 
-Alle sechs Signal-/Steuerleitungen, wie oben schon einzeln erwähnt:
+Der Aufbau in zwei Schritten:
+
+1. Auf die Adapter-Platine wird eine vollständige 40-Pin-Buchse gelötet.
+   Der Amp2 steckt komplett und mechanisch genau wie bei einem normalen
+   Pi-Stack auf diese Buchse - exakt wie sonst direkt auf den Pi.
+2. Von dieser 40-Pin-Buchse wird über einen zweiten Stecker **nur** die
+   tatsächlich benötigte Teilmenge der Pins (siehe Tabellen unten) mit
+   dünnerem Kabel zum Pi-eigenen Header weiterverbunden. Die übrigen
+   Pin-Positionen der Buchse bleiben mechanisch belegt, aber elektrisch
+   unbeschaltet.
+
+Eine bebilderte Übersicht dazu (inkl. aller anderen Bauteile) gibt es in
+`docs/owlbox-adapter-wiring-pi5.svg`.
+
+Alle sechs für diesen Anschluss relevanten Signal-/Steuerleitungen, wie
+oben schon einzeln erwähnt:
 
 | HiFiBerry Amp2 | Pi-Pin (BCM) | Zweck |
 |---|---|---|

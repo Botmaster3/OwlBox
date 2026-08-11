@@ -1,0 +1,884 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1900 1660" width="1900" height="1660" font-family="Arial, sans-serif">
+<rect x="0" y="0" width="1900" height="1660" fill="#f5f2ea"/>
+<text x="44" y="46" font-size="15" letter-spacing="2" fill="#b5732a" font-family="ui-monospace, Consolas, monospace" font-weight="700">OWLBOX &#183; ADAPTER-PLATINE (PI 5)</text>
+<text x="44" y="80" font-size="28" font-weight="800" fill="#1c231e">Gesamtverkabelung: RC522, Taster, Encoder, HiFiBerry Amp2</text>
+<text x="44" y="105" font-size="14" fill="#6d7669">HiFiBerry sitzt wegen der aktiven K&#252;hlung nicht mehr gestapelt, sondern steckt komplett auf einer eigenen 40-Pin-Buchse auf der Adapter-Platine (es ist ein HAT, kein Breakout mit einzelnen Pins). Pin-Namen 1:1 aus docs/hardware.md.</text>
+<line x1="44" y1="132" x2="70" y2="132" stroke="#b5732a" stroke-width="5" stroke-linecap="round"/>
+<text x="78" y="136" font-size="12.5" fill="#1c231e">3.3V</text>
+<line x1="514" y1="132" x2="540" y2="132" stroke="#8a2f2f" stroke-width="5" stroke-linecap="round"/>
+<text x="548" y="136" font-size="12.5" fill="#1c231e">5V (HiFiBerry, dickeres Kabel + beide Pins nutzen!)</text>
+<line x1="984" y1="132" x2="1010" y2="132" stroke="#33362f" stroke-width="5" stroke-linecap="round"/>
+<text x="1018" y="136" font-size="12.5" fill="#1c231e">GND</text>
+<line x1="44" y1="156" x2="70" y2="156" stroke="#2e5f8a" stroke-width="5" stroke-linecap="round"/>
+<text x="78" y="160" font-size="12.5" fill="#1c231e">SPI0 (RC522, Hardware-SPI)</text>
+<line x1="514" y1="156" x2="540" y2="156" stroke="#7a4fa0" stroke-width="5" stroke-linecap="round"/>
+<text x="548" y="160" font-size="12.5" fill="#1c231e">Taster (Weiter/Zurück)</text>
+<line x1="984" y1="156" x2="1010" y2="156" stroke="#2f6f4e" stroke-width="5" stroke-linecap="round"/>
+<text x="1018" y="160" font-size="12.5" fill="#1c231e">Lautstärke-Encoder</text>
+<line x1="44" y1="180" x2="70" y2="180" stroke="#3f8f6f" stroke-width="5" stroke-linecap="round"/>
+<text x="78" y="184" font-size="12.5" fill="#1c231e">Helligkeits-Encoder</text>
+<line x1="514" y1="180" x2="540" y2="180" stroke="#1a7a8a" stroke-width="5" stroke-linecap="round"/>
+<text x="548" y="184" font-size="12.5" fill="#1c231e">I2S (HiFiBerry Audio)</text>
+<line x1="984" y1="180" x2="1010" y2="180" stroke="#c94f7c" stroke-width="5" stroke-linecap="round"/>
+<text x="1018" y="184" font-size="12.5" fill="#1c231e">I2C (HiFiBerry-Steuerung, gemeinsam mit Display-Touch)</text>
+<rect x="44" y="236" width="300" height="150" rx="10" fill="#efe9d8" stroke="#2f6f4e" stroke-width="2.2"/>
+<text x="194.0" y="262" font-size="15.5" font-weight="800" fill="#2f6f4e" text-anchor="middle">RC522 (RFID, SPI0)</text>
+<text x="194.0" y="280" font-size="10.8" fill="#6d7669" text-anchor="middle">13,56 MHz Hardware-SPI</text>
+<line x1="70.0" y1="370" x2="70.0" y2="408" stroke="#b5732a" stroke-width="3.4"/>
+<circle cx="70.0" cy="370" r="4" fill="#b5732a"/>
+<text x="70.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 70.0 364)" font-family="ui-monospace, monospace">VCC</text>
+<line x1="111.33333333333334" y1="370" x2="111.33333333333334" y2="408" stroke="#33362f" stroke-width="3.4"/>
+<circle cx="111.33333333333334" cy="370" r="4" fill="#33362f"/>
+<text x="111.33333333333334" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 111.33333333333334 364)" font-family="ui-monospace, monospace">GND</text>
+<line x1="152.66666666666669" y1="370" x2="152.66666666666669" y2="408" stroke="#2e5f8a" stroke-width="3.4"/>
+<circle cx="152.66666666666669" cy="370" r="4" fill="#2e5f8a"/>
+<text x="152.66666666666669" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 152.66666666666669 364)" font-family="ui-monospace, monospace">RST</text>
+<line x1="194.0" y1="370" x2="194.0" y2="408" stroke="#2e5f8a" stroke-width="3.4"/>
+<circle cx="194.0" cy="370" r="4" fill="#2e5f8a"/>
+<text x="194.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 194.0 364)" font-family="ui-monospace, monospace">SDA/CS</text>
+<line x1="235.33333333333334" y1="370" x2="235.33333333333334" y2="408" stroke="#2e5f8a" stroke-width="3.4"/>
+<circle cx="235.33333333333334" cy="370" r="4" fill="#2e5f8a"/>
+<text x="235.33333333333334" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 235.33333333333334 364)" font-family="ui-monospace, monospace">SCK</text>
+<line x1="276.66666666666663" y1="370" x2="276.66666666666663" y2="408" stroke="#2e5f8a" stroke-width="3.4"/>
+<circle cx="276.66666666666663" cy="370" r="4" fill="#2e5f8a"/>
+<text x="276.66666666666663" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 276.66666666666663 364)" font-family="ui-monospace, monospace">MOSI</text>
+<line x1="318.0" y1="370" x2="318.0" y2="408" stroke="#2e5f8a" stroke-width="3.4"/>
+<circle cx="318.0" cy="370" r="4" fill="#2e5f8a"/>
+<text x="318.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 318.0 364)" font-family="ui-monospace, monospace">MISO</text>
+<rect x="374" y="236" width="150" height="150" rx="10" fill="#efe9d8" stroke="#2f6f4e" stroke-width="2.2"/>
+<text x="449.0" y="262" font-size="15.5" font-weight="800" fill="#2f6f4e" text-anchor="middle">Taster „Weiter“</text>
+<text x="449.0" y="280" font-size="10.8" fill="#6d7669" text-anchor="middle">Cherry-MX, 2 Kontakte</text>
+<line x1="400.0" y1="370" x2="400.0" y2="408" stroke="#7a4fa0" stroke-width="3.4"/>
+<circle cx="400.0" cy="370" r="4" fill="#7a4fa0"/>
+<text x="400.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 400.0 364)" font-family="ui-monospace, monospace">GPIO5</text>
+<line x1="498.0" y1="370" x2="498.0" y2="408" stroke="#33362f" stroke-width="3.4"/>
+<circle cx="498.0" cy="370" r="4" fill="#33362f"/>
+<text x="498.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 498.0 364)" font-family="ui-monospace, monospace">GND</text>
+<rect x="554" y="236" width="150" height="150" rx="10" fill="#efe9d8" stroke="#2f6f4e" stroke-width="2.2"/>
+<text x="629.0" y="262" font-size="15.5" font-weight="800" fill="#2f6f4e" text-anchor="middle">Taster „Zurück“</text>
+<text x="629.0" y="280" font-size="10.8" fill="#6d7669" text-anchor="middle">Cherry-MX, 2 Kontakte</text>
+<line x1="580.0" y1="370" x2="580.0" y2="408" stroke="#7a4fa0" stroke-width="3.4"/>
+<circle cx="580.0" cy="370" r="4" fill="#7a4fa0"/>
+<text x="580.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 580.0 364)" font-family="ui-monospace, monospace">GPIO6</text>
+<line x1="678.0" y1="370" x2="678.0" y2="408" stroke="#33362f" stroke-width="3.4"/>
+<circle cx="678.0" cy="370" r="4" fill="#33362f"/>
+<text x="678.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 678.0 364)" font-family="ui-monospace, monospace">GND</text>
+<rect x="734" y="236" width="280" height="150" rx="10" fill="#efe9d8" stroke="#2f6f4e" stroke-width="2.2"/>
+<text x="874.0" y="262" font-size="15.5" font-weight="800" fill="#2f6f4e" text-anchor="middle">Lautstärke-Encoder</text>
+<text x="874.0" y="280" font-size="10.8" fill="#6d7669" text-anchor="middle">KY-040 mit Taster (Play/Pause)</text>
+<line x1="760.0" y1="370" x2="760.0" y2="408" stroke="#2f6f4e" stroke-width="3.4"/>
+<circle cx="760.0" cy="370" r="4" fill="#2f6f4e"/>
+<text x="760.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 760.0 364)" font-family="ui-monospace, monospace">CLK</text>
+<line x1="817.0" y1="370" x2="817.0" y2="408" stroke="#2f6f4e" stroke-width="3.4"/>
+<circle cx="817.0" cy="370" r="4" fill="#2f6f4e"/>
+<text x="817.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 817.0 364)" font-family="ui-monospace, monospace">DT</text>
+<line x1="874.0" y1="370" x2="874.0" y2="408" stroke="#2f6f4e" stroke-width="3.4"/>
+<circle cx="874.0" cy="370" r="4" fill="#2f6f4e"/>
+<text x="874.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 874.0 364)" font-family="ui-monospace, monospace">SW</text>
+<line x1="931.0" y1="370" x2="931.0" y2="408" stroke="#b5732a" stroke-width="3.4"/>
+<circle cx="931.0" cy="370" r="4" fill="#b5732a"/>
+<text x="931.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 931.0 364)" font-family="ui-monospace, monospace">+</text>
+<line x1="988.0" y1="370" x2="988.0" y2="408" stroke="#33362f" stroke-width="3.4"/>
+<circle cx="988.0" cy="370" r="4" fill="#33362f"/>
+<text x="988.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 988.0 364)" font-family="ui-monospace, monospace">GND</text>
+<rect x="1044" y="236" width="280" height="150" rx="10" fill="#efe9d8" stroke="#2f6f4e" stroke-width="2.2"/>
+<text x="1184.0" y="262" font-size="15.5" font-weight="800" fill="#2f6f4e" text-anchor="middle">Helligkeits-Encoder</text>
+<text x="1184.0" y="280" font-size="10.8" fill="#6d7669" text-anchor="middle">KY-040 mit Taster (Nachtmodus)</text>
+<line x1="1070.0" y1="370" x2="1070.0" y2="408" stroke="#3f8f6f" stroke-width="3.4"/>
+<circle cx="1070.0" cy="370" r="4" fill="#3f8f6f"/>
+<text x="1070.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1070.0 364)" font-family="ui-monospace, monospace">CLK</text>
+<line x1="1127.0" y1="370" x2="1127.0" y2="408" stroke="#3f8f6f" stroke-width="3.4"/>
+<circle cx="1127.0" cy="370" r="4" fill="#3f8f6f"/>
+<text x="1127.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1127.0 364)" font-family="ui-monospace, monospace">DT</text>
+<line x1="1184.0" y1="370" x2="1184.0" y2="408" stroke="#3f8f6f" stroke-width="3.4"/>
+<circle cx="1184.0" cy="370" r="4" fill="#3f8f6f"/>
+<text x="1184.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1184.0 364)" font-family="ui-monospace, monospace">SW</text>
+<line x1="1241.0" y1="370" x2="1241.0" y2="408" stroke="#b5732a" stroke-width="3.4"/>
+<circle cx="1241.0" cy="370" r="4" fill="#b5732a"/>
+<text x="1241.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1241.0 364)" font-family="ui-monospace, monospace">+</text>
+<line x1="1298.0" y1="370" x2="1298.0" y2="408" stroke="#33362f" stroke-width="3.4"/>
+<circle cx="1298.0" cy="370" r="4" fill="#33362f"/>
+<text x="1298.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1298.0 364)" font-family="ui-monospace, monospace">GND</text>
+<rect x="1354" y="236" width="500" height="150" rx="10" fill="#efe9d8" stroke="#8a2f2f" stroke-width="2.2"/>
+<text x="1604.0" y="262" font-size="15.5" font-weight="800" fill="#8a2f2f" text-anchor="middle">HiFiBerry Amp2</text>
+<text x="1604.0" y="280" font-size="10.8" fill="#6d7669" text-anchor="middle">steckt komplett auf einer eigenen 40-Pin-Buchse auf der Adapter-Platine</text>
+<line x1="1380.0" y1="370" x2="1380.0" y2="408" stroke="#1a7a8a" stroke-width="3.4"/>
+<circle cx="1380.0" cy="370" r="4" fill="#1a7a8a"/>
+<text x="1380.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1380.0 364)" font-family="ui-monospace, monospace">BCLK</text>
+<line x1="1429.7777777777778" y1="370" x2="1429.7777777777778" y2="408" stroke="#1a7a8a" stroke-width="3.4"/>
+<circle cx="1429.7777777777778" cy="370" r="4" fill="#1a7a8a"/>
+<text x="1429.7777777777778" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1429.7777777777778 364)" font-family="ui-monospace, monospace">LRCLK</text>
+<line x1="1479.5555555555557" y1="370" x2="1479.5555555555557" y2="408" stroke="#1a7a8a" stroke-width="3.4"/>
+<circle cx="1479.5555555555557" cy="370" r="4" fill="#1a7a8a"/>
+<text x="1479.5555555555557" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1479.5555555555557 364)" font-family="ui-monospace, monospace">DIN</text>
+<line x1="1529.3333333333333" y1="370" x2="1529.3333333333333" y2="408" stroke="#1a7a8a" stroke-width="3.4"/>
+<circle cx="1529.3333333333333" cy="370" r="4" fill="#1a7a8a"/>
+<text x="1529.3333333333333" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1529.3333333333333 364)" font-family="ui-monospace, monospace">DOUT</text>
+<line x1="1579.111111111111" y1="370" x2="1579.111111111111" y2="408" stroke="#c94f7c" stroke-width="3.4"/>
+<circle cx="1579.111111111111" cy="370" r="4" fill="#c94f7c"/>
+<text x="1579.111111111111" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1579.111111111111 364)" font-family="ui-monospace, monospace">SDA</text>
+<line x1="1628.888888888889" y1="370" x2="1628.888888888889" y2="408" stroke="#c94f7c" stroke-width="3.4"/>
+<circle cx="1628.888888888889" cy="370" r="4" fill="#c94f7c"/>
+<text x="1628.888888888889" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1628.888888888889 364)" font-family="ui-monospace, monospace">SCL</text>
+<line x1="1678.6666666666667" y1="370" x2="1678.6666666666667" y2="408" stroke="#8a2f2f" stroke-width="3.4"/>
+<circle cx="1678.6666666666667" cy="370" r="4" fill="#8a2f2f"/>
+<text x="1678.6666666666667" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1678.6666666666667 364)" font-family="ui-monospace, monospace">5V</text>
+<line x1="1728.4444444444443" y1="370" x2="1728.4444444444443" y2="408" stroke="#8a2f2f" stroke-width="3.4"/>
+<circle cx="1728.4444444444443" cy="370" r="4" fill="#8a2f2f"/>
+<text x="1728.4444444444443" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1728.4444444444443 364)" font-family="ui-monospace, monospace">5V</text>
+<line x1="1778.2222222222222" y1="370" x2="1778.2222222222222" y2="408" stroke="#33362f" stroke-width="3.4"/>
+<circle cx="1778.2222222222222" cy="370" r="4" fill="#33362f"/>
+<text x="1778.2222222222222" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1778.2222222222222 364)" font-family="ui-monospace, monospace">GND</text>
+<line x1="1828.0" y1="370" x2="1828.0" y2="408" stroke="#33362f" stroke-width="3.4"/>
+<circle cx="1828.0" cy="370" r="4" fill="#33362f"/>
+<text x="1828.0" y="364" font-size="10.3" fill="#1c231e" text-anchor="middle" transform="rotate(-90 1828.0 364)" font-family="ui-monospace, monospace">GND</text>
+<circle cx="1420" cy="190" r="28" fill="#2a2a2a" stroke="#1c231e" stroke-width="2"/>
+<circle cx="1420" cy="190" r="15.400000000000002" fill="#3d3d3d" stroke="#111" stroke-width="1.5"/>
+<circle cx="1420" cy="190" r="4.48" fill="#111"/>
+<text x="1420" y="236" font-size="11" fill="#1c231e" text-anchor="middle">Lautsprecher L</text>
+<circle cx="1500" cy="190" r="28" fill="#2a2a2a" stroke="#1c231e" stroke-width="2"/>
+<circle cx="1500" cy="190" r="15.400000000000002" fill="#3d3d3d" stroke="#111" stroke-width="1.5"/>
+<circle cx="1500" cy="190" r="4.48" fill="#111"/>
+<text x="1500" y="236" font-size="11" fill="#1c231e" text-anchor="middle">Lautsprecher R</text>
+<text x="1460" y="144" font-size="11" fill="#6d7669" text-anchor="middle">2-adrig, Polarit&#228;t beachten (s. hardware.md)</text>
+<rect x="1354" y="426" width="500" height="118" rx="10" fill="#efe9d8" stroke="#8a2f2f" stroke-width="1.8" stroke-dasharray="5,3"/>
+<circle cx="1374.0" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1374.0" cy="502" r="4.4" fill="#8a2f2f"/>
+<line x1="1678.6666666666667" y1="408" x2="1374.0" y2="496" stroke="#8a2f2f" stroke-width="2.2"/>
+<circle cx="1398.2105263157894" cy="484" r="4.4" fill="#c94f7c"/>
+<line x1="1579.111111111111" y1="408" x2="1398.2105263157894" y2="478" stroke="#c94f7c" stroke-width="2.2"/>
+<circle cx="1398.2105263157894" cy="502" r="4.4" fill="#8a2f2f"/>
+<line x1="1728.4444444444443" y1="408" x2="1398.2105263157894" y2="496" stroke="#8a2f2f" stroke-width="2.2"/>
+<circle cx="1422.421052631579" cy="484" r="4.4" fill="#c94f7c"/>
+<line x1="1628.888888888889" y1="408" x2="1422.421052631579" y2="478" stroke="#c94f7c" stroke-width="2.2"/>
+<circle cx="1422.421052631579" cy="502" r="4.4" fill="#33362f"/>
+<line x1="1778.2222222222222" y1="408" x2="1422.421052631579" y2="496" stroke="#33362f" stroke-width="2.2"/>
+<circle cx="1446.6315789473683" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1446.6315789473683" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1470.842105263158" cy="484" r="4.4" fill="#33362f"/>
+<line x1="1828.0" y1="408" x2="1470.842105263158" y2="478" stroke="#33362f" stroke-width="2.2"/>
+<circle cx="1470.842105263158" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1495.0526315789473" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1495.0526315789473" cy="502" r="4.4" fill="#1a7a8a"/>
+<line x1="1380.0" y1="408" x2="1495.0526315789473" y2="496" stroke="#1a7a8a" stroke-width="2.2"/>
+<circle cx="1519.2631578947369" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1519.2631578947369" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1543.4736842105262" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1543.4736842105262" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1567.6842105263158" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1567.6842105263158" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1591.8947368421052" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1591.8947368421052" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1616.1052631578948" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1616.1052631578948" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1640.3157894736842" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1640.3157894736842" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1664.5263157894738" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1664.5263157894738" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1688.7368421052631" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1688.7368421052631" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1712.9473684210527" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1712.9473684210527" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1737.157894736842" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1737.157894736842" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1761.3684210526317" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1761.3684210526317" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1785.578947368421" cy="484" r="4.4" fill="#1a7a8a"/>
+<line x1="1429.7777777777778" y1="408" x2="1785.578947368421" y2="478" stroke="#1a7a8a" stroke-width="2.2"/>
+<circle cx="1785.578947368421" cy="502" r="2.4" fill="#c9c2af"/>
+<circle cx="1809.7894736842104" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1809.7894736842104" cy="502" r="4.4" fill="#1a7a8a"/>
+<line x1="1479.5555555555557" y1="408" x2="1809.7894736842104" y2="496" stroke="#1a7a8a" stroke-width="2.2"/>
+<circle cx="1834.0" cy="484" r="2.4" fill="#c9c2af"/>
+<circle cx="1834.0" cy="502" r="4.4" fill="#1a7a8a"/>
+<line x1="1529.3333333333333" y1="408" x2="1834.0" y2="496" stroke="#1a7a8a" stroke-width="2.2"/>
+<rect x="1362" y="430" width="484" height="38" rx="6" fill="#efe9d8" opacity="0.94"/>
+<text x="1604.0" y="444" font-size="11.5" font-weight="700" fill="#8a2f2f" text-anchor="middle">40-Pin-Buchse auf der Adapter-Platine (HiFiBerry steckt hier komplett auf)</text>
+<text x="1604.0" y="459" font-size="9.8" fill="#6d7669" text-anchor="middle">nur die 11 farbigen Pins werden elektrisch weiterverdrahtet - der Rest bleibt wie beim direkten Stapeln ungenutzt</text>
+<rect x="44" y="574" width="1810" height="210" rx="12" fill="#efe9d8" stroke="#1c231e" stroke-width="2.6"/>
+<text x="64" y="604" font-size="17" font-weight="800" fill="#1c231e">Adapter-Platine (Lochraster, ca. 90×60&#8239;mm)</text>
+<text x="64" y="624" font-size="11.5" fill="#6d7669">RC522, beide Taster, beide Encoder und jetzt auch HiFiBerry sitzen bzw. verdrahten hier - nur B&#252;ndel-Jumperkabel gehen weiter zum Pi.</text>
+<circle cx="80" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="106" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="132" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="158" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="184" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="210" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="236" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="262" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="288" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="314" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="340" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="366" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="392" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="418" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="444" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="470" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="496" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="522" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="548" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="574" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="600" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="626" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="652" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="678" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="704" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="730" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="756" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="782" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="808" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="834" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="860" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="886" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="912" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="938" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="964" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="990" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1016" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1042" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1068" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1094" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1120" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1146" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1172" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1198" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1224" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1250" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1276" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1302" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1328" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1354" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1380" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1406" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1432" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1458" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1484" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1510" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1536" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1562" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1588" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1614" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1640" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1666" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1692" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1718" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1744" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1770" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1796" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="1822" cy="644" r="1.6" fill="#c9c2af"/>
+<circle cx="80" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="106" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="132" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="158" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="184" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="210" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="236" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="262" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="288" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="314" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="340" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="366" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="392" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="418" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="444" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="470" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="496" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="522" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="548" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="574" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="600" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="626" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="652" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="678" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="704" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="730" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="756" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="782" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="808" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="834" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="860" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="886" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="912" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="938" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="964" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="990" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1016" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1042" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1068" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1094" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1120" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1146" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1172" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1198" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1224" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1250" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1276" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1302" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1328" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1354" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1380" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1406" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1432" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1458" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1484" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1510" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1536" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1562" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1588" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1614" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1640" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1666" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1692" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1718" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1744" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1770" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1796" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="1822" cy="664" r="1.6" fill="#c9c2af"/>
+<circle cx="80" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="106" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="132" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="158" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="184" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="210" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="236" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="262" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="288" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="314" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="340" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="366" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="392" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="418" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="444" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="470" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="496" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="522" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="548" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="574" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="600" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="626" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="652" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="678" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="704" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="730" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="756" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="782" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="808" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="834" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="860" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="886" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="912" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="938" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="964" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="990" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1016" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1042" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1068" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1094" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1120" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1146" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1172" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1198" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1224" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1250" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1276" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1302" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1328" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1354" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1380" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1406" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1432" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1458" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1484" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1510" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1536" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1562" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1588" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1614" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1640" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1666" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1692" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1718" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1744" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1770" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1796" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="1822" cy="684" r="1.6" fill="#c9c2af"/>
+<circle cx="80" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="106" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="132" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="158" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="184" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="210" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="236" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="262" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="288" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="314" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="340" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="366" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="392" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="418" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="444" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="470" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="496" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="522" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="548" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="574" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="600" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="626" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="652" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="678" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="704" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="730" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="756" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="782" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="808" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="834" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="860" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="886" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="912" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="938" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="964" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="990" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1016" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1042" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1068" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1094" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1120" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1146" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1172" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1198" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1224" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1250" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1276" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1302" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1328" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1354" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1380" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1406" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1432" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1458" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1484" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1510" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1536" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1562" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1588" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1614" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1640" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1666" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1692" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1718" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1744" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1770" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1796" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="1822" cy="704" r="1.6" fill="#c9c2af"/>
+<circle cx="80" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="106" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="132" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="158" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="184" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="210" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="236" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="262" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="288" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="314" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="340" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="366" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="392" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="418" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="444" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="470" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="496" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="522" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="548" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="574" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="600" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="626" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="652" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="678" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="704" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="730" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="756" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="782" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="808" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="834" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="860" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="886" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="912" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="938" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="964" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="990" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1016" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1042" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1068" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1094" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1120" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1146" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1172" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1198" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1224" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1250" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1276" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1302" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1328" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1354" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1380" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1406" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1432" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1458" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1484" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1510" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1536" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1562" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1588" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1614" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1640" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1666" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1692" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1718" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1744" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1770" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1796" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="1822" cy="724" r="1.6" fill="#c9c2af"/>
+<circle cx="80" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="106" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="132" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="158" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="184" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="210" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="236" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="262" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="288" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="314" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="340" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="366" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="392" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="418" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="444" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="470" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="496" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="522" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="548" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="574" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="600" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="626" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="652" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="678" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="704" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="730" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="756" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="782" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="808" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="834" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="860" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="886" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="912" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="938" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="964" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="990" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1016" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1042" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1068" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1094" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1120" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1146" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1172" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1198" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1224" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1250" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1276" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1302" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1328" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1354" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1380" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1406" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1432" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1458" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1484" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1510" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1536" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1562" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1588" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1614" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1640" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1666" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1692" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1718" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1744" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1770" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1796" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="1822" cy="744" r="1.6" fill="#c9c2af"/>
+<circle cx="80" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="106" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="132" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="158" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="184" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="210" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="236" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="262" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="288" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="314" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="340" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="366" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="392" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="418" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="444" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="470" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="496" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="522" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="548" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="574" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="600" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="626" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="652" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="678" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="704" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="730" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="756" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="782" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="808" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="834" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="860" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="886" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="912" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="938" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="964" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="990" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1016" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1042" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1068" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1094" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1120" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1146" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1172" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1198" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1224" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1250" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1276" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1302" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1328" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1354" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1380" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1406" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1432" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1458" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1484" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1510" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1536" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1562" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1588" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1614" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1640" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1666" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1692" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1718" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1744" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1770" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1796" cy="764" r="1.6" fill="#c9c2af"/>
+<circle cx="1822" cy="764" r="1.6" fill="#c9c2af"/>
+<line x1="70.0" y1="386" x2="70.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="111.33333333333334" y1="386" x2="111.33333333333334" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="152.66666666666669" y1="386" x2="152.66666666666669" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="194.0" y1="386" x2="194.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="235.33333333333334" y1="386" x2="235.33333333333334" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="276.66666666666663" y1="386" x2="276.66666666666663" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="318.0" y1="386" x2="318.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="400.0" y1="386" x2="400.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="498.0" y1="386" x2="498.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="580.0" y1="386" x2="580.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="678.0" y1="386" x2="678.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="760.0" y1="386" x2="760.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="817.0" y1="386" x2="817.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="874.0" y1="386" x2="874.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="931.0" y1="386" x2="931.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="988.0" y1="386" x2="988.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1070.0" y1="386" x2="1070.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1127.0" y1="386" x2="1127.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1184.0" y1="386" x2="1184.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1241.0" y1="386" x2="1241.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1298.0" y1="386" x2="1298.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1374.0" y1="502" x2="1374.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1398.2105263157894" y1="484" x2="1398.2105263157894" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1398.2105263157894" y1="502" x2="1398.2105263157894" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1422.421052631579" y1="484" x2="1422.421052631579" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1422.421052631579" y1="502" x2="1422.421052631579" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1470.842105263158" y1="484" x2="1470.842105263158" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1495.0526315789473" y1="502" x2="1495.0526315789473" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1785.578947368421" y1="484" x2="1785.578947368421" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1809.7894736842104" y1="502" x2="1809.7894736842104" y2="640" stroke="#00000022" stroke-width="1"/>
+<line x1="1834.0" y1="502" x2="1834.0" y2="640" stroke="#00000022" stroke-width="1"/>
+<rect x="620" y="854" width="700" height="640" rx="14" fill="#1c2a20" stroke="#1c231e" stroke-width="2.4"/>
+<text x="970.0" y="888" font-size="18" font-weight="800" fill="#e7efe9" text-anchor="middle">Raspberry Pi 5</text>
+<text x="970.0" y="908" font-size="11.5" fill="#9fb3a6" text-anchor="middle">40-Pin-Header, physische Nummerierung - nur belegte Pins beschriftet/farbig</text>
+<circle cx="924.0" cy="946" r="9" fill="#b5732a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="950" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">3V3</text>
+<text x="924.0" y="932" font-size="7.6" fill="#5c6a61" text-anchor="middle">1</text>
+<circle cx="970.0" cy="946" r="9" fill="#8a2f2f" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="950" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">5V</text>
+<text x="970.0" y="932" font-size="7.6" fill="#5c6a61" text-anchor="middle">2</text>
+<circle cx="924.0" cy="973" r="9" fill="#c94f7c" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="977" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO2</text>
+<text x="924.0" y="959" font-size="7.6" fill="#5c6a61" text-anchor="middle">3</text>
+<circle cx="970.0" cy="973" r="9" fill="#8a2f2f" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="977" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">5V</text>
+<text x="970.0" y="959" font-size="7.6" fill="#5c6a61" text-anchor="middle">4</text>
+<circle cx="924.0" cy="1000" r="9" fill="#c94f7c" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1004" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO3</text>
+<text x="924.0" y="986" font-size="7.6" fill="#5c6a61" text-anchor="middle">5</text>
+<circle cx="970.0" cy="1000" r="9" fill="#33362f" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1004" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GND</text>
+<text x="970.0" y="986" font-size="7.6" fill="#5c6a61" text-anchor="middle">6</text>
+<circle cx="924.0" cy="1027" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1031" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="end" font-family="ui-monospace, monospace">GPIO4</text>
+<text x="924.0" y="1013" font-size="7.6" fill="#5c6a61" text-anchor="middle">7</text>
+<circle cx="970.0" cy="1027" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1031" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GPIO14</text>
+<text x="970.0" y="1013" font-size="7.6" fill="#5c6a61" text-anchor="middle">8</text>
+<circle cx="924.0" cy="1054" r="9" fill="#33362f" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1058" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GND</text>
+<text x="924.0" y="1040" font-size="7.6" fill="#5c6a61" text-anchor="middle">9</text>
+<circle cx="970.0" cy="1054" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1058" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GPIO15</text>
+<text x="970.0" y="1040" font-size="7.6" fill="#5c6a61" text-anchor="middle">10</text>
+<circle cx="924.0" cy="1081" r="9" fill="#3f8f6f" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1085" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO17</text>
+<text x="924.0" y="1067" font-size="7.6" fill="#5c6a61" text-anchor="middle">11</text>
+<circle cx="970.0" cy="1081" r="9" fill="#1a7a8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1085" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GPIO18</text>
+<text x="970.0" y="1067" font-size="7.6" fill="#5c6a61" text-anchor="middle">12</text>
+<circle cx="924.0" cy="1108" r="9" fill="#2f6f4e" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1112" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO27</text>
+<text x="924.0" y="1094" font-size="7.6" fill="#5c6a61" text-anchor="middle">13</text>
+<circle cx="970.0" cy="1108" r="9" fill="#33362f" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1112" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GND</text>
+<text x="970.0" y="1094" font-size="7.6" fill="#5c6a61" text-anchor="middle">14</text>
+<circle cx="924.0" cy="1135" r="9" fill="#2f6f4e" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1139" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO22</text>
+<text x="924.0" y="1121" font-size="7.6" fill="#5c6a61" text-anchor="middle">15</text>
+<circle cx="970.0" cy="1135" r="9" fill="#3f8f6f" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1139" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GPIO23</text>
+<text x="970.0" y="1121" font-size="7.6" fill="#5c6a61" text-anchor="middle">16</text>
+<circle cx="924.0" cy="1162" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1166" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="end" font-family="ui-monospace, monospace">3V3</text>
+<text x="924.0" y="1148" font-size="7.6" fill="#5c6a61" text-anchor="middle">17</text>
+<circle cx="970.0" cy="1162" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1166" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GPIO24</text>
+<text x="970.0" y="1148" font-size="7.6" fill="#5c6a61" text-anchor="middle">18</text>
+<circle cx="924.0" cy="1189" r="9" fill="#2e5f8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1193" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO10</text>
+<text x="924.0" y="1175" font-size="7.6" fill="#5c6a61" text-anchor="middle">19</text>
+<circle cx="970.0" cy="1189" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1193" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GND</text>
+<text x="970.0" y="1175" font-size="7.6" fill="#5c6a61" text-anchor="middle">20</text>
+<circle cx="924.0" cy="1216" r="9" fill="#2e5f8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1220" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO9</text>
+<text x="924.0" y="1202" font-size="7.6" fill="#5c6a61" text-anchor="middle">21</text>
+<circle cx="970.0" cy="1216" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1220" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GPIO25</text>
+<text x="970.0" y="1202" font-size="7.6" fill="#5c6a61" text-anchor="middle">22</text>
+<circle cx="924.0" cy="1243" r="9" fill="#2e5f8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1247" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO11</text>
+<text x="924.0" y="1229" font-size="7.6" fill="#5c6a61" text-anchor="middle">23</text>
+<circle cx="970.0" cy="1243" r="9" fill="#2e5f8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1247" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GPIO8</text>
+<text x="970.0" y="1229" font-size="7.6" fill="#5c6a61" text-anchor="middle">24</text>
+<circle cx="924.0" cy="1270" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1274" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="end" font-family="ui-monospace, monospace">GND</text>
+<text x="924.0" y="1256" font-size="7.6" fill="#5c6a61" text-anchor="middle">25</text>
+<circle cx="970.0" cy="1270" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1274" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GPIO7</text>
+<text x="970.0" y="1256" font-size="7.6" fill="#5c6a61" text-anchor="middle">26</text>
+<circle cx="924.0" cy="1297" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1301" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="end" font-family="ui-monospace, monospace">GPIO0</text>
+<text x="924.0" y="1283" font-size="7.6" fill="#5c6a61" text-anchor="middle">27</text>
+<circle cx="970.0" cy="1297" r="9" fill="#2f6f4e" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1301" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GPIO1</text>
+<text x="970.0" y="1283" font-size="7.6" fill="#5c6a61" text-anchor="middle">28</text>
+<circle cx="924.0" cy="1324" r="9" fill="#7a4fa0" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1328" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO5</text>
+<text x="924.0" y="1310" font-size="7.6" fill="#5c6a61" text-anchor="middle">29</text>
+<circle cx="970.0" cy="1324" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1328" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GND</text>
+<text x="970.0" y="1310" font-size="7.6" fill="#5c6a61" text-anchor="middle">30</text>
+<circle cx="924.0" cy="1351" r="9" fill="#7a4fa0" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1355" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO6</text>
+<text x="924.0" y="1337" font-size="7.6" fill="#5c6a61" text-anchor="middle">31</text>
+<circle cx="970.0" cy="1351" r="9" fill="#3f8f6f" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1355" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GPIO12</text>
+<text x="970.0" y="1337" font-size="7.6" fill="#5c6a61" text-anchor="middle">32</text>
+<circle cx="924.0" cy="1378" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1382" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="end" font-family="ui-monospace, monospace">GPIO13</text>
+<text x="924.0" y="1364" font-size="7.6" fill="#5c6a61" text-anchor="middle">33</text>
+<circle cx="970.0" cy="1378" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1382" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GND</text>
+<text x="970.0" y="1364" font-size="7.6" fill="#5c6a61" text-anchor="middle">34</text>
+<circle cx="924.0" cy="1405" r="9" fill="#1a7a8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1409" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO19</text>
+<text x="924.0" y="1391" font-size="7.6" fill="#5c6a61" text-anchor="middle">35</text>
+<circle cx="970.0" cy="1405" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1409" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="start" font-family="ui-monospace, monospace">GPIO16</text>
+<text x="970.0" y="1391" font-size="7.6" fill="#5c6a61" text-anchor="middle">36</text>
+<circle cx="924.0" cy="1432" r="9" fill="#2e5f8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1436" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="end" font-family="ui-monospace, monospace">GPIO26</text>
+<text x="924.0" y="1418" font-size="7.6" fill="#5c6a61" text-anchor="middle">37</text>
+<circle cx="970.0" cy="1432" r="9" fill="#1a7a8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1436" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GPIO20</text>
+<text x="970.0" y="1418" font-size="7.6" fill="#5c6a61" text-anchor="middle">38</text>
+<circle cx="924.0" cy="1459" r="9" fill="#3c4a40" stroke="#0d140f" stroke-width="1.2"/>
+<text x="908.0" y="1463" font-size="10.6" fill="#6f8078" font-weight="400" text-anchor="end" font-family="ui-monospace, monospace">GND</text>
+<text x="924.0" y="1445" font-size="7.6" fill="#5c6a61" text-anchor="middle">39</text>
+<circle cx="970.0" cy="1459" r="9" fill="#1a7a8a" stroke="#0d140f" stroke-width="1.2"/>
+<text x="986.0" y="1463" font-size="10.6" fill="#f5f2ea" font-weight="700" text-anchor="start" font-family="ui-monospace, monospace">GPIO21</text>
+<text x="970.0" y="1445" font-size="7.6" fill="#5c6a61" text-anchor="middle">40</text>
+<text x="970.0" y="1478" font-size="10.5" fill="#8fa397" text-anchor="middle">graue Pins: unbenutzt/reserviert (z.&#8239;B. CE1 auf GPIO7, bewusst frei)</text>
+<path d="M 120.0 784 C 120.0 874, 924.0 806, 924.0 931" stroke="#b5732a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="120.0" cy="784" r="4" fill="#b5732a"/>
+<path d="M 192.5 784 C 192.5 874, 970.0 806, 970.0 931" stroke="#8a2f2f" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="192.5" cy="784" r="4" fill="#8a2f2f"/>
+<path d="M 265.0 784 C 265.0 874, 924.0 833, 924.0 958" stroke="#c94f7c" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="265.0" cy="784" r="4" fill="#c94f7c"/>
+<path d="M 337.5 784 C 337.5 874, 970.0 833, 970.0 958" stroke="#8a2f2f" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="337.5" cy="784" r="4" fill="#8a2f2f"/>
+<path d="M 410.0 784 C 410.0 874, 924.0 860, 924.0 985" stroke="#c94f7c" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="410.0" cy="784" r="4" fill="#c94f7c"/>
+<path d="M 482.5 784 C 482.5 874, 970.0 860, 970.0 985" stroke="#33362f" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="482.5" cy="784" r="4" fill="#33362f"/>
+<path d="M 555.0 784 C 555.0 874, 924.0 914, 924.0 1039" stroke="#33362f" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="555.0" cy="784" r="4" fill="#33362f"/>
+<path d="M 627.5 784 C 627.5 874, 924.0 941, 924.0 1066" stroke="#3f8f6f" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="627.5" cy="784" r="4" fill="#3f8f6f"/>
+<path d="M 700.0 784 C 700.0 874, 970.0 941, 970.0 1066" stroke="#1a7a8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="700.0" cy="784" r="4" fill="#1a7a8a"/>
+<path d="M 772.5 784 C 772.5 874, 924.0 968, 924.0 1093" stroke="#2f6f4e" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="772.5" cy="784" r="4" fill="#2f6f4e"/>
+<path d="M 845.0 784 C 845.0 874, 970.0 968, 970.0 1093" stroke="#33362f" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="845.0" cy="784" r="4" fill="#33362f"/>
+<path d="M 917.5 784 C 917.5 874, 924.0 995, 924.0 1120" stroke="#2f6f4e" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="917.5" cy="784" r="4" fill="#2f6f4e"/>
+<path d="M 990.0 784 C 990.0 874, 970.0 995, 970.0 1120" stroke="#3f8f6f" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="990.0" cy="784" r="4" fill="#3f8f6f"/>
+<path d="M 1062.5 784 C 1062.5 874, 924.0 1049, 924.0 1174" stroke="#2e5f8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1062.5" cy="784" r="4" fill="#2e5f8a"/>
+<path d="M 1135.0 784 C 1135.0 874, 924.0 1076, 924.0 1201" stroke="#2e5f8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1135.0" cy="784" r="4" fill="#2e5f8a"/>
+<path d="M 1207.5 784 C 1207.5 874, 924.0 1103, 924.0 1228" stroke="#2e5f8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1207.5" cy="784" r="4" fill="#2e5f8a"/>
+<path d="M 1280.0 784 C 1280.0 874, 970.0 1103, 970.0 1228" stroke="#2e5f8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1280.0" cy="784" r="4" fill="#2e5f8a"/>
+<path d="M 1352.5 784 C 1352.5 874, 970.0 1157, 970.0 1282" stroke="#2f6f4e" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1352.5" cy="784" r="4" fill="#2f6f4e"/>
+<path d="M 1425.0 784 C 1425.0 874, 924.0 1184, 924.0 1309" stroke="#7a4fa0" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1425.0" cy="784" r="4" fill="#7a4fa0"/>
+<path d="M 1497.5 784 C 1497.5 874, 924.0 1211, 924.0 1336" stroke="#7a4fa0" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1497.5" cy="784" r="4" fill="#7a4fa0"/>
+<path d="M 1570.0 784 C 1570.0 874, 970.0 1211, 970.0 1336" stroke="#3f8f6f" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1570.0" cy="784" r="4" fill="#3f8f6f"/>
+<path d="M 1642.5 784 C 1642.5 874, 924.0 1265, 924.0 1390" stroke="#1a7a8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1642.5" cy="784" r="4" fill="#1a7a8a"/>
+<path d="M 1715.0 784 C 1715.0 874, 924.0 1292, 924.0 1417" stroke="#2e5f8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1715.0" cy="784" r="4" fill="#2e5f8a"/>
+<path d="M 1787.5 784 C 1787.5 874, 970.0 1292, 970.0 1417" stroke="#1a7a8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1787.5" cy="784" r="4" fill="#1a7a8a"/>
+<path d="M 1860.0 784 C 1860.0 874, 970.0 1319, 970.0 1444" stroke="#1a7a8a" stroke-width="2.6" fill="none" opacity="0.85"/>
+<circle cx="1860.0" cy="784" r="4" fill="#1a7a8a"/>
+<text x="44" y="1534" font-size="12" fill="#6d7669">Quelle aller Pin-Zuordnungen: docs/hardware.md (Tabellen &#8222;GPIO-&#220;bersicht&#8220;, &#8222;RC522&#8220;, &#8222;Taster&#8220;, &#8222;Dreh-Encoder&#8220;, &#8222;HiFiBerry Amp2&#8220;). GND-Pins f&#252;r RC522/Taster/Encoder sind austauschbar (jeder GND-Pin ist gleichwertig) - beim HiFiBerry bewusst mehrere gleichzeitig + dickeres Kabel, s. dort.</text>
+<text x="44" y="1558" font-size="12" fill="#6d7669" font-weight="700">Noch nicht an echter Pi-5-Hardware verifiziert (s. docs/hardware.md) - reine Verkabelungs-Referenz aus den dokumentierten Pin-Tabellen.</text>
+</svg>
