@@ -664,7 +664,7 @@ body.kiosk { height: 100vh; overflow: hidden; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5vw;
+  gap: 4.5vw;
   height: 100vh;
   width: 100vw;
   padding: 3vh 4vw;
@@ -687,13 +687,20 @@ body.kiosk { height: 100vh; overflow: hidden; }
 .cover-wrap {
   width: min(42vh, 42vw);
   height: min(42vh, 42vw);
-  border-radius: 18px;
+  border-radius: 26px;
   overflow: hidden;
   background: var(--panel);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  /* Two shadows: a soft, wide one for real depth, plus a thin accent-tinted
+     ring right at the edge - the ring reads as a deliberate frame rather
+     than a random hard box, and picks up whatever --accent the current
+     theme uses instead of being a flat generic border. */
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 0 3px var(--accent-dim);
 }
 
 /* Weihnachten only (see the rules further down) - an empty box the rest of
@@ -717,12 +724,20 @@ html[data-theme="weihnachten"] .advent-wreath {
 .cover { width: 100%; height: 100%; object-fit: cover; }
 .cover-placeholder { font-size: min(20vh, 20vw); opacity: 0.6; }
 
+/* Grouped into a card (same var(--panel) technique as every admin .card),
+   instead of floating directly on the busy theme background - gives the
+   whole now-playing block a defined edge and enough contrast to stay
+   legible over any theme's --bg-image gradient, dark or light alike. */
 .info {
   flex: 1 1 auto;
   max-width: 50vw;
   display: flex;
   flex-direction: column;
-  gap: 3vh;
+  gap: 2.4vh;
+  background: var(--panel);
+  border-radius: 26px;
+  padding: clamp(20px, 3.2vw, 38px) clamp(24px, 3.6vw, 44px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
 }
 
 /* A long story title used to be allowed to wrap onto a second line
@@ -778,10 +793,33 @@ html[data-theme="weihnachten"] .advent-wreath {
    *column* container, e.g. the Info page's disk/memory/CPU gauges) bars to
    zero height, since flex-basis: 0 wins over `height` on the main axis there. */
 .progress-row .progress-bar, .volume-row .progress-bar { flex: 1; width: auto; }
-.progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s linear; }
+.progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s linear; position: relative; }
 
 .volume-row { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; }
 .volume-fill { background: var(--text-dim); }
+
+/* Purely decorative "scrub head" on the kiosk's progress/volume bars only -
+   a static, view-only cue (nothing on this screen is actually touchable,
+   see docs/hardware.md), the same idea a car dashboard or TV media UI uses:
+   it reads as "this is a position on a timeline" without implying you can
+   drag it. Scoped to .player specifically rather than the shared
+   .progress-row/.progress-fill classes, which the admin dashboard and the
+   Info page's disk/memory/CPU gauges reuse too - this look is a kiosk-only
+   flourish, not a change to how progress bars render everywhere else. */
+.player .progress-bar { overflow: visible; }
+.player .progress-fill::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(50%, -50%);
+  box-shadow: 0 0 0 3px var(--panel);
+}
+.player .volume-fill::after { background: var(--text-dim); }
 
 /* Decorative "is audio playing" animation, dancing while playback is active
    and resting flat otherwise - not a real audio-level analysis. Sized to hug
@@ -790,7 +828,7 @@ html[data-theme="weihnachten"] .advent-wreath {
 .vu-bar {
   width: 4px;
   height: 12%;
-  border-radius: 1px 1px 0 0;
+  border-radius: 2px;
   background: var(--accent);
   opacity: 0.85;
   transition: height 0.12s ease-out;
@@ -1331,6 +1369,7 @@ html[data-theme="weihnachten"] .advent-wreath {
 }
 .np-upcoming-list li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .np-upcoming-list li.current { color: var(--accent); font-weight: 600; }
+.np-upcoming-list li.current::marker { color: var(--accent); }
 
 /* Tighter than the admin Home version - the kiosk's info column has much less
    room to spare (fixed small screen, several other rows already stacked).
