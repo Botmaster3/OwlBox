@@ -214,10 +214,12 @@ class Engine:
         self._multiroom_last_error: Optional[str] = None
         self._last_multiroom_check: Optional[float] = None
 
-        # Spiele-Menü (Einstellungen -> Spiel): toggled on/off by a dedicated
-        # RFID function tag ("game_toggle" - see FUNCTION_ACTIONS/_execute_
-        # function_action), same momentary-scan-toggles-state pattern as
-        # shuffle_toggle. Never persisted - always starts off after a
+        # Spiele-Menü (media managed under its own "Spiele" nav entry):
+        # toggled on/off by a dedicated RFID function tag ("game_toggle" -
+        # see FUNCTION_ACTIONS/_execute_function_action) or the admin
+        # dashboard's own button (see api.py's toggle_game_mode route),
+        # same momentary-scan-toggles-state pattern as shuffle_toggle for
+        # the RFID path. Never persisted - always starts off after a
         # restart, same reasoning as night mode above: physical state (is
         # the box currently in game mode) shouldn't outlive a reboot. Which
         # mini-game is currently open (if any) is purely a client-side

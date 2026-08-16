@@ -57,6 +57,12 @@ def admin_tags_page():
     )
 
 
+@pages_bp.route("/admin/games")
+@admin_required
+def admin_games_page():
+    return render_template("admin_games.html", active="games")
+
+
 @pages_bp.route("/admin/info")
 @admin_required
 def admin_info_page():

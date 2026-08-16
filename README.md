@@ -69,14 +69,15 @@ den Pi geladen und einem Chip zugewiesen.
     verschwindet. Die Schwierigkeit bestimmt nur das Tempo.
   - **Tier-Sound-Quiz** - ein Klang spielt ab, aus mehreren Bildern das
     passende antippen (z.B. Kuh-Bild zu Muh-Ton). Feste Bild+Ton-Paare, frei
-    unter Einstellungen → Spiel anlegbar (inkl. optionaler, nur intern
-    sichtbarer Bezeichnung).
+    unter Spiele anlegbar (inkl. optionaler, nur intern sichtbarer
+    Bezeichnung).
   - **Sound-Memory** - wie Memory, aber es werden Klangpaare statt Bildpaare
     per Gehör gesucht: Karte antippen spielt einen kurzen Klang ab, die
     zweite Karte mit demselben Klang finden.
 
-  Die Bild- und Klang-Pools lassen sich alle frei unter Einstellungen →
-  Spiel hochladen/löschen (JPG/PNG/WebP bzw. gängige Audioformate); mit
+  Die Bild- und Klang-Pools lassen sich alle frei unter dem eigenen
+  Spiele-Reiter der Verwaltung hochladen/löschen (JPG/PNG/WebP bzw. gängige
+  Audioformate); mit
   weniger Inhalten als eine gewählte Schwierigkeit verlangt wird die jeweilige
   Runde einfach entsprechend kleiner statt einen Fehler zu zeigen.
 - **Physische Bedienung**: zwei Taster (vor/zurück - kurz drücken springt zum

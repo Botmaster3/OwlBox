@@ -2,8 +2,8 @@
 // tiles to swap them) - one of several mini-games under the Spiele-Menü (see
 // game.js, which owns menu/switching and calls window.OwlBoxGamePuzzle.start()/
 // stop() at the right moments). Reuses the same picture pool as Memory
-// (/api/game/images, uploaded under Einstellungen -> Spiel) rather than
-// asking for a second, separate set of images.
+// (/api/game/images, uploaded under the admin UI's own "Spiele" nav entry)
+// rather than asking for a second, separate set of images.
 (function () {
   const containerEl = document.getElementById("game-puzzle");
   const difficultyEl = document.getElementById("game-puzzle-difficulty");

@@ -9,7 +9,6 @@
     <button type="button" class="settings-tab" data-panel="design" role="tab">Design</button>
     <button type="button" class="settings-tab" data-panel="audio" role="tab">Audio</button>
     <button type="button" class="settings-tab" data-panel="anzeige" role="tab">Anzeige</button>
-    <button type="button" class="settings-tab" data-panel="spiel" role="tab">Spiel</button>
     <button type="button" class="settings-tab" data-panel="netzwerk" role="tab">Netzwerk</button>
     <button type="button" class="settings-tab" data-panel="system" role="tab">System</button>
   </nav>
@@ -400,83 +399,6 @@
       werden. Braucht den Taster des Helligkeits-Encoders verkabelt
       (<code>gpio.brightness_encoder_switch</code>, siehe docs/hardware.md) - ohne den ist der
       Knopf hier trotzdem nutzbar, nur der physische Encoder am Gerät nicht.
-    </p>
-  </div>
-
-  </div>
-
-  <div class="settings-panel" data-panel="spiel" hidden>
-  <h2 class="settings-section-heading" id="section-spiel">Spiel</h2>
-
-  <div class="card">
-    <h2>Bilder (Memory &amp; Schiebe-Puzzle)</h2>
-    <p class="field-help">
-      Diese Bilder werden von zwei Mini-Spielen gemeinsam genutzt: beim Memory-Spiel als Paare
-      (je zwei Karten pro Bild, gemischt), beim Schiebe-Puzzle wird jeweils ein zufälliges Bild in
-      Teile zerlegt. Mindestens 2 Bilder nötig, damit Memory überhaupt ein Paar zum Finden hat;
-      mehr als 12 werden für eine Memory-Runde nicht gebraucht (der Rest bleibt trotzdem in der
-      Sammlung und kann bei der nächsten Runde oder für das Puzzle mit dabei sein).
-    </p>
-    <div class="field">
-      <label for="game-image-upload">Neue Bilder hochladen</label>
-      <input type="file" id="game-image-upload" accept="image/*" multiple>
-    </div>
-    <button class="btn" id="game-image-upload-btn" type="button">Hochladen</button>
-    <div id="game-image-grid" class="game-image-grid"></div>
-    <p class="hint" id="game-image-empty-hint">Noch keine Bilder hochgeladen.</p>
-  </div>
-
-  <div class="card">
-    <h2>Klänge (Sound-Memory)</h2>
-    <p class="field-help">
-      Kurze Klangschnipsel für das Sound-Memory-Spiel - statt Bildpaaren werden hier Klangpaare per
-      Gehör gesucht: Karte antippen spielt den Klang ab, die zweite Karte mit demselben Klang
-      finden. Mindestens 2 Klänge nötig.
-    </p>
-    <div class="field">
-      <label for="sound-clip-upload">Neue Klänge hochladen</label>
-      <input type="file" id="sound-clip-upload" accept="audio/*" multiple>
-    </div>
-    <button class="btn" id="sound-clip-upload-btn" type="button">Hochladen</button>
-    <div id="sound-clip-list" class="sound-clip-list"></div>
-    <p class="hint" id="sound-clip-empty-hint">Noch keine Klänge hochgeladen.</p>
-  </div>
-
-  <div class="card">
-    <h2>Rätsel (Tier-Sound-Quiz)</h2>
-    <p class="field-help">
-      Bild+Ton-Paare für das Tier-Sound-Quiz - z.B. ein Kuh-Foto plus eine Muh-Aufnahme. Ein Klang
-      spielt ab, das Kind tippt aus mehreren Bildern das passende an. Die Bezeichnung ist optional
-      und nur zur eigenen Übersicht hier - sie wird im Spiel selbst nie angezeigt. Mindestens 2
-      Rätsel nötig, damit es überhaupt eine falsche Auswahlmöglichkeit gibt.
-    </p>
-    <div class="field">
-      <label for="quiz-item-image">Bild</label>
-      <input type="file" id="quiz-item-image" accept="image/*">
-    </div>
-    <div class="field">
-      <label for="quiz-item-sound">Ton</label>
-      <input type="file" id="quiz-item-sound" accept="audio/*">
-    </div>
-    <div class="field">
-      <label for="quiz-item-label">Bezeichnung (optional, z.B. "Kuh")</label>
-      <input type="text" id="quiz-item-label" maxlength="60">
-    </div>
-    <button class="btn" id="quiz-item-upload-btn" type="button">Hinzufügen</button>
-    <div id="quiz-item-list" class="quiz-item-list"></div>
-    <p class="hint" id="quiz-item-empty-hint">Noch keine Rätsel angelegt.</p>
-  </div>
-
-  <div class="card">
-    <h2>Aktivierung per RFID-Chip</h2>
-    <p class="field-help">
-      Die Mini-Spiele werden nicht hier gestartet, sondern über einen dafür angelegten
-      Funktions-Chip: Unter „RFID-Tags“ einen Chip mit der Aktion „Spiele-Menü an/aus“ anlegen.
-      Erstes Auflegen zeigt das Spiele-Menü auf dem Kiosk-Display an (dort ist dann auch als
-      einzige Stelle in OwlBox der Touchscreen aktiv) - von dort lässt sich eines der Mini-Spiele
-      antippen. Erneutes Auflegen desselben Chips verlässt das Spiele-Menü wieder komplett und
-      zeigt wieder die normale „Jetzt läuft“-Ansicht. Eine laufende Geschichte spielt im
-      Hintergrund einfach weiter.
     </p>
   </div>
 
