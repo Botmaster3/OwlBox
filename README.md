@@ -305,6 +305,47 @@ bleibt der Kiosk nach dem nächsten Neustart schwarz.
 > `sudo owlbox-install` vermeidet das komplett, da es unabhängig vom
 > aktuellen Verzeichnis funktioniert.
 
+### Vollautomatisch, ganz ohne Rückkehr zur Konsole
+
+Alles oben beschriebene lässt sich zu einem einzigen Befehl zusammenfassen,
+der von der frisch geflashten SD-Karte bis zur fertigen, einsatzbereiten Box
+komplett unbeaufsichtigt durchläuft - kein erneutes Einloggen nach dem
+Neustart, kein Browser-Ersteinrichtungsschritt:
+
+```bash
+sudo apt update && sudo apt install -y git
+git clone https://github.com/Botmaster3/OwlBox owlbox
+cd owlbox
+sudo ./scripts/autoinstall.sh
+```
+
+Standardhardware (siehe [docs/hardware.md](docs/hardware.md)) muss dafür
+bereits **komplett verkabelt** sein, bevor der Befehl startet - anders als
+beim gestaffelten Ablauf oben gibt es keine Pause zum Anschließen der
+nächsten Komponente, da niemand zusieht. `scripts/autoinstall.sh` erledigt
+der Reihe nach: die komplette OS-Vorbereitung (`sudo owlbox-install`,
+inklusive des einen dabei nötigen Neustarts - ein selbst installierter
+systemd-Dienst nimmt den Faden danach von allein wieder auf, kein manuelles
+SSH nötig), alle vier `owlbox-stage`-Aufrufe hintereinander, und zuletzt die
+Ersteinrichtung des Verwaltungs-Zugangs ganz ohne Browser.
+
+Für einen selbst gewählten Benutzernamen/Passwort statt eines zufällig
+generierten: vor dem Start eine Datei `owlbox-admin.txt` auf die Boot-
+Partition legen (derselbe Ort wie `config.txt` - `/boot/firmware/` bei
+aktuellem Raspberry Pi OS, `/boot/` bei älterem):
+
+```
+username=eltern
+password=dein-eigenes-passwort
+```
+
+Ohne diese Datei erzeugt das Skript ein zufälliges Passwort und schreibt es
+nach `/root/owlbox-admin-credentials.txt` (nur für root lesbar) - am Ende
+des Laufs wird der Fundort noch einmal ausgegeben. Sicherheitsabwägung dabei
+bewusst in Kauf genommen: die gestaffelte Variante oben schreibt das
+Passwort nie irgendwohin, sondern verlangt die Eingabe im Browser - wer das
+lieber hat, bleibt einfach beim gestaffelten Ablauf.
+
 Jede Stufe ist für sich beliebig oft wiederholbar (idempotent) - jeder
 Schritt prüft zuerst, ob er schon erledigt ist, und jede Stufe schreibt nur
 in ihren eigenen, klar markierten Abschnitt von `config.txt` (siehe

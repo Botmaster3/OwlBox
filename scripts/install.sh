@@ -429,7 +429,8 @@ fi
 mkdir -p "$INSTALL_DIR/media" "$INSTALL_DIR/data"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 chmod +x "$INSTALL_DIR/scripts/kiosk.sh" "$INSTALL_DIR/scripts/kiosk-boot-wait.sh" "$INSTALL_DIR/scripts/stage.sh" \
-  "$INSTALL_DIR/scripts/test_rfid.py" "$INSTALL_DIR/scripts/test_controls.py"
+  "$INSTALL_DIR/scripts/test_rfid.py" "$INSTALL_DIR/scripts/test_controls.py" \
+  "$INSTALL_DIR/scripts/autoinstall.sh" "$INSTALL_DIR/scripts/create_admin.py"
 # Guided staged bring-up (sound -> display -> rfid -> controls): starts/stops/
 # tests each stage's hardware and owns config.yaml's feature toggles - see
 # docs/staged-setup.md. Safe as a plain symlink (unlike owlbox-install

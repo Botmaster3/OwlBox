@@ -1,0 +1,27 @@
+[Unit]
+Description=OwlBox unattended installer - resume after a reboot
+# Only ever fires while a run is actually in progress - ConditionPathExists
+# makes a boot where autoinstall.sh was never started (the normal case for
+# every OwlBox after the very first setup) a complete no-op: systemd checks
+# the file, finds it missing, and skips the unit entirely without even
+# starting it. scripts/autoinstall.sh installs this unit and writes that
+# state file itself right before it does anything that might reboot the
+# box (see there); the final step of a completed run removes both again,
+# so a normal reboot afterward never re-triggers this.
+ConditionPathExists=/var/lib/owlbox/.autoinstall-state
+# Deliberately NOT After=network-online.target: every remaining step
+# (config.txt already applied, hardware staging, admin-account creation) is
+# purely local, and this project already disables raspi-config's
+# boot-network-wait for the same "don't slow down boot waiting on WiFi"
+# reason (see scripts/install.sh's BASE stage) - waiting here would work
+# against that same goal for no benefit.
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/owlbox/scripts/autoinstall.sh
+# No RemainAfterExit - a finished run removes this unit's own file (see
+# above), so there's nothing left to "remain" once it's done.
+
+[Install]
+WantedBy=multi-user.target

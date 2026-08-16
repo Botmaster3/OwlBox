@@ -6,6 +6,16 @@ woran es liegt, sondern **eine Komponente nach der anderen** verkabeln und
 sofort testen. Jede Stufe hat ihr eigenes, kleines Testwerkzeug - keine der
 späteren Komponenten muss schon angeschlossen sein, um eine frühere zu testen.
 
+**Wer stattdessen schon komplett verkabelte Standardhardware hat und keine
+Rückkehr zur Konsole zwischen den Schritten will:** `sudo
+./scripts/autoinstall.sh` führt genau diesen ganzen Ablauf inklusive
+Neustart-Wiederaufnahme und Ersteinrichtung des Verwaltungs-Zugangs
+vollautomatisch durch, ganz ohne die einzelnen Testwerkzeuge/-pausen unten -
+siehe README.md, Abschnitt "Vollautomatisch, ganz ohne Rückkehr zur
+Konsole". Diese Datei hier bleibt der empfohlene Weg für den *ersten*
+Aufbau einer neuen Box, wo genau die Testwerkzeuge Gold wert sind, um ein
+Verkabelungsproblem sofort einer einzelnen Komponente zuzuordnen.
+
 ## Warum nicht alles auf einmal
 
 Ein Problem, das erst auffällt, wenn RFID, Display, Taster und Sound alle
