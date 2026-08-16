@@ -93,5 +93,8 @@
      of one file input per row - the button just sets which story to target, then clicks this. -->
 <input type="file" id="add-tracks-input" accept="audio/*" multiple hidden>
 
+<!-- Same sharing pattern as add-tracks-input above, for "Cover ändern". -->
+<input type="file" id="change-cover-input" accept="image/*" hidden>
+
 <script src="{{ url_for('static', filename='js/admin_library.js') }}"></script>
 {% endblock %}

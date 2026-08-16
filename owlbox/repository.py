@@ -367,7 +367,7 @@ def remove_story_uid(story_id: int) -> None:
         cur.execute("UPDATE stories SET uid = NULL WHERE id = ?", (story_id,))
 
 
-def set_cover_path(story_id: int, cover_path: str) -> None:
+def set_cover_path(story_id: int, cover_path: Optional[str]) -> None:
     with write_cursor() as cur:
         cur.execute("UPDATE stories SET cover_path = ? WHERE id = ?", (cover_path, story_id))
 

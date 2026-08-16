@@ -331,6 +331,49 @@ def unassign_story(story_id):
     return jsonify({"ok": True})
 
 
+@api_bp.route("/stories/<int:story_id>/cover", methods=["POST"])
+@admin_required
+def set_cover(story_id):
+    # Was previously only settable once, at creation time (create_story()/
+    # stories_from_tracks() below) - most noticeable for Livestream-URL and
+    # Ganzer-Ordner imports, where a cover is picked (or skipped) before
+    # there's necessarily a good one to hand, with no way back afterward.
+    # This is that way back, for every story regardless of how it was
+    # originally created.
+    story = repository.get_story(story_id)
+    if story is None:
+        return jsonify({"error": "not found"}), 404
+    cover = request.files.get("cover")
+    if not cover or not cover.filename:
+        return jsonify({"error": "cover file is required"}), 400
+    if not is_allowed_image(cover.filename):
+        return jsonify({"error": f"unsupported cover image: {cover.filename}"}), 400
+
+    story_dir = _config().media_dir / str(story_id)
+    story_dir.mkdir(parents=True, exist_ok=True)
+    # Old cover file might have had a different extension (e.g. replacing a
+    # .png with a .jpg) - remove it first so it doesn't linger orphaned
+    # alongside the new one, unreferenced but still taking up space.
+    if story.cover_path:
+        (story_dir / story.cover_path).unlink(missing_ok=True)
+    cover_filename = "cover" + Path(secure_filename(cover.filename)).suffix.lower()
+    cover.save(story_dir / cover_filename)
+    repository.set_cover_path(story_id, cover_filename)
+    return jsonify(_story_to_dict(repository.get_story(story_id)))
+
+
+@api_bp.route("/stories/<int:story_id>/cover", methods=["DELETE"])
+@admin_required
+def remove_cover(story_id):
+    story = repository.get_story(story_id)
+    if story is None:
+        return jsonify({"error": "not found"}), 404
+    if story.cover_path:
+        (_config().media_dir / str(story_id) / story.cover_path).unlink(missing_ok=True)
+        repository.set_cover_path(story_id, None)
+    return jsonify(_story_to_dict(repository.get_story(story_id)))
+
+
 @api_bp.route("/stories/<int:story_id>/flags", methods=["POST"])
 @admin_required
 def set_flags(story_id):

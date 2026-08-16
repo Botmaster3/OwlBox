@@ -5,6 +5,7 @@
   const filterChipGroup = document.getElementById("filter-chip-group");
   const filterTypeGroup = document.getElementById("filter-type-group");
   const addTracksInput = document.getElementById("add-tracks-input");
+  const changeCoverInput = document.getElementById("change-cover-input");
   const assignOverlay = document.getElementById("assign-overlay");
   const assignStatus = document.getElementById("assign-status");
   const assignCancel = document.getElementById("assign-cancel");
@@ -20,6 +21,8 @@
   // shared #add-tracks-input's file dialog opens, read back once a
   // selection comes in (see addTracksInput's "change" handler below).
   let addTracksTargetId = null;
+  // Same idea as addTracksTargetId above, for the shared #change-cover-input.
+  let changeCoverTargetId = null;
   // Cross-story track selection for "aus Bibliothek zur Playlist
   // hinzufügen" (mirrors the picker on Hinzufügen, but starting from
   // tracks already visible here instead of a separate search). Array, not
@@ -393,6 +396,8 @@
           <button class="btn" data-action="play">▶️ Abspielen</button>
           <button class="btn secondary" data-action="assign">Chip zuweisen</button>
           ${story.uid ? '<button class="btn secondary" data-action="unassign">Chip entfernen</button>' : ""}
+          <button class="btn secondary" data-action="change-cover">🖼️ Cover ändern</button>
+          ${story.cover_url ? '<button class="btn secondary" data-action="remove-cover">Cover entfernen</button>' : ""}
           ${
             story.stream_url
               ? ""
@@ -410,7 +415,10 @@
           „Abspielen“ startet diese Geschichte sofort, genau wie das Auflegen ihres Chips - auch
           ohne dass ihr überhaupt ein Chip zugewiesen ist. „Chip zuweisen“ verknüpft den nächsten
           aufgelegten Chip mit dieser Geschichte, „Chip entfernen“ löst die Verknüpfung wieder
-          (löscht die Geschichte nicht). „+ Weitere Tracks“ hängt zusätzliche Audiodateien hinten an
+          (löscht die Geschichte nicht). „Cover ändern“ ersetzt das Vorschaubild jederzeit, egal
+          wie die Geschichte ursprünglich angelegt wurde - praktisch besonders bei Livestream- und
+          Ganzer-Ordner-Einträgen, wo oft erst nachträglich ein passendes Bild zur Hand ist.
+          „+ Weitere Tracks“ hängt zusätzliche Audiodateien hinten an
           diese Geschichte an, statt eine neue anzulegen - praktisch für ein Hörbuch auf mehreren
           CDs: jede CD einzeln über diesen Button nachladen, alle landen in derselben Geschichte, in
           der Reihenfolge des Hinzufügens. Shuffle mischt die Tracks zufällig. „Ordner“ wiederholt
@@ -442,6 +450,23 @@
           try {
             await api(`/api/stories/${story.id}/unassign`, { method: "POST" });
             showToast("Chip entfernt.");
+            loadStories();
+          } catch (err) {
+            showToast(err.message, true);
+          }
+        });
+      }
+      header.querySelector('[data-action="change-cover"]').addEventListener("click", () => {
+        changeCoverTargetId = story.id;
+        changeCoverInput.value = ""; // otherwise re-selecting the exact same file wouldn't fire "change"
+        changeCoverInput.click();
+      });
+      const removeCoverBtn = header.querySelector('[data-action="remove-cover"]');
+      if (removeCoverBtn) {
+        removeCoverBtn.addEventListener("click", async () => {
+          try {
+            await api(`/api/stories/${story.id}/cover`, { method: "DELETE" });
+            showToast("Cover entfernt.");
             loadStories();
           } catch (err) {
             showToast(err.message, true);
@@ -550,6 +575,21 @@
     try {
       await api(`/api/stories/${storyId}/tracks`, { method: "POST", body: formData });
       showToast(`${files.length} Track(s) hinzugefügt.`);
+      loadStories();
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  changeCoverInput.addEventListener("change", async () => {
+    const file = (changeCoverInput.files || [])[0];
+    const storyId = changeCoverTargetId;
+    if (!storyId || !file) return;
+    const formData = new FormData();
+    formData.append("cover", file);
+    try {
+      await api(`/api/stories/${storyId}/cover`, { method: "POST", body: formData });
+      showToast("Cover geändert.");
       loadStories();
     } catch (err) {
       showToast(err.message, true);

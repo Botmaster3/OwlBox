@@ -3,6 +3,9 @@ plus this session's manual curl/browser verification passes, but a couple of
 things (like the AirPlay endpoints' loopback restriction) only actually live
 in Flask's request handling and are worth pinning down with a real WSGI
 request instead of just trusting the code by inspection."""
+import io
+
+from owlbox import repository
 from owlbox.engine import Engine
 from owlbox.web import create_app
 
@@ -154,3 +157,98 @@ def test_multiroom_endpoint_feature_disabled_forces_master_off(config, monkeypat
     assert body["multiroom"]["feature_enabled"] is False
     assert body["multiroom"]["master_enabled"] is False
     assert body["multiroom"]["effective_role"] == "off"
+
+
+def _png_bytes():
+    # Smallest possible valid PNG (1x1, transparent) - is_allowed_image()
+    # only looks at the filename extension, not the actual bytes, but real
+    # image content makes this fixture reusable if that ever changes.
+    return bytes.fromhex(
+        "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4"
+        "890000000a49444154789c6360000002000155a2415d0000000049454e44ae42"
+        "6082"
+    )
+
+
+def test_story_cover_requires_admin_login(config):
+    story = repository.create_story(title="Ohne Cover")
+    client, engine = _make_client(config)
+
+    resp = client.post(
+        f"/api/stories/{story.id}/cover",
+        data={"cover": (io.BytesIO(_png_bytes()), "cover.png")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 401
+    assert client.delete(f"/api/stories/{story.id}/cover").status_code == 401
+
+
+def test_story_cover_set_replace_and_remove(config):
+    # Exercises exactly the flow the "Cover ändern"/"Cover entfernen"
+    # buttons in admin_library.js drive - upload once (no cover existed
+    # yet, the common case right after a Livestream-URL/Ganzer-Ordner
+    # import), replace with a different image format (old file on disk
+    # must not linger with the wrong extension), then remove entirely.
+    story = repository.create_story(title="Der Karpatenhund")
+    client, engine = _make_client(config)
+    _login(client)
+
+    assert repository.get_story(story.id).cover_path is None
+
+    resp = client.post(
+        f"/api/stories/{story.id}/cover",
+        data={"cover": (io.BytesIO(_png_bytes()), "cover.png")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["cover_url"] == f"/media/{story.id}/cover.png"
+    story_dir = config.media_dir / str(story.id)
+    assert (story_dir / "cover.png").exists()
+
+    # Replace with a different extension - the old cover.png must be gone,
+    # not just shadowed by the new cover.jpg sitting alongside it.
+    resp = client.post(
+        f"/api/stories/{story.id}/cover",
+        data={"cover": (io.BytesIO(_png_bytes()), "cover.jpg")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["cover_url"] == f"/media/{story.id}/cover.jpg"
+    assert (story_dir / "cover.jpg").exists()
+    assert not (story_dir / "cover.png").exists()
+
+    resp = client.delete(f"/api/stories/{story.id}/cover")
+    assert resp.status_code == 200
+    assert resp.get_json()["cover_url"] is None
+    assert not (story_dir / "cover.jpg").exists()
+    assert repository.get_story(story.id).cover_path is None
+
+    # Removing again (no cover left) is a harmless no-op, not an error.
+    resp = client.delete(f"/api/stories/{story.id}/cover")
+    assert resp.status_code == 200
+    assert resp.get_json()["cover_url"] is None
+
+
+def test_story_cover_rejects_unsupported_file_and_missing_story(config):
+    story = repository.create_story(title="Bibi Blocksberg")
+    client, engine = _make_client(config)
+    _login(client)
+
+    resp = client.post(
+        f"/api/stories/{story.id}/cover",
+        data={"cover": (io.BytesIO(b"not an image"), "cover.txt")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 400
+    assert repository.get_story(story.id).cover_path is None
+
+    resp = client.post(f"/api/stories/{story.id}/cover", data={}, content_type="multipart/form-data")
+    assert resp.status_code == 400
+
+    resp = client.post(
+        "/api/stories/999999/cover",
+        data={"cover": (io.BytesIO(_png_bytes()), "cover.png")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 404
+    assert client.delete("/api/stories/999999/cover").status_code == 404
