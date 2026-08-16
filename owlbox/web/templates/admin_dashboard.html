@@ -64,6 +64,7 @@
           <button type="button" class="segmented-btn" data-mode="folder">🔁 Ordner</button>
           <button type="button" class="segmented-btn" data-mode="track">🔂 Track</button>
         </div>
+        <button class="btn secondary" id="np-btn-game-mode" type="button">🎮 Spiele-Menü öffnen</button>
       </div>
       <p class="field-help">
         Shuffle mischt die Tracks der aktuellen Geschichte in zufälliger Reihenfolge. Zurück/Weiter
@@ -74,7 +75,10 @@
         „Stop“ beendet die aktuelle Geschichte ganz (statt nur zu pausieren) - die
         Dashboard-Anzeige geht zurück auf „Kein Chip aufgelegt“. Die Position bleibt dabei
         gespeichert, der nächste Start (Chip auflegen oder „Abspielen“ in der Bibliothek) setzt
-        also trotzdem genau dort fort.
+        also trotzdem genau dort fort. „Spiele-Menü öffnen“ schaltet das Kiosk-Display auf das
+        Spiele-Menü um, genau wie ein Funktions-Chip - unabhängig davon, ob gerade eine Geschichte
+        läuft (die spielt im Hintergrund einfach weiter). Erneuter Klick schaltet zurück zur
+        Now-Playing-Anzeige.
       </p>
       <div class="field">
         <label for="np-volume">Lautstärke (<span id="np-volume-value">–</span>%)</label>

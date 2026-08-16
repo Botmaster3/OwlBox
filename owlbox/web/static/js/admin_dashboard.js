@@ -18,6 +18,7 @@
   const npBtnToggle = document.getElementById("np-btn-toggle");
   const npBtnNext = document.getElementById("np-btn-next");
   const npBtnStop = document.getElementById("np-btn-stop");
+  const npBtnGameMode = document.getElementById("np-btn-game-mode");
   const npRepeatToggle = document.getElementById("np-repeat-toggle");
   const npRepeatButtons = npRepeatToggle.querySelectorAll(".segmented-btn");
   const npVolumeInput = document.getElementById("np-volume");
@@ -69,6 +70,7 @@
   npBtnToggle.addEventListener("click", () => fetch("/api/control/toggle", { method: "POST" }));
   npBtnNext.addEventListener("click", () => fetch("/api/control/next", { method: "POST" }));
   npBtnStop.addEventListener("click", () => fetch("/api/control/stop", { method: "POST" }));
+  npBtnGameMode.addEventListener("click", () => fetch("/api/game-mode/toggle", { method: "POST" }));
 
   npBtnShuffle.addEventListener("click", () => {
     if (!currentStory) return;
@@ -253,6 +255,10 @@
     // show unconditionally) has spotty font support and doesn't say which
     // way it's about to switch, unlike swapping between the two here.
     npBtnToggle.textContent = player.playing ? "⏸️ Pause" : "▶️ Play";
+
+    const gameModeActive = !!(state.game_mode && state.game_mode.active);
+    npBtnGameMode.textContent = gameModeActive ? "🎮 Spiele-Menü schließen" : "🎮 Spiele-Menü öffnen";
+    npBtnGameMode.classList.toggle("active", gameModeActive);
 
     if (!volumeSliderBeingDragged) {
       npVolumeInput.value = player.volume || 0;

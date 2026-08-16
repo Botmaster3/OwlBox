@@ -252,3 +252,30 @@ def test_story_cover_rejects_unsupported_file_and_missing_story(config):
     )
     assert resp.status_code == 404
     assert client.delete("/api/stories/999999/cover").status_code == 404
+
+
+def test_game_mode_toggle_requires_admin_login(config):
+    client, engine = _make_client(config)
+    assert client.post("/api/game-mode/toggle").status_code == 401
+    assert engine.get_state()["game_mode"]["active"] is False
+
+
+def test_game_mode_toggle_flips_state(config):
+    # The web-UI equivalent of scanning a "Spiele-Menü an/aus" function tag
+    # (engine.py's toggle_game_mode(), reached here without any RFID chip
+    # involved at all) - see admin_dashboard.js's "🎮 Spiele-Menü
+    # öffnen/schließen" button.
+    client, engine = _make_client(config)
+    _login(client)
+
+    assert engine.get_state()["game_mode"]["active"] is False
+
+    resp = client.post("/api/game-mode/toggle")
+    assert resp.status_code == 200
+    assert resp.get_json() == {"active": True}
+    assert engine.get_state()["game_mode"]["active"] is True
+
+    resp = client.post("/api/game-mode/toggle")
+    assert resp.status_code == 200
+    assert resp.get_json() == {"active": False}
+    assert engine.get_state()["game_mode"]["active"] is False

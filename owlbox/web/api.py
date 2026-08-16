@@ -130,6 +130,19 @@ def control_stop():
     return jsonify({"ok": True})
 
 
+@api_bp.route("/game-mode/toggle", methods=["POST"])
+@admin_required
+def toggle_game_mode():
+    # The only other way to reach toggle_game_mode() so far was scanning a
+    # dedicated RFID function tag (see engine.py's _execute_function_action)
+    # - this gives the same toggle to anyone logged into the admin UI,
+    # without needing a chip for it at all. Admin-gated (unlike the plain
+    # playback controls above, which the unauthenticated kiosk itself also
+    # calls) since this button only ever lives behind a login.
+    _engine().toggle_game_mode()
+    return jsonify({"active": _engine().get_state()["game_mode"]["active"]})
+
+
 # -- library ------------------------------------------------------------
 
 
