@@ -639,6 +639,31 @@ body.kiosk { height: 100vh; overflow: hidden; }
   font-size: 0.85rem;
 }
 
+/* Nachtmodus-Farbstich, wie iPhones Night Shift: ein flaches, halbtransparentes
+   Warmton-Overlay über dem *gesamten* Kiosk-Display (deshalb z-index über allem
+   anderen hier, inkl. Status-/OSD-Overlays oben - anders als die Sonderedition-
+   Effekte, die bewusst darunter liegen, soll dieser Ton wirklich alles einfärben,
+   genau wie beim Vorbild). Bewusst eine reine background-color statt
+   mix-blend-mode/filter: dieses Display läuft auf komplett softwaregerendertem
+   Chromium ohne GPU (siehe docs/hardware.md) - ein Blend-Mode/Filter müsste dafür
+   jeden Frame den kompletten darunterliegenden Inhalt neu compositen, eine flache
+   Overlay-Farbe kostet dagegen nichts weiter als jedes andere Element hier auch.
+   Die opacity-transition ist ein einmaliger Zustandswechsel beim Umschalten
+   (siehe player.js, data-night-mode), kein Dauer-Repaint wie die entfernte
+   Titel-Laufschrift oder ein tickendes Intervall - unproblematisch. */
+.night-mode-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+  background: rgba(255, 138, 46, 0.16);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+:root[data-night-mode="true"] .night-mode-overlay {
+  opacity: 1;
+}
+
 /* Recovery-hotspot notice - shown across splash/parent-mode/now-playing alike
    whenever no real WiFi has been reachable for a while (see docs/hardware.md),
    so the credentials to join it are never hidden behind whatever else the

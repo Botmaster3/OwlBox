@@ -262,6 +262,10 @@
       lastBrightness = settings.brightness;
       lastNightModeActive = nightModeActive;
       nightModeBadge.hidden = !nightModeActive;
+      // Drives the warm, iPhone-Night-Shift-style overlay (.night-mode-overlay
+      // in style.css) - pure brightness dimming alone left the display looking
+      // exactly as cool/blue-ish as during the day, just darker.
+      document.documentElement.dataset.nightMode = String(nightModeActive);
     }
     airplayBadge.hidden = !state.airplay.active;
     applyWifi(state.wifi);
