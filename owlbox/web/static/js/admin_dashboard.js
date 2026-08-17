@@ -25,6 +25,7 @@
   const npVolumeValue = document.getElementById("np-volume-value");
   const npBrightnessInput = document.getElementById("np-brightness");
   const npBrightnessValue = document.getElementById("np-brightness-value");
+  const npNightModeSwitch = document.getElementById("np-night-mode");
   const npWifiBars = document.querySelectorAll("#np-wifi-bars .wifi-bar");
   const npWifiLabel = document.getElementById("np-wifi-label");
   const hotspotBanner = document.getElementById("hotspot-banner");
@@ -132,6 +133,10 @@
   npBrightnessInput.addEventListener("change", async () => {
     await postJson("/api/settings/brightness", { brightness: parseInt(npBrightnessInput.value, 10) });
     brightnessSliderBeingDragged = false;
+  });
+
+  npNightModeSwitch.addEventListener("change", () => {
+    postJson("/api/settings/brightness", { night_mode_active: npNightModeSwitch.checked });
   });
 
   const FUNCTION_LABELS = {
@@ -292,6 +297,9 @@
       npBrightnessInput.value = settings.brightness;
       npBrightnessValue.textContent = settings.brightness;
     }
+    // Also flipped by the brightness-encoder's push switch directly on the
+    // device (see docs/hardware.md) - keeps the web UI in sync with that.
+    npNightModeSwitch.checked = !!settings.night_mode_active;
 
     const trackList = (story && story.tracks) || [];
     if (trackList.length === 0) {
