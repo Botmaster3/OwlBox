@@ -96,18 +96,38 @@
     postJson("/api/control/seek", { seconds });
   });
 
+  // Applied live while dragging, not just once on release: "input" fires on
+  // every move, "change" only once the slider is let go. Posting on every
+  // single "input" tick would fire dozens of requests per second while
+  // dragging though, so those are throttled to ~10/s (still reads as
+  // instant to a person, but doesn't hammer the hardware mixer/backlight
+  // write on every pixel of movement) - "change" always posts the exact
+  // final value regardless of the throttle, so letting go never gets
+  // dropped by bad timing.
+  let lastVolumePost = 0;
   npVolumeInput.addEventListener("input", () => {
     volumeSliderBeingDragged = true;
     npVolumeValue.textContent = npVolumeInput.value;
+    const now = Date.now();
+    if (now - lastVolumePost > 100) {
+      lastVolumePost = now;
+      postJson("/api/settings/volume", { current_volume: parseInt(npVolumeInput.value, 10) });
+    }
   });
   npVolumeInput.addEventListener("change", async () => {
     await postJson("/api/settings/volume", { current_volume: parseInt(npVolumeInput.value, 10) });
     volumeSliderBeingDragged = false;
   });
 
+  let lastBrightnessPost = 0;
   npBrightnessInput.addEventListener("input", () => {
     brightnessSliderBeingDragged = true;
     npBrightnessValue.textContent = npBrightnessInput.value;
+    const now = Date.now();
+    if (now - lastBrightnessPost > 100) {
+      lastBrightnessPost = now;
+      postJson("/api/settings/brightness", { brightness: parseInt(npBrightnessInput.value, 10) });
+    }
   });
   npBrightnessInput.addEventListener("change", async () => {
     await postJson("/api/settings/brightness", { brightness: parseInt(npBrightnessInput.value, 10) });

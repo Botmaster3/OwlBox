@@ -144,10 +144,25 @@
   const volumeSaveBtn = document.getElementById("volume-save-btn");
 
   let volumeSliderBeingDragged = false;
+  // Applied live while dragging (throttled to ~10/s so it doesn't hammer
+  // the hardware mixer on every pixel of movement), not just once on
+  // release - "change" still always posts the exact final value regardless
+  // of the throttle. See admin_dashboard.js's matching sliders for the same
+  // reasoning.
+  let lastVolumePost = 0;
 
   currentVolumeInput.addEventListener("input", () => {
     volumeSliderBeingDragged = true;
     currentVolumeValue.textContent = currentVolumeInput.value;
+    const now = Date.now();
+    if (now - lastVolumePost > 100) {
+      lastVolumePost = now;
+      api("/api/settings/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current_volume: parseInt(currentVolumeInput.value, 10) }),
+      }).catch((err) => showToast(err.message, true));
+    }
   });
   currentVolumeInput.addEventListener("change", async () => {
     try {
@@ -368,10 +383,22 @@
   const brightnessSaveBtn = document.getElementById("brightness-save-btn");
 
   let brightnessSliderBeingDragged = false;
+  // Same live-while-dragging + throttled-post pattern as currentVolumeInput
+  // above.
+  let lastBrightnessPost = 0;
 
   currentBrightnessInput.addEventListener("input", () => {
     brightnessSliderBeingDragged = true;
     currentBrightnessValue.textContent = currentBrightnessInput.value;
+    const now = Date.now();
+    if (now - lastBrightnessPost > 100) {
+      lastBrightnessPost = now;
+      api("/api/settings/brightness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brightness: parseInt(currentBrightnessInput.value, 10) }),
+      }).catch((err) => showToast(err.message, true));
+    }
   });
   currentBrightnessInput.addEventListener("change", async () => {
     try {

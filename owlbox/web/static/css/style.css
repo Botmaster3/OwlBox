@@ -740,6 +740,25 @@ html[data-theme="weihnachten"] .advent-wreath {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
 }
 
+/* Portrait panel (this project's current standard display is a 720x1280
+   DSI panel, physically mounted rotated in its housing - see
+   docs/hardware.md - so the browser's own viewport genuinely stays
+   portrait no matter how the finished box is meant to be viewed). The
+   landscape row layout above put cover and info side by side along the
+   buffer's *horizontal* axis - after the physical 90 degree mount, that
+   axis is what the viewer perceives as *vertical*, so the two pieces
+   still ended up visually stacked, just as two disconnected floating
+   blocks with a large gap between them (confirmed on real hardware) rather
+   than a deliberately composed layout. This is that deliberate version:
+   a real column stack, cover on top, info card directly beneath it, one
+   consistent gap between them instead of an accidental one. */
+@media (orientation: portrait) {
+  .player { flex-direction: column; gap: 3vh; }
+  .cover-column { transform: none; }
+  .cover-wrap { width: min(38vh, 62vw); height: min(38vh, 62vw); }
+  .info { max-width: 88vw; width: 88vw; }
+}
+
 /* A long story title used to be allowed to wrap onto a second line
    (-webkit-line-clamp), which ate into the vertical space the rest of the
    .info column (progress, volume, track list) needed on the small kiosk
