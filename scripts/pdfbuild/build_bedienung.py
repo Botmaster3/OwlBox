@@ -696,9 +696,10 @@ story.append(spec_table(
          "(systemctl status owlbox-kiosk). Siehe OwlBox-Verkabelung.pdf."],
         ["Verwaltung im Browser nicht erreichbar", "IP-Adresse erneut prüfen; auf dem Kiosk-Display "
          "nachsehen, ob gerade der Notfall-Hotspot aktiv ist (Kapitel 10.6)."],
-        ["Helligkeitsregler ohne Wirkung", "Aktuell erwartbar: das Backlight-Dimmen ist beim "
-         "derzeitigen Display nicht angeschlossen (gpio.backlight_pin bleibt null) - siehe "
-         "OwlBox-Verkabelung.pdf, Abschnitt Hintergrundbeleuchtung."],
+        ["Helligkeitsregler ohne Wirkung", "Sollte beim aktuellen Display normal funktionieren "
+         "(Sysfs-Backlight, automatisch erkannt). Falls doch nicht: per SSH prüfen, ob "
+         "ls /sys/class/backlight/ überhaupt ein Gerät zeigt - siehe OwlBox-Verkabelung.pdf, "
+         "Abschnitt Hintergrundbeleuchtung."],
         ["Passwort vergessen", "Auf dem Pi direkt: Datenbankdatei (data/owlbox.db) sichern, Tabelle "
          "admin_user leeren und den Server neu starten - der Setup-Assistent (Kapitel 2.1) erscheint dann erneut."],
         ["AirPlay-Abzeichen erscheint nie", "AirPlay ist ein optionales Extra, nicht Teil der "

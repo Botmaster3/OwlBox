@@ -240,11 +240,15 @@ benennt die Komponente.
 
 - **Knistert es schon bei "sound"**: liegt nicht an der Software, sondern an
   Hardware/Verkabelung/Netzteil/`config.txt`.
-- **Erst ab "display"**: Backlight-PWM (GPIO 13). Gegenprobe: Helligkeit auf
-  100% - bei vollem Tastverhältnis schaltet die PWM nicht mehr, die Störung
-  muss verschwinden. Abhilfe: `gpio.backlight_pin: null` setzen (Dimmung
-  entfällt, Display läuft auf voller Helligkeit) oder den
-  Backlight-Treibertransistor mit einem RC-Glied entstören.
+- **Erst ab "display"**: an echter Hardware bestätigt, dass die Helligkeit
+  bei diesem Display über ein Sysfs-Backlight-Gerät läuft
+  (`/sys/class/backlight/.../brightness`, siehe docs/hardware.md), **nicht**
+  über GPIO13-PWM wie beim früheren Display - `gpio.backlight_pin` ist für
+  dieses Display gar nicht mehr verkabelt und kommt als Störquelle damit
+  nicht mehr in Frage. Gegenprobe trotzdem sinnvoll: Helligkeit auf 100%
+  stellen - bleibt die Störung dabei unverändert bestehen, liegt es an
+  etwas anderem, das erst mit dem Display dazukam (z.B. der I2C-Bus, über
+  den sowohl Touch-Controller als auch HiFiBerry-Amp-Steuerung laufen).
 - **Erst ab "rfid"**: der RC522 hängt an Hardware-SPI0 (siehe
   `owlbox/rfid/mfrc522_reader.py`). Falls hier trotzdem Störungen auftreten,
   `rfid.poll_interval` in `config.yaml` erhöhen (z.B. `0.5`) als erste

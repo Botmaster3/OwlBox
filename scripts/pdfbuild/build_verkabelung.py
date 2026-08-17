@@ -583,23 +583,23 @@ story.append(note_box(
 # ============================================================ 7. Backlight
 h1("7. Display-Hintergrundbeleuchtung")
 story.append(note_box(
-    "Noch nicht an echter Hardware verifiziert, welchen Mechanismus dieses Display für die "
-    "Helligkeit anbietet: eine per GPIO/PWM ansteuerbare LED-Leitung wie beim alten SPI-Display, "
-    "eine interne Linux-Backlight-Sysfs-Schnittstelle (/sys/class/backlight/.../brightness, "
-    "angesteuert vom Power-Chip auf der Display-Adapterplatine) - oder nur die eigene, laut "
-    "Auftraggeber vorhandene Touch-Helligkeitsregelung des Displays, die diese Box bewusst nicht "
-    "verwendet (siehe Kapitel 6). Falls es tatsächlich Sysfs ist: kein gpio.backlight_pin, kein "
-    "Transistor/MOSFET nötig, aber owlbox/backlight.py müsste dafür erst auf die Sysfs-"
-    "Schnittstelle umgestellt werden - aktuell nutzt es noch GPIO-PWM.",
-    kind="warn",
+    "An echter Hardware bestätigt: dieses Display bietet Helligkeitsregelung über eine interne "
+    "Linux-Backlight-Sysfs-Schnittstelle an (/sys/class/backlight/<id>/brightness, auf dem "
+    "geprüften Gerät als /sys/class/backlight/11-0045/ zu finden - die Zahl davor ist eine "
+    "I2C-Bus/Adress-Kombination und kann je nach Board/Kernel-Version abweichen; max_brightness "
+    "war 255, die Datei group-schreibbar für video, dieselbe Gruppe, die owlbox.service ohnehin "
+    "schon hat). owlbox/backlight.py erkennt dieses Sysfs-Gerät automatisch und nutzt es - keine "
+    "GPIO-Verkabelung nötig, passend dazu, dass die Anschluss-Tabelle oben nur 4 Kabel "
+    "(5V/GND/SDA/SCL) kennt. Der alte GPIO13-PWM-Ansatz bleibt als Fallback im Code, greift aber "
+    "nur noch, wenn kein Sysfs-Gerät gefunden wird.",
+    kind="note",
 ))
 p(
-    "Software-seitig ist der zweite Encoder trotzdem vollständig verdrahtet und angebunden (CLK/DT "
-    "fürs Drehen, SW für den Nachtmodus-Taster, siehe Kapitel 6) - jede Helligkeitsänderung über "
+    "Software-seitig ist der zweite Encoder vollständig verdrahtet und angebunden (CLK/DT fürs "
+    "Drehen, SW für den Nachtmodus-Taster, siehe Kapitel 6) - jede Helligkeitsänderung über "
     "Encoder, Web-Oberfläche oder Nachtmodus-Taster ändert den intern gespeicherten "
-    "brightness-Wert zuverlässig und blendet ihn kurz auf dem Display ein. Ob sich davon auch die "
-    "tatsächliche Display-Helligkeit sichtbar ändert, hängt vom oben noch offenen Mechanismus ab "
-    "und ist erst an echter Hardware zu klären."
+    "brightness-Wert zuverlässig, blendet ihn kurz auf dem Display ein und dimmt jetzt auch "
+    "tatsächlich die Display-Helligkeit sichtbar."
 )
 
 # ============================================================ 8. Fallback-Hotspot

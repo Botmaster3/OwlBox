@@ -217,17 +217,27 @@ Gelegenheit, Touch-Eingaben auf dem echten Waveshare-Display zu testen, ob
 sich der Touch-Controller unter X11/Chromium tatsächlich so unauffällig
 wie eine Maus meldet, wie hier angenommen.
 
-**Zur Hintergrundbeleuchtung:** Noch nicht bekannt, ob dieses Display eine
-per GPIO/PWM ansteuerbare LED-Leitung hat, die Helligkeit wie das bisherige
-Display intern über eine Linux-Backlight-Sysfs-Schnittstelle regelt - oder
-nur über die eigene Touch-Helligkeitsregelung verfügt, die diese Box
-bewusst nicht verwendet (siehe „Zweiter Dreh-Encoder für Helligkeit"
-unten). Für die bisherige Hardware gilt: keine GPIO13-Transistor-Schaltung
-mehr nötig, `gpio.backlight_pin` bleibt `null`. Software-seitig ist der
-zweite Encoder inzwischen trotzdem vollständig angebunden (Drehen **und**
-sein Taster für den Nachtmodus, s.u.) - der interne `brightness`-Wert
-ändert sich zuverlässig, ob das auch die tatsächliche Display-Helligkeit
-sichtbar ändert, hängt vom noch offenen Mechanismus hier ab.
+**Zur Hintergrundbeleuchtung:** An echter Hardware bestätigt - dieses
+Display bietet Helligkeitsregelung über eine interne Linux-Backlight-
+Sysfs-Schnittstelle an (`/sys/class/backlight/<id>/brightness`, auf dem
+geprüften Gerät als `/sys/class/backlight/11-0045/` zu finden; die
+Zahl davor ist eine I2C-Bus/Adress-Kombination und kann je nach Board/
+Kernel-Version abweichen). `max_brightness` war `255`, die Datei
+`brightness` group-schreibbar für `video` - genau die Gruppe, die
+`owlbox.service` über seine `SupplementaryGroups` ohnehin schon hat, keine
+zusätzliche Berechtigung nötig. `owlbox/backlight.py` erkennt dieses
+Sysfs-Gerät automatisch (`SysfsBacklight.detect()`) und nutzt es, sobald
+vorhanden - **keine GPIO-Verkabelung nötig**, passend dazu, dass die
+Anschluss-Tabelle oben für dieses Display ohnehin nur 4 Kabel
+(5V/GND/SDA/SCL) kennt, keine separate Backlight-Leitung. Der alte
+GPIO13-PWM-Transistor-Ansatz (`GpioBacklight`) bleibt als Fallback im Code,
+greift aber nur noch, wenn kein Sysfs-Gerät gefunden wird - `config.yaml`s
+`gpio.backlight_pin` ist für dieses Display damit praktisch irrelevant
+(darf `13` oder `null` sein, beides funktioniert identisch, solange das
+Sysfs-Gerät vorhanden ist). Software-seitig ist der zweite Encoder
+vollständig angebunden (Drehen **und** sein Taster für den Nachtmodus,
+s.u.) - der interne `brightness`-Wert ändert sich zuverlässig **und**
+dimmt jetzt auch tatsächlich das Display sichtbar.
 
 ## GPIO-Belegung im Überblick
 
@@ -793,13 +803,9 @@ Display-Helligkeit auseinanderlaufen lassen, ohne dass OwlBox davon etwas
 mitbekommt - die Touch-Helligkeitsregelung des Displays also am besten gar
 nicht erst anfassen.
 
-**Noch offen, nicht an echter Hardware verifiziert:** ob `owlbox/backlight.py`s
-GPIO-PWM-Ansatz (siehe „Zur Hintergrundbeleuchtung" oben - Status dort schon
-länger unklar, unabhängig von diesem Feature hier) auf diesem Display
-überhaupt etwas bewirkt, oder ob der Encoder am Ende nur den intern
-gespeicherten `brightness`-Wert ändert, ohne dass sich am Display sichtbar
-etwas tut. Erst an echter Hardware zu klären, welcher Mechanismus (falls
-überhaupt einer per Software erreichbar ist) tatsächlich zieht.
+**An echter Hardware bestätigt:** der Encoder dimmt das Display jetzt auch
+sichtbar - siehe „Zur Hintergrundbeleuchtung" oben für den dabei
+verwendeten Mechanismus (Sysfs-Backlight-Gerät, automatisch erkannt).
 
 **Nachtmodus, noch nicht an echter Hardware verifiziert:** Ein Druck auf den
 Taster (SW) schaltet zwischen der normalen ("Tag"-)Helligkeit und einer
