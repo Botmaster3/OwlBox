@@ -25,13 +25,18 @@ Group=owlbox
 # hardware ALSA mixer writes (see player.py's AlsaMixer) - snapclient must
 # not also apply its own volume scaling on top of that, or the two would
 # fight over what "the" volume actually is. --soundcard matches this
-# project's standard audio.alsa_device (config.example.yaml) - update this
-# line too if that's ever changed for non-standard hardware.
+# project's standard audio.alsa_device (config.example.yaml) - "owlbox", the
+# dmix-backed virtual device scripts/install.sh's SOUND stage sets up
+# (/etc/asound.conf), not a raw hw:X,Y - update this line too if that's ever
+# changed for non-standard hardware. Using the dmix device here (rather than
+# hw:0,0 directly) is what lets the feedback chimes (owlbox/feedback.py)
+# still play over aplay while this is running, same reasoning as mpv vs.
+# aplay - see AudioConfig.alsa_device's docstring in owlbox/config.py.
 #
 # Neither the exact snapclient CLI flags below nor real cross-device audio
 # sync have been exercised against real Snapcast/real hardware yet - see
 # docs/hardware.md's "Mehrraum-Wiedergabe" section.
-ExecStart=/bin/sh -c 'exec snapclient --host "$(cat /tmp/owlbox-multiroom-host.txt 2>/dev/null || echo 127.0.0.1)" --soundcard hw:0,0 --mixer none'
+ExecStart=/bin/sh -c 'exec snapclient --host "$(cat /tmp/owlbox-multiroom-host.txt 2>/dev/null || echo 127.0.0.1)" --soundcard owlbox --mixer none'
 Restart=on-failure
 RestartSec=3
 

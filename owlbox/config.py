@@ -20,7 +20,15 @@ class WebConfig:
 
 @dataclass
 class AudioConfig:
-    alsa_device: str = "hw:0,0"
+    # "owlbox" (not a raw "hw:X,Y") on purpose - a dmix-backed virtual ALSA
+    # device set up by scripts/install.sh's SOUND stage (/etc/asound.conf).
+    # Confirmed on real hardware: pointing this straight at hw:0,0 meant the
+    # short aplay-based feedback chimes (feedback.py) could never actually
+    # play while owlbox.service was running - mpv holds that raw device open
+    # continuously (--idle=yes), so aplay's own attempt to open it always
+    # failed with "Device or resource busy", not just occasionally. The dmix
+    # wrapper lets both share the card at once.
+    alsa_device: str = "owlbox"
     mixer_control: str = "Digital"
     mixer_card: str = "0"
     default_volume: int = 60

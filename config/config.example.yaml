@@ -21,10 +21,15 @@ web:
   secret_key: "change-me"
 
 audio:
-  # ALSA output device for mpv, as shown by `aplay -L`.
-  # For a HiFiBerry Amp/Amp2/DAC+ this is usually "hw:0,0" or "hw:sndrpihifiberry,0" once
-  # the sound card is the only one registered (see docs/hardware.md).
-  alsa_device: "hw:0,0"
+  # ALSA output device for both mpv and the short aplay-based feedback
+  # chimes (owlbox/feedback.py). "owlbox" is a dmix-backed virtual device
+  # set up by scripts/install.sh's SOUND stage (/etc/asound.conf) - NOT a
+  # raw "hw:0,0". Confirmed on real hardware: pointing this straight at the
+  # raw device meant chimes could never actually play while owlbox.service
+  # was running (mpv holds hw:0,0 open continuously via --idle=yes, so
+  # aplay's own attempt always failed with "Device or resource busy"); dmix
+  # lets both share the card at once. See docs/hardware.md.
+  alsa_device: "owlbox"
   # ALSA mixer control used for hardware volume (see `amixer scontrols` on the Pi).
   # HiFiBerry DAC+/Amp2 boards commonly expose "Digital" or "PCM".
   mixer_control: "Digital"

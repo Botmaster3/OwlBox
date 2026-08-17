@@ -509,6 +509,44 @@ if [ "$DO_SOUND" -eq 1 ]; then
     echo "WARNUNG: config.txt nicht gefunden (weder /boot/firmware/config.txt noch /boot/config.txt)." >&2
     echo "         HiFiBerry-Overlay konnte nicht automatisch gesetzt werden - siehe docs/hardware.md." >&2
   fi
+
+  # Confirmed on real hardware: without this, the short aplay-based feedback
+  # chimes (owlbox/feedback.py - RFID scans, Start/Stop, and the
+  # Einstellungen > Audio "Testen" buttons) played NOTHING, ever, while
+  # owlbox.service was running - not just occasionally. mpv opens the raw
+  # hw:0,0 device directly and, thanks to --idle=yes, keeps holding it open
+  # for as long as the service is alive, whether or not a story is actually
+  # playing. A plain `aplay -D hw:0,0` chime attempt during that whole window
+  # fails outright with "Device or resource busy" - there's no window where
+  # it would have worked. This dmix-backed virtual device lets mpv and aplay
+  # share the same physical card at the same time; both now point at "owlbox"
+  # (see the config.yaml migration below) instead of the raw hw:0,0.
+  echo "==> [Sound] Setting up ALSA dmix (/etc/asound.conf) so chimes can play alongside mpv"
+  touch /etc/asound.conf
+  write_stage_block /etc/asound.conf sound \
+    "pcm.owlbox_dmix {" \
+    "  type dmix" \
+    "  ipc_key 1027" \
+    "  slave {" \
+    "    pcm \"hw:0,0\"" \
+    "    period_time 0" \
+    "    period_size 1024" \
+    "    buffer_size 4096" \
+    "  }" \
+    "}" \
+    "pcm.owlbox {" \
+    "  type plug" \
+    "  slave.pcm \"owlbox_dmix\"" \
+    "}"
+  # Migrate an existing config.yaml only if it still holds the old raw-device
+  # default - never touch a deliberately customized value (e.g. a different
+  # card index, or "hw:sndrpihifiberry,0"). The hardware ALSA mixer used for
+  # actual volume control (audio.mixer_card/mixer_control, amixer -c ...) is
+  # a completely separate ALSA concept from this PCM playback device string,
+  # so this migration has no effect on volume control either way.
+  if [ -f "$INSTALL_DIR/config/config.yaml" ]; then
+    sed -i -E 's/^(\s*alsa_device:)\s*"?hw:0,0"?\s*$/\1 "owlbox"/' "$INSTALL_DIR/config/config.yaml"
+  fi
 fi
 
 # ============================================================ DISPLAY

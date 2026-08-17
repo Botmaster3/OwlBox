@@ -387,15 +387,22 @@ siehe unten.
 
 Danach mit `aplay -l` die Kartennummer der HiFiBerry ermitteln (z.B. `card 2:
 ...`) und mit `amixer -c <Kartennummer> scontrols` den Mixer-Namen prüfen -
-beides in `config.yaml` eintragen: `audio.alsa_device` (`"hw:<Kartennummer>,0"`),
-`audio.mixer_control` (Amp/Amp2 nutzen meist `Digital`, manche Boards `PCM`
-oder `Master`) **und `audio.mixer_card`** (nur die Kartennummer, ohne
-`hw:`/`,0`). Alle drei müssen zur selben Karte passen - `install.sh` trägt sie
-bei der automatischen Erkennung mittlerweile alle drei ein, aber wer das von
-Hand einträgt, vergisst leicht `mixer_card`: bleibt die dann auf ihrem
-Standardwert `"0"` stehen während die HiFiBerry tatsächlich auf einer anderen
-Kartennummer läuft, zielt jede Lautstärkeabfrage/-änderung ins Leere - äußert
-sich als "eingestellte Lautstärke wird nie gespeichert, zeigt immer 0".
+davon in `config.yaml` eintragen: `audio.mixer_control` (Amp/Amp2 nutzen
+meist `Digital`, manche Boards `PCM` oder `Master`) **und `audio.mixer_card`**
+(nur die Kartennummer, ohne `hw:`/`,0`). Beide müssen zur selben Karte passen -
+`install.sh` trägt sie bei der automatischen Erkennung mittlerweile ein, aber
+wer das von Hand einträgt, vergisst leicht `mixer_card`: bleibt die dann auf
+ihrem Standardwert `"0"` stehen während die HiFiBerry tatsächlich auf einer
+anderen Kartennummer läuft, zielt jede Lautstärkeabfrage/-änderung ins Leere -
+äußert sich als "eingestellte Lautstärke wird nie gespeichert, zeigt immer 0".
+`audio.alsa_device` selbst bleibt normalerweise unverändert auf `"owlbox"`
+stehen (siehe unten) - das ist das dmix-Gerät aus `/etc/asound.conf`, nicht
+die rohe Kartennummer. Läuft die HiFiBerry nicht auf Karte 0, muss stattdessen
+das `slave.pcm "hw:0,0"` in `/etc/asound.conf` (Stage `sound` in `install.sh`,
+Abschnitt „Kein Ton" in `docs/staged-setup.md`) auf die richtige Kartennummer
+angepasst werden - `alsa_device` direkt auf eine rohe `"hw:<Kartennummer>,0"`
+zu setzen funktioniert zwar auch, bringt dann aber den unten beschriebenen
+mpv/aplay-Konflikt zurück (Hinweistöne würden nie mehr spielen).
 
 ### Lautsprecher anschließen
 
@@ -647,11 +654,16 @@ den echten Hardware-Mixer (`amixer`, siehe `player.py`s `AlsaMixer`) -
 unverändert, unabhängig davon, ob mpv gerade in die Pipe oder direkt auf
 die Karte schreibt. `owlbox-snapclient.service` läuft deshalb explizit mit
 `--mixer none`, damit Snapcast keine eigene Lautstärkeregelung obendrauf
-legt. Hinweistöne (`feedback.play_chime`) laufen weiterhin über `aplay`
-direkt auf die Karte - kollidiert das mit dem lokalen `snapclient`, der
-gerade dieselbe Karte offen hält (kein dmix), wird der Chime übersprungen
-und als WARNING geloggt (siehe `owlbox/feedback.py`), exakt dasselbe
-bekannte Verhalten wie beim AirPlay-Ducking oben - keine neue Fehlerklasse.
+legt. Hinweistöne (`feedback.play_chime`) laufen weiterhin über `aplay`,
+seit Kurzem aber wie mpv/`snapclient` selbst über das dmix-Gerät `owlbox`
+(`/etc/asound.conf`, siehe „Kein Ton" in `docs/staged-setup.md` sowie
+`audio.alsa_device` weiter oben) statt direkt über eine rohe `hw:X,Y`-Karte -
+an echter Hardware bestätigt: ohne dmix hielt mpv (`--idle=yes`) die rohe
+Karte durchgehend offen, wodurch `aplay` sie praktisch nie öffnen konnte und
+Hinweistöne komplett ausblieben, nicht nur gelegentlich. Kollidiert trotz
+dmix trotzdem mal etwas, wird der Chime übersprungen und als WARNING
+geloggt (siehe `owlbox/feedback.py`), exakt dasselbe bekannte Verhalten wie
+beim AirPlay-Ducking oben - keine neue Fehlerklasse.
 
 **Noch nicht an echter Mehrgeräte-Hardware verifiziert** - deutlich mehr
 noch als bei AirPlay: weder die `snapserver`/`snapclient`/`avahi-utils`-
