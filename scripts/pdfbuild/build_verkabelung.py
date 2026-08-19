@@ -47,6 +47,13 @@ def bullets(items, style=S_BULLET):
     story.append(Spacer(1, 6))
 
 
+def parts_table(rows):
+    return spec_table(
+        [["Bauteil", "Spezifikation", "Menge"]] + rows,
+        col_widths=[60 * mm, 88 * mm, 22 * mm],
+    )
+
+
 def code(lines):
     from reportlab.platypus import Table, TableStyle
     from reportlab.lib import colors
@@ -76,12 +83,12 @@ story.append(toc)
 # ============================================================ 1. Zielhardware
 h1("1. Zielhardware")
 bullets([
-    "Raspberry Pi 5 (4GB) mit aktiver Kühlung (siehe Kapitel 2). Ersetzt das früher hier "
+    "Raspberry Pi 5 (4GB) mit aktiver Kühlung (siehe Kapitel 3). Ersetzt das früher hier "
     "dokumentierte Pi 3B+; dessen vollständig verifiziertes Setup ist noch in der Git-Historie "
     "dieser Datei zu finden. Noch NICHT an echter Hardware verifiziert.",
     "HiFiBerry Amp2 (I2S-Verstärker-HAT, TAS5756M-Chip) - sitzt wegen des Kühlkörpers NICHT mehr "
     "direkt gestapelt auf dem 40-Pin-Header, sondern hängt über eine eigene Adapter-Platine dran, "
-    "per Jumperkabel wie RC522/Taster/Encoder auch (siehe Kapitel 2). Noch NICHT an echter "
+    "per Jumperkabel wie RC522/Taster/Encoder auch (siehe Kapitel 3). Noch NICHT an echter "
     "Hardware verifiziert.",
     "RC522 RFID-Modul (SPI, 13,56 MHz)",
     "Waveshare 5″ DSI Capacitive Touch Display (Modell 5-DSI-TOUCH-A, 720×1280, DSI-Flachbandkabel "
@@ -120,7 +127,7 @@ p(
     "Wie beim bisherigen Display sitzt es <b>nicht</b> auf dem 40-Pin-Header - Bild und Touch "
     "laufen über das DSI-Flachbandkabel (eigener Steckplatz auf dem Pi, neben den HDMI-Buchsen), "
     "keine Steckplatz-Kollision mit dem HiFiBerry (der auf diesem Aufbau ohnehin nicht mehr direkt "
-    "auf dem 40-Pin-Header sitzt, sondern über eine Adapter-Platine läuft, siehe Kapitel 2)."
+    "auf dem 40-Pin-Header sitzt, sondern über eine Adapter-Platine läuft, siehe Kapitel 3)."
 )
 p(
     "Die Adapter-/Power-Platine des Displays braucht vermutlich weiterhin 4 Jumper-/Dupont-Kabel "
@@ -153,7 +160,7 @@ p(
     "halber: säße der HiFiBerry doch einmal wieder direkt auf dem 40-Pin-Header und die Pins "
     "dadurch von oben nicht mehr mit Dupont-Kabeln erreichbar, würde ein GPIO-Stacking-Header "
     "[Extra-Höhe, mit durchgeführten Pins] zwischen Pi und HiFiBerry das lösen. Auf dem aktuellen "
-    "Aufbau nicht relevant, da der HiFiBerry ohnehin über die Adapter-Platine läuft, s. Kapitel 2.)"
+    "Aufbau nicht relevant, da der HiFiBerry ohnehin über die Adapter-Platine läuft, s. Kapitel 3.)"
 )
 story.append(note_box(
     "Overlay laut Waveshare-Wiki (waveshare.com/wiki/5-DSI-TOUCH-A - nicht direkt erreichbar "
@@ -163,7 +170,7 @@ story.append(note_box(
     "vc4-kms-dsi-waveshare-panel,5_0_inch ohne \"-v2\"/\"_a\" (andere Waveshare-5″-Modelle). "
     "install.sh trägt den Overlay automatisch ein. Rotation/Ausrichtung bewusst nicht "
     "konfiguriert - wird laut Auftraggeber beim physischen Einbau gelöst, nicht per Software; "
-    "Details siehe Kapitel 9.",
+    "Details siehe Kapitel 10.",
     kind="warn",
 ))
 
@@ -178,7 +185,7 @@ story.append(spec_table(
         ["I2C SDA", "2", "HiFiBerry (Amp-Steuerung) und Display-Touch-Controller - gemeinsam am "
          "selben I2C-Bus, kein Konflikt (unterschiedliche Adressen), s.o."],
         ["I2C SCL", "3", "HiFiBerry (Amp-Steuerung) und Display-Touch-Controller, s.o."],
-        ["SPI0 SCLK/MOSI/MISO/CE0", "11 / 10 / 9 / 8", "RC522 (Hardware-SPI, s. Kapitel 4)"],
+        ["SPI0 SCLK/MOSI/MISO/CE0", "11 / 10 / 9 / 8", "RC522 (Hardware-SPI, s. Kapitel 5)"],
         ["SPI0 CE1", "7", "frei (nicht genutzt - der RC522 braucht nur CE0)"],
         ["RC522 RST", "26", "RC522 (rfid.reset_pin)"],
         ["Taster Weiter", "5", "Taster"],
@@ -187,7 +194,7 @@ story.append(spec_table(
         ["Encoder DT", "27", "Lautstärke-Encoder"],
         ["Encoder SW", "22", "Lautstärke-Encoder"],
         ["Display-Backlight", "-", "läuft über Sysfs, kein GPIO mehr - dimmt zuverlässig über den "
-         "Encoder unten, s. Kapitel 7"],
+         "Encoder unten, s. Kapitel 8"],
         ["Helligkeits-Encoder CLK", "23", "Helligkeits-Encoder"],
         ["Helligkeits-Encoder DT", "12", "Helligkeits-Encoder"],
         ["Helligkeits-Encoder SW", "17", "Helligkeits-Encoder - Nachtmodus-Umschalter "
@@ -196,8 +203,104 @@ story.append(spec_table(
     col_widths=[62 * mm, 28 * mm, 70 * mm],
 ))
 
-# ============================================================ 2. HiFiBerry
-h1("2. HiFiBerry Amp2")
+# ============================================================ 2. Komponenten
+h1("2. Komponentenübersicht")
+p(
+    "Bevor es an die einzelnen Pin-Tabellen geht: welches Bauteil und welches Kabel pro "
+    "Baugruppe gebraucht wird. Angaben zu Typ/Spezifikation/Menge, bewusst ohne Preise oder "
+    "konkrete Händlerlinks - die schwanken zu schnell, um sie in einem Dokument zu pflegen. Bei "
+    "allen mit „Noch nicht an echter Hardware verifiziert“ markierten Positionen gilt dieselbe "
+    "Einschränkung wie im Rest dieser PDF: vor dem Kauf gegen das jeweilige Datenblatt prüfen."
+)
+
+h2("Zentraleinheit")
+story.append(parts_table([
+    ["Raspberry Pi 5 (4GB)", "Quad-Core Cortex-A76, 40-Pin-GPIO-Header, DSI- und "
+     "CSI-Anschluss. Ersetzt das früher verbaute Pi 3B+.", "1×"],
+    ["GeeekPi Low-Profile Plus CPU Cooler", "Aluminium-Kühlkörper mit Lüfter, steckt auf den "
+     "eigenen 4-Pin-JST-Lüfteranschluss des Pi 5 (kein GPIO, keine config.txt-Zeile nötig, "
+     "s. Kapitel 3.1).", "1×"],
+    ["USB-C-PD-Netzteil", "5V/5A (27W, offizielles Raspberry-Pi-Netzteil empfohlen) - ein "
+     "schwächeres 5V/2,5-3A-Netzteil reicht bei Amp2 unter Last plus Lüfter nicht sicher aus.", "1×"],
+    ["microSD-Karte", "Mind. 16GB, empfohlen 32GB+, Class 10 / A2 für flüssiges Booten und die "
+     "Hörspiel-/Spiele-Bibliothek.", "1×"],
+]))
+
+h2("Audio (Kapitel 3)")
+story.append(parts_table([
+    ["HiFiBerry Amp2", "I2S-Verstärker-HAT, TAS5756M-Chip, Class-D, 2 Kanäle. Sitzt wegen des "
+     "Kühlkörpers nicht mehr direkt auf dem 40-Pin-Header, sondern hängt per Jumperkabel an der "
+     "Adapter-Platine (s. Kapitel 3.2).", "1×"],
+    ["Passivlautsprecher", "Impedanz/Belastbarkeit gegen das Amp2-Datenblatt prüfen (typ. "
+     "4-8Ω).", "2×"],
+    ["Lautsprecherkabel, 2-adrig", "Querschnitt ≥ 0,75mm² / AWG18 (reicht für 15W/4Ω); bei "
+     "Kabelwegen über 3-5m eher 1,0-1,5mm² nehmen. Für die Federklemmen des Amp2, kein Cinch/"
+     "Klinke.", "nach Bedarf"],
+]))
+
+h2("Display (Kapitel 1.1 und 10)")
+story.append(note_box(
+    "Noch NICHT an echter Hardware verifiziert.",
+    kind="warn",
+))
+story.append(parts_table([
+    ["Waveshare 5″ DSI Capacitive Touch Display", "Modell 5-DSI-TOUCH-A, 720×1280, kapazitiver "
+     "Touch, Aluminiumgehäuse. Bild+Touch über eigenes DSI-Flachbandkabel (Lieferumfang), "
+     "zusätzlich 4 Jumperkabel für Strom/I2C.", "1×"],
+    ["Jumperkabel, Dupont female-female", "Für Display-Strom (5V, GND) und I2C-Touch (SDA, "
+     "SCL) zwischen Display-Adapterplatine und Pi-GPIO-Header.", "4×"],
+]))
+
+h2("RFID (Kapitel 5)")
+story.append(parts_table([
+    ["RC522-Modul", "SPI-RFID-Leser, 13,56 MHz, läuft am Pi über Hardware-SPI0/CE0.", "1×"],
+    ["Jumperkabel, Dupont female-female", "Für SPI (SCLK/MOSI/MISO/CE0), RST und 3,3V/GND - "
+     "VCC ausdrücklich an 3,3V, nicht 5V.", "7×"],
+    ["RFID-Chips/Tags", "13,56 MHz, Mifare-kompatibel (Karte, Sticker oder "
+     "Schlüsselanhänger) - je ein Chip pro Hörspiel/Funktion, plus optional je einer pro "
+     "Nutzer-Login.", "nach Bedarf"],
+]))
+
+h2("Bedienelemente (Kapitel 6 und 7)")
+story.append(parts_table([
+    ["Taster (Cherry MX oder kompatibel)", "3-Pin-Bauform, nur 2 Metallpins aktiv genutzt - "
+     "vor/zurück.", "2×"],
+    ["KY-040 Dreh-Encoder-Modul, mit Druckschalter", "Lautstärke/Play-Pause; langer Druck "
+     "fährt den Pi sicher herunter.", "1×"],
+    ["KY-040 Dreh-Encoder-Modul, mit Druckschalter", "Helligkeit; Druckschalter schaltet den "
+     "Nachtmodus um.", "1×"],
+]))
+
+h2("Verkabelung & Adapter-Platine (Kapitel 3.2)")
+story.append(parts_table([
+    ["Lochraster-Platine", "Trägt die 40-Pin-Buchsenleiste für den Amp2 plus die "
+     "Jumperkabel-Anschlüsse für RC522/Taster/Encoder - eigenverdrahtet, kein fertiges "
+     "Produkt.", "1×"],
+    ["40-Pin-Buchsenleiste (2×20, 2,54mm), zum Auflöten", "Nimmt den Amp2 als vollständiges "
+     "40-Pin-HAT auf - anders als RC522/Taster/Encoder lässt sich der Amp2 nicht einzeln per "
+     "Jumperkabel verdrahten.", "1×"],
+    ["Jumperkabel, Dupont male-female", "Verbindet die 40-Pin-Buchsenleiste der "
+     "Adapter-Platine mit dem 40-Pin-Header des Pi.", "40×"],
+    ["Litze, AWG20 oder dicker (für 5V/GND des Amp2)", "Der Amp2 zieht seine komplette "
+     "Lautsprecher-Ausgangsleistung direkt aus der 5V-Schiene (Class-D) - bei "
+     "Zimmerlautstärke durchaus über 1A. Dünne Standard-Jumperkabel sind dafür nicht "
+     "ausgelegt.", "kurz, je 2×"],
+]))
+story.append(note_box(
+    "Nach dem Zusammenbau prüfen: vcgencmd get_throttled sollte 0x0 zeigen (keine "
+    "Unterspannung) - bei Verzerren/Aussetzern unter Last zuerst hier ansetzen."
+))
+
+h2("Werkzeug (nicht Teil der Stückliste, aber sinnvoll)")
+bullets([
+    "Lötkolben + Lötzinn (für die 40-Pin-Buchsenleiste auf der Adapter-Platine)",
+    "Abisolierzange (für die Lautsprecher- und Netzteil-Adern)",
+    "Multimeter (Polaritäts-/Kurzschlussprüfung vor dem ersten Einschalten)",
+    "microSD-Kartenleser (zum Flashen des OS-Images, falls nicht schon vorhanden)",
+])
+
+# ============================================================ 3. HiFiBerry
+h1("3. HiFiBerry Amp2")
 p(
     "Der HiFiBerry belegt die I2S-Pins (BCM 18/19/20/21) sowie I2C (BCM 2/3) zur "
     "Verstärkersteuerung. In /boot/firmware/config.txt (bzw. /boot/config.txt auf älteren Images):"
@@ -310,7 +413,7 @@ bullets([
     "Flachsteckhülsen/Bananas oder Lötfahnen).",
 ])
 
-h2("2.1 Aktive Kühlung (Pi 5)")
+h2("3.1 Aktive Kühlung (Pi 5)")
 story.append(note_box(
     "Dieser komplette Abschnitt ist noch NICHT an echter Hardware verifiziert - die "
     "Software-Anpassungen sind vorbereitet, aber dieses Projekt lief zum Zeitpunkt des Schreibens "
@@ -341,7 +444,7 @@ story.append(note_box(
     kind="warn",
 ))
 
-h2("2.2 Nicht mehr direkt aufgesteckt: Anschluss über Adapter-Platine")
+h2("3.2 Nicht mehr direkt aufgesteckt: Anschluss über Adapter-Platine")
 story.append(note_box(
     "Dieser Abschnitt ist noch NICHT an echter Hardware verifiziert.",
     kind="warn",
@@ -392,7 +495,7 @@ story.append(note_box(
 ))
 
 # ============================================================ 3. AirPlay
-h1("3. AirPlay (optional, shairport-sync)")
+h1("4. AirPlay (optional, shairport-sync)")
 p(
     "Kein zusätzliches Kabel, kein zusätzlicher Chip - AirPlay läuft komplett über WLAN und "
     "dieselbe HiFiBerry-Ausgabe, die OwlBox ohnehin schon nutzt. Ein optionales Software-Add-on: "
@@ -439,7 +542,7 @@ story.append(note_box(
 ))
 
 # ============================================================ 4. RC522
-h1("4. RC522 RFID-Leser (Hardware-SPI0)")
+h1("5. RC522 RFID-Leser (Hardware-SPI0)")
 story.append(note_box(
     "Der RC522 hängt an SPI0, dem Hardware-SPI-Bus des Pi (/dev/spidev0.0, CE0). Grund, warum das "
     "möglich ist: SPI1 liegt auf GPIO18-21, exakt den Pins, die der HiFiBerry für I2S-Ton braucht "
@@ -490,7 +593,7 @@ p(
 )
 
 # ============================================================ 5. Taster
-h1("5. Taster (vor/zurück)")
+h1("6. Taster (vor/zurück)")
 p(
     "Als Taster kommen Cherry-MX-Switches (3-Pin-Variante) zum Einsatz - elektrisch ganz normale "
     "Momentary-Schalter (schließt nur beim Drücken, öffnet sonst)."
@@ -514,10 +617,10 @@ p(
     "Schritten von gpio.seek_step_seconds (Standard 10s) - kein Trackwechsel, solange gehalten wird."
 )
 
-# ============================================================ 6. Encoder
-h1("6. Dreh-Encoder mit Taster (KY-040)")
+# ============================================================ 7. Encoder
+h1("7. Dreh-Encoder mit Taster (KY-040)")
 story.append(spec_table(
-    [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO1 (nicht 17, siehe Kapitel 4)"], ["DT", "GPIO27"],
+    [["Encoder-Pin", "Raspberry Pi"], ["CLK", "GPIO1 (nicht 17, siehe Kapitel 5)"], ["DT", "GPIO27"],
      ["SW", "GPIO22"], ["+", "3.3V"], ["GND", "GND"]],
     col_widths=[100 * mm, 60 * mm],
 ))
@@ -550,7 +653,7 @@ p("Drehen ändert die Helligkeit (Schrittweite gpio.brightness_step, Standard 5%
   "ausschließlich Encoder und Web-UI.")
 story.append(note_box(
     "An echter Hardware bestätigt: eine Helligkeitsänderung per Encoder/Web-UI dimmt tatsächlich "
-    "sichtbar das Display - Details zur Sysfs-Backlight-Schnittstelle siehe Kapitel 7."
+    "sichtbar das Display - Details zur Sysfs-Backlight-Schnittstelle siehe Kapitel 8."
 ))
 p(
     "<b>Nachtmodus:</b> Ein Druck auf den Taster (SW) schaltet zwischen der normalen "
@@ -578,8 +681,8 @@ story.append(note_box(
     kind="warn",
 ))
 
-# ============================================================ 7. Backlight
-h1("7. Display-Hintergrundbeleuchtung")
+# ============================================================ 8. Backlight
+h1("8. Display-Hintergrundbeleuchtung")
 story.append(note_box(
     "An echter Hardware bestätigt: dieses Display bietet Helligkeitsregelung über eine interne "
     "Linux-Backlight-Sysfs-Schnittstelle an (/sys/class/backlight/<id>/brightness, auf dem "
@@ -594,14 +697,14 @@ story.append(note_box(
 ))
 p(
     "Software-seitig ist der zweite Encoder vollständig verdrahtet und angebunden (CLK/DT fürs "
-    "Drehen, SW für den Nachtmodus-Taster, siehe Kapitel 6) - jede Helligkeitsänderung über "
+    "Drehen, SW für den Nachtmodus-Taster, siehe Kapitel 7) - jede Helligkeitsänderung über "
     "Encoder, Web-Oberfläche oder Nachtmodus-Taster ändert den intern gespeicherten "
     "brightness-Wert zuverlässig, blendet ihn kurz auf dem Display ein und dimmt jetzt auch "
     "tatsächlich die Display-Helligkeit sichtbar."
 )
 
 # ============================================================ 8. Fallback-Hotspot
-h1("8. Fallback-Hotspot (WLAN-Recovery)")
+h1("9. Fallback-Hotspot (WLAN-Recovery)")
 p(
     "Ist WLAN eingeschaltet, aber für network.hotspot_after_seconds (Standard 60s) mit keinem "
     "Netzwerk verbunden - z.B. weil das Heimnetz sein Passwort geändert hat oder der Pi an einen "
@@ -627,14 +730,14 @@ story.append(note_box(
 ))
 
 # ============================================================ 9. Display-Treiber
-h1("9. DSI-Display: kein separater Treiber-Installer nötig")
+h1("10. DSI-Display: kein separater Treiber-Installer nötig")
 p(
     "Im Gegensatz zum früheren 3,5″-SPI-Display (das einen virtuellen-HDMI-Trick, fbcp und den "
     "alten Legacy-Grafiktreiber brauchte, um überhaupt ein Bild zu zeigen) kommt das aktuelle "
     "DSI-Display an einem normalen Raspberry Pi OS Bookworm-Image ohne Treiber-Installer, ohne "
     "Extra-Paket aus - nur die eine dtoverlay=-Zeile unten ist nötig, sonst nichts. Empfohlenes "
     "Basis-Image bleibt Raspberry Pi OS Lite, 64-bit (ohne Desktop-Umgebung) - der Kiosk startet X "
-    "selbst nur für Chromium (siehe Kapitel 10), eine mitinstallierte Desktop-Umgebung (lightdm, "
+    "selbst nur für Chromium (siehe Kapitel 11), eine mitinstallierte Desktop-Umgebung (lightdm, "
     "LXDE) würde beim Boot nur unnötig Zeit kosten. Wichtig ist nur: der moderne KMS-Grafiktreiber "
     "(vc4-kms-v3d) bleibt aktiv (Bookworm-Standard) - er wurde beim alten SPI-Display extra "
     "deaktiviert, das ist mit einem DSI-Display nicht mehr nötig und würde die GPU-Beschleunigung "
@@ -677,7 +780,7 @@ bullets([
 ])
 
 # ============================================================ 10. Kiosk-Autostart
-h1("10. Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)")
+h1("11. Kiosk-Autostart (Chromium fullscreen, ohne Desktop-Umgebung)")
 p(
     "Da die Basis „Lite“ keine Desktop-Umgebung mitbringt, gibt es auch kein lightdm/LXDE, in das "
     "sich der Kiosk einhängen könnte. Stattdessen startet ein eigener systemd-Dienst "
@@ -748,7 +851,7 @@ story.append(note_box(
 ))
 
 # ============================================================ 11. Konfiguration
-h1("11. Konfigurationsdatei (config.yaml)")
+h1("12. Konfigurationsdatei (config.yaml)")
 p(
     "Alle in dieser Anleitung genannten Werte (Pins, Schrittweiten, Zeiten) stehen gesammelt in "
     "config/config.yaml (aus config/config.example.yaml kopieren). Die wichtigsten Abschnitte:"
