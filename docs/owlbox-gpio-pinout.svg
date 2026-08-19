@@ -4,8 +4,8 @@
 <text x="40" y="74" font-size="26" font-weight="800" fill="#1c231e" font-family="Arial, sans-serif">Welches Gerät an welchen Pin</text>
 <text x="40" y="98" font-size="13.5" fill="#6d7669" font-family="Arial, sans-serif">40-Pin-Header, physische Nummerierung wie auf der Pi-Platine · BCM-Name und Zielgerät pro Pin</text>
 <rect x="40" y="148" width="460" height="70" rx="14" fill="#e3e9ed" stroke="#4c6478" stroke-width="2"/>
-<text x="270" y="182" font-size="18" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="Arial, sans-serif">Pi 3B+ + HiFiBerry</text>
-<text x="270" y="204" font-size="12.5" fill="#6d7669" text-anchor="middle" font-family="Arial, sans-serif">gestapelt, direkt auf dem 40-Pin-Header</text>
+<text x="270" y="182" font-size="18" font-weight="700" fill="#4c6478" text-anchor="middle" font-family="Arial, sans-serif">Pi 5 + HiFiBerry</text>
+<text x="270" y="204" font-size="12.5" fill="#6d7669" text-anchor="middle" font-family="Arial, sans-serif">HiFiBerry per Adapter-Platine · I2S/I2C-Pins bleiben am Pi</text>
 <rect x="860" y="148" width="460" height="70" rx="14" fill="#e4ede7" stroke="#2f6f4e" stroke-width="2"/>
 <text x="1090" y="182" font-size="18" font-weight="700" fill="#2f6f4e" text-anchor="middle" font-family="Arial, sans-serif">Adapter-Platine</text>
 <text x="1090" y="204" font-size="12.5" fill="#6d7669" text-anchor="middle" font-family="Arial, sans-serif">RC522, Taster ×2, Encoder ×2, optional Display</text>
