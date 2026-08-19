@@ -31,7 +31,8 @@ Zielhardware:
   dessen Anleitung ist noch in der Historie zu finden.
 - 2 Taster (vor/zurück)
 - 1 Dreh-Encoder mit Druckschalter (Lautstärke / Pause)
-- 1 weiterer Dreh-Encoder ohne Taster (Helligkeit, s.u.)
+- 1 weiterer Dreh-Encoder mit Druckschalter (Helligkeit, Taster schaltet den
+  Nachtmodus, s.u.)
 
 Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Defaults in
 `config/config.example.yaml`. Wer andere Pins verdrahtet, passt einfach die

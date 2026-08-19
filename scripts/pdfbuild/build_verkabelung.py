@@ -91,8 +91,8 @@ bullets([
     "Hardware verifiziert, siehe Kapitel 1.1.",
     "2 Taster (vor/zurück)",
     "1 Dreh-Encoder mit Druckschalter (Lautstärke/Play-Pause)",
-    "1 weiterer Dreh-Encoder ohne Taster (Helligkeit, s.u. - auf dieser Hardware aktuell ohne "
-    "Wirkung, s. Kapitel 7)",
+    "1 weiterer Dreh-Encoder mit Druckschalter (Helligkeit, Taster schaltet den Nachtmodus, "
+    "s.u.)",
 ])
 p("Alle Pin-Angaben sind BCM-Nummerierung und entsprechen den Standardwerten in "
   "config/config.example.yaml. Wer andere Pins verdrahtet, passt einfach die gpio:/rfid:-Sektion "
@@ -186,8 +186,8 @@ story.append(spec_table(
         ["Encoder CLK", "1", "Lautstärke-Encoder (17 ist inzwischen wieder belegt, s.u.)"],
         ["Encoder DT", "27", "Lautstärke-Encoder"],
         ["Encoder SW", "22", "Lautstärke-Encoder"],
-        ["Display-Backlight", "-", "läuft über Sysfs, kein GPIO mehr - ob eine Helligkeitsänderung "
-         "per Encoder unten physisch etwas bewirkt, ist noch offen, s. Kapitel 7"],
+        ["Display-Backlight", "-", "läuft über Sysfs, kein GPIO mehr - dimmt zuverlässig über den "
+         "Encoder unten, s. Kapitel 7"],
         ["Helligkeits-Encoder CLK", "23", "Helligkeits-Encoder"],
         ["Helligkeits-Encoder DT", "12", "Helligkeits-Encoder"],
         ["Helligkeits-Encoder SW", "17", "Helligkeits-Encoder - Nachtmodus-Umschalter "
@@ -549,10 +549,8 @@ p("Drehen ändert die Helligkeit (Schrittweite gpio.brightness_step, Standard 5%
   "Touch-Helligkeitsregelung, die das Waveshare-Display selbst laut Auftraggeber mitbringt - "
   "ausschließlich Encoder und Web-UI.")
 story.append(note_box(
-    "Noch nicht an echter Hardware verifiziert: ob eine Helligkeitsänderung per Encoder/Software "
-    "auf diesem Display überhaupt sichtbar etwas bewirkt - siehe Kapitel 7, Status dort schon "
-    "länger unklar, unabhängig vom Nachtmodus-Feature hier.",
-    kind="warn",
+    "An echter Hardware bestätigt: eine Helligkeitsänderung per Encoder/Web-UI dimmt tatsächlich "
+    "sichtbar das Display - Details zur Sysfs-Backlight-Schnittstelle siehe Kapitel 7."
 ))
 p(
     "<b>Nachtmodus:</b> Ein Druck auf den Taster (SW) schaltet zwischen der normalen "
