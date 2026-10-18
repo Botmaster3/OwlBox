@@ -122,7 +122,7 @@ table.wl td { padding: 4px 8px; }
 .card ul.conn { display: block; columns: 2; margin: 0; padding-left: 18px; }
 @media print {
   #kabelbaum-zeichnung svg.harness { max-height: 150mm; width: auto; margin: 0 auto; }
-  table.wl td { padding: 0 6px; font-size: .7rem; line-height: 1.32; }
+  table.wl td { padding: 0 6px; font-size: .66rem; line-height: 1.2; }
   table.wl th { padding: 2px 6px; }
   #leitungsliste .card { padding: 6px 10px; gap: 3px; }
   #leitungsliste .card ul { gap: 1px; font-size: .78rem; }
@@ -139,11 +139,11 @@ table.wl td { padding: 4px 8px; }
 </header>
 <section class="sheet first" id="kabel">
 <div class="sheet-head"><h2>Welche Kabel?</h2></div>
-<div class="kpis"><span><b>31</b>Adern am Stecker</span><span><b>25</b>× 0,14 mm² Signal</span><span><b>6</b>× 0,25 mm² Strom</span><span><b>2</b>× 0,75 mm² Lautsprecher</span></div>
+<div class="kpis"><span><b>31</b>Adern am Stecker</span><span><b>25</b>× 0,14 mm² Signal</span><span><b>6</b>× 0,25 mm² Strom</span><span><b>2</b>× 0,75 mm² Hauptleitung</span><span><b>2</b>× 0,75 mm² Lautsprecher</span></div>
 <div class="grid2">
 <div class="card"><h3>Signal-Adern: 0,14 mm² (AWG 26)</h3><p>Für alles außer der Stromversorgung von Amp2 und Display: RFID, Taster, Encoder, I2C, I2S. Es fließen nur Milliampere.</p><ul><li><b>Silikon-Litze</b> (hochflexibel, Isolierung schmilzt beim Löten nicht weg) oder PVC-Schaltlitze LiY</li><li>Set mit 10 Farben, je ca. 2 m reicht</li><li>Außendurchmesser ≤ 1,2 mm, damit benachbarte Pins (2,54 mm Abstand) Platz haben</li></ul></div>
-<div class="card"><h3>Strom-Adern: 0,25 mm² (AWG 24)</h3><p>Nur für 5 V und GND zum Amp2 (5 Adern) und zum Display (2 Adern). Über diese Adern fließen bis zu ca. 3 A.</p><ul><li>Silikon-Litze in Rot und Schwarz</li><li>So kurz wie möglich, max. ca. 20 cm</li><li>Dicker (AWG 22/20) passt meist nicht mehr an einen 2,54-mm-Pin. Deshalb lieber zwei Pins parallel (5 V auf Pin 2 und 4, GND auf 6, 9 und 14)</li></ul></div>
-<div class="card"><h3>Lautsprecher: 0,75 mm² (AWG 18)</h3><p>2-adriges Lautsprecherkabel von den Federklemmen des Amp2 zu den Lautsprechern. Nicht am 40-Pin-Stecker. Polarität an beiden Lautsprechern gleich (+ zu +).</p></div>
+<div class="card"><h3>Strom-Adern: 0,25 mm² (AWG 24)</h3><p>Nur für 5 V und GND zum Amp2 (5 Adern) und zum Display (2 Adern). Über diese Adern fließen bis zu ca. 3 A.</p><ul><li>Silikon-Litze in Rot und Schwarz</li><li>So kurz wie möglich, max. ca. 20 cm</li><li>Dicker (AWG 22/20) passt meist nicht mehr an einen 2,54-mm-Pin. Deshalb nur kurze Stummel (5–8 cm) an den Pins, danach Spleiß auf eine dicke Hauptleitung</li></ul></div>
+<div class="card"><h3>Dick: 0,75 mm² (AWG 18)</h3><ul><li><b>Hauptleitung Amp2:</b> je eine rote (5 V) und schwarze (GND) Leitung von den Spleißen S4/S5 am Pi zu S3/S6 an der Amp-Buchse. Trägt den ganzen Verstärkerstrom</li><li><b>Lautsprecher:</b> 2-adrig von den Federklemmen des Amp2, nicht am 40-Pin-Stecker. Polarität an beiden Lautsprechern gleich (+ zu +)</li></ul></div>
 <div class="card"><h3>Zubehör</h3><ul><li>Schrumpfschlauch 1,5 mm (über jede Lötstelle am Stecker) und 3 mm (Bündel)</li><li>2×20-Buchsenleiste RM 2,54 + Stück Lochraster für den Amp2</li><li>Kabelbinder bzw. Gewebeband zum Bündeln pro Bauteil</li><li>Lötzinn 0,5–0,8 mm mit Flussmittel, Lötkolben ca. 330 °C</li></ul></div>
 </div>
 <div class="warn"><b>Vor dem Löten:</b> Pi ausschalten und Netzteil ab. Den Stecker zum Löten <b>vom Pi abziehen</b>, die Hitze kann sonst den Pi beschädigen. Pin 1 ist der Pin mit dem eckigen Lötauge, auf der Seite weg von USB/LAN. Gerade Pins (2, 4, 6 …) liegen in der Reihe am Platinenrand. Alle Zeichnungen zeigen den Stecker <b>von oben, so wie er auf dem Pi sitzt</b>. Lötest du von unten, ist alles spiegelverkehrt.</div>
@@ -230,50 +230,53 @@ table.wl td { padding: 4px 8px; }
 </section>
 <section class="sheet" id="kabelbaum">
 <div class="sheet-head"><h2>Kabelbaum: an jedem Pin nur eine Ader</h2></div>
-<div class="card"><p>Drei Pins versorgen zwei Bauteile. Die Adern werden dafür vorher im Kabelbaum zusammengeführt (Spleiß, wie beim Auto), sodass am Stecker immer nur eine Ader ankommt:</p><ul><li><b>S1 · Pin 17 (3,3 V, orange):</b> eine Ader zu S1 in der Nähe der Encoder, von dort je eine zum „+“ beider Encoder</li><li><b>S2 · Pin 30 (GND, schwarz):</b> eine Ader zu S2 in der Nähe der Taster, von dort zu Kontakt B beider Taster</li><li><b>S3 · Pin 4 (5 V, rot):</b> die Amp2-Ader von Pin 4 bekommt kurz vor der Amp-Buchse einen Abzweig zum Display (0,25 mm²)</li><li>So spleißen: Schrumpfschlauch vorher aufschieben, 8 mm abisolieren, Adern verdrillen oder die Abzweigader um die Hauptader wickeln, verlöten, Schrumpfschlauch drüber</li><li>Spleiße mindestens 5 cm vom Stecker entfernt und gegeneinander versetzt setzen, damit der Baum nicht an einer Stelle dick wird und nichts direkt am Stecker knickt</li><li>Nicht zusammenführen: die Strom-Adern des Amp2 (Pins 2, 4, 6, 9, 14). Die laufen absichtlich über mehrere Pins parallel.</li></ul></div>
+<div class="card"><p>Wo sich mehrere Adern eine Leitung teilen, werden sie im Kabelbaum zusammengeführt (Spleiß, wie beim Auto). Am Stecker kommt immer nur eine Ader pro Pin an:</p><ul><li><b>S1 · Pin 17 (3,3 V, orange):</b> eine Ader zu S1 in der Nähe der Encoder, von dort je eine zum „+“ beider Encoder</li><li><b>S2 · Pin 30 (GND, schwarz):</b> eine Ader zu S2 in der Nähe der Taster, von dort zu Kontakt B beider Taster</li><li><b>S4 · Pin 2 + 4 (5 V, rot):</b> zwei 0,25-mm²-Stummel (5–8 cm) auf die 0,75-mm²-Hauptleitung</li><li><b>S5 · Pin 6 + 9 + 14 (GND, schwarz):</b> drei 0,25-mm²-Stummel auf die 0,75-mm²-Hauptleitung</li><li><b>S3 / S6 (kurz vor der Amp-Buchse):</b> die Hauptleitungen teilen sich wieder auf Buchsen-Pin 2 + 4 bzw. 6 + 9 + 14 auf. An S3 geht zusätzlich die 5-V-Ader zum Display ab</li><li>So spleißen: Schrumpfschlauch vorher aufschieben, 8 mm abisolieren, Adern verdrillen oder die Abzweigader um die Hauptader wickeln, verlöten, Schrumpfschlauch drüber</li><li>Spleiße mindestens 5 cm vom Stecker entfernt und gegeneinander versetzt setzen, damit der Baum nicht an einer Stelle dick wird und nichts direkt am Stecker knickt</li><li>Die Stummel an den Pins kurz halten: Der Engpass ist der einzelne Pin mit seiner dünnen Ader, nicht die Hauptleitung. Deshalb bleiben es mehrere Pins parallel</li></ul></div>
 </section>
 <section class="sheet" id="kabelbaum-zeichnung">
-<div class="sheet-head"><h2>Kabelbaum-Zeichnung</h2><span class="count">37 Leitungen · 3 Spleiße · 8 Stecker</span></div>
+<div class="sheet-head"><h2>Kabelbaum-Zeichnung</h2><span class="count">43 Leitungen · 6 Spleiße · 8 Stecker</span></div>
 <p>Der ganze Baum auf einen Blick, so wie eine Kabelbaumzeichnung beim Auto: Vom Stecker X1 geht ein Stamm ab, der sich an den Abzweigen A, R und F aufteilt. In jedem Abschnitt steht, wie viele Leitungen darin laufen. In den Steckerkästen steht pro Kontakt die Leitungsnummer und Farbe. Die Leitungsliste auf der nächsten Seite sagt, wo jede Leitung anfängt und endet.</p>
 <div class="fig"><svg viewBox="0 0 1200 760" class="plan harness" role="img" aria-label="Kabelbaum-Zeichnung OwlBox"><path d="M215,380 L300,380" class="hb-edge" stroke-width="24.05"/>
 <path d="M215,380 L300,380" class="hb" stroke-width="21.05"/>
 <text x="257" y="404" class="hb-lbl" text-anchor="middle">31 Ltg · L1</text>
-<path d="M300,380 L300,170 L430,170" class="hb-edge" stroke-width="13.600000000000001"/>
-<path d="M300,380 L300,170 L430,170" class="hb" stroke-width="10.600000000000001"/>
-<text x="310" y="270" class="hb-lbl" text-anchor="start">12 Ltg · L2</text>
-<path d="M430,170 L520,170" class="hb-edge" stroke-width="13.05"/>
-<path d="M430,170 L520,170" class="hb" stroke-width="10.05"/>
-<text x="475" y="158" class="hb-lbl" text-anchor="middle">11 · L3</text>
-<path d="M430,170 L430,92 L372,92" class="hb-edge" stroke-width="8.1"/>
-<path d="M430,170 L430,92 L372,92" class="hb" stroke-width="5.1"/>
-<text x="438" y="128" class="hb-lbl" text-anchor="start">2 · L4</text>
+<path d="M300,380 L300,345" class="hb-edge" stroke-width="13.600000000000001"/>
+<path d="M300,380 L300,345" class="hb" stroke-width="10.600000000000001"/>
+<text x="291" y="366" class="hb-lbl" text-anchor="end">12 · L2</text>
+<path d="M300,315 L300,170 L440,170" class="hb-edge" stroke-width="11.95"/>
+<path d="M300,315 L300,170 L440,170" class="hb" stroke-width="8.95"/>
+<text x="310" y="250" class="hb-lbl" text-anchor="start">9 Ltg · L3</text>
+<path d="M440,170 L520,170" class="hb-edge" stroke-width="11.95"/>
+<path d="M440,170 L520,170" class="hb" stroke-width="8.95"/>
+<text x="500" y="158" class="hb-lbl" text-anchor="middle">L4</text>
+<path d="M440,170 L440,92 L372,92" class="hb-edge" stroke-width="8.1"/>
+<path d="M440,170 L440,92 L372,92" class="hb" stroke-width="5.1"/>
+<text x="448" y="128" class="hb-lbl" text-anchor="start">2 · L5</text>
 <path d="M300,380 L470,380" class="hb-edge" stroke-width="17.450000000000003"/>
 <path d="M300,380 L470,380" class="hb" stroke-width="14.450000000000001"/>
-<text x="385" y="368" class="hb-lbl" text-anchor="middle">19 Ltg · L5</text>
+<text x="385" y="368" class="hb-lbl" text-anchor="middle">19 Ltg · L6</text>
 <path d="M470,380 L470,585 L520,585" class="hb-edge" stroke-width="10.850000000000001"/>
 <path d="M470,380 L470,585 L520,585" class="hb" stroke-width="7.8500000000000005"/>
-<text x="482" y="490" class="hb-lbl" text-anchor="start">7 Ltg · L6</text>
+<text x="482" y="490" class="hb-lbl" text-anchor="start">7 Ltg · L7</text>
 <path d="M470,380 L700,380" class="hb-edge" stroke-width="13.600000000000001"/>
 <path d="M470,380 L700,380" class="hb" stroke-width="10.600000000000001"/>
-<text x="585" y="368" class="hb-lbl" text-anchor="middle">12 Ltg · L7</text>
+<text x="585" y="368" class="hb-lbl" text-anchor="middle">12 Ltg · L8</text>
 <path d="M700,380 L700,250 L840,250" class="hb-edge" stroke-width="8.65"/>
 <path d="M700,380 L700,250 L840,250" class="hb" stroke-width="5.65"/>
-<text x="711" y="310" class="hb-lbl" text-anchor="start">3 Ltg · L8</text>
+<text x="711" y="310" class="hb-lbl" text-anchor="start">3 Ltg · L9</text>
 <path d="M840,250 L900,250 L900,120 L940,120" class="hb-edge" stroke-width="8.1"/>
 <path d="M840,250 L900,250 L900,120 L940,120" class="hb" stroke-width="5.1"/>
-<text x="891" y="190" class="hb-lbl" text-anchor="end">2 · L9</text>
+<text x="891" y="190" class="hb-lbl" text-anchor="end">2 · L10</text>
 <path d="M840,250 L900,250 L900,300 L940,300" class="hb-edge" stroke-width="8.1"/>
 <path d="M840,250 L900,250 L900,300 L940,300" class="hb" stroke-width="5.1"/>
-<text x="891" y="292" class="hb-lbl" text-anchor="end">2 · L10</text>
+<text x="891" y="292" class="hb-lbl" text-anchor="end">2 · L11</text>
 <path d="M700,380 L700,520 L840,520" class="hb-edge" stroke-width="11.95"/>
 <path d="M700,380 L700,520 L840,520" class="hb" stroke-width="8.95"/>
-<text x="714" y="455" class="hb-lbl" text-anchor="start">9 Ltg · L11</text>
+<text x="714" y="455" class="hb-lbl" text-anchor="start">9 Ltg · L12</text>
 <path d="M840,520 L900,520 L900,430 L940,430" class="hb-edge" stroke-width="9.75"/>
 <path d="M840,520 L900,520 L900,430 L940,430" class="hb" stroke-width="6.75"/>
-<text x="891" y="480" class="hb-lbl" text-anchor="end">5 · L12</text>
+<text x="891" y="480" class="hb-lbl" text-anchor="end">5 · L13</text>
 <path d="M840,520 L900,520 L900,600 L940,600" class="hb-edge" stroke-width="9.75"/>
 <path d="M840,520 L900,520 L900,600 L940,600" class="hb" stroke-width="6.75"/>
-<text x="891" y="568" class="hb-lbl" text-anchor="end">5 · L13</text>
+<text x="891" y="568" class="hb-lbl" text-anchor="end">5 · L14</text>
 <rect x="30" y="300" width="185" height="160" rx="6" class="cbox"/>
 <rect x="30" y="300" width="185" height="26" rx="6" class="chead"/>
 <text x="40" y="318" class="cid">X1</text>
@@ -289,59 +292,65 @@ table.wl td { padding: 4px 8px; }
 <text x="482" y="402" class="bp-lbl">Abzweig R</text>
 <rect x="694" y="374" width="12" height="12" class="bp" transform="rotate(45 700 380)"/>
 <text x="712" y="402" class="bp-lbl">Abzweig F</text>
-<circle cx="430" cy="170" r="9" class="splice"/>
-<text x="430" y="155" class="splice-lbl">S3</text>
+<circle cx="440" cy="170" r="9" class="splice"/>
+<text x="440" y="155" class="splice-lbl">S3</text>
+<circle cx="480" cy="170" r="9" class="splice"/>
+<text x="480" y="155" class="splice-lbl">S6</text>
 <circle cx="840" cy="250" r="9" class="splice"/>
 <text x="840" y="235" class="splice-lbl">S2</text>
 <circle cx="840" cy="520" r="9" class="splice"/>
 <text x="840" y="505" class="splice-lbl">S1</text>
+<circle cx="300" cy="345" r="9" class="splice"/>
+<text x="315" y="350" class="splice-lbl" style="text-anchor:start">S4</text>
+<circle cx="300" cy="315" r="9" class="splice"/>
+<text x="315" y="320" class="splice-lbl" style="text-anchor:start">S5</text>
 <rect x="520" y="40" width="210" height="223" rx="6" class="cbox"/>
 <rect x="520" y="40" width="210" height="26" rx="6" class="chead"/>
 <text x="530" y="58" class="cid">X2</text>
 <text x="560" y="58" class="cname">Amp-Buchse (HiFiBerry Amp2)</text>
 <text x="530" y="82" class="crow">2</text>
 <rect x="590" y="73" width="22" height="10" rx="2" fill="#d63a2f" class="cw"/>
-<text x="620" y="82" class="crow b">W01</text>
+<text x="620" y="82" class="crow b">W04</text>
 <text x="660" y="82" class="crow m">rot</text>
 <text x="530" y="99" class="crow">4</text>
 <rect x="590" y="90" width="22" height="10" rx="2" fill="#d63a2f" class="cw"/>
-<text x="620" y="99" class="crow b">W03</text>
+<text x="620" y="99" class="crow b">W05</text>
 <text x="660" y="99" class="crow m">rot</text>
 <text x="530" y="116" class="crow">6</text>
 <rect x="590" y="107" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
-<text x="620" y="116" class="crow b">W04</text>
+<text x="620" y="116" class="crow b">W11</text>
 <text x="660" y="116" class="crow m">schwarz</text>
 <text x="530" y="133" class="crow">9</text>
 <rect x="590" y="124" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
-<text x="620" y="133" class="crow b">W05</text>
+<text x="620" y="133" class="crow b">W12</text>
 <text x="660" y="133" class="crow m">schwarz</text>
 <text x="530" y="150" class="crow">14</text>
 <rect x="590" y="141" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
-<text x="620" y="150" class="crow b">W06</text>
+<text x="620" y="150" class="crow b">W13</text>
 <text x="660" y="150" class="crow m">schwarz</text>
 <text x="530" y="167" class="crow">3</text>
 <rect x="590" y="158" width="22" height="10" rx="2" fill="#2f6fd1" class="cw"/>
-<text x="620" y="167" class="crow b">W07</text>
+<text x="620" y="167" class="crow b">W15</text>
 <text x="660" y="167" class="crow m">blau</text>
 <text x="530" y="184" class="crow">5</text>
 <rect x="590" y="175" width="22" height="10" rx="2" fill="#8a4fc4" class="cw"/>
-<text x="620" y="184" class="crow b">W08</text>
+<text x="620" y="184" class="crow b">W16</text>
 <text x="660" y="184" class="crow m">violett</text>
 <text x="530" y="201" class="crow">12</text>
 <rect x="590" y="192" width="22" height="10" rx="2" fill="#e8c31a" class="cw"/>
-<text x="620" y="201" class="crow b">W09</text>
+<text x="620" y="201" class="crow b">W17</text>
 <text x="660" y="201" class="crow m">gelb</text>
 <text x="530" y="218" class="crow">35</text>
 <rect x="590" y="209" width="22" height="10" rx="2" fill="#2f9a4c" class="cw"/>
-<text x="620" y="218" class="crow b">W10</text>
+<text x="620" y="218" class="crow b">W18</text>
 <text x="660" y="218" class="crow m">grün</text>
 <text x="530" y="235" class="crow">40</text>
 <rect x="590" y="226" width="22" height="10" rx="2" fill="#f4f4f0" class="cw"/>
-<text x="620" y="235" class="crow b">W11</text>
+<text x="620" y="235" class="crow b">W19</text>
 <text x="660" y="235" class="crow m">weiß</text>
 <text x="530" y="252" class="crow">38</text>
 <rect x="590" y="243" width="22" height="10" rx="2" fill="#8d9290" class="cw"/>
-<text x="620" y="252" class="crow b">W12</text>
+<text x="620" y="252" class="crow b">W20</text>
 <text x="660" y="252" class="crow m">grau</text>
 <rect x="172" y="50" width="200" height="70" rx="6" class="cbox"/>
 <rect x="172" y="50" width="200" height="26" rx="6" class="chead"/>
@@ -349,7 +358,7 @@ table.wl td { padding: 4px 8px; }
 <text x="212" y="68" class="cname">Display 5″ DSI</text>
 <text x="182" y="92" class="crow">5V</text>
 <rect x="242" y="83" width="22" height="10" rx="2" fill="#d63a2f" class="cw"/>
-<text x="272" y="92" class="crow b">W13</text>
+<text x="272" y="92" class="crow b">W06</text>
 <text x="312" y="92" class="crow m">rot</text>
 <text x="182" y="109" class="crow">GND</text>
 <rect x="242" y="100" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
@@ -361,31 +370,31 @@ table.wl td { padding: 4px 8px; }
 <text x="560" y="538" class="cname">RC522 RFID</text>
 <text x="530" y="562" class="crow">SDA</text>
 <rect x="590" y="553" width="22" height="10" rx="2" fill="#f4f4f0" class="cw"/>
-<text x="620" y="562" class="crow b">W15</text>
+<text x="620" y="562" class="crow b">W21</text>
 <text x="660" y="562" class="crow m">weiß</text>
 <text x="530" y="579" class="crow">SCK</text>
 <rect x="590" y="570" width="22" height="10" rx="2" fill="#e8c31a" class="cw"/>
-<text x="620" y="579" class="crow b">W16</text>
+<text x="620" y="579" class="crow b">W22</text>
 <text x="660" y="579" class="crow m">gelb</text>
 <text x="530" y="596" class="crow">MOSI</text>
 <rect x="590" y="587" width="22" height="10" rx="2" fill="#2f9a4c" class="cw"/>
-<text x="620" y="596" class="crow b">W17</text>
+<text x="620" y="596" class="crow b">W23</text>
 <text x="660" y="596" class="crow m">grün</text>
 <text x="530" y="613" class="crow">MISO</text>
 <rect x="590" y="604" width="22" height="10" rx="2" fill="#2f6fd1" class="cw"/>
-<text x="620" y="613" class="crow b">W18</text>
+<text x="620" y="613" class="crow b">W24</text>
 <text x="660" y="613" class="crow m">blau</text>
 <text x="530" y="630" class="crow">GND</text>
 <rect x="590" y="621" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
-<text x="620" y="630" class="crow b">W19</text>
+<text x="620" y="630" class="crow b">W25</text>
 <text x="660" y="630" class="crow m">schwarz</text>
 <text x="530" y="647" class="crow">RST</text>
 <rect x="590" y="638" width="22" height="10" rx="2" fill="#8a4fc4" class="cw"/>
-<text x="620" y="647" class="crow b">W20</text>
+<text x="620" y="647" class="crow b">W26</text>
 <text x="660" y="647" class="crow m">violett</text>
 <text x="530" y="664" class="crow">3.3V</text>
 <rect x="590" y="655" width="22" height="10" rx="2" fill="#ee8a1c" class="cw"/>
-<text x="620" y="664" class="crow b">W21</text>
+<text x="620" y="664" class="crow b">W27</text>
 <text x="660" y="664" class="crow m">orange</text>
 <rect x="940" y="80" width="200" height="70" rx="6" class="cbox"/>
 <rect x="940" y="80" width="200" height="26" rx="6" class="chead"/>
@@ -393,11 +402,11 @@ table.wl td { padding: 4px 8px; }
 <text x="980" y="98" class="cname">Taster Weiter</text>
 <text x="950" y="122" class="crow">A</text>
 <rect x="1010" y="113" width="22" height="10" rx="2" fill="#f4f4f0" class="cw"/>
-<text x="1040" y="122" class="crow b">W22</text>
+<text x="1040" y="122" class="crow b">W28</text>
 <text x="1080" y="122" class="crow m">weiß</text>
 <text x="950" y="139" class="crow">B</text>
 <rect x="1010" y="130" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
-<text x="1040" y="139" class="crow b">W25</text>
+<text x="1040" y="139" class="crow b">W31</text>
 <text x="1080" y="139" class="crow m">schwarz</text>
 <rect x="940" y="262" width="200" height="70" rx="6" class="cbox"/>
 <rect x="940" y="262" width="200" height="26" rx="6" class="chead"/>
@@ -405,11 +414,11 @@ table.wl td { padding: 4px 8px; }
 <text x="980" y="280" class="cname">Taster Zurück</text>
 <text x="950" y="304" class="crow">A</text>
 <rect x="1010" y="295" width="22" height="10" rx="2" fill="#8d9290" class="cw"/>
-<text x="1040" y="304" class="crow b">W23</text>
+<text x="1040" y="304" class="crow b">W29</text>
 <text x="1080" y="304" class="crow m">grau</text>
 <text x="950" y="321" class="crow">B</text>
 <rect x="1010" y="312" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
-<text x="1040" y="321" class="crow b">W26</text>
+<text x="1040" y="321" class="crow b">W32</text>
 <text x="1080" y="321" class="crow m">schwarz</text>
 <rect x="940" y="362" width="200" height="121" rx="6" class="cbox"/>
 <rect x="940" y="362" width="200" height="26" rx="6" class="chead"/>
@@ -417,23 +426,23 @@ table.wl td { padding: 4px 8px; }
 <text x="980" y="380" class="cname">Encoder Lautstärke</text>
 <text x="950" y="404" class="crow">+</text>
 <rect x="1010" y="395" width="22" height="10" rx="2" fill="#ee8a1c" class="cw"/>
-<text x="1040" y="404" class="crow b">W28</text>
+<text x="1040" y="404" class="crow b">W34</text>
 <text x="1080" y="404" class="crow m">orange</text>
 <text x="950" y="421" class="crow">CLK</text>
 <rect x="1010" y="412" width="22" height="10" rx="2" fill="#e8c31a" class="cw"/>
-<text x="1040" y="421" class="crow b">W30</text>
+<text x="1040" y="421" class="crow b">W36</text>
 <text x="1080" y="421" class="crow m">gelb</text>
 <text x="950" y="438" class="crow">DT</text>
 <rect x="1010" y="429" width="22" height="10" rx="2" fill="#2f9a4c" class="cw"/>
-<text x="1040" y="438" class="crow b">W31</text>
+<text x="1040" y="438" class="crow b">W37</text>
 <text x="1080" y="438" class="crow m">grün</text>
 <text x="950" y="455" class="crow">SW</text>
 <rect x="1010" y="446" width="22" height="10" rx="2" fill="#2f6fd1" class="cw"/>
-<text x="1040" y="455" class="crow b">W32</text>
+<text x="1040" y="455" class="crow b">W38</text>
 <text x="1080" y="455" class="crow m">blau</text>
 <text x="950" y="472" class="crow">GND</text>
 <rect x="1010" y="463" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
-<text x="1040" y="472" class="crow b">W33</text>
+<text x="1040" y="472" class="crow b">W39</text>
 <text x="1080" y="472" class="crow m">schwarz</text>
 <rect x="940" y="548" width="200" height="121" rx="6" class="cbox"/>
 <rect x="940" y="548" width="200" height="26" rx="6" class="chead"/>
@@ -441,34 +450,34 @@ table.wl td { padding: 4px 8px; }
 <text x="980" y="566" class="cname">Encoder Helligkeit</text>
 <text x="950" y="590" class="crow">+</text>
 <rect x="1010" y="581" width="22" height="10" rx="2" fill="#ee8a1c" class="cw"/>
-<text x="1040" y="590" class="crow b">W29</text>
+<text x="1040" y="590" class="crow b">W35</text>
 <text x="1080" y="590" class="crow m">orange</text>
 <text x="950" y="607" class="crow">CLK</text>
 <rect x="1010" y="598" width="22" height="10" rx="2" fill="#e8c31a" class="cw"/>
-<text x="1040" y="607" class="crow b">W34</text>
+<text x="1040" y="607" class="crow b">W40</text>
 <text x="1080" y="607" class="crow m">gelb</text>
 <text x="950" y="624" class="crow">DT</text>
 <rect x="1010" y="615" width="22" height="10" rx="2" fill="#2f9a4c" class="cw"/>
-<text x="1040" y="624" class="crow b">W35</text>
+<text x="1040" y="624" class="crow b">W41</text>
 <text x="1080" y="624" class="crow m">grün</text>
 <text x="950" y="641" class="crow">SW</text>
 <rect x="1010" y="632" width="22" height="10" rx="2" fill="#2f6fd1" class="cw"/>
-<text x="1040" y="641" class="crow b">W36</text>
+<text x="1040" y="641" class="crow b">W42</text>
 <text x="1080" y="641" class="crow m">blau</text>
 <text x="950" y="658" class="crow">GND</text>
 <rect x="1010" y="649" width="22" height="10" rx="2" fill="#2a2a2a" class="cw"/>
-<text x="1040" y="658" class="crow b">W37</text>
+<text x="1040" y="658" class="crow b">W43</text>
 <text x="1080" y="658" class="crow m">schwarz</text>
-<g class="legend"><circle cx="40" cy="712" r="7" class="splice"/><text x="54" y="716">Spleiß (Lötverbindung, Schrumpfschlauch)</text><rect x="34" y="734" width="11" height="11" class="bp" transform="rotate(45 39.5 739.5)"/><text x="54" y="744">Abzweig (Adern verlassen den Baum, nichts verbunden)</text><text x="560" y="716">Strichstärke ≈ Anzahl Leitungen im Abschnitt</text><text x="560" y="744">L1–L13 = Längen, am Gehäuse ausmessen und in die Tabelle eintragen</text></g></svg></div>
+<g class="legend"><circle cx="40" cy="712" r="7" class="splice"/><text x="54" y="716">Spleiß (Lötverbindung, Schrumpfschlauch)</text><rect x="34" y="734" width="11" height="11" class="bp" transform="rotate(45 39.5 739.5)"/><text x="54" y="744">Abzweig (Adern verlassen den Baum, nichts verbunden)</text><text x="560" y="716">Strichstärke ≈ Anzahl Leitungen im Abschnitt</text><text x="560" y="744">L1–L14 = Längen, am Gehäuse ausmessen und in die Tabelle eintragen</text></g></svg></div>
 </section>
 <section class="sheet" id="leitungsliste">
 <div class="sheet-head"><h2>Leitungsliste</h2><span class="count">Länge beim Zuschneiden eintragen</span></div>
 <div class="wl-cols">
-<div class="tbl"><table class="wl"><thead><tr><th>Ltg</th><th>von</th><th>nach</th><th>Farbe</th><th>Quer&shy;schnitt</th><th>Funktion</th><th>Länge cm</th></tr></thead><tbody><tr><td class='mono nw'><b>W01</b></td><td class='mono nw'>X1:2</td><td class='mono nw'>X2:2</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W02</b></td><td class='mono nw'>X1:4</td><td class='mono nw'>S3</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V (Amp2 + Display)</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W03</b></td><td class='mono nw'>S3</td><td class='mono nw'>X2:4</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W04</b></td><td class='mono nw'>X1:6</td><td class='mono nw'>X2:6</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W05</b></td><td class='mono nw'>X1:9</td><td class='mono nw'>X2:9</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W06</b></td><td class='mono nw'>X1:14</td><td class='mono nw'>X2:14</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W07</b></td><td class='mono nw'>X1:3</td><td class='mono nw'>X2:3</td><td class='nw'><span class='sw' style='background:#2f6fd1'></span>blau</td><td class='mono nw'>0,14 mm²</td><td>I2C SDA</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W08</b></td><td class='mono nw'>X1:5</td><td class='mono nw'>X2:5</td><td class='nw'><span class='sw' style='background:#8a4fc4'></span>violett</td><td class='mono nw'>0,14 mm²</td><td>I2C SCL</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W09</b></td><td class='mono nw'>X1:12</td><td class='mono nw'>X2:12</td><td class='nw'><span class='sw' style='background:#e8c31a'></span>gelb</td><td class='mono nw'>0,14 mm²</td><td>I2S BCLK</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W10</b></td><td class='mono nw'>X1:35</td><td class='mono nw'>X2:35</td><td class='nw'><span class='sw' style='background:#2f9a4c'></span>grün</td><td class='mono nw'>0,14 mm²</td><td>I2S LRCLK</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W11</b></td><td class='mono nw'>X1:40</td><td class='mono nw'>X2:40</td><td class='nw'><span class='sw' style='background:#f4f4f0'></span>weiß</td><td class='mono nw'>0,14 mm²</td><td>I2S Audiodaten</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W12</b></td><td class='mono nw'>X1:38</td><td class='mono nw'>X2:38</td><td class='nw'><span class='sw' style='background:#8d9290'></span>grau</td><td class='mono nw'>0,14 mm²</td><td>I2S DIN (ungenutzt)</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W13</b></td><td class='mono nw'>S3</td><td class='mono nw'>X3:5V</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V Display</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W14</b></td><td class='mono nw'>X1:20</td><td class='mono nw'>X3:GND</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND Display</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W15</b></td><td class='mono nw'>X1:24</td><td class='mono nw'>X4:SDA</td><td class='nw'><span class='sw' style='background:#f4f4f0'></span>weiß</td><td class='mono nw'>0,14 mm²</td><td>SPI CS</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W16</b></td><td class='mono nw'>X1:23</td><td class='mono nw'>X4:SCK</td><td class='nw'><span class='sw' style='background:#e8c31a'></span>gelb</td><td class='mono nw'>0,14 mm²</td><td>SPI SCK</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W17</b></td><td class='mono nw'>X1:19</td><td class='mono nw'>X4:MOSI</td><td class='nw'><span class='sw' style='background:#2f9a4c'></span>grün</td><td class='mono nw'>0,14 mm²</td><td>SPI MOSI</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W18</b></td><td class='mono nw'>X1:21</td><td class='mono nw'>X4:MISO</td><td class='nw'><span class='sw' style='background:#2f6fd1'></span>blau</td><td class='mono nw'>0,14 mm²</td><td>SPI MISO</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W19</b></td><td class='mono nw'>X1:25</td><td class='mono nw'>X4:GND</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W20</b></td><td class='mono nw'>X1:37</td><td class='mono nw'>X4:RST</td><td class='nw'><span class='sw' style='background:#8a4fc4'></span>violett</td><td class='mono nw'>0,14 mm²</td><td>Reset</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W21</b></td><td class='mono nw'>X1:1</td><td class='mono nw'>X4:3.3V</td><td class='nw'><span class='sw' style='background:#ee8a1c'></span>orange</td><td class='mono nw'>0,14 mm²</td><td>3,3 V</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W22</b></td><td class='mono nw'>X1:29</td><td class='mono nw'>X5:A</td><td class='nw'><span class='sw' style='background:#f4f4f0'></span>weiß</td><td class='mono nw'>0,14 mm²</td><td>Taster Weiter</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W23</b></td><td class='mono nw'>X1:31</td><td class='mono nw'>X6:A</td><td class='nw'><span class='sw' style='background:#8d9290'></span>grau</td><td class='mono nw'>0,14 mm²</td><td>Taster Zurück</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W24</b></td><td class='mono nw'>X1:30</td><td class='mono nw'>S2</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND Taster</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W25</b></td><td class='mono nw'>S2</td><td class='mono nw'>X5:B</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W26</b></td><td class='mono nw'>S2</td><td class='mono nw'>X6:B</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W27</b></td><td class='mono nw'>X1:17</td><td class='mono nw'>S1</td><td class='nw'><span class='sw' style='background:#ee8a1c'></span>orange</td><td class='mono nw'>0,14 mm²</td><td>3,3 V Encoder</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W28</b></td><td class='mono nw'>S1</td><td class='mono nw'>X7:+</td><td class='nw'><span class='sw' style='background:#ee8a1c'></span>orange</td><td class='mono nw'>0,14 mm²</td><td>3,3 V</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W29</b></td><td class='mono nw'>S1</td><td class='mono nw'>X8:+</td><td class='nw'><span class='sw' style='background:#ee8a1c'></span>orange</td><td class='mono nw'>0,14 mm²</td><td>3,3 V</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W30</b></td><td class='mono nw'>X1:28</td><td class='mono nw'>X7:CLK</td><td class='nw'><span class='sw' style='background:#e8c31a'></span>gelb</td><td class='mono nw'>0,14 mm²</td><td>Drehen A</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W31</b></td><td class='mono nw'>X1:13</td><td class='mono nw'>X7:DT</td><td class='nw'><span class='sw' style='background:#2f9a4c'></span>grün</td><td class='mono nw'>0,14 mm²</td><td>Drehen B</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W32</b></td><td class='mono nw'>X1:15</td><td class='mono nw'>X7:SW</td><td class='nw'><span class='sw' style='background:#2f6fd1'></span>blau</td><td class='mono nw'>0,14 mm²</td><td>Taster</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W33</b></td><td class='mono nw'>X1:39</td><td class='mono nw'>X7:GND</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W34</b></td><td class='mono nw'>X1:16</td><td class='mono nw'>X8:CLK</td><td class='nw'><span class='sw' style='background:#e8c31a'></span>gelb</td><td class='mono nw'>0,14 mm²</td><td>Drehen A</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W35</b></td><td class='mono nw'>X1:32</td><td class='mono nw'>X8:DT</td><td class='nw'><span class='sw' style='background:#2f9a4c'></span>grün</td><td class='mono nw'>0,14 mm²</td><td>Drehen B</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W36</b></td><td class='mono nw'>X1:11</td><td class='mono nw'>X8:SW</td><td class='nw'><span class='sw' style='background:#2f6fd1'></span>blau</td><td class='mono nw'>0,14 mm²</td><td>Taster / Nachtmodus</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W37</b></td><td class='mono nw'>X1:34</td><td class='mono nw'>X8:GND</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr></tbody></table></div>
+<div class="tbl"><table class="wl"><thead><tr><th>Ltg</th><th>von</th><th>nach</th><th>Farbe</th><th>Quer&shy;schnitt</th><th>Funktion</th><th>Länge cm</th></tr></thead><tbody><tr><td class='mono nw'><b>W01</b></td><td class='mono nw'>X1:2</td><td class='mono nw'>S4</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W02</b></td><td class='mono nw'>X1:4</td><td class='mono nw'>S4</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W03</b></td><td class='mono nw'>S4</td><td class='mono nw'>S3</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,75 mm²</td><td>5 V Hauptleitung</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W04</b></td><td class='mono nw'>S3</td><td class='mono nw'>X2:2</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W05</b></td><td class='mono nw'>S3</td><td class='mono nw'>X2:4</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W06</b></td><td class='mono nw'>S3</td><td class='mono nw'>X3:5V</td><td class='nw'><span class='sw' style='background:#d63a2f'></span>rot</td><td class='mono nw'>0,25 mm²</td><td>5 V Display</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W07</b></td><td class='mono nw'>X1:6</td><td class='mono nw'>S5</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W08</b></td><td class='mono nw'>X1:9</td><td class='mono nw'>S5</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W09</b></td><td class='mono nw'>X1:14</td><td class='mono nw'>S5</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W10</b></td><td class='mono nw'>S5</td><td class='mono nw'>S6</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,75 mm²</td><td>GND Hauptleitung</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W11</b></td><td class='mono nw'>S6</td><td class='mono nw'>X2:6</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W12</b></td><td class='mono nw'>S6</td><td class='mono nw'>X2:9</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W13</b></td><td class='mono nw'>S6</td><td class='mono nw'>X2:14</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND Stummel</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W14</b></td><td class='mono nw'>X1:20</td><td class='mono nw'>X3:GND</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,25 mm²</td><td>GND Display</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W15</b></td><td class='mono nw'>X1:3</td><td class='mono nw'>X2:3</td><td class='nw'><span class='sw' style='background:#2f6fd1'></span>blau</td><td class='mono nw'>0,14 mm²</td><td>I2C SDA</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W16</b></td><td class='mono nw'>X1:5</td><td class='mono nw'>X2:5</td><td class='nw'><span class='sw' style='background:#8a4fc4'></span>violett</td><td class='mono nw'>0,14 mm²</td><td>I2C SCL</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W17</b></td><td class='mono nw'>X1:12</td><td class='mono nw'>X2:12</td><td class='nw'><span class='sw' style='background:#e8c31a'></span>gelb</td><td class='mono nw'>0,14 mm²</td><td>I2S BCLK</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W18</b></td><td class='mono nw'>X1:35</td><td class='mono nw'>X2:35</td><td class='nw'><span class='sw' style='background:#2f9a4c'></span>grün</td><td class='mono nw'>0,14 mm²</td><td>I2S LRCLK</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W19</b></td><td class='mono nw'>X1:40</td><td class='mono nw'>X2:40</td><td class='nw'><span class='sw' style='background:#f4f4f0'></span>weiß</td><td class='mono nw'>0,14 mm²</td><td>I2S Audiodaten</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W20</b></td><td class='mono nw'>X1:38</td><td class='mono nw'>X2:38</td><td class='nw'><span class='sw' style='background:#8d9290'></span>grau</td><td class='mono nw'>0,14 mm²</td><td>I2S DIN (ungenutzt)</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W21</b></td><td class='mono nw'>X1:24</td><td class='mono nw'>X4:SDA</td><td class='nw'><span class='sw' style='background:#f4f4f0'></span>weiß</td><td class='mono nw'>0,14 mm²</td><td>SPI CS</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W22</b></td><td class='mono nw'>X1:23</td><td class='mono nw'>X4:SCK</td><td class='nw'><span class='sw' style='background:#e8c31a'></span>gelb</td><td class='mono nw'>0,14 mm²</td><td>SPI SCK</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W23</b></td><td class='mono nw'>X1:19</td><td class='mono nw'>X4:MOSI</td><td class='nw'><span class='sw' style='background:#2f9a4c'></span>grün</td><td class='mono nw'>0,14 mm²</td><td>SPI MOSI</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W24</b></td><td class='mono nw'>X1:21</td><td class='mono nw'>X4:MISO</td><td class='nw'><span class='sw' style='background:#2f6fd1'></span>blau</td><td class='mono nw'>0,14 mm²</td><td>SPI MISO</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W25</b></td><td class='mono nw'>X1:25</td><td class='mono nw'>X4:GND</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W26</b></td><td class='mono nw'>X1:37</td><td class='mono nw'>X4:RST</td><td class='nw'><span class='sw' style='background:#8a4fc4'></span>violett</td><td class='mono nw'>0,14 mm²</td><td>Reset</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W27</b></td><td class='mono nw'>X1:1</td><td class='mono nw'>X4:3.3V</td><td class='nw'><span class='sw' style='background:#ee8a1c'></span>orange</td><td class='mono nw'>0,14 mm²</td><td>3,3 V</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W28</b></td><td class='mono nw'>X1:29</td><td class='mono nw'>X5:A</td><td class='nw'><span class='sw' style='background:#f4f4f0'></span>weiß</td><td class='mono nw'>0,14 mm²</td><td>Taster Weiter</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W29</b></td><td class='mono nw'>X1:31</td><td class='mono nw'>X6:A</td><td class='nw'><span class='sw' style='background:#8d9290'></span>grau</td><td class='mono nw'>0,14 mm²</td><td>Taster Zurück</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W30</b></td><td class='mono nw'>X1:30</td><td class='mono nw'>S2</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND Taster</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W31</b></td><td class='mono nw'>S2</td><td class='mono nw'>X5:B</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W32</b></td><td class='mono nw'>S2</td><td class='mono nw'>X6:B</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W33</b></td><td class='mono nw'>X1:17</td><td class='mono nw'>S1</td><td class='nw'><span class='sw' style='background:#ee8a1c'></span>orange</td><td class='mono nw'>0,14 mm²</td><td>3,3 V Encoder</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W34</b></td><td class='mono nw'>S1</td><td class='mono nw'>X7:+</td><td class='nw'><span class='sw' style='background:#ee8a1c'></span>orange</td><td class='mono nw'>0,14 mm²</td><td>3,3 V</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W35</b></td><td class='mono nw'>S1</td><td class='mono nw'>X8:+</td><td class='nw'><span class='sw' style='background:#ee8a1c'></span>orange</td><td class='mono nw'>0,14 mm²</td><td>3,3 V</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W36</b></td><td class='mono nw'>X1:28</td><td class='mono nw'>X7:CLK</td><td class='nw'><span class='sw' style='background:#e8c31a'></span>gelb</td><td class='mono nw'>0,14 mm²</td><td>Drehen A</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W37</b></td><td class='mono nw'>X1:13</td><td class='mono nw'>X7:DT</td><td class='nw'><span class='sw' style='background:#2f9a4c'></span>grün</td><td class='mono nw'>0,14 mm²</td><td>Drehen B</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W38</b></td><td class='mono nw'>X1:15</td><td class='mono nw'>X7:SW</td><td class='nw'><span class='sw' style='background:#2f6fd1'></span>blau</td><td class='mono nw'>0,14 mm²</td><td>Taster</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W39</b></td><td class='mono nw'>X1:39</td><td class='mono nw'>X7:GND</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W40</b></td><td class='mono nw'>X1:16</td><td class='mono nw'>X8:CLK</td><td class='nw'><span class='sw' style='background:#e8c31a'></span>gelb</td><td class='mono nw'>0,14 mm²</td><td>Drehen A</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W41</b></td><td class='mono nw'>X1:32</td><td class='mono nw'>X8:DT</td><td class='nw'><span class='sw' style='background:#2f9a4c'></span>grün</td><td class='mono nw'>0,14 mm²</td><td>Drehen B</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W42</b></td><td class='mono nw'>X1:11</td><td class='mono nw'>X8:SW</td><td class='nw'><span class='sw' style='background:#2f6fd1'></span>blau</td><td class='mono nw'>0,14 mm²</td><td>Taster / Nachtmodus</td><td class='blank'></td></tr><tr><td class='mono nw'><b>W43</b></td><td class='mono nw'>X1:34</td><td class='mono nw'>X8:GND</td><td class='nw'><span class='sw' style='background:#2a2a2a'></span>schwarz</td><td class='mono nw'>0,14 mm²</td><td>GND</td><td class='blank'></td></tr></tbody></table></div>
 <div class="side">
-<div class="card"><h3>Stecker</h3><ul class="conn"><li><b class='mono'>X1</b> 40-Pin-Stecker Pi</li><li><b class='mono'>X2</b> Amp-Buchse (HiFiBerry Amp2)</li><li><b class='mono'>X3</b> Display 5″ DSI</li><li><b class='mono'>X4</b> RC522 RFID</li><li><b class='mono'>X5</b> Taster Weiter</li><li><b class='mono'>X6</b> Taster Zurück</li><li><b class='mono'>X7</b> Encoder Lautstärke</li><li><b class='mono'>X8</b> Encoder Helligkeit</li></ul><p class="muted">X1:4 = Stecker X1, Pin 4. X4:MOSI = RC522, Anschluss MOSI. S1–S3 = Spleiße.</p></div>
-<div class="card"><h3>Abschnittslängen</h3><div class="tbl"><table class="wl"><thead><tr><th>Maß</th><th>von</th><th>bis</th><th>Richtwert</th><th>Länge cm</th></tr></thead><tbody><tr><td class='mono'><b>L1</b></td><td>X1</td><td>Abzw. A (Amp2)</td><td class='muted'>3–5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L2</b></td><td>Abzw. A</td><td>S3</td><td class='muted'>5–10 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L3</b></td><td>S3</td><td>X2 Amp-Buchse</td><td class='muted'>3–5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L4</b></td><td>S3</td><td>X3 Display</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L5</b></td><td>Abzw. A</td><td>Abzw. R (RFID)</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L6</b></td><td>Abzw. R</td><td>X4 RC522</td><td class='muted'>X1–X4 ≤ 30 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L7</b></td><td>Abzw. R</td><td>Abzw. F (Front)</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L8</b></td><td>Abzw. F</td><td>S2</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L9</b></td><td>S2</td><td>X5 Taster Weiter</td><td class='muted'>≥ 5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L10</b></td><td>S2</td><td>X6 Taster Zurück</td><td class='muted'>≥ 5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L11</b></td><td>Abzw. F</td><td>S1</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L12</b></td><td>S1</td><td>X7 Encoder L</td><td class='muted'>≥ 5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L13</b></td><td>S1</td><td>X8 Encoder H</td><td class='muted'>≥ 5 cm</td><td class='blank'></td></tr></tbody></table></div></div>
-<div class="card"><h3>Reihenfolge beim Bauen</h3><ul><li>Bauteile im Gehäuse montieren, Längen L1–L13 mit einer Schnur ausmessen und eintragen</li><li>Jede Leitung = Summe der Abschnitte auf ihrem Weg + 3 cm Reserve, zuschneiden und an beiden Enden mit der Ltg-Nummer markieren (Malerkrepp)</li><li>Spleiße S1–S3 zuerst löten, dann die Bauteil-Enden, X1 zuletzt</li><li>Nach dem Löten jede Leitung mit dem Durchgangsprüfer von X1 bis zum Bauteil messen, erst dann bündeln</li></ul></div>
+<div class="card"><h3>Stecker</h3><ul class="conn"><li><b class='mono'>X1</b> 40-Pin-Stecker Pi</li><li><b class='mono'>X2</b> Amp-Buchse (HiFiBerry Amp2)</li><li><b class='mono'>X3</b> Display 5″ DSI</li><li><b class='mono'>X4</b> RC522 RFID</li><li><b class='mono'>X5</b> Taster Weiter</li><li><b class='mono'>X6</b> Taster Zurück</li><li><b class='mono'>X7</b> Encoder Lautstärke</li><li><b class='mono'>X8</b> Encoder Helligkeit</li></ul><p class="muted">X1:4 = Stecker X1, Pin 4. X4:MOSI = RC522, Anschluss MOSI. S1–S6 = Spleiße.</p></div>
+<div class="card"><h3>Abschnittslängen</h3><div class="tbl"><table class="wl"><thead><tr><th>Maß</th><th>von</th><th>bis</th><th>Richtwert</th><th>Länge cm</th></tr></thead><tbody><tr><td class='mono'><b>L1</b></td><td>X1</td><td>Abzw. A (Amp2)</td><td class='muted'>3–5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L2</b></td><td>Abzw. A</td><td>S4 / S5</td><td class='muted'>Stummel ab X1 ≤ 8 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L3</b></td><td>S4 / S5</td><td>S3 / S6</td><td class='muted'>Hauptleitung</td><td class='blank'></td></tr><tr><td class='mono'><b>L4</b></td><td>S3 / S6</td><td>X2 Amp-Buchse</td><td class='muted'>3–5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L5</b></td><td>S3</td><td>X3 Display</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L6</b></td><td>Abzw. A</td><td>Abzw. R (RFID)</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L7</b></td><td>Abzw. R</td><td>X4 RC522</td><td class='muted'>X1–X4 ≤ 30 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L8</b></td><td>Abzw. R</td><td>Abzw. F (Front)</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L9</b></td><td>Abzw. F</td><td>S2</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L10</b></td><td>S2</td><td>X5 Taster Weiter</td><td class='muted'>≥ 5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L11</b></td><td>S2</td><td>X6 Taster Zurück</td><td class='muted'>≥ 5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L12</b></td><td>Abzw. F</td><td>S1</td><td class='muted'>nach Bedarf</td><td class='blank'></td></tr><tr><td class='mono'><b>L13</b></td><td>S1</td><td>X7 Encoder L</td><td class='muted'>≥ 5 cm</td><td class='blank'></td></tr><tr><td class='mono'><b>L14</b></td><td>S1</td><td>X8 Encoder H</td><td class='muted'>≥ 5 cm</td><td class='blank'></td></tr></tbody></table></div></div>
+<div class="card"><h3>Reihenfolge beim Bauen</h3><ul><li>Bauteile im Gehäuse montieren, Längen L1–L14 mit einer Schnur ausmessen und eintragen</li><li>Jede Leitung = Summe der Abschnitte auf ihrem Weg + 3 cm Reserve, zuschneiden und an beiden Enden mit der Ltg-Nummer markieren (Malerkrepp)</li><li>Spleiße S1–S6 zuerst löten, dann die Bauteil-Enden, X1 zuletzt</li><li>Nach dem Löten jede Leitung mit dem Durchgangsprüfer von X1 bis zum Bauteil messen, erst dann bündeln</li></ul></div>
 </div></div>
 </section>
 <section class="sheet stack" id="amp">
@@ -608,7 +617,7 @@ table.wl td { padding: 4px 8px; }
 <text x="36.0" y="378" class="cap" text-anchor="start">Amp-Buchse auf der Lochrasterplatine (Draufsicht, Amp2 steckt hier drauf)</text></svg></div>
 <div class="side">
 <div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>5 V</b></td><td class='mono nw'><b>2</b> → Buchse 2</td><td class='nw'><span class="sw" style="background:#d63a2f"></span>rot</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Versorgung</td></tr><tr><td class='mono nw'><b>5 V</b></td><td class='mono nw'><b>4</b> → Buchse 4</td><td class='nw'><span class="sw" style="background:#d63a2f"></span>rot</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Versorgung<br><span class=note>+ 5 V vom Display auf demselben Pin</span></td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>6</b> → Buchse 6</td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>9</b> → Buchse 9</td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>14</b> → Buchse 14</td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr><td class='mono nw'><b>SDA</b></td><td class='mono nw'><b>3</b> → Buchse 3</td><td class='nw'><span class="sw" style="background:#2f6fd1"></span>blau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Daten (Lautstärke, Mute)</td></tr><tr><td class='mono nw'><b>SCL</b></td><td class='mono nw'><b>5</b> → Buchse 5</td><td class='nw'><span class="sw" style="background:#8a4fc4"></span>violett</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Takt</td></tr><tr><td class='mono nw'><b>BCLK</b></td><td class='mono nw'><b>12</b> → Buchse 12</td><td class='nw'><span class="sw" style="background:#e8c31a"></span>gelb</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2S Bit-Takt (GPIO18)</td></tr><tr><td class='mono nw'><b>LRCLK</b></td><td class='mono nw'><b>35</b> → Buchse 35</td><td class='nw'><span class="sw" style="background:#2f9a4c"></span>grün</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2S Links/Rechts (GPIO19)</td></tr><tr><td class='mono nw'><b>DATA</b></td><td class='mono nw'><b>40</b> → Buchse 40</td><td class='nw'><span class="sw" style="background:#f4f4f0"></span>weiß</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2S Audiodaten (GPIO21)<br><span class=note>ohne diese Ader kein Ton</span></td></tr><tr><td class='mono nw'><b>DIN</b></td><td class='mono nw'><b>38</b> → Buchse 38</td><td class='nw'><span class="sw" style="background:#8d9290"></span>grau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2S-Eingang (GPIO20)<br><span class=note>vom Amp2 nicht genutzt</span></td></tr></tbody></table></div>
-<div class="card"><h3>Hinweise</h3><ul><li>Die fünf Strom-Adern (rot/schwarz) in 0,25 mm², nicht dünner: über 5 V und GND fließen je nach Lautstärke 1–3 A. Zwei parallele 0,25-mm²-Adern pro Richtung reichen bei maximal 20 cm Länge locker. Dicker als AWG 24 passt meist nicht mehr an einen Pin im 2,54-mm-Raster.</li><li>Die vier I2S-Adern (gelb, grün, weiß, grau) so kurz wie möglich (unter 20 cm), gebündelt und dicht an einer schwarzen GND-Ader entlang führen.</li><li>Kein 3,3 V nötig. Der Amp2 macht seine Logikspannung selbst, und Pin 27/28 (ID-EEPROM) bleiben unbeschaltet.</li></ul></div>
+<div class="card"><h3>Hinweise</h3><ul><li>Strom läuft über eine dicke Hauptleitung: Die 0,25-mm²-Adern von Pin 2 und 4 (5 V) bzw. 6, 9 und 14 (GND) sind nur 5–8 cm lange Stummel bis zu Spleiß S4 bzw. S5. Ab dort geht je eine 0,75-mm²-Leitung zum Amp2, kurz vor der Amp-Buchse wird sie in S3 bzw. S6 wieder auf 0,25-mm²-Stummel zu den Buchsen-Pins aufgeteilt. Siehe Kabelbaum-Zeichnung.</li><li>Die vier I2S-Adern (gelb, grün, weiß, grau) so kurz wie möglich (unter 20 cm), gebündelt und dicht an einer schwarzen GND-Ader entlang führen.</li><li>Kein 3,3 V nötig. Der Amp2 macht seine Logikspannung selbst, und Pin 27/28 (ID-EEPROM) bleiben unbeschaltet.</li></ul></div>
 </div></div>
 </section>
 <section class="sheet" id="display">
@@ -687,8 +696,8 @@ table.wl td { padding: 4px 8px; }
 <text x="494.0" y="322" class="dev-lbl">SCL</text>
 <text x="494.0" y="340" class="dev-sub">→ Pin 5</text></svg></div>
 <div class="side">
-<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>5V</b></td><td class='mono nw'><b>4</b> <span class="muted">5 V</span></td><td class='nw'><span class="sw" style="background:#d63a2f"></span>rot</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Versorgung<br><span class=note>Abzweig (Spleiß S3) von der Amp2-Ader an Pin 4</span></td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>20</b> <span class="muted">GND</span></td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr class="opt"><td class='mono nw'><b>SDA</b></td><td class='mono nw'><b>3</b> <span class="muted">GPIO2 · SDA</span></td><td class='nw'><span class="sw" style="background:#2f6fd1"></span>blau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Daten<br><span class=note>optional · nur falls Touch ohne nicht geht</span></td></tr><tr class="opt"><td class='mono nw'><b>SCL</b></td><td class='mono nw'><b>5</b> <span class="muted">GPIO3 · SCL</span></td><td class='nw'><span class="sw" style="background:#8a4fc4"></span>violett</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Takt<br><span class=note>optional · nur falls Touch ohne nicht geht</span></td></tr></tbody></table></div>
-<div class="card"><h3>Hinweise</h3><ul><li>Die 5-V-Ader des Displays kommt nicht direkt an Pin 4, sondern zweigt kurz vor der Amp-Buchse von der roten Amp2-Ader an Pin 4 ab (Spleiß S3). So landet an Pin 4 nur eine Ader.</li><li>SDA/SCL sehr wahrscheinlich unnötig: Helligkeit und Touch laufen über das DSI-Kabel. Nur anschließen, wenn der Touch ohne sie nicht reagiert.</li></ul></div>
+<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>5V</b></td><td class='mono nw'><b>4</b> <span class="muted">5 V</span></td><td class='nw'><span class="sw" style="background:#d63a2f"></span>rot</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Versorgung<br><span class=note>Abzweig an Spleiß S3 (5-V-Hauptleitung)</span></td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>20</b> <span class="muted">GND</span></td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr class="opt"><td class='mono nw'><b>SDA</b></td><td class='mono nw'><b>3</b> <span class="muted">GPIO2 · SDA</span></td><td class='nw'><span class="sw" style="background:#2f6fd1"></span>blau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Daten<br><span class=note>optional · nur falls Touch ohne nicht geht</span></td></tr><tr class="opt"><td class='mono nw'><b>SCL</b></td><td class='mono nw'><b>5</b> <span class="muted">GPIO3 · SCL</span></td><td class='nw'><span class="sw" style="background:#8a4fc4"></span>violett</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Takt<br><span class=note>optional · nur falls Touch ohne nicht geht</span></td></tr></tbody></table></div>
+<div class="card"><h3>Hinweise</h3><ul><li>Die 5-V-Ader des Displays kommt nicht direkt an Pin 4, sondern zweigt kurz vor der Amp-Buchse an Spleiß S3 von der 5-V-Hauptleitung ab. Sie hängt damit an Pin 2 und 4 zugleich.</li><li>SDA/SCL sehr wahrscheinlich unnötig: Helligkeit und Touch laufen über das DSI-Kabel. Nur anschließen, wenn der Touch ohne sie nicht reagiert.</li></ul></div>
 </div></div>
 </section>
 <section class="sheet" id="rfid">

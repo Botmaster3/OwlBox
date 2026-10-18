@@ -66,10 +66,10 @@ DEVICES = [
             ("DIN", 38, "grau", SIG, "I2S-Eingang (GPIO20)", "vom Amp2 nicht genutzt"),
         ],
         "notes": [
-            "Die fünf Strom-Adern (rot/schwarz) in 0,25 mm², nicht dünner: über 5 V und GND fließen "
-            "je nach Lautstärke 1–3 A. Zwei parallele 0,25-mm²-Adern pro Richtung reichen bei "
-            "maximal 20 cm Länge locker. Dicker als AWG 24 passt meist nicht mehr an einen "
-            "Pin im 2,54-mm-Raster.",
+            "Strom läuft über eine dicke Hauptleitung: Die 0,25-mm²-Adern von Pin 2 und 4 (5 V) bzw. 6, 9 "
+            "und 14 (GND) sind nur 5–8 cm lange Stummel bis zu Spleiß S4 bzw. S5. Ab dort geht je eine "
+            "0,75-mm²-Leitung zum Amp2, kurz vor der Amp-Buchse wird sie in S3 bzw. S6 wieder auf "
+            "0,25-mm²-Stummel zu den Buchsen-Pins aufgeteilt. Siehe Kabelbaum-Zeichnung.",
             "Die vier I2S-Adern (gelb, grün, weiß, grau) so kurz wie möglich (unter 20 cm), "
             "gebündelt und dicht an einer schwarzen GND-Ader entlang führen.",
             "Kein 3,3 V nötig. Der Amp2 macht seine Logikspannung selbst, und Pin 27/28 "
@@ -85,7 +85,7 @@ DEVICES = [
                  "hängt höchstens die Stromversorgung. <b>Läuft dein Display bisher nur mit dem "
                  "DSI-Kabel, lässt du diese Seite weg.</b>",
         "wires": [
-            ("5V", 4, "rot", PWR, "Versorgung", "Abzweig (Spleiß S3) von der Amp2-Ader an Pin 4"),
+            ("5V", 4, "rot", PWR, "Versorgung", "Abzweig an Spleiß S3 (5-V-Hauptleitung)"),
             ("GND", 20, "schwarz", PWR, "Masse", ""),
         ],
         "optional": [
@@ -94,7 +94,7 @@ DEVICES = [
         ],
         "notes": [
             "Die 5-V-Ader des Displays kommt nicht direkt an Pin 4, sondern zweigt kurz vor der "
-            "Amp-Buchse von der roten Amp2-Ader an Pin 4 ab (Spleiß S3). So landet an Pin 4 nur eine Ader.",
+            "Amp-Buchse an Spleiß S3 von der 5-V-Hauptleitung ab. Sie hängt damit an Pin 2 und 4 zugleich.",
             "SDA/SCL sehr wahrscheinlich unnötig: Helligkeit und Touch laufen über das DSI-Kabel. "
             "Nur anschließen, wenn der Touch ohne sie nicht reagiert.",
         ],
@@ -505,6 +505,7 @@ def build():
         f'<span><b>{total}</b>Adern am Stecker</span>'
         f'<span><b>{sig}</b>× 0,14 mm² Signal</span>'
         f'<span><b>{pwr}</b>× 0,25 mm² Strom</span>'
+        '<span><b>2</b>× 0,75 mm² Hauptleitung</span>'
         '<span><b>2</b>× 0,75 mm² Lautsprecher</span></div>',
         '<div class="grid2">',
         '<div class="card"><h3>Signal-Adern: 0,14 mm² (AWG 26)</h3>'
@@ -518,11 +519,13 @@ def build():
         "ca. 3 A.</p><ul>"
         "<li>Silikon-Litze in Rot und Schwarz</li>"
         "<li>So kurz wie möglich, max. ca. 20 cm</li>"
-        "<li>Dicker (AWG 22/20) passt meist nicht mehr an einen 2,54-mm-Pin. Deshalb lieber "
-        "zwei Pins parallel (5 V auf Pin 2 und 4, GND auf 6, 9 und 14)</li></ul></div>",
-        '<div class="card"><h3>Lautsprecher: 0,75 mm² (AWG 18)</h3>'
-        "<p>2-adriges Lautsprecherkabel von den Federklemmen des Amp2 zu den Lautsprechern. "
-        "Nicht am 40-Pin-Stecker. Polarität an beiden Lautsprechern gleich (+ zu +).</p></div>",
+        "<li>Dicker (AWG 22/20) passt meist nicht mehr an einen 2,54-mm-Pin. Deshalb nur kurze "
+        "Stummel (5–8 cm) an den Pins, danach Spleiß auf eine dicke Hauptleitung</li></ul></div>",
+        '<div class="card"><h3>Dick: 0,75 mm² (AWG 18)</h3><ul>'
+        "<li><b>Hauptleitung Amp2:</b> je eine rote (5 V) und schwarze (GND) Leitung von den Spleißen S4/S5 "
+        "am Pi zu S3/S6 an der Amp-Buchse. Trägt den ganzen Verstärkerstrom</li>"
+        "<li><b>Lautsprecher:</b> 2-adrig von den Federklemmen des Amp2, nicht am 40-Pin-Stecker. "
+        "Polarität an beiden Lautsprechern gleich (+ zu +)</li></ul></div>",
         '<div class="card"><h3>Zubehör</h3><ul>'
         "<li>Schrumpfschlauch 1,5 mm (über jede Lötstelle am Stecker) und 3 mm (Bündel)</li>"
         "<li>2×20-Buchsenleiste RM 2,54 + Stück Lochraster für den Amp2</li>"
@@ -545,20 +548,22 @@ def build():
         '<section class="sheet" id="kabelbaum">',
         '<div class="sheet-head"><h2>Kabelbaum: an jedem Pin nur eine Ader</h2></div>',
         '<div class="card">'
-        "<p>Drei Pins versorgen zwei Bauteile. Die Adern werden dafür vorher im Kabelbaum "
-        "zusammengeführt (Spleiß, wie beim Auto), sodass am Stecker immer nur eine Ader ankommt:</p><ul>"
+        "<p>Wo sich mehrere Adern eine Leitung teilen, werden sie im Kabelbaum zusammengeführt (Spleiß, "
+        "wie beim Auto). Am Stecker kommt immer nur eine Ader pro Pin an:</p><ul>"
         "<li><b>S1 · Pin 17 (3,3 V, orange):</b> eine Ader zu S1 in der Nähe der Encoder, von dort je eine "
         "zum „+“ beider Encoder</li>"
         "<li><b>S2 · Pin 30 (GND, schwarz):</b> eine Ader zu S2 in der Nähe der Taster, von dort zu Kontakt B "
         "beider Taster</li>"
-        "<li><b>S3 · Pin 4 (5 V, rot):</b> die Amp2-Ader von Pin 4 bekommt kurz vor der Amp-Buchse einen "
-        "Abzweig zum Display (0,25 mm²)</li>"
+        "<li><b>S4 · Pin 2 + 4 (5 V, rot):</b> zwei 0,25-mm²-Stummel (5–8 cm) auf die 0,75-mm²-Hauptleitung</li>"
+        "<li><b>S5 · Pin 6 + 9 + 14 (GND, schwarz):</b> drei 0,25-mm²-Stummel auf die 0,75-mm²-Hauptleitung</li>"
+        "<li><b>S3 / S6 (kurz vor der Amp-Buchse):</b> die Hauptleitungen teilen sich wieder auf Buchsen-Pin 2 + 4 "
+        "bzw. 6 + 9 + 14 auf. An S3 geht zusätzlich die 5-V-Ader zum Display ab</li>"
         "<li>So spleißen: Schrumpfschlauch vorher aufschieben, 8 mm abisolieren, Adern verdrillen oder "
         "die Abzweigader um die Hauptader wickeln, verlöten, Schrumpfschlauch drüber</li>"
         "<li>Spleiße mindestens 5 cm vom Stecker entfernt und gegeneinander versetzt setzen, damit der "
         "Baum nicht an einer Stelle dick wird und nichts direkt am Stecker knickt</li>"
-        "<li>Nicht zusammenführen: die Strom-Adern des Amp2 (Pins 2, 4, 6, 9, 14). Die laufen absichtlich "
-        "über mehrere Pins parallel.</li></ul></div>",
+        "<li>Die Stummel an den Pins kurz halten: Der Engpass ist der einzelne Pin mit seiner dünnen Ader, "
+        "nicht die Hauptleitung. Deshalb bleiben es mehrere Pins parallel</li></ul></div>",
         "</section>",
     ]
     html += harness.sections(WIRE, SIG, PWR)
