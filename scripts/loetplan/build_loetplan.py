@@ -8,8 +8,12 @@ docs/hardware.md - wer dort Pins ändert, ändert sie auch hier und baut neu:
     python3 scripts/loetplan/build_loetplan.py
     node scripts/loetplan/render_pdf.cjs      # optional, erzeugt die PDF
 """
+import sys
 from html import escape
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import harness  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT = REPO_ROOT / "docs/loetplan/OwlBox-Loetplan.html"
@@ -483,7 +487,7 @@ def build():
         '<link rel="preconnect" href="https://fonts.googleapis.com">',
         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&'
         'family=IBM+Plex+Mono:wght@400;600;700&display=swap">',
-        f"<style>{CSS}</style>",
+        f"<style>{CSS}{harness.CSS}</style>",
         '<div class="wrap">',
         '<header class="top">',
         '<span class="eyebrow">OwlBox · Raspberry Pi 5 · 40-Pin-Lötstecker</span>',
@@ -492,7 +496,7 @@ def build():
         "und welchem Querschnitt an welchen Pin des Steckers kommt. Alle Pin-Nummern sind die "
         "<b>physischen</b> Nummern 1–40 auf dem Stecker, nicht die GPIO-Nummern. Die Belegung "
         "entspricht der Standard-config.yaml, die Software muss also nicht angepasst werden.</p>",
-        f'<nav class="toc"><a href="#kabel">Kabel</a><a href="#uebersicht">Übersicht</a><a href="#kabelbaum">Kabelbaum</a>{toc}</nav>',
+        f'<nav class="toc"><a href="#kabel">Kabel</a><a href="#uebersicht">Übersicht</a><a href="#kabelbaum">Kabelbaum</a><a href="#kabelbaum-zeichnung">Baum-Zeichnung</a><a href="#leitungsliste">Leitungsliste</a>{toc}</nav>',
         "</header>",
         # Kabel
         '<section class="sheet first" id="kabel">',
@@ -557,6 +561,7 @@ def build():
         "über mehrere Pins parallel.</li></ul></div>",
         "</section>",
     ]
+    html += harness.sections(WIRE, SIG, PWR)
     for dev in DEVICES:
         n = sum(1 for w in dev["wires"] if w[1])
         opt = len(dev.get("optional", []))
