@@ -81,7 +81,7 @@ DEVICES = [
                  "hängt höchstens die Stromversorgung. <b>Läuft dein Display bisher nur mit dem "
                  "DSI-Kabel, lässt du diese Seite weg.</b>",
         "wires": [
-            ("5V", 4, "rot", PWR, "Versorgung", "teilt sich Pin 4 mit dem Amp2"),
+            ("5V", 4, "rot", PWR, "Versorgung", "Abzweig (Spleiß S3) von der Amp2-Ader an Pin 4"),
             ("GND", 20, "schwarz", PWR, "Masse", ""),
         ],
         "optional": [
@@ -89,11 +89,10 @@ DEVICES = [
             ("SCL", 5, "violett", SIG, "I2C-Takt", "nur falls Touch ohne nicht geht"),
         ],
         "notes": [
-            "Zwei Adern auf einem Pin (hier Pin 4, Amp2 und Display): Litzen abisolieren, "
-            "miteinander verdrillen, verzinnen und dann zusammen anlöten.",
-            "SDA/SCL brauchst du sehr wahrscheinlich nicht. Die Helligkeit läuft nachweislich über "
-            "das DSI-Kabel (I2C-Bus 11), und der Touch-Controller sitzt auf demselben Bus. Erst "
-            "anschließen, wenn der Touch ohne diese Adern nicht reagiert.",
+            "Die 5-V-Ader des Displays kommt nicht direkt an Pin 4, sondern zweigt kurz vor der "
+            "Amp-Buchse von der roten Amp2-Ader an Pin 4 ab (Spleiß S3). So landet an Pin 4 nur eine Ader.",
+            "SDA/SCL sehr wahrscheinlich unnötig: Helligkeit und Touch laufen über das DSI-Kabel. "
+            "Nur anschließen, wenn der Touch ohne sie nicht reagiert.",
         ],
     },
     {
@@ -127,11 +126,11 @@ DEVICES = [
                  "nur Halterung. Welcher Metall-Pin wohin geht, ist egal. Kein Widerstand nötig.",
         "wires": [
             ("Kontakt A", 29, "weiß", SIG, "Taster Weiter (GPIO5)", ""),
-            ("Kontakt B", 30, "schwarz", SIG, "Masse", "teilt sich Pin 30 mit „Zurück“"),
+            ("Kontakt B", 30, "schwarz", SIG, "Masse", "über Spleiß S2, gemeinsam mit „Zurück“"),
         ],
         "notes": [
-            "Die beiden GND-Adern der Taster kommen zusammen auf Pin 30: verdrillen, verzinnen, "
-            "gemeinsam anlöten.",
+            "Die GND-Adern beider Taster laufen in Spleiß S2 (in der Nähe der Taster) zusammen, von "
+            "dort geht eine schwarze Ader zu Pin 30.",
         ],
     },
     {
@@ -142,7 +141,7 @@ DEVICES = [
         "intro": "Gleicher Aufbau wie „Weiter“. Welcher Metall-Pin wohin geht, ist egal.",
         "wires": [
             ("Kontakt A", 31, "grau", SIG, "Taster Zurück (GPIO6)", ""),
-            ("Kontakt B", 30, "schwarz", SIG, "Masse", "teilt sich Pin 30 mit „Weiter“"),
+            ("Kontakt B", 30, "schwarz", SIG, "Masse", "über Spleiß S2, gemeinsam mit „Weiter“"),
         ],
         "notes": [
             "Für die beiden Signaladern unterschiedliche Farben nehmen (weiß = Weiter, grau = Zurück), "
@@ -160,7 +159,7 @@ DEVICES = [
             ("CLK", 28, "gelb", SIG, "Drehen A (GPIO1)", "Pin 28 – nicht zur Amp-Buchse führen"),
             ("DT", 13, "grün", SIG, "Drehen B (GPIO27)", ""),
             ("SW", 15, "blau", SIG, "Taster (GPIO22)", ""),
-            ("+", 17, "orange", SIG, "Versorgung 3,3 V", "teilt sich Pin 17 mit dem Helligkeits-Encoder"),
+            ("+", 17, "orange", SIG, "Versorgung 3,3 V", "über Spleiß S1, gemeinsam mit dem Helligkeits-Encoder"),
             ("GND", 39, "schwarz", SIG, "Masse", ""),
         ],
         "notes": [
@@ -181,7 +180,7 @@ DEVICES = [
             ("CLK", 16, "gelb", SIG, "Drehen A (GPIO23)", ""),
             ("DT", 32, "grün", SIG, "Drehen B (GPIO12)", ""),
             ("SW", 11, "blau", SIG, "Taster / Nachtmodus (GPIO17)", ""),
-            ("+", 17, "orange", SIG, "Versorgung 3,3 V", "teilt sich Pin 17 mit dem Lautstärke-Encoder"),
+            ("+", 17, "orange", SIG, "Versorgung 3,3 V", "über Spleiß S1, gemeinsam mit dem Lautstärke-Encoder"),
             ("GND", 34, "schwarz", SIG, "Masse", ""),
         ],
         "notes": [
@@ -367,9 +366,10 @@ def overview():
 
 
 def count_wires():
-    n = sum(1 for d in DEVICES for w in d["wires"] if w[1])
-    sig = sum(1 for d in DEVICES for w in d["wires"] if w[1] and w[3] == SIG)
-    return n, n - sig, sig
+    # Pro Pin kommt genau eine Ader an (geteilte Pins werden im Kabelbaum gespleißt).
+    pins = {w[1]: w[3] for d in DEVICES for w in d["wires"] if w[1]}
+    sig = sum(1 for g in pins.values() if g == SIG)
+    return len(pins), len(pins) - sig, sig
 
 
 CSS = """
@@ -492,7 +492,7 @@ def build():
         "und welchem Querschnitt an welchen Pin des Steckers kommt. Alle Pin-Nummern sind die "
         "<b>physischen</b> Nummern 1–40 auf dem Stecker, nicht die GPIO-Nummern. Die Belegung "
         "entspricht der Standard-config.yaml, die Software muss also nicht angepasst werden.</p>",
-        f'<nav class="toc"><a href="#kabel">Kabel</a><a href="#uebersicht">Übersicht</a>{toc}</nav>',
+        f'<nav class="toc"><a href="#kabel">Kabel</a><a href="#uebersicht">Übersicht</a><a href="#kabelbaum">Kabelbaum</a>{toc}</nav>',
         "</header>",
         # Kabel
         '<section class="sheet first" id="kabel">',
@@ -537,9 +537,24 @@ def build():
         '<span class="count">Farbe = Aderfarbe des ersten Bauteils am Pin</span></div>',
         f'<div class="fig">{ov_svg}</div>',
         ov_table,
-        '<p class="muted">Pins mit zwei Einträgen bekommen zwei Adern: 2× 3,3 V auf Pin 17 (beide Encoder), '
-        "2× GND auf Pin 30 (beide Taster), 2× 5 V auf Pin 4 (Amp2 + Display). Abisolieren, verdrillen, "
-        "verzinnen, zusammen anlöten.</p>",
+        "</section>",
+        '<section class="sheet" id="kabelbaum">',
+        '<div class="sheet-head"><h2>Kabelbaum: an jedem Pin nur eine Ader</h2></div>',
+        '<div class="card">'
+        "<p>Drei Pins versorgen zwei Bauteile. Die Adern werden dafür vorher im Kabelbaum "
+        "zusammengeführt (Spleiß, wie beim Auto), sodass am Stecker immer nur eine Ader ankommt:</p><ul>"
+        "<li><b>S1 · Pin 17 (3,3 V, orange):</b> eine Ader zu S1 in der Nähe der Encoder, von dort je eine "
+        "zum „+“ beider Encoder</li>"
+        "<li><b>S2 · Pin 30 (GND, schwarz):</b> eine Ader zu S2 in der Nähe der Taster, von dort zu Kontakt B "
+        "beider Taster</li>"
+        "<li><b>S3 · Pin 4 (5 V, rot):</b> die Amp2-Ader von Pin 4 bekommt kurz vor der Amp-Buchse einen "
+        "Abzweig zum Display (0,25 mm²)</li>"
+        "<li>So spleißen: Schrumpfschlauch vorher aufschieben, 8 mm abisolieren, Adern verdrillen oder "
+        "die Abzweigader um die Hauptader wickeln, verlöten, Schrumpfschlauch drüber</li>"
+        "<li>Spleiße mindestens 5 cm vom Stecker entfernt und gegeneinander versetzt setzen, damit der "
+        "Baum nicht an einer Stelle dick wird und nichts direkt am Stecker knickt</li>"
+        "<li>Nicht zusammenführen: die Strom-Adern des Amp2 (Pins 2, 4, 6, 9, 14). Die laufen absichtlich "
+        "über mehrere Pins parallel.</li></ul></div>",
         "</section>",
     ]
     for dev in DEVICES:
