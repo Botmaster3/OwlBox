@@ -1,0 +1,832 @@
+<title>OwlBox Lötplan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<style>
+:root {
+  /* Werkbank-Blatt: links Zeichnung, darunter Tabelle; eine Seite pro Bauteil */
+  --bg: #f4f6f2; --paper: #ffffff; --fg: #1b2420; --muted: #5d6b64;
+  --line: #d3dad4; --mask: #1f6b4a; --copper: #b4682a; --hdr: #26302b; --pin-free: #b9c2bc;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111613; --paper: #182019; --fg: #e3e9e4; --muted: #94a39a;
+  --line: #2c3730; --mask: #5cbf8c; --copper: #e09a5c; --hdr: #0b0f0d; --pin-free: #4a564f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111613; --paper: #182019; --fg: #e3e9e4; --muted: #94a39a;
+  --line: #2c3730; --mask: #5cbf8c; --copper: #e09a5c; --hdr: #0b0f0d; --pin-free: #4a564f; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 1.45rem; font-weight: 750; }
+h3 { font-size: 1rem; font-weight: 700; }
+p { margin: 0; max-width: 72ch; }
+.eyebrow { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--mask); }
+.muted { color: var(--muted); }
+.mono { font-family: var(--font-mono); font-size: .86rem; }
+header.top { display: grid; gap: 10px; margin-bottom: 24px; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+nav.toc a { font-family: var(--font-mono); font-size: .8rem; color: var(--fg); text-decoration: none;
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--paper); }
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--mask); outline: none; }
+section.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px; margin-top: 22px; display: grid; gap: 16px; }
+.sheet-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
+.sheet-head .count { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.grid2 > * { min-width: 0; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 6px; align-content: start; }
+.card ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.fig { overflow-x: auto; }
+svg.plan { display: block; width: 100%; min-width: 640px; height: auto; font-family: var(--font-mono); }
+.hdr-body { fill: var(--hdr); }
+.pin-free { fill: none; stroke: var(--pin-free); stroke-width: 1.5; }
+.pin-used { stroke: rgba(0,0,0,.35); stroke-width: 1; }
+.pin-num { font-size: 11px; font-weight: 700; text-anchor: middle; }
+.pin-num.on-dark { fill: #ffffff; } .pin-num.on-light { fill: #1b2420; }
+.wire { fill: none; stroke-linecap: round; }
+.wire-edge { fill: none; stroke-linecap: round; stroke: color-mix(in srgb, var(--fg) 45%, transparent); }
+.cap { font-size: 12px; fill: var(--fg); font-family: var(--font-body); font-weight: 600; }
+.cap.muted { fill: var(--muted); font-weight: 500; }
+.dev-body { fill: var(--bg); stroke: var(--mask); stroke-width: 2; }
+.dev-name { font-size: 13px; fill: var(--fg); text-anchor: middle; font-family: var(--font-body); font-weight: 700; }
+.dev-pin { stroke: var(--fg); stroke-width: 1.5; }
+.dev-pin.nc { stroke-dasharray: 2 2; }
+.dev-lbl { font-size: 13px; font-weight: 700; fill: var(--fg); text-anchor: middle; }
+.dev-sub { font-size: 11px; fill: var(--muted); text-anchor: middle; }
+.cols, .side { display: grid; gap: 16px; }
+.cols > *, .side > * { min-width: 0; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+tr.opt td { color: var(--muted); }
+td.r, th.r { text-align: right; }
+td.nw { white-space: nowrap; }
+td.pn, th.pn { text-align: center; font-family: var(--font-mono); font-weight: 700; width: 3.2em;
+  background: color-mix(in srgb, var(--hdr) 8%, transparent); }
+table.ov td { font-size: .82rem; padding: 4px 8px; }
+.note { font-size: .82rem; color: var(--copper); }
+.sw { display: inline-block; width: .85em; height: .85em; border-radius: 2px; margin-right: 6px; vertical-align: -1px;
+  border: 1px solid color-mix(in srgb, var(--fg) 40%, transparent); }
+.sw.nc { background: none; border-style: dashed; }
+.kpis { display: flex; flex-wrap: wrap; gap: 10px 28px; font-family: var(--font-mono); font-size: .85rem; }
+.kpis b { font-family: var(--font-display); font-size: 1.3rem; display: block; }
+.warn { border-left: 3px solid var(--copper); padding: 8px 12px; background: color-mix(in srgb, var(--copper) 9%, transparent); border-radius: 0 6px 6px 0; }
+@media print {
+  @page { size: A4 landscape; margin: 11mm; }
+  body { font-size: 11.5px; background: #fff; }
+  .wrap { max-width: none; padding: 0; }
+  nav.toc { display: none; }
+  section.sheet { break-before: page; border: none; padding: 0; margin: 0; gap: 10px; }
+  section.sheet.first { break-before: auto; }
+  svg.plan { min-width: 0; }
+  .grid2 { grid-template-columns: 1fr 1fr; }
+  h1 { font-size: 1.7rem; } h2 { font-size: 1.25rem; }
+  .cols { grid-template-columns: 1.25fr 1fr; align-items: start; gap: 8mm; }
+  .side { gap: 8px; }
+  .stack .cols { grid-template-columns: 1fr; gap: 4mm; }
+  .stack svg.plan { max-height: 50mm; width: auto; margin: 0 auto; }
+  .stack p { max-width: none; }
+  .stack td { padding: 2px 6px; }
+  .stack .side { grid-template-columns: 1.7fr 1fr; align-items: start; }
+  table { font-size: .82rem; } th, td { padding: 3px 6px; }
+  .card { padding: 8px 10px; }
+  #uebersicht svg.plan { max-height: 34mm; width: auto; margin: 0 auto; }
+  table.ov td { font-size: .74rem; padding: 1px 6px; line-height: 1.3; }
+  #uebersicht > p { font-size: .8rem; }
+}
+</style>
+<div class="wrap">
+<header class="top">
+<span class="eyebrow">OwlBox · Raspberry Pi 5 · 40-Pin-Lötstecker</span>
+<h1>Lötplan: alle Bauteile an den 40-Pin-Stecker</h1>
+<p>Pro Bauteil eine Seite mit Zeichnung und Tabelle: welcher Bauteil-Pin mit welcher Aderfarbe und welchem Querschnitt an welchen Pin des Steckers kommt. Alle Pin-Nummern sind die <b>physischen</b> Nummern 1–40 auf dem Stecker, nicht die GPIO-Nummern. Die Belegung entspricht der Standard-config.yaml, die Software muss also nicht angepasst werden.</p>
+<nav class="toc"><a href="#kabel">Kabel</a><a href="#uebersicht">Übersicht</a><a href="#amp">Verstärker</a><a href="#display">Display</a><a href="#rfid">RFID</a><a href="#next">Taster vor</a><a href="#prev">Taster zurück</a><a href="#vol">Encoder Lautstärke</a><a href="#bright">Encoder Helligkeit</a></nav>
+</header>
+<section class="sheet first" id="kabel">
+<div class="sheet-head"><h2>Welche Kabel?</h2></div>
+<div class="kpis"><span><b>34</b>Adern am Stecker</span><span><b>27</b>× 0,14 mm² Signal</span><span><b>7</b>× 0,25 mm² Strom</span><span><b>2</b>× 0,75 mm² Lautsprecher</span></div>
+<div class="grid2">
+<div class="card"><h3>Signal-Adern: 0,14 mm² (AWG 26)</h3><p>Für alles außer der Stromversorgung von Amp2 und Display: RFID, Taster, Encoder, I2C, I2S. Es fließen nur Milliampere.</p><ul><li><b>Silikon-Litze</b> (hochflexibel, Isolierung schmilzt beim Löten nicht weg) oder PVC-Schaltlitze LiY</li><li>Set mit 10 Farben, je ca. 2 m reicht</li><li>Außendurchmesser ≤ 1,2 mm, damit benachbarte Pins (2,54 mm Abstand) Platz haben</li></ul></div>
+<div class="card"><h3>Strom-Adern: 0,25 mm² (AWG 24)</h3><p>Nur für 5 V und GND zum Amp2 (5 Adern) und zum Display (2 Adern). Über diese Adern fließen bis zu ca. 3 A.</p><ul><li>Silikon-Litze in Rot und Schwarz</li><li>So kurz wie möglich, max. ca. 20 cm</li><li>Dicker (AWG 22/20) passt meist nicht mehr an einen 2,54-mm-Pin. Deshalb lieber zwei Pins parallel (5 V auf Pin 2 und 4, GND auf 6, 9 und 14)</li></ul></div>
+<div class="card"><h3>Lautsprecher: 0,75 mm² (AWG 18)</h3><p>2-adriges Lautsprecherkabel von den Federklemmen des Amp2 zu den Lautsprechern. Nicht am 40-Pin-Stecker. Polarität an beiden Lautsprechern gleich (+ zu +).</p></div>
+<div class="card"><h3>Zubehör</h3><ul><li>Schrumpfschlauch 1,5 mm (über jede Lötstelle am Stecker) und 3 mm (Bündel)</li><li>2×20-Buchsenleiste RM 2,54 + Stück Lochraster für den Amp2</li><li>Kabelbinder bzw. Gewebeband zum Bündeln pro Bauteil</li><li>Lötzinn 0,5–0,8 mm mit Flussmittel, Lötkolben ca. 330 °C</li></ul></div>
+</div>
+<div class="warn"><b>Vor dem Löten:</b> Pi ausschalten und Netzteil ab. Den Stecker zum Löten <b>vom Pi abziehen</b>, die Hitze kann sonst den Pi beschädigen. Pin 1 ist der Pin mit dem eckigen Lötauge, auf der Seite weg von USB/LAN. Gerade Pins (2, 4, 6 …) liegen in der Reihe am Platinenrand. Alle Zeichnungen zeigen den Stecker <b>von oben, so wie er auf dem Pi sitzt</b>. Lötest du von unten, ist alles spiegelverkehrt.</div>
+</section>
+<section class="sheet" id="uebersicht">
+<div class="sheet-head"><h2>Übersicht: alle 40 Pins</h2><span class="count">Farbe = Aderfarbe des ersten Bauteils am Pin</span></div>
+<div class="fig"><svg viewBox="0 0 766 164" class="plan" role="img" aria-label="Übersicht 40-Pin-Stecker"><rect x="36.0" y="46.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="48.0" y="92.0" width="24" height="24" rx="3" fill="#ee8a1c" class="pin-used"/>
+<text x="60" y="108" class="pin-num on-light">1</text>
+<rect x="48.0" y="58.0" width="24" height="24" rx="3" fill="#d63a2f" class="pin-used"/>
+<text x="60" y="74" class="pin-num on-dark">2</text>
+<rect x="82.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="94" y="108" class="pin-num on-dark">3</text>
+<rect x="82.0" y="58.0" width="24" height="24" rx="3" fill="#d63a2f" class="pin-used"/>
+<text x="94" y="74" class="pin-num on-dark">4</text>
+<rect x="116.0" y="92.0" width="24" height="24" rx="3" fill="#8a4fc4" class="pin-used"/>
+<text x="128" y="108" class="pin-num on-dark">5</text>
+<rect x="116.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="128" y="74" class="pin-num on-dark">6</text>
+<circle cx="162" cy="104" r="7" class="pin-free"/>
+<circle cx="162" cy="70" r="7" class="pin-free"/>
+<rect x="184.0" y="92.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="196" y="108" class="pin-num on-dark">9</text>
+<circle cx="196" cy="70" r="7" class="pin-free"/>
+<rect x="218.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="230" y="108" class="pin-num on-dark">11</text>
+<rect x="218.0" y="58.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="230" y="74" class="pin-num on-light">12</text>
+<rect x="252.0" y="92.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="264" y="108" class="pin-num on-dark">13</text>
+<rect x="252.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="264" y="74" class="pin-num on-dark">14</text>
+<rect x="286.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="298" y="108" class="pin-num on-dark">15</text>
+<rect x="286.0" y="58.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="298" y="74" class="pin-num on-light">16</text>
+<rect x="320.0" y="92.0" width="24" height="24" rx="3" fill="#ee8a1c" class="pin-used"/>
+<text x="332" y="108" class="pin-num on-light">17</text>
+<circle cx="332" cy="70" r="7" class="pin-free"/>
+<rect x="354.0" y="92.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="366" y="108" class="pin-num on-dark">19</text>
+<rect x="354.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="366" y="74" class="pin-num on-dark">20</text>
+<rect x="388.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="400" y="108" class="pin-num on-dark">21</text>
+<circle cx="400" cy="70" r="7" class="pin-free"/>
+<rect x="422.0" y="92.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="434" y="108" class="pin-num on-light">23</text>
+<rect x="422.0" y="58.0" width="24" height="24" rx="3" fill="#f4f4f0" class="pin-used"/>
+<text x="434" y="74" class="pin-num on-light">24</text>
+<rect x="456.0" y="92.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="468" y="108" class="pin-num on-dark">25</text>
+<circle cx="468" cy="70" r="7" class="pin-free"/>
+<circle cx="502" cy="104" r="7" class="pin-free"/>
+<rect x="490.0" y="58.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="502" y="74" class="pin-num on-light">28</text>
+<rect x="524.0" y="92.0" width="24" height="24" rx="3" fill="#f4f4f0" class="pin-used"/>
+<text x="536" y="108" class="pin-num on-light">29</text>
+<rect x="524.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="536" y="74" class="pin-num on-dark">30</text>
+<rect x="558.0" y="92.0" width="24" height="24" rx="3" fill="#8d9290" class="pin-used"/>
+<text x="570" y="108" class="pin-num on-dark">31</text>
+<rect x="558.0" y="58.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="570" y="74" class="pin-num on-dark">32</text>
+<circle cx="604" cy="104" r="7" class="pin-free"/>
+<rect x="592.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="604" y="74" class="pin-num on-dark">34</text>
+<rect x="626.0" y="92.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="638" y="108" class="pin-num on-dark">35</text>
+<circle cx="638" cy="70" r="7" class="pin-free"/>
+<rect x="660.0" y="92.0" width="24" height="24" rx="3" fill="#8a4fc4" class="pin-used"/>
+<text x="672" y="108" class="pin-num on-dark">37</text>
+<rect x="660.0" y="58.0" width="24" height="24" rx="3" fill="#8d9290" class="pin-used"/>
+<text x="672" y="74" class="pin-num on-dark">38</text>
+<rect x="694.0" y="92.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="706" y="108" class="pin-num on-dark">39</text>
+<rect x="694.0" y="58.0" width="24" height="24" rx="3" fill="#f4f4f0" class="pin-used"/>
+<text x="706" y="74" class="pin-num on-light">40</text>
+<text x="36.0" y="40" class="cap" text-anchor="start">40-Pin-Stecker auf dem Pi (Draufsicht)</text>
+<text x="730.0" y="40" class="cap muted" text-anchor="end">Platinenrand ↑ · USB/LAN →</text>
+<text x="60" y="140" class="cap muted" text-anchor="middle">Pin 1</text>
+<text x="706" y="140" class="cap muted" text-anchor="middle">Pin 39</text></svg></div>
+<div class="tbl"><table class="ov"><thead><tr><th class="r">Bauteil</th><th class="r">Signal</th><th class="pn">ungerade</th><th class="pn">gerade</th><th>Signal</th><th>Bauteil</th></tr></thead><tbody><tr><td class='r'><span class="sw" style="background:#ee8a1c"></span>RFID: 3.3V</td><td class='mono r muted'>3,3 V</td><td class='pn'>1</td><td class='pn'>2</td><td class='mono muted'>5 V</td><td><span class="sw" style="background:#d63a2f"></span>Verstärker: 5 V</td></tr><tr><td class='r'><span class="sw" style="background:#2f6fd1"></span>Verstärker: SDA<br><span class="sw" style="background:#2f6fd1"></span>Display (opt.): SDA</td><td class='mono r muted'>GPIO2 · SDA</td><td class='pn'>3</td><td class='pn'>4</td><td class='mono muted'>5 V</td><td><span class="sw" style="background:#d63a2f"></span>Verstärker: 5 V<br><span class="sw" style="background:#d63a2f"></span>Display: 5V</td></tr><tr><td class='r'><span class="sw" style="background:#8a4fc4"></span>Verstärker: SCL<br><span class="sw" style="background:#8a4fc4"></span>Display (opt.): SCL</td><td class='mono r muted'>GPIO3 · SCL</td><td class='pn'>5</td><td class='pn'>6</td><td class='mono muted'>GND</td><td><span class="sw" style="background:#2a2a2a"></span>Verstärker: GND</td></tr><tr><td class='r'><span class="muted">frei</span></td><td class='mono r muted'>GPIO4</td><td class='pn'>7</td><td class='pn'>8</td><td class='mono muted'>GPIO14</td><td><span class="muted">frei</span></td></tr><tr><td class='r'><span class="sw" style="background:#2a2a2a"></span>Verstärker: GND</td><td class='mono r muted'>GND</td><td class='pn'>9</td><td class='pn'>10</td><td class='mono muted'>GPIO15</td><td><span class="muted">frei</span></td></tr><tr><td class='r'><span class="sw" style="background:#2f6fd1"></span>Encoder Helligkeit: SW</td><td class='mono r muted'>GPIO17</td><td class='pn'>11</td><td class='pn'>12</td><td class='mono muted'>GPIO18</td><td><span class="sw" style="background:#e8c31a"></span>Verstärker: BCLK</td></tr><tr><td class='r'><span class="sw" style="background:#2f9a4c"></span>Encoder Lautstärke: DT</td><td class='mono r muted'>GPIO27</td><td class='pn'>13</td><td class='pn'>14</td><td class='mono muted'>GND</td><td><span class="sw" style="background:#2a2a2a"></span>Verstärker: GND</td></tr><tr><td class='r'><span class="sw" style="background:#2f6fd1"></span>Encoder Lautstärke: SW</td><td class='mono r muted'>GPIO22</td><td class='pn'>15</td><td class='pn'>16</td><td class='mono muted'>GPIO23</td><td><span class="sw" style="background:#e8c31a"></span>Encoder Helligkeit: CLK</td></tr><tr><td class='r'><span class="sw" style="background:#ee8a1c"></span>Encoder Lautstärke: +<br><span class="sw" style="background:#ee8a1c"></span>Encoder Helligkeit: +</td><td class='mono r muted'>3,3 V</td><td class='pn'>17</td><td class='pn'>18</td><td class='mono muted'>GPIO24</td><td><span class="muted">frei</span></td></tr><tr><td class='r'><span class="sw" style="background:#2f9a4c"></span>RFID: MOSI</td><td class='mono r muted'>GPIO10 · MOSI</td><td class='pn'>19</td><td class='pn'>20</td><td class='mono muted'>GND</td><td><span class="sw" style="background:#2a2a2a"></span>Display: GND</td></tr><tr><td class='r'><span class="sw" style="background:#2f6fd1"></span>RFID: MISO</td><td class='mono r muted'>GPIO9 · MISO</td><td class='pn'>21</td><td class='pn'>22</td><td class='mono muted'>GPIO25</td><td><span class="muted">frei</span></td></tr><tr><td class='r'><span class="sw" style="background:#e8c31a"></span>RFID: SCK</td><td class='mono r muted'>GPIO11 · SCLK</td><td class='pn'>23</td><td class='pn'>24</td><td class='mono muted'>GPIO8 · CE0</td><td><span class="sw" style="background:#f4f4f0"></span>RFID: SDA</td></tr><tr><td class='r'><span class="sw" style="background:#2a2a2a"></span>RFID: GND</td><td class='mono r muted'>GND</td><td class='pn'>25</td><td class='pn'>26</td><td class='mono muted'>GPIO7 · CE1</td><td><span class="muted">frei</span></td></tr><tr><td class='r'><span class="muted">frei</span></td><td class='mono r muted'>GPIO0 · ID_SD</td><td class='pn'>27</td><td class='pn'>28</td><td class='mono muted'>GPIO1 · ID_SC</td><td><span class="sw" style="background:#e8c31a"></span>Encoder Lautstärke: CLK</td></tr><tr><td class='r'><span class="sw" style="background:#f4f4f0"></span>Taster vor: Kontakt A</td><td class='mono r muted'>GPIO5</td><td class='pn'>29</td><td class='pn'>30</td><td class='mono muted'>GND</td><td><span class="sw" style="background:#2a2a2a"></span>Taster vor: Kontakt B<br><span class="sw" style="background:#2a2a2a"></span>Taster zurück: Kontakt B</td></tr><tr><td class='r'><span class="sw" style="background:#8d9290"></span>Taster zurück: Kontakt A</td><td class='mono r muted'>GPIO6</td><td class='pn'>31</td><td class='pn'>32</td><td class='mono muted'>GPIO12</td><td><span class="sw" style="background:#2f9a4c"></span>Encoder Helligkeit: DT</td></tr><tr><td class='r'><span class="muted">frei</span></td><td class='mono r muted'>GPIO13</td><td class='pn'>33</td><td class='pn'>34</td><td class='mono muted'>GND</td><td><span class="sw" style="background:#2a2a2a"></span>Encoder Helligkeit: GND</td></tr><tr><td class='r'><span class="sw" style="background:#2f9a4c"></span>Verstärker: LRCLK</td><td class='mono r muted'>GPIO19</td><td class='pn'>35</td><td class='pn'>36</td><td class='mono muted'>GPIO16</td><td><span class="muted">frei</span></td></tr><tr><td class='r'><span class="sw" style="background:#8a4fc4"></span>RFID: RST</td><td class='mono r muted'>GPIO26</td><td class='pn'>37</td><td class='pn'>38</td><td class='mono muted'>GPIO20</td><td><span class="sw" style="background:#8d9290"></span>Verstärker: DIN</td></tr><tr><td class='r'><span class="sw" style="background:#2a2a2a"></span>Encoder Lautstärke: GND</td><td class='mono r muted'>GND</td><td class='pn'>39</td><td class='pn'>40</td><td class='mono muted'>GPIO21</td><td><span class="sw" style="background:#f4f4f0"></span>Verstärker: DATA</td></tr></tbody></table></div>
+<p class="muted">Pins mit zwei Einträgen bekommen zwei Adern: 2× 3,3 V auf Pin 17 (beide Encoder), 2× GND auf Pin 30 (beide Taster), 2× 5 V auf Pin 4 (Amp2 + Display). Abisolieren, verdrillen, verzinnen, zusammen anlöten.</p>
+</section>
+<section class="sheet stack" id="amp">
+<div class="sheet-head"><h2>HiFiBerry Amp2</h2><span class="count">11 Adern</span></div>
+<p>Der Amp2 ist ein HAT und hat keine einzelnen Lötpunkte. Er steckt auf einer eigenen 2×20-Buchsenleiste (Raster 2,54 mm) auf der Lochrasterplatine. Verdrahtet wird <b>1:1, gleiche Pin-Nummer auf beiden Seiten</b>: Pin 12 am Pi geht auf Pin 12 der Amp-Buchse und so weiter. Alle anderen Pins der Buchse bleiben frei, vor allem 27 und 28, denn GPIO1 (Pin 28) braucht der Lautstärke-Encoder.</p>
+<div class="cols">
+<div class="fig"><svg viewBox="0 0 766 394" class="plan" role="img" aria-label="Verdrahtung HiFiBerry Amp2"><path d="M60,70 C60,185.0 60,185.0 60,300" stroke-width="7" class="wire-edge"/>
+<path d="M60,70 C60,185.0 60,185.0 60,300" stroke="#d63a2f" stroke-width="5" class="wire"/>
+<path d="M94,70 C94,185.0 94,185.0 94,300" stroke-width="7" class="wire-edge"/>
+<path d="M94,70 C94,185.0 94,185.0 94,300" stroke="#d63a2f" stroke-width="5" class="wire"/>
+<path d="M128,70 C128,185.0 128,185.0 128,300" stroke-width="7" class="wire-edge"/>
+<path d="M128,70 C128,185.0 128,185.0 128,300" stroke="#2a2a2a" stroke-width="5" class="wire"/>
+<path d="M196,104 C196,225.0 196,225.0 196,334" stroke-width="7" class="wire-edge"/>
+<path d="M196,104 C196,225.0 196,225.0 196,334" stroke="#2a2a2a" stroke-width="5" class="wire"/>
+<path d="M264,70 C264,185.0 264,185.0 264,300" stroke-width="7" class="wire-edge"/>
+<path d="M264,70 C264,185.0 264,185.0 264,300" stroke="#2a2a2a" stroke-width="5" class="wire"/>
+<path d="M94,104 C94,225.0 94,225.0 94,334" stroke-width="5" class="wire-edge"/>
+<path d="M94,104 C94,225.0 94,225.0 94,334" stroke="#2f6fd1" stroke-width="3" class="wire"/>
+<path d="M128,104 C128,225.0 128,225.0 128,334" stroke-width="5" class="wire-edge"/>
+<path d="M128,104 C128,225.0 128,225.0 128,334" stroke="#8a4fc4" stroke-width="3" class="wire"/>
+<path d="M230,70 C230,185.0 230,185.0 230,300" stroke-width="5" class="wire-edge"/>
+<path d="M230,70 C230,185.0 230,185.0 230,300" stroke="#e8c31a" stroke-width="3" class="wire"/>
+<path d="M638,104 C638,225.0 638,225.0 638,334" stroke-width="5" class="wire-edge"/>
+<path d="M638,104 C638,225.0 638,225.0 638,334" stroke="#2f9a4c" stroke-width="3" class="wire"/>
+<path d="M706,70 C706,185.0 706,185.0 706,300" stroke-width="5" class="wire-edge"/>
+<path d="M706,70 C706,185.0 706,185.0 706,300" stroke="#f4f4f0" stroke-width="3" class="wire"/>
+<path d="M672,70 C672,185.0 672,185.0 672,300" stroke-width="5" class="wire-edge"/>
+<path d="M672,70 C672,185.0 672,185.0 672,300" stroke="#8d9290" stroke-width="3" class="wire"/>
+<rect x="36.0" y="46.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="53" y="97" width="14" height="14" class="pin-free"/>
+<rect x="48.0" y="58.0" width="24" height="24" rx="3" fill="#d63a2f" class="pin-used"/>
+<text x="60" y="74" class="pin-num on-dark">2</text>
+<rect x="82.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="94" y="108" class="pin-num on-dark">3</text>
+<rect x="82.0" y="58.0" width="24" height="24" rx="3" fill="#d63a2f" class="pin-used"/>
+<text x="94" y="74" class="pin-num on-dark">4</text>
+<rect x="116.0" y="92.0" width="24" height="24" rx="3" fill="#8a4fc4" class="pin-used"/>
+<text x="128" y="108" class="pin-num on-dark">5</text>
+<rect x="116.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="128" y="74" class="pin-num on-dark">6</text>
+<circle cx="162" cy="104" r="7" class="pin-free"/>
+<circle cx="162" cy="70" r="7" class="pin-free"/>
+<rect x="184.0" y="92.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="196" y="108" class="pin-num on-dark">9</text>
+<circle cx="196" cy="70" r="7" class="pin-free"/>
+<circle cx="230" cy="104" r="7" class="pin-free"/>
+<rect x="218.0" y="58.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="230" y="74" class="pin-num on-light">12</text>
+<circle cx="264" cy="104" r="7" class="pin-free"/>
+<rect x="252.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="264" y="74" class="pin-num on-dark">14</text>
+<circle cx="298" cy="104" r="7" class="pin-free"/>
+<circle cx="298" cy="70" r="7" class="pin-free"/>
+<circle cx="332" cy="104" r="7" class="pin-free"/>
+<circle cx="332" cy="70" r="7" class="pin-free"/>
+<circle cx="366" cy="104" r="7" class="pin-free"/>
+<circle cx="366" cy="70" r="7" class="pin-free"/>
+<circle cx="400" cy="104" r="7" class="pin-free"/>
+<circle cx="400" cy="70" r="7" class="pin-free"/>
+<circle cx="434" cy="104" r="7" class="pin-free"/>
+<circle cx="434" cy="70" r="7" class="pin-free"/>
+<circle cx="468" cy="104" r="7" class="pin-free"/>
+<circle cx="468" cy="70" r="7" class="pin-free"/>
+<circle cx="502" cy="104" r="7" class="pin-free"/>
+<circle cx="502" cy="70" r="7" class="pin-free"/>
+<circle cx="536" cy="104" r="7" class="pin-free"/>
+<circle cx="536" cy="70" r="7" class="pin-free"/>
+<circle cx="570" cy="104" r="7" class="pin-free"/>
+<circle cx="570" cy="70" r="7" class="pin-free"/>
+<circle cx="604" cy="104" r="7" class="pin-free"/>
+<circle cx="604" cy="70" r="7" class="pin-free"/>
+<rect x="626.0" y="92.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="638" y="108" class="pin-num on-dark">35</text>
+<circle cx="638" cy="70" r="7" class="pin-free"/>
+<circle cx="672" cy="104" r="7" class="pin-free"/>
+<rect x="660.0" y="58.0" width="24" height="24" rx="3" fill="#8d9290" class="pin-used"/>
+<text x="672" y="74" class="pin-num on-dark">38</text>
+<circle cx="706" cy="104" r="7" class="pin-free"/>
+<rect x="694.0" y="58.0" width="24" height="24" rx="3" fill="#f4f4f0" class="pin-used"/>
+<text x="706" y="74" class="pin-num on-light">40</text>
+<text x="36.0" y="40" class="cap" text-anchor="start">40-Pin-Stecker auf dem Pi (Draufsicht)</text>
+<text x="730.0" y="40" class="cap muted" text-anchor="end">Platinenrand ↑ · USB/LAN →</text>
+<text x="60" y="140" class="cap muted" text-anchor="middle">Pin 1</text>
+<text x="706" y="140" class="cap muted" text-anchor="middle">Pin 39</text>
+<rect x="36.0" y="276.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="53" y="327" width="14" height="14" class="pin-free"/>
+<rect x="48.0" y="288.0" width="24" height="24" rx="3" fill="#d63a2f" class="pin-used"/>
+<text x="60" y="304" class="pin-num on-dark">2</text>
+<rect x="82.0" y="322.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="94" y="338" class="pin-num on-dark">3</text>
+<rect x="82.0" y="288.0" width="24" height="24" rx="3" fill="#d63a2f" class="pin-used"/>
+<text x="94" y="304" class="pin-num on-dark">4</text>
+<rect x="116.0" y="322.0" width="24" height="24" rx="3" fill="#8a4fc4" class="pin-used"/>
+<text x="128" y="338" class="pin-num on-dark">5</text>
+<rect x="116.0" y="288.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="128" y="304" class="pin-num on-dark">6</text>
+<circle cx="162" cy="334" r="7" class="pin-free"/>
+<circle cx="162" cy="300" r="7" class="pin-free"/>
+<rect x="184.0" y="322.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="196" y="338" class="pin-num on-dark">9</text>
+<circle cx="196" cy="300" r="7" class="pin-free"/>
+<circle cx="230" cy="334" r="7" class="pin-free"/>
+<rect x="218.0" y="288.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="230" y="304" class="pin-num on-light">12</text>
+<circle cx="264" cy="334" r="7" class="pin-free"/>
+<rect x="252.0" y="288.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="264" y="304" class="pin-num on-dark">14</text>
+<circle cx="298" cy="334" r="7" class="pin-free"/>
+<circle cx="298" cy="300" r="7" class="pin-free"/>
+<circle cx="332" cy="334" r="7" class="pin-free"/>
+<circle cx="332" cy="300" r="7" class="pin-free"/>
+<circle cx="366" cy="334" r="7" class="pin-free"/>
+<circle cx="366" cy="300" r="7" class="pin-free"/>
+<circle cx="400" cy="334" r="7" class="pin-free"/>
+<circle cx="400" cy="300" r="7" class="pin-free"/>
+<circle cx="434" cy="334" r="7" class="pin-free"/>
+<circle cx="434" cy="300" r="7" class="pin-free"/>
+<circle cx="468" cy="334" r="7" class="pin-free"/>
+<circle cx="468" cy="300" r="7" class="pin-free"/>
+<circle cx="502" cy="334" r="7" class="pin-free"/>
+<circle cx="502" cy="300" r="7" class="pin-free"/>
+<circle cx="536" cy="334" r="7" class="pin-free"/>
+<circle cx="536" cy="300" r="7" class="pin-free"/>
+<circle cx="570" cy="334" r="7" class="pin-free"/>
+<circle cx="570" cy="300" r="7" class="pin-free"/>
+<circle cx="604" cy="334" r="7" class="pin-free"/>
+<circle cx="604" cy="300" r="7" class="pin-free"/>
+<rect x="626.0" y="322.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="638" y="338" class="pin-num on-dark">35</text>
+<circle cx="638" cy="300" r="7" class="pin-free"/>
+<circle cx="672" cy="334" r="7" class="pin-free"/>
+<rect x="660.0" y="288.0" width="24" height="24" rx="3" fill="#8d9290" class="pin-used"/>
+<text x="672" y="304" class="pin-num on-dark">38</text>
+<circle cx="706" cy="334" r="7" class="pin-free"/>
+<rect x="694.0" y="288.0" width="24" height="24" rx="3" fill="#f4f4f0" class="pin-used"/>
+<text x="706" y="304" class="pin-num on-light">40</text>
+<text x="36.0" y="378" class="cap" text-anchor="start">Amp-Buchse auf der Lochrasterplatine (Draufsicht, Amp2 steckt hier drauf)</text></svg></div>
+<div class="side">
+<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>5 V</b></td><td class='mono nw'><b>2</b> → Buchse 2</td><td class='nw'><span class="sw" style="background:#d63a2f"></span>rot</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Versorgung</td></tr><tr><td class='mono nw'><b>5 V</b></td><td class='mono nw'><b>4</b> → Buchse 4</td><td class='nw'><span class="sw" style="background:#d63a2f"></span>rot</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Versorgung<br><span class=note>+ 5 V vom Display auf demselben Pin</span></td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>6</b> → Buchse 6</td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>9</b> → Buchse 9</td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>14</b> → Buchse 14</td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr><td class='mono nw'><b>SDA</b></td><td class='mono nw'><b>3</b> → Buchse 3</td><td class='nw'><span class="sw" style="background:#2f6fd1"></span>blau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Daten (Lautstärke, Mute)</td></tr><tr><td class='mono nw'><b>SCL</b></td><td class='mono nw'><b>5</b> → Buchse 5</td><td class='nw'><span class="sw" style="background:#8a4fc4"></span>violett</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Takt</td></tr><tr><td class='mono nw'><b>BCLK</b></td><td class='mono nw'><b>12</b> → Buchse 12</td><td class='nw'><span class="sw" style="background:#e8c31a"></span>gelb</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2S Bit-Takt (GPIO18)</td></tr><tr><td class='mono nw'><b>LRCLK</b></td><td class='mono nw'><b>35</b> → Buchse 35</td><td class='nw'><span class="sw" style="background:#2f9a4c"></span>grün</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2S Links/Rechts (GPIO19)</td></tr><tr><td class='mono nw'><b>DATA</b></td><td class='mono nw'><b>40</b> → Buchse 40</td><td class='nw'><span class="sw" style="background:#f4f4f0"></span>weiß</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2S Audiodaten (GPIO21)<br><span class=note>ohne diese Ader kein Ton</span></td></tr><tr><td class='mono nw'><b>DIN</b></td><td class='mono nw'><b>38</b> → Buchse 38</td><td class='nw'><span class="sw" style="background:#8d9290"></span>grau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2S-Eingang (GPIO20)<br><span class=note>vom Amp2 nicht genutzt</span></td></tr></tbody></table></div>
+<div class="card"><h3>Hinweise</h3><ul><li>Die fünf Strom-Adern (rot/schwarz) in 0,25 mm², nicht dünner: über 5 V und GND fließen je nach Lautstärke 1–3 A. Zwei parallele 0,25-mm²-Adern pro Richtung reichen bei maximal 20 cm Länge locker. Dicker als AWG 24 passt meist nicht mehr an einen Pin im 2,54-mm-Raster.</li><li>Die vier I2S-Adern (gelb, grün, weiß, grau) so kurz wie möglich (unter 20 cm), gebündelt und dicht an einer schwarzen GND-Ader entlang führen.</li><li>Kein 3,3 V nötig. Der Amp2 macht seine Logikspannung selbst, und Pin 27/28 (ID-EEPROM) bleiben unbeschaltet.</li></ul></div>
+</div></div>
+</section>
+<section class="sheet" id="display">
+<div class="sheet-head"><h2>Waveshare 5″ DSI Display</h2><span class="count">2 Adern + 2 optional</span></div>
+<p>Bild, Touch und Helligkeit laufen über das DSI-Flachbandkabel. Am 40-Pin-Stecker hängt höchstens die Stromversorgung. <b>Läuft dein Display bisher nur mit dem DSI-Kabel, lässt du diese Seite weg.</b></p>
+<div class="cols">
+<div class="fig"><svg viewBox="0 0 766 424" class="plan" role="img" aria-label="Verdrahtung Waveshare 5″ DSI Display"><path d="M94,70 C94,150 272.0,204 272.0,294" stroke-width="7" class="wire-edge"/>
+<path d="M94,70 C94,150 272.0,204 272.0,294" stroke="#d63a2f" stroke-width="5" class="wire"/>
+<path d="M366,70 C366,160 346.0,204 346.0,294" stroke-width="7" class="wire-edge"/>
+<path d="M366,70 C366,160 346.0,204 346.0,294" stroke="#2a2a2a" stroke-width="5" class="wire"/>
+<path d="M94,104 C94,204 420.0,204 420.0,294" stroke-width="5" stroke-dasharray="7 5" class="wire-edge"/>
+<path d="M94,104 C94,204 420.0,204 420.0,294" stroke="#2f6fd1" stroke-width="3" stroke-dasharray="7 5" class="wire"/>
+<path d="M128,104 C128,184 494.0,204 494.0,294" stroke-width="5" stroke-dasharray="7 5" class="wire-edge"/>
+<path d="M128,104 C128,184 494.0,204 494.0,294" stroke="#8a4fc4" stroke-width="3" stroke-dasharray="7 5" class="wire"/>
+<rect x="36.0" y="46.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="53" y="97" width="14" height="14" class="pin-free"/>
+<circle cx="60" cy="70" r="7" class="pin-free"/>
+<rect x="82.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="94" y="108" class="pin-num on-dark">3</text>
+<rect x="82.0" y="58.0" width="24" height="24" rx="3" fill="#d63a2f" class="pin-used"/>
+<text x="94" y="74" class="pin-num on-dark">4</text>
+<rect x="116.0" y="92.0" width="24" height="24" rx="3" fill="#8a4fc4" class="pin-used"/>
+<text x="128" y="108" class="pin-num on-dark">5</text>
+<circle cx="128" cy="70" r="7" class="pin-free"/>
+<circle cx="162" cy="104" r="7" class="pin-free"/>
+<circle cx="162" cy="70" r="7" class="pin-free"/>
+<circle cx="196" cy="104" r="7" class="pin-free"/>
+<circle cx="196" cy="70" r="7" class="pin-free"/>
+<circle cx="230" cy="104" r="7" class="pin-free"/>
+<circle cx="230" cy="70" r="7" class="pin-free"/>
+<circle cx="264" cy="104" r="7" class="pin-free"/>
+<circle cx="264" cy="70" r="7" class="pin-free"/>
+<circle cx="298" cy="104" r="7" class="pin-free"/>
+<circle cx="298" cy="70" r="7" class="pin-free"/>
+<circle cx="332" cy="104" r="7" class="pin-free"/>
+<circle cx="332" cy="70" r="7" class="pin-free"/>
+<circle cx="366" cy="104" r="7" class="pin-free"/>
+<rect x="354.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="366" y="74" class="pin-num on-dark">20</text>
+<circle cx="400" cy="104" r="7" class="pin-free"/>
+<circle cx="400" cy="70" r="7" class="pin-free"/>
+<circle cx="434" cy="104" r="7" class="pin-free"/>
+<circle cx="434" cy="70" r="7" class="pin-free"/>
+<circle cx="468" cy="104" r="7" class="pin-free"/>
+<circle cx="468" cy="70" r="7" class="pin-free"/>
+<circle cx="502" cy="104" r="7" class="pin-free"/>
+<circle cx="502" cy="70" r="7" class="pin-free"/>
+<circle cx="536" cy="104" r="7" class="pin-free"/>
+<circle cx="536" cy="70" r="7" class="pin-free"/>
+<circle cx="570" cy="104" r="7" class="pin-free"/>
+<circle cx="570" cy="70" r="7" class="pin-free"/>
+<circle cx="604" cy="104" r="7" class="pin-free"/>
+<circle cx="604" cy="70" r="7" class="pin-free"/>
+<circle cx="638" cy="104" r="7" class="pin-free"/>
+<circle cx="638" cy="70" r="7" class="pin-free"/>
+<circle cx="672" cy="104" r="7" class="pin-free"/>
+<circle cx="672" cy="70" r="7" class="pin-free"/>
+<circle cx="706" cy="104" r="7" class="pin-free"/>
+<circle cx="706" cy="70" r="7" class="pin-free"/>
+<text x="36.0" y="40" class="cap" text-anchor="start">40-Pin-Stecker auf dem Pi (Draufsicht)</text>
+<text x="730.0" y="40" class="cap muted" text-anchor="end">Platinenrand ↑ · USB/LAN →</text>
+<text x="60" y="140" class="cap muted" text-anchor="middle">Pin 1</text>
+<text x="706" y="140" class="cap muted" text-anchor="middle">Pin 39</text>
+<rect x="217.0" y="294" width="332" height="92" rx="8" class="dev-body"/>
+<text x="383.0" y="374" class="dev-name">Waveshare 5″ DSI Display · Modul</text>
+<circle cx="272.0" cy="294" r="8" fill="#d63a2f" class="dev-pin"/>
+<text x="272.0" y="322" class="dev-lbl">5V</text>
+<text x="272.0" y="340" class="dev-sub">→ Pin 4</text>
+<circle cx="346.0" cy="294" r="8" fill="#2a2a2a" class="dev-pin"/>
+<text x="346.0" y="322" class="dev-lbl">GND</text>
+<text x="346.0" y="340" class="dev-sub">→ Pin 20</text>
+<circle cx="420.0" cy="294" r="8" fill="#2f6fd1" class="dev-pin"/>
+<text x="420.0" y="322" class="dev-lbl">SDA</text>
+<text x="420.0" y="340" class="dev-sub">→ Pin 3</text>
+<circle cx="494.0" cy="294" r="8" fill="#8a4fc4" class="dev-pin"/>
+<text x="494.0" y="322" class="dev-lbl">SCL</text>
+<text x="494.0" y="340" class="dev-sub">→ Pin 5</text></svg></div>
+<div class="side">
+<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>5V</b></td><td class='mono nw'><b>4</b> <span class="muted">5 V</span></td><td class='nw'><span class="sw" style="background:#d63a2f"></span>rot</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Versorgung<br><span class=note>teilt sich Pin 4 mit dem Amp2</span></td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>20</b> <span class="muted">GND</span></td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,25 mm² (AWG 24)</td><td>Masse</td></tr><tr class="opt"><td class='mono nw'><b>SDA</b></td><td class='mono nw'><b>3</b> <span class="muted">GPIO2 · SDA</span></td><td class='nw'><span class="sw" style="background:#2f6fd1"></span>blau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Daten<br><span class=note>optional · nur falls Touch ohne nicht geht</span></td></tr><tr class="opt"><td class='mono nw'><b>SCL</b></td><td class='mono nw'><b>5</b> <span class="muted">GPIO3 · SCL</span></td><td class='nw'><span class="sw" style="background:#8a4fc4"></span>violett</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>I2C-Takt<br><span class=note>optional · nur falls Touch ohne nicht geht</span></td></tr></tbody></table></div>
+<div class="card"><h3>Hinweise</h3><ul><li>Zwei Adern auf einem Pin (hier Pin 4, Amp2 und Display): Litzen abisolieren, miteinander verdrillen, verzinnen und dann zusammen anlöten.</li><li>SDA/SCL brauchst du sehr wahrscheinlich nicht. Die Helligkeit läuft nachweislich über das DSI-Kabel (I2C-Bus 11), und der Touch-Controller sitzt auf demselben Bus. Erst anschließen, wenn der Touch ohne diese Adern nicht reagiert.</li></ul></div>
+</div></div>
+</section>
+<section class="sheet" id="rfid">
+<div class="sheet-head"><h2>RC522 RFID-Leser</h2><span class="count">7 Adern</span></div>
+<p>Hängt am Hardware-SPI0 des Pi. Die Pin-Reihenfolge unten entspricht der Stiftleiste auf dem blauen RC522-Modul (von links: SDA … 3.3V). <b>Nur 3,3 V, niemals 5 V.</b></p>
+<div class="cols">
+<div class="fig"><svg viewBox="0 0 766 424" class="plan" role="img" aria-label="Verdrahtung RC522 RFID-Leser"><path d="M434,70 C434,150 124.0,204 124.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M434,70 C434,150 124.0,204 124.0,294" stroke="#f4f4f0" stroke-width="3" class="wire"/>
+<path d="M434,104 C434,194 198.0,204 198.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M434,104 C434,194 198.0,204 198.0,294" stroke="#e8c31a" stroke-width="3" class="wire"/>
+<path d="M366,104 C366,204 272.0,204 272.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M366,104 C366,204 272.0,204 272.0,294" stroke="#2f9a4c" stroke-width="3" class="wire"/>
+<path d="M400,104 C400,184 346.0,204 346.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M400,104 C400,184 346.0,204 346.0,294" stroke="#2f6fd1" stroke-width="3" class="wire"/>
+<path d="M468,104 C468,204 494.0,204 494.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M468,104 C468,204 494.0,204 494.0,294" stroke="#2a2a2a" stroke-width="3" class="wire"/>
+<path d="M672,104 C672,184 568.0,204 568.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M672,104 C672,184 568.0,204 568.0,294" stroke="#8a4fc4" stroke-width="3" class="wire"/>
+<path d="M60,104 C60,194 642.0,204 642.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M60,104 C60,194 642.0,204 642.0,294" stroke="#ee8a1c" stroke-width="3" class="wire"/>
+<rect x="36.0" y="46.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="48.0" y="92.0" width="24" height="24" rx="3" fill="#ee8a1c" class="pin-used"/>
+<text x="60" y="108" class="pin-num on-light">1</text>
+<circle cx="60" cy="70" r="7" class="pin-free"/>
+<circle cx="94" cy="104" r="7" class="pin-free"/>
+<circle cx="94" cy="70" r="7" class="pin-free"/>
+<circle cx="128" cy="104" r="7" class="pin-free"/>
+<circle cx="128" cy="70" r="7" class="pin-free"/>
+<circle cx="162" cy="104" r="7" class="pin-free"/>
+<circle cx="162" cy="70" r="7" class="pin-free"/>
+<circle cx="196" cy="104" r="7" class="pin-free"/>
+<circle cx="196" cy="70" r="7" class="pin-free"/>
+<circle cx="230" cy="104" r="7" class="pin-free"/>
+<circle cx="230" cy="70" r="7" class="pin-free"/>
+<circle cx="264" cy="104" r="7" class="pin-free"/>
+<circle cx="264" cy="70" r="7" class="pin-free"/>
+<circle cx="298" cy="104" r="7" class="pin-free"/>
+<circle cx="298" cy="70" r="7" class="pin-free"/>
+<circle cx="332" cy="104" r="7" class="pin-free"/>
+<circle cx="332" cy="70" r="7" class="pin-free"/>
+<rect x="354.0" y="92.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="366" y="108" class="pin-num on-dark">19</text>
+<circle cx="366" cy="70" r="7" class="pin-free"/>
+<rect x="388.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="400" y="108" class="pin-num on-dark">21</text>
+<circle cx="400" cy="70" r="7" class="pin-free"/>
+<rect x="422.0" y="92.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="434" y="108" class="pin-num on-light">23</text>
+<rect x="422.0" y="58.0" width="24" height="24" rx="3" fill="#f4f4f0" class="pin-used"/>
+<text x="434" y="74" class="pin-num on-light">24</text>
+<rect x="456.0" y="92.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="468" y="108" class="pin-num on-dark">25</text>
+<circle cx="468" cy="70" r="7" class="pin-free"/>
+<circle cx="502" cy="104" r="7" class="pin-free"/>
+<circle cx="502" cy="70" r="7" class="pin-free"/>
+<circle cx="536" cy="104" r="7" class="pin-free"/>
+<circle cx="536" cy="70" r="7" class="pin-free"/>
+<circle cx="570" cy="104" r="7" class="pin-free"/>
+<circle cx="570" cy="70" r="7" class="pin-free"/>
+<circle cx="604" cy="104" r="7" class="pin-free"/>
+<circle cx="604" cy="70" r="7" class="pin-free"/>
+<circle cx="638" cy="104" r="7" class="pin-free"/>
+<circle cx="638" cy="70" r="7" class="pin-free"/>
+<rect x="660.0" y="92.0" width="24" height="24" rx="3" fill="#8a4fc4" class="pin-used"/>
+<text x="672" y="108" class="pin-num on-dark">37</text>
+<circle cx="672" cy="70" r="7" class="pin-free"/>
+<circle cx="706" cy="104" r="7" class="pin-free"/>
+<circle cx="706" cy="70" r="7" class="pin-free"/>
+<text x="36.0" y="40" class="cap" text-anchor="start">40-Pin-Stecker auf dem Pi (Draufsicht)</text>
+<text x="730.0" y="40" class="cap muted" text-anchor="end">Platinenrand ↑ · USB/LAN →</text>
+<text x="60" y="140" class="cap muted" text-anchor="middle">Pin 1</text>
+<text x="706" y="140" class="cap muted" text-anchor="middle">Pin 39</text>
+<rect x="69.0" y="294" width="628" height="92" rx="8" class="dev-body"/>
+<text x="383.0" y="374" class="dev-name">RC522 RFID-Leser · Modul</text>
+<circle cx="124.0" cy="294" r="8" fill="#f4f4f0" class="dev-pin"/>
+<text x="124.0" y="322" class="dev-lbl">SDA</text>
+<text x="124.0" y="340" class="dev-sub">→ Pin 24</text>
+<circle cx="198.0" cy="294" r="8" fill="#e8c31a" class="dev-pin"/>
+<text x="198.0" y="322" class="dev-lbl">SCK</text>
+<text x="198.0" y="340" class="dev-sub">→ Pin 23</text>
+<circle cx="272.0" cy="294" r="8" fill="#2f9a4c" class="dev-pin"/>
+<text x="272.0" y="322" class="dev-lbl">MOSI</text>
+<text x="272.0" y="340" class="dev-sub">→ Pin 19</text>
+<circle cx="346.0" cy="294" r="8" fill="#2f6fd1" class="dev-pin"/>
+<text x="346.0" y="322" class="dev-lbl">MISO</text>
+<text x="346.0" y="340" class="dev-sub">→ Pin 21</text>
+<circle cx="420.0" cy="294" r="8" fill="none" class="dev-pin nc"/>
+<text x="420.0" y="322" class="dev-lbl">IRQ</text>
+<text x="420.0" y="340" class="dev-sub">frei</text>
+<circle cx="494.0" cy="294" r="8" fill="#2a2a2a" class="dev-pin"/>
+<text x="494.0" y="322" class="dev-lbl">GND</text>
+<text x="494.0" y="340" class="dev-sub">→ Pin 25</text>
+<circle cx="568.0" cy="294" r="8" fill="#8a4fc4" class="dev-pin"/>
+<text x="568.0" y="322" class="dev-lbl">RST</text>
+<text x="568.0" y="340" class="dev-sub">→ Pin 37</text>
+<circle cx="642.0" cy="294" r="8" fill="#ee8a1c" class="dev-pin"/>
+<text x="642.0" y="322" class="dev-lbl">3.3V</text>
+<text x="642.0" y="340" class="dev-sub">→ Pin 1</text></svg></div>
+<div class="side">
+<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>SDA</b></td><td class='mono nw'><b>24</b> <span class="muted">GPIO8 · CE0</span></td><td class='nw'><span class="sw" style="background:#f4f4f0"></span>weiß</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Chip-Select (GPIO8 · CE0)</td></tr><tr><td class='mono nw'><b>SCK</b></td><td class='mono nw'><b>23</b> <span class="muted">GPIO11 · SCLK</span></td><td class='nw'><span class="sw" style="background:#e8c31a"></span>gelb</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>SPI-Takt (GPIO11)</td></tr><tr><td class='mono nw'><b>MOSI</b></td><td class='mono nw'><b>19</b> <span class="muted">GPIO10 · MOSI</span></td><td class='nw'><span class="sw" style="background:#2f9a4c"></span>grün</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>SPI Daten zum Leser (GPIO10)</td></tr><tr><td class='mono nw'><b>MISO</b></td><td class='mono nw'><b>21</b> <span class="muted">GPIO9 · MISO</span></td><td class='nw'><span class="sw" style="background:#2f6fd1"></span>blau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>SPI Daten vom Leser (GPIO9)</td></tr><tr><td class='mono nw'><b>IRQ</b></td><td class='mono nw'><span class="muted">–</span></td><td class='nw'><span class="sw nc"></span>–</td><td class='mono nw'>–</td><td>nicht verbunden<br><span class=note>frei lassen</span></td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>25</b> <span class="muted">GND</span></td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Masse</td></tr><tr><td class='mono nw'><b>RST</b></td><td class='mono nw'><b>37</b> <span class="muted">GPIO26</span></td><td class='nw'><span class="sw" style="background:#8a4fc4"></span>violett</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Reset (GPIO26)</td></tr><tr><td class='mono nw'><b>3.3V</b></td><td class='mono nw'><b>1</b> <span class="muted">3,3 V</span></td><td class='nw'><span class="sw" style="background:#ee8a1c"></span>orange</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Versorgung 3,3 V<br><span class=note>NICHT 5 V</span></td></tr></tbody></table></div>
+<div class="card"><h3>Hinweise</h3><ul><li>SPI-Adern unter etwa 30 cm halten, sonst liest der Leser unzuverlässig.</li><li>Der Leser braucht nur ein paar Dutzend mA, 0,14 mm² reicht für alle Adern.</li></ul></div>
+</div></div>
+</section>
+<section class="sheet" id="next">
+<div class="sheet-head"><h2>Taster „Weiter“</h2><span class="count">2 Adern</span></div>
+<p>Cherry-MX-Schalter: nur die zwei Metall-Pins sind Kontakte, der Kunststoff-Pin ist nur Halterung. Welcher Metall-Pin wohin geht, ist egal. Kein Widerstand nötig.</p>
+<div class="cols">
+<div class="fig"><svg viewBox="0 0 766 424" class="plan" role="img" aria-label="Verdrahtung Taster „Weiter“"><path d="M536,104 C536,184 323.0,204 323.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M536,104 C536,184 323.0,204 323.0,294" stroke="#f4f4f0" stroke-width="3" class="wire"/>
+<path d="M536,70 C536,160 443.0,204 443.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M536,70 C536,160 443.0,204 443.0,294" stroke="#2a2a2a" stroke-width="3" class="wire"/>
+<rect x="36.0" y="46.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="53" y="97" width="14" height="14" class="pin-free"/>
+<circle cx="60" cy="70" r="7" class="pin-free"/>
+<circle cx="94" cy="104" r="7" class="pin-free"/>
+<circle cx="94" cy="70" r="7" class="pin-free"/>
+<circle cx="128" cy="104" r="7" class="pin-free"/>
+<circle cx="128" cy="70" r="7" class="pin-free"/>
+<circle cx="162" cy="104" r="7" class="pin-free"/>
+<circle cx="162" cy="70" r="7" class="pin-free"/>
+<circle cx="196" cy="104" r="7" class="pin-free"/>
+<circle cx="196" cy="70" r="7" class="pin-free"/>
+<circle cx="230" cy="104" r="7" class="pin-free"/>
+<circle cx="230" cy="70" r="7" class="pin-free"/>
+<circle cx="264" cy="104" r="7" class="pin-free"/>
+<circle cx="264" cy="70" r="7" class="pin-free"/>
+<circle cx="298" cy="104" r="7" class="pin-free"/>
+<circle cx="298" cy="70" r="7" class="pin-free"/>
+<circle cx="332" cy="104" r="7" class="pin-free"/>
+<circle cx="332" cy="70" r="7" class="pin-free"/>
+<circle cx="366" cy="104" r="7" class="pin-free"/>
+<circle cx="366" cy="70" r="7" class="pin-free"/>
+<circle cx="400" cy="104" r="7" class="pin-free"/>
+<circle cx="400" cy="70" r="7" class="pin-free"/>
+<circle cx="434" cy="104" r="7" class="pin-free"/>
+<circle cx="434" cy="70" r="7" class="pin-free"/>
+<circle cx="468" cy="104" r="7" class="pin-free"/>
+<circle cx="468" cy="70" r="7" class="pin-free"/>
+<circle cx="502" cy="104" r="7" class="pin-free"/>
+<circle cx="502" cy="70" r="7" class="pin-free"/>
+<rect x="524.0" y="92.0" width="24" height="24" rx="3" fill="#f4f4f0" class="pin-used"/>
+<text x="536" y="108" class="pin-num on-light">29</text>
+<rect x="524.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="536" y="74" class="pin-num on-dark">30</text>
+<circle cx="570" cy="104" r="7" class="pin-free"/>
+<circle cx="570" cy="70" r="7" class="pin-free"/>
+<circle cx="604" cy="104" r="7" class="pin-free"/>
+<circle cx="604" cy="70" r="7" class="pin-free"/>
+<circle cx="638" cy="104" r="7" class="pin-free"/>
+<circle cx="638" cy="70" r="7" class="pin-free"/>
+<circle cx="672" cy="104" r="7" class="pin-free"/>
+<circle cx="672" cy="70" r="7" class="pin-free"/>
+<circle cx="706" cy="104" r="7" class="pin-free"/>
+<circle cx="706" cy="70" r="7" class="pin-free"/>
+<text x="36.0" y="40" class="cap" text-anchor="start">40-Pin-Stecker auf dem Pi (Draufsicht)</text>
+<text x="730.0" y="40" class="cap muted" text-anchor="end">Platinenrand ↑ · USB/LAN →</text>
+<text x="60" y="140" class="cap muted" text-anchor="middle">Pin 1</text>
+<text x="706" y="140" class="cap muted" text-anchor="middle">Pin 39</text>
+<rect x="268.0" y="294" width="230" height="92" rx="8" class="dev-body"/>
+<text x="383.0" y="374" class="dev-name">Taster „Weiter“ · Schalter</text>
+<circle cx="323.0" cy="294" r="8" fill="#f4f4f0" class="dev-pin"/>
+<text x="323.0" y="322" class="dev-lbl">Kontakt A</text>
+<text x="323.0" y="340" class="dev-sub">→ Pin 29</text>
+<circle cx="443.0" cy="294" r="8" fill="#2a2a2a" class="dev-pin"/>
+<text x="443.0" y="322" class="dev-lbl">Kontakt B</text>
+<text x="443.0" y="340" class="dev-sub">→ Pin 30</text></svg></div>
+<div class="side">
+<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>Kontakt A</b></td><td class='mono nw'><b>29</b> <span class="muted">GPIO5</span></td><td class='nw'><span class="sw" style="background:#f4f4f0"></span>weiß</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Taster Weiter (GPIO5)</td></tr><tr><td class='mono nw'><b>Kontakt B</b></td><td class='mono nw'><b>30</b> <span class="muted">GND</span></td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Masse<br><span class=note>teilt sich Pin 30 mit „Zurück“</span></td></tr></tbody></table></div>
+<div class="card"><h3>Hinweise</h3><ul><li>Die beiden GND-Adern der Taster kommen zusammen auf Pin 30: verdrillen, verzinnen, gemeinsam anlöten.</li></ul></div>
+</div></div>
+</section>
+<section class="sheet" id="prev">
+<div class="sheet-head"><h2>Taster „Zurück“</h2><span class="count">2 Adern</span></div>
+<p>Gleicher Aufbau wie „Weiter“. Welcher Metall-Pin wohin geht, ist egal.</p>
+<div class="cols">
+<div class="fig"><svg viewBox="0 0 766 424" class="plan" role="img" aria-label="Verdrahtung Taster „Zurück“"><path d="M570,104 C570,184 323.0,204 323.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M570,104 C570,184 323.0,204 323.0,294" stroke="#8d9290" stroke-width="3" class="wire"/>
+<path d="M536,70 C536,160 443.0,204 443.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M536,70 C536,160 443.0,204 443.0,294" stroke="#2a2a2a" stroke-width="3" class="wire"/>
+<rect x="36.0" y="46.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="53" y="97" width="14" height="14" class="pin-free"/>
+<circle cx="60" cy="70" r="7" class="pin-free"/>
+<circle cx="94" cy="104" r="7" class="pin-free"/>
+<circle cx="94" cy="70" r="7" class="pin-free"/>
+<circle cx="128" cy="104" r="7" class="pin-free"/>
+<circle cx="128" cy="70" r="7" class="pin-free"/>
+<circle cx="162" cy="104" r="7" class="pin-free"/>
+<circle cx="162" cy="70" r="7" class="pin-free"/>
+<circle cx="196" cy="104" r="7" class="pin-free"/>
+<circle cx="196" cy="70" r="7" class="pin-free"/>
+<circle cx="230" cy="104" r="7" class="pin-free"/>
+<circle cx="230" cy="70" r="7" class="pin-free"/>
+<circle cx="264" cy="104" r="7" class="pin-free"/>
+<circle cx="264" cy="70" r="7" class="pin-free"/>
+<circle cx="298" cy="104" r="7" class="pin-free"/>
+<circle cx="298" cy="70" r="7" class="pin-free"/>
+<circle cx="332" cy="104" r="7" class="pin-free"/>
+<circle cx="332" cy="70" r="7" class="pin-free"/>
+<circle cx="366" cy="104" r="7" class="pin-free"/>
+<circle cx="366" cy="70" r="7" class="pin-free"/>
+<circle cx="400" cy="104" r="7" class="pin-free"/>
+<circle cx="400" cy="70" r="7" class="pin-free"/>
+<circle cx="434" cy="104" r="7" class="pin-free"/>
+<circle cx="434" cy="70" r="7" class="pin-free"/>
+<circle cx="468" cy="104" r="7" class="pin-free"/>
+<circle cx="468" cy="70" r="7" class="pin-free"/>
+<circle cx="502" cy="104" r="7" class="pin-free"/>
+<circle cx="502" cy="70" r="7" class="pin-free"/>
+<circle cx="536" cy="104" r="7" class="pin-free"/>
+<rect x="524.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="536" y="74" class="pin-num on-dark">30</text>
+<rect x="558.0" y="92.0" width="24" height="24" rx="3" fill="#8d9290" class="pin-used"/>
+<text x="570" y="108" class="pin-num on-dark">31</text>
+<circle cx="570" cy="70" r="7" class="pin-free"/>
+<circle cx="604" cy="104" r="7" class="pin-free"/>
+<circle cx="604" cy="70" r="7" class="pin-free"/>
+<circle cx="638" cy="104" r="7" class="pin-free"/>
+<circle cx="638" cy="70" r="7" class="pin-free"/>
+<circle cx="672" cy="104" r="7" class="pin-free"/>
+<circle cx="672" cy="70" r="7" class="pin-free"/>
+<circle cx="706" cy="104" r="7" class="pin-free"/>
+<circle cx="706" cy="70" r="7" class="pin-free"/>
+<text x="36.0" y="40" class="cap" text-anchor="start">40-Pin-Stecker auf dem Pi (Draufsicht)</text>
+<text x="730.0" y="40" class="cap muted" text-anchor="end">Platinenrand ↑ · USB/LAN →</text>
+<text x="60" y="140" class="cap muted" text-anchor="middle">Pin 1</text>
+<text x="706" y="140" class="cap muted" text-anchor="middle">Pin 39</text>
+<rect x="268.0" y="294" width="230" height="92" rx="8" class="dev-body"/>
+<text x="383.0" y="374" class="dev-name">Taster „Zurück“ · Schalter</text>
+<circle cx="323.0" cy="294" r="8" fill="#8d9290" class="dev-pin"/>
+<text x="323.0" y="322" class="dev-lbl">Kontakt A</text>
+<text x="323.0" y="340" class="dev-sub">→ Pin 31</text>
+<circle cx="443.0" cy="294" r="8" fill="#2a2a2a" class="dev-pin"/>
+<text x="443.0" y="322" class="dev-lbl">Kontakt B</text>
+<text x="443.0" y="340" class="dev-sub">→ Pin 30</text></svg></div>
+<div class="side">
+<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>Kontakt A</b></td><td class='mono nw'><b>31</b> <span class="muted">GPIO6</span></td><td class='nw'><span class="sw" style="background:#8d9290"></span>grau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Taster Zurück (GPIO6)</td></tr><tr><td class='mono nw'><b>Kontakt B</b></td><td class='mono nw'><b>30</b> <span class="muted">GND</span></td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Masse<br><span class=note>teilt sich Pin 30 mit „Weiter“</span></td></tr></tbody></table></div>
+<div class="card"><h3>Hinweise</h3><ul><li>Für die beiden Signaladern unterschiedliche Farben nehmen (weiß = Weiter, grau = Zurück), dann kannst du sie später noch auseinanderhalten.</li></ul></div>
+</div></div>
+</section>
+<section class="sheet" id="vol">
+<div class="sheet-head"><h2>Encoder Lautstärke (KY-040)</h2><span class="count">5 Adern</span></div>
+<p>Drehen ändert die Lautstärke, Drücken ist Play/Pause, 4 s halten fährt den Pi herunter. Pin-Reihenfolge wie auf der Stiftleiste des KY-040: CLK, DT, SW, +, GND.</p>
+<div class="cols">
+<div class="fig"><svg viewBox="0 0 766 424" class="plan" role="img" aria-label="Verdrahtung Encoder Lautstärke (KY-040)"><path d="M502,70 C502,150 235.0,204 235.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M502,70 C502,150 235.0,204 235.0,294" stroke="#e8c31a" stroke-width="3" class="wire"/>
+<path d="M264,104 C264,194 309.0,204 309.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M264,104 C264,194 309.0,204 309.0,294" stroke="#2f9a4c" stroke-width="3" class="wire"/>
+<path d="M298,104 C298,204 383.0,204 383.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M298,104 C298,204 383.0,204 383.0,294" stroke="#2f6fd1" stroke-width="3" class="wire"/>
+<path d="M332,104 C332,184 457.0,204 457.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M332,104 C332,184 457.0,204 457.0,294" stroke="#ee8a1c" stroke-width="3" class="wire"/>
+<path d="M706,104 C706,194 531.0,204 531.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M706,104 C706,194 531.0,204 531.0,294" stroke="#2a2a2a" stroke-width="3" class="wire"/>
+<rect x="36.0" y="46.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="53" y="97" width="14" height="14" class="pin-free"/>
+<circle cx="60" cy="70" r="7" class="pin-free"/>
+<circle cx="94" cy="104" r="7" class="pin-free"/>
+<circle cx="94" cy="70" r="7" class="pin-free"/>
+<circle cx="128" cy="104" r="7" class="pin-free"/>
+<circle cx="128" cy="70" r="7" class="pin-free"/>
+<circle cx="162" cy="104" r="7" class="pin-free"/>
+<circle cx="162" cy="70" r="7" class="pin-free"/>
+<circle cx="196" cy="104" r="7" class="pin-free"/>
+<circle cx="196" cy="70" r="7" class="pin-free"/>
+<circle cx="230" cy="104" r="7" class="pin-free"/>
+<circle cx="230" cy="70" r="7" class="pin-free"/>
+<rect x="252.0" y="92.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="264" y="108" class="pin-num on-dark">13</text>
+<circle cx="264" cy="70" r="7" class="pin-free"/>
+<rect x="286.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="298" y="108" class="pin-num on-dark">15</text>
+<circle cx="298" cy="70" r="7" class="pin-free"/>
+<rect x="320.0" y="92.0" width="24" height="24" rx="3" fill="#ee8a1c" class="pin-used"/>
+<text x="332" y="108" class="pin-num on-light">17</text>
+<circle cx="332" cy="70" r="7" class="pin-free"/>
+<circle cx="366" cy="104" r="7" class="pin-free"/>
+<circle cx="366" cy="70" r="7" class="pin-free"/>
+<circle cx="400" cy="104" r="7" class="pin-free"/>
+<circle cx="400" cy="70" r="7" class="pin-free"/>
+<circle cx="434" cy="104" r="7" class="pin-free"/>
+<circle cx="434" cy="70" r="7" class="pin-free"/>
+<circle cx="468" cy="104" r="7" class="pin-free"/>
+<circle cx="468" cy="70" r="7" class="pin-free"/>
+<circle cx="502" cy="104" r="7" class="pin-free"/>
+<rect x="490.0" y="58.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="502" y="74" class="pin-num on-light">28</text>
+<circle cx="536" cy="104" r="7" class="pin-free"/>
+<circle cx="536" cy="70" r="7" class="pin-free"/>
+<circle cx="570" cy="104" r="7" class="pin-free"/>
+<circle cx="570" cy="70" r="7" class="pin-free"/>
+<circle cx="604" cy="104" r="7" class="pin-free"/>
+<circle cx="604" cy="70" r="7" class="pin-free"/>
+<circle cx="638" cy="104" r="7" class="pin-free"/>
+<circle cx="638" cy="70" r="7" class="pin-free"/>
+<circle cx="672" cy="104" r="7" class="pin-free"/>
+<circle cx="672" cy="70" r="7" class="pin-free"/>
+<rect x="694.0" y="92.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="706" y="108" class="pin-num on-dark">39</text>
+<circle cx="706" cy="70" r="7" class="pin-free"/>
+<text x="36.0" y="40" class="cap" text-anchor="start">40-Pin-Stecker auf dem Pi (Draufsicht)</text>
+<text x="730.0" y="40" class="cap muted" text-anchor="end">Platinenrand ↑ · USB/LAN →</text>
+<text x="60" y="140" class="cap muted" text-anchor="middle">Pin 1</text>
+<text x="706" y="140" class="cap muted" text-anchor="middle">Pin 39</text>
+<rect x="180.0" y="294" width="406" height="92" rx="8" class="dev-body"/>
+<text x="383.0" y="374" class="dev-name">Encoder Lautstärke (KY-040) · Modul</text>
+<circle cx="235.0" cy="294" r="8" fill="#e8c31a" class="dev-pin"/>
+<text x="235.0" y="322" class="dev-lbl">CLK</text>
+<text x="235.0" y="340" class="dev-sub">→ Pin 28</text>
+<circle cx="309.0" cy="294" r="8" fill="#2f9a4c" class="dev-pin"/>
+<text x="309.0" y="322" class="dev-lbl">DT</text>
+<text x="309.0" y="340" class="dev-sub">→ Pin 13</text>
+<circle cx="383.0" cy="294" r="8" fill="#2f6fd1" class="dev-pin"/>
+<text x="383.0" y="322" class="dev-lbl">SW</text>
+<text x="383.0" y="340" class="dev-sub">→ Pin 15</text>
+<circle cx="457.0" cy="294" r="8" fill="#ee8a1c" class="dev-pin"/>
+<text x="457.0" y="322" class="dev-lbl">+</text>
+<text x="457.0" y="340" class="dev-sub">→ Pin 17</text>
+<circle cx="531.0" cy="294" r="8" fill="#2a2a2a" class="dev-pin"/>
+<text x="531.0" y="322" class="dev-lbl">GND</text>
+<text x="531.0" y="340" class="dev-sub">→ Pin 39</text></svg></div>
+<div class="side">
+<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>CLK</b></td><td class='mono nw'><b>28</b> <span class="muted">GPIO1 · ID_SC</span></td><td class='nw'><span class="sw" style="background:#e8c31a"></span>gelb</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Drehen A (GPIO1)<br><span class=note>Pin 28 – nicht zur Amp-Buchse führen</span></td></tr><tr><td class='mono nw'><b>DT</b></td><td class='mono nw'><b>13</b> <span class="muted">GPIO27</span></td><td class='nw'><span class="sw" style="background:#2f9a4c"></span>grün</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Drehen B (GPIO27)</td></tr><tr><td class='mono nw'><b>SW</b></td><td class='mono nw'><b>15</b> <span class="muted">GPIO22</span></td><td class='nw'><span class="sw" style="background:#2f6fd1"></span>blau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Taster (GPIO22)</td></tr><tr><td class='mono nw'><b>+</b></td><td class='mono nw'><b>17</b> <span class="muted">3,3 V</span></td><td class='nw'><span class="sw" style="background:#ee8a1c"></span>orange</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Versorgung 3,3 V<br><span class=note>teilt sich Pin 17 mit dem Helligkeits-Encoder</span></td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>39</b> <span class="muted">GND</span></td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Masse</td></tr></tbody></table></div>
+<div class="card"><h3>Hinweise</h3><ul><li>Das „+“ des KY-040 an 3,3 V, nicht an 5 V. Mit 5 V lägen die Signale über dem, was die GPIOs vertragen.</li><li>Dreht die Lautstärke falsch herum, CLK und DT tauschen (oder in config.yaml encoder_clk/encoder_dt tauschen).</li></ul></div>
+</div></div>
+</section>
+<section class="sheet" id="bright">
+<div class="sheet-head"><h2>Encoder Helligkeit (KY-040)</h2><span class="count">5 Adern</span></div>
+<p>Drehen ändert die Display-Helligkeit, Drücken schaltet den Nachtmodus. Gleiche Pin-Reihenfolge wie beim Lautstärke-Encoder.</p>
+<div class="cols">
+<div class="fig"><svg viewBox="0 0 766 424" class="plan" role="img" aria-label="Verdrahtung Encoder Helligkeit (KY-040)"><path d="M298,70 C298,150 235.0,204 235.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M298,70 C298,150 235.0,204 235.0,294" stroke="#e8c31a" stroke-width="3" class="wire"/>
+<path d="M570,70 C570,160 309.0,204 309.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M570,70 C570,160 309.0,204 309.0,294" stroke="#2f9a4c" stroke-width="3" class="wire"/>
+<path d="M230,104 C230,204 383.0,204 383.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M230,104 C230,204 383.0,204 383.0,294" stroke="#2f6fd1" stroke-width="3" class="wire"/>
+<path d="M332,104 C332,184 457.0,204 457.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M332,104 C332,184 457.0,204 457.0,294" stroke="#ee8a1c" stroke-width="3" class="wire"/>
+<path d="M604,70 C604,160 531.0,204 531.0,294" stroke-width="5" class="wire-edge"/>
+<path d="M604,70 C604,160 531.0,204 531.0,294" stroke="#2a2a2a" stroke-width="3" class="wire"/>
+<rect x="36.0" y="46.0" width="694" height="82" rx="6" class="hdr-body"/>
+<rect x="53" y="97" width="14" height="14" class="pin-free"/>
+<circle cx="60" cy="70" r="7" class="pin-free"/>
+<circle cx="94" cy="104" r="7" class="pin-free"/>
+<circle cx="94" cy="70" r="7" class="pin-free"/>
+<circle cx="128" cy="104" r="7" class="pin-free"/>
+<circle cx="128" cy="70" r="7" class="pin-free"/>
+<circle cx="162" cy="104" r="7" class="pin-free"/>
+<circle cx="162" cy="70" r="7" class="pin-free"/>
+<circle cx="196" cy="104" r="7" class="pin-free"/>
+<circle cx="196" cy="70" r="7" class="pin-free"/>
+<rect x="218.0" y="92.0" width="24" height="24" rx="3" fill="#2f6fd1" class="pin-used"/>
+<text x="230" y="108" class="pin-num on-dark">11</text>
+<circle cx="230" cy="70" r="7" class="pin-free"/>
+<circle cx="264" cy="104" r="7" class="pin-free"/>
+<circle cx="264" cy="70" r="7" class="pin-free"/>
+<circle cx="298" cy="104" r="7" class="pin-free"/>
+<rect x="286.0" y="58.0" width="24" height="24" rx="3" fill="#e8c31a" class="pin-used"/>
+<text x="298" y="74" class="pin-num on-light">16</text>
+<rect x="320.0" y="92.0" width="24" height="24" rx="3" fill="#ee8a1c" class="pin-used"/>
+<text x="332" y="108" class="pin-num on-light">17</text>
+<circle cx="332" cy="70" r="7" class="pin-free"/>
+<circle cx="366" cy="104" r="7" class="pin-free"/>
+<circle cx="366" cy="70" r="7" class="pin-free"/>
+<circle cx="400" cy="104" r="7" class="pin-free"/>
+<circle cx="400" cy="70" r="7" class="pin-free"/>
+<circle cx="434" cy="104" r="7" class="pin-free"/>
+<circle cx="434" cy="70" r="7" class="pin-free"/>
+<circle cx="468" cy="104" r="7" class="pin-free"/>
+<circle cx="468" cy="70" r="7" class="pin-free"/>
+<circle cx="502" cy="104" r="7" class="pin-free"/>
+<circle cx="502" cy="70" r="7" class="pin-free"/>
+<circle cx="536" cy="104" r="7" class="pin-free"/>
+<circle cx="536" cy="70" r="7" class="pin-free"/>
+<circle cx="570" cy="104" r="7" class="pin-free"/>
+<rect x="558.0" y="58.0" width="24" height="24" rx="3" fill="#2f9a4c" class="pin-used"/>
+<text x="570" y="74" class="pin-num on-dark">32</text>
+<circle cx="604" cy="104" r="7" class="pin-free"/>
+<rect x="592.0" y="58.0" width="24" height="24" rx="3" fill="#2a2a2a" class="pin-used"/>
+<text x="604" y="74" class="pin-num on-dark">34</text>
+<circle cx="638" cy="104" r="7" class="pin-free"/>
+<circle cx="638" cy="70" r="7" class="pin-free"/>
+<circle cx="672" cy="104" r="7" class="pin-free"/>
+<circle cx="672" cy="70" r="7" class="pin-free"/>
+<circle cx="706" cy="104" r="7" class="pin-free"/>
+<circle cx="706" cy="70" r="7" class="pin-free"/>
+<text x="36.0" y="40" class="cap" text-anchor="start">40-Pin-Stecker auf dem Pi (Draufsicht)</text>
+<text x="730.0" y="40" class="cap muted" text-anchor="end">Platinenrand ↑ · USB/LAN →</text>
+<text x="60" y="140" class="cap muted" text-anchor="middle">Pin 1</text>
+<text x="706" y="140" class="cap muted" text-anchor="middle">Pin 39</text>
+<rect x="180.0" y="294" width="406" height="92" rx="8" class="dev-body"/>
+<text x="383.0" y="374" class="dev-name">Encoder Helligkeit (KY-040) · Modul</text>
+<circle cx="235.0" cy="294" r="8" fill="#e8c31a" class="dev-pin"/>
+<text x="235.0" y="322" class="dev-lbl">CLK</text>
+<text x="235.0" y="340" class="dev-sub">→ Pin 16</text>
+<circle cx="309.0" cy="294" r="8" fill="#2f9a4c" class="dev-pin"/>
+<text x="309.0" y="322" class="dev-lbl">DT</text>
+<text x="309.0" y="340" class="dev-sub">→ Pin 32</text>
+<circle cx="383.0" cy="294" r="8" fill="#2f6fd1" class="dev-pin"/>
+<text x="383.0" y="322" class="dev-lbl">SW</text>
+<text x="383.0" y="340" class="dev-sub">→ Pin 11</text>
+<circle cx="457.0" cy="294" r="8" fill="#ee8a1c" class="dev-pin"/>
+<text x="457.0" y="322" class="dev-lbl">+</text>
+<text x="457.0" y="340" class="dev-sub">→ Pin 17</text>
+<circle cx="531.0" cy="294" r="8" fill="#2a2a2a" class="dev-pin"/>
+<text x="531.0" y="322" class="dev-lbl">GND</text>
+<text x="531.0" y="340" class="dev-sub">→ Pin 34</text></svg></div>
+<div class="side">
+<div class="tbl"><table><thead><tr><th>Bauteil-Pin</th><th>Pin am Pi-Stecker</th><th>Aderfarbe</th><th>Querschnitt</th><th>Funktion / Hinweis</th></tr></thead><tbody><tr><td class='mono nw'><b>CLK</b></td><td class='mono nw'><b>16</b> <span class="muted">GPIO23</span></td><td class='nw'><span class="sw" style="background:#e8c31a"></span>gelb</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Drehen A (GPIO23)</td></tr><tr><td class='mono nw'><b>DT</b></td><td class='mono nw'><b>32</b> <span class="muted">GPIO12</span></td><td class='nw'><span class="sw" style="background:#2f9a4c"></span>grün</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Drehen B (GPIO12)</td></tr><tr><td class='mono nw'><b>SW</b></td><td class='mono nw'><b>11</b> <span class="muted">GPIO17</span></td><td class='nw'><span class="sw" style="background:#2f6fd1"></span>blau</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Taster / Nachtmodus (GPIO17)</td></tr><tr><td class='mono nw'><b>+</b></td><td class='mono nw'><b>17</b> <span class="muted">3,3 V</span></td><td class='nw'><span class="sw" style="background:#ee8a1c"></span>orange</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Versorgung 3,3 V<br><span class=note>teilt sich Pin 17 mit dem Lautstärke-Encoder</span></td></tr><tr><td class='mono nw'><b>GND</b></td><td class='mono nw'><b>34</b> <span class="muted">GND</span></td><td class='nw'><span class="sw" style="background:#2a2a2a"></span>schwarz</td><td class='mono nw'>0,14 mm² (AWG 26)</td><td>Masse</td></tr></tbody></table></div>
+<div class="card"><h3>Hinweise</h3><ul><li>Beide Encoder haben dieselben Aderfarben. Ein Stück beschrifteter Schrumpfschlauch („L“ / „H“) am Kabelbündel erspart später das Suchen.</li></ul></div>
+</div></div>
+</section>
+</div>

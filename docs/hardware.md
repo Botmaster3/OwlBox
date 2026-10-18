@@ -41,6 +41,11 @@ Header-Positionen sind über alle Pi-Modelle mit 40-Pin-Header hinweg identisch
 (auch der Pi 5) - nur *welcher Linux-`gpiochip`* dahintersteckt, unterscheidet
 sich, siehe „Raspberry Pi 5: was sich geändert hat" unten.
 
+**Lötplan für den 40-Pin-Lötstecker**: `docs/loetplan/OwlBox-Loetplan.pdf`
+(bzw. die `.html` daneben) zeigt pro Bauteil eine eigene Zeichnung mit Tabelle -
+welcher Bauteil-Pin mit welcher Aderfarbe und welchem Querschnitt an welchen
+physischen Pin kommt. Erzeugt von `scripts/loetplan/build_loetplan.py`.
+
 **GPIO-Pinbelegung als Grafik**: `docs/owlbox-gpio-pinout.svg` zeigt den
 kompletten 40-Pin-Header (physische Nummerierung wie auf der Pi-Platine) mit
 Zielgerät pro Pin - aktuell für RC522 (Hardware-SPI0), direkte Verkabelung
@@ -246,8 +251,8 @@ dimmt jetzt auch tatsächlich das Display sichtbar.
 |----------------------------------|---------|---------------------|
 | I2S BCLK                        | 18      | HiFiBerry           |
 | I2S LRCLK                       | 19      | HiFiBerry           |
-| I2S DIN                         | 20      | HiFiBerry           |
-| I2S DOUT                        | 21      | HiFiBerry           |
+| I2S PCM_DIN (Eingang am Pi)     | 20      | HiFiBerry (vom Amp2 nicht genutzt, wird trotzdem verbunden) |
+| I2S PCM_DOUT (Audiodaten zum Amp) | 21    | HiFiBerry           |
 | I2C SDA                         | 2       | HiFiBerry (Amp-Steuerung) **und** Display-Touch-Controller - gemeinsam am selben I2C-Bus, kein Konflikt (unterschiedliche Adressen), s.o. |
 | I2C SCL                         | 3       | HiFiBerry (Amp-Steuerung) **und** Display-Touch-Controller, s.o. |
 | SPI0 SCLK/MOSI/MISO/CE0         | 11/10/9/8 | RC522 (Hardware-SPI, s.u.) |
@@ -452,8 +457,8 @@ oben schon einzeln erwähnt:
 |---|---|---|
 | BCLK | GPIO18 | I2S-Bit-Clock |
 | LRCLK/WS | GPIO19 | I2S-Wortauswahl (links/rechts) |
-| DIN | GPIO20 | I2S-Audiodaten |
-| DOUT | GPIO21 | I2S (vom Amp2 ungenutzt für reine Wiedergabe, trotzdem verbinden) |
+| DATA | GPIO21 (PCM_DOUT) | I2S-Audiodaten vom Pi zum Verstärker - ohne diese Ader kein Ton |
+| - | GPIO20 (PCM_DIN) | I2S-Eingang am Pi (vom Amp2 für reine Wiedergabe ungenutzt, trotzdem verbinden) |
 | SDA | GPIO2 | I2C-Datenleitung (Verstärkersteuerung, Lautstärke/Mute-Register) |
 | SCL | GPIO3 | I2C-Taktleitung (Verstärkersteuerung) |
 
@@ -477,7 +482,9 @@ nur für < 1A ausgelegt, spürbarer Spannungsabfall bei mehr) - stattdessen:
 
 - Beide 5V-Pins (2 und 4) UND mehrere GND-Pins parallel nutzen, nicht nur je
   einen - reduziert den Übergangswiderstand.
-- Wenn möglich kurze, dickere Leitungen (z.B. AWG 20 oder dicker) statt
+- Kurze Silikon-Litze mit 0,25 mm² (AWG 24) pro Pin - dicker passt an einen
+  Pin im 2,54-mm-Raster meist nicht mehr, deshalb mehrere Pins parallel (siehe
+  `docs/loetplan/OwlBox-Loetplan.pdf`) - statt
   Standard-Dupont-Kabel für genau diese beiden Adern.
 - Nach dem Zusammenbau prüfen: `vcgencmd get_throttled` sollte `0x0` zeigen
   (keine Unterspannung); bei hörbarem Verzerren/Aussetzern unter Last zuerst
